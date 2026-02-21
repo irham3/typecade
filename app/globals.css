@@ -24,6 +24,22 @@
   --font-sans: var(--font-dm-sans);
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-syne);
+
+  --animate-caret-blink: caret-blink 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+
+  @keyframes caret-blink {
+
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 6px 0px var(--accent);
+    }
+
+    50% {
+      opacity: 0;
+      box-shadow: 0 0 0px 0px var(--accent);
+    }
+  }
 }
 
 body {
@@ -34,22 +50,4 @@ body {
     radial-gradient(circle at 50% 0%, var(--panel-bg), transparent 80%);
   background-attachment: fixed;
   min-height: 100vh;
-}
-
-@keyframes caret-blink {
-
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 6px 0px var(--color-accent);
-  }
-
-  50% {
-    opacity: 0;
-    box-shadow: 0 0 0px 0px var(--color-accent);
-  }
-}
-
-.animate-caret-blink {
-  animation: caret-blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
