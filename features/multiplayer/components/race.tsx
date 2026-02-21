@@ -36,6 +36,7 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
     const [typedChars, setTypedChars] = useState("");
     const [targetText, setTargetText] = useState<string>("");
     const activeCharRef = useRef<HTMLSpanElement>(null);
+    const startTimeRef = useRef<number | null>(null);
     const [translateY, setTranslateY] = useState(0);
     const [mounted, setMounted] = useState(false);
 
@@ -54,6 +55,7 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
             } else if (countdown === 0) {
                 const timer = setTimeout(() => {
                     setRaceState("racing");
+                    startTimeRef.current = Date.now();
                     setPlayers(p => p.map(player => ({ ...player, status: "playing" })));
                 }, 0);
                 return () => clearTimeout(timer);
@@ -75,7 +77,7 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
 
                 // Simulate bots and update P1 WPM dynamically based on time left
                 setPlayers(p => {
-                    const elapsedMin = Math.max(0.01, (60 - (timeLeft - 1)) / 60);
+                    const elapsedMin = startTimeRef.current ? Math.max(0.01, (Date.now() - startTimeRef.current) / 1000 / 60) : 0.01;
 
                     return p.map(player => {
                         if (player.status === "finished") return player;
@@ -143,9 +145,9 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
         }
 
         // Update player 1 wpm internally, visually updated more rapidly by setInterval
-        const timeElapsedMin = Math.max(0.01, (60 - timeLeft) / 60);
+        const elapsedMin = startTimeRef.current ? Math.max(0.01, (Date.now() - startTimeRef.current) / 1000 / 60) : 0.01;
         const correctChars = val.split("").filter((char, i) => char === targetText[i]).length;
-        const wpm = Math.max(0, Math.floor((correctChars / 5) / timeElapsedMin));
+        const wpm = Math.max(0, Math.floor((correctChars / 5) / elapsedMin));
         const progress = Math.min(100, (correctChars / 600) * 100);
 
         setPlayers(p => p.map(player => {
@@ -245,7 +247,7 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
                                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                                 exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
                                 transition={{ duration: 0.4 }}
-                                className="absolute text-[200px] leading-none font-display font-bold text-accent drop-shadow-[0_0_50px_rgba(99,102,241,0.4)]"
+                                className="absolute text-[200px] leading-none font-mono font-black text-accent drop-shadow-[0_0_50px_rgba(99,102,241,0.4)]"
                             >
                                 {countdown === 0 ? "GO!" : countdown}
                             </motion.div>
@@ -257,7 +259,12 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
     }
 
     return (
-        <div className="w-full max-w-4xl flex flex-col font-sans relative">
+        <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="w-full max-w-4xl flex flex-col font-sans relative"
+        >
 
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-8 px-6 py-4 bg-[#1A1A1A] rounded-2xl border border-white/5">
@@ -281,7 +288,7 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
             </div>
 
             {/* Input Area (Moved above lanes) */}
-            <div className={`relative transition-all duration-500 bg-[#0F0F0F] rounded-[24px] p-6 sm:p-8 border border-white/5 shadow-xl overflow-hidden mb-6 mt-2 shrink-0 ${raceState === "racing" ? "opacity-100 translate-y-0" : "opacity-50 pointer-events-none"}`}>
+            <div className={`relative bg-[#0F0F0F] rounded-[24px] p-6 sm:p-8 border border-white/5 shadow-xl overflow-hidden mb-6 mt-2 shrink-0 ${raceState === "racing" ? "opacity-100" : "opacity-50 pointer-events-none"}`}>
                 <input
                     autoFocus
                     className="absolute inset-0 opacity-0 z-50 cursor-text"
@@ -379,6 +386,6 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
                 onLeave={onLeave}
             />
 
-        </div>
+        </motion.div>
     );
 }
