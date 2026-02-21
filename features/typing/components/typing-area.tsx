@@ -139,7 +139,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                         className={`relative transition-colors duration-100 ${charStatusClass}`}
                     >
                         {isCurrent && status !== "finished" && (
-                            <span className="absolute left-0 top-[10%] w-[2px] h-[80%] bg-accent shadow-[0_0_10px_rgba(99,102,241,0.8)] animate-pulse" />
+                            <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
                         )}
                         {char}
                     </span>
@@ -171,7 +171,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                             className={`relative transition-colors duration-100 ${spaceStatusClass}`}
                         >
                             {isSpaceCurrent && status !== "finished" && (
-                                <span className="absolute left-0 top-[10%] w-[2px] h-[80%] bg-accent shadow-[0_0_10px_rgba(99,102,241,0.8)] animate-pulse" />
+                                <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
                             )}
                             {"\u00A0"}
                         </span>
@@ -233,7 +233,6 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                             className="w-full font-mono text-2xl sm:text-[2rem] leading-[1.6] tracking-tight text-left bg-panel-bg/20 p-8 sm:p-12 rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden"
                             style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}
                         >
-                            <div className="absolute inset-0 z-0 opacity-10" style={{ background: "radial-gradient(circle at center, var(--accent) 0%, transparent 60%)" }} />
                             {/* Using 4.8em for exactly 3 lines of visible text (3 * 1.6) with fade masks so cut-offs are unnoticeable */}
                             <div
                                 className="h-[4.8em] overflow-hidden relative z-10 w-full rounded-lg"

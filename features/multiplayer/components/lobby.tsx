@@ -66,7 +66,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
 
                     <button
                         onClick={() => onJoin("NEW")}
-                        className="w-full mt-auto py-4 bg-accent hover:bg-accent/90 text-[#0F0F0F] font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        className="w-full mt-auto py-4 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                         Create & Join <ArrowRight size={18} />
                     </button>
