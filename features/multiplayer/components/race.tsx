@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Home, RotateCcw } from "lucide-react";
+import { Medal } from "lucide-react";
+import { useRef } from "react";
+import { generateWords } from "@/lib/words";
+import { RaceResultsModal } from "./race-results-modal";
 
-interface Player {
+export interface Player {
     id: string;
     name: string;
     wpm: number;
@@ -10,23 +13,38 @@ interface Player {
     color: string;
     status: "playing" | "finished" | "waiting";
     place?: number;
+    correctChars: number;
 }
 
 export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
     const [countdown, setCountdown] = useState<number | null>(3);
     const [timeLeft, setTimeLeft] = useState(60);
     const [raceState, setRaceState] = useState<"countdown" | "racing" | "finished">("countdown");
+    const [showResults, setShowResults] = useState(true);
 
     const [players, setPlayers] = useState<Player[]>([
-        { id: "p1", name: "TypingNinja (You)", wpm: 0, progress: 0, color: "#F5A623", status: "waiting" },
-        { id: "p2", name: "FastFingers99", wpm: 0, progress: 0, color: "#4EA8DE", status: "waiting" },
-        { id: "p3", name: "CodeMonkey", wpm: 0, progress: 0, color: "#72DDF7", status: "waiting" },
-        { id: "p4", name: "Keyboard_Slayer", wpm: 0, progress: 0, color: "#FF6B6B", status: "waiting" },
+        { id: "p1", name: "TypingNinja (You)", wpm: 0, progress: 0, correctChars: 0, color: "var(--color-accent)", status: "waiting" },
+        { id: "p2", name: "Newbie_Typer", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
+        { id: "p3", name: "SlowPoke", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
+        { id: "p4", name: "AverageJoe", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
+        { id: "p5", name: "FastFingers99", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
+        { id: "p6", name: "Keyboard_Slayer", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
+        { id: "p7", name: "TypeGod_T800", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
     ]);
 
     // Dummy typing engine
     const [typedChars, setTypedChars] = useState("");
-    const targetText = "the quick brown fox jumps over the lazy dog and types faster to think clearer in this multiplayer race".replace(/ /g, "\u00A0");
+    const [targetText, setTargetText] = useState<string>("");
+    const activeCharRef = useRef<HTMLSpanElement>(null);
+    const [translateY, setTranslateY] = useState(0);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => {
+            setTargetText(generateWords("EN", 50, false, false));
+            setMounted(true);
+        }, 0);
+    }, []);
 
     useEffect(() => {
         if (raceState === "countdown" && countdown !== null) {
@@ -55,45 +73,188 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
                     return t - 1;
                 });
 
-                // Simulate bots typing
-                setPlayers(p => p.map(player => {
-                    if (player.id === "p1" || player.status === "finished") return player;
-                    const advance = Math.random() > 0.3 ? Math.random() * 2 + 0.5 : 0;
-                    const newProgress = Math.min(100, player.progress + advance);
-                    const newWpm = Math.floor(60 + (Math.random() * 40));
+                // Simulate bots and update P1 WPM dynamically based on time left
+                setPlayers(p => {
+                    const elapsedMin = Math.max(0.01, (60 - (timeLeft - 1)) / 60);
 
-                    if (newProgress >= 100) {
-                        return { ...player, progress: 100, status: "finished", wpm: newWpm, place: Math.floor(Math.random() * 3) + 1 };
-                    }
+                    return p.map(player => {
+                        if (player.status === "finished") return player;
 
-                    return { ...player, progress: newProgress, wpm: newWpm };
-                }));
+                        if (player.id === "p1") {
+                            const newWpm = Math.max(0, Math.floor((player.correctChars / 5) / elapsedMin));
+                            const newProgress = Math.min(100, (player.correctChars / 600) * 100);
+                            return { ...player, wpm: newWpm, progress: newProgress };
+                        }
+
+                        // Bot logic
+                        const botSpeeds: Record<string, number> = {
+                            "p2": 15,
+                            "p3": 30,
+                            "p4": 50,
+                            "p5": 70,
+                            "p6": 90,
+                            "p7": 110
+                        };
+                        const baseSpeed = botSpeeds[player.id] || 40;
+                        const currentWpm = baseSpeed + (Math.random() * 10 - 5);
+                        const charsAdded = (currentWpm * 5) / 120; // 500ms segment of chars
+                        const newCorrectChars = player.correctChars + charsAdded;
+                        const newProgress = Math.min(100, (newCorrectChars / 600) * 100); // 600 chars is the '100% full bar' threshold (120 WPM for 60s)
+
+                        return { ...player, correctChars: newCorrectChars, progress: newProgress, wpm: Math.floor(currentWpm) };
+                    });
+                });
             }, 500);
             return () => clearInterval(timer);
         }
-    }, [raceState]);
+    }, [raceState, timeLeft]);
+
+    useEffect(() => {
+        if (raceState === "countdown") {
+            const timer = setTimeout(() => setTranslateY(0), 0);
+            return () => clearTimeout(timer);
+        }
+
+        if (!activeCharRef.current) return;
+        const charTop = activeCharRef.current.offsetTop;
+
+        const parentElem = activeCharRef.current.parentElement?.parentElement;
+        if (!parentElem) return;
+
+        const computedLineHeight = window.getComputedStyle(parentElem).lineHeight;
+        const lineHeight = parseFloat(computedLineHeight) || activeCharRef.current.offsetHeight;
+
+        if (lineHeight === 0) return;
+
+        const lineIndex = Math.floor((charTop + 2) / lineHeight);
+        // Container is 2 lines high. Keep active line at the top so next line is always visible.
+        const newTranslate = lineIndex * lineHeight;
+        const timer = setTimeout(() => setTranslateY(newTranslate), 0);
+        return () => clearTimeout(timer);
+    }, [typedChars, raceState]);
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (raceState !== "racing") return;
         const val = e.target.value;
         setTypedChars(val);
 
-        // Update player 1 progress
-        const progress = Math.min(100, (val.length / targetText.length) * 100);
-        // Dummy WPM calc
-        const wpm = progress > 0 ? Math.floor(70 + (progress * 0.5)) : 0;
+        if (targetText.length - val.length < 150) {
+            setTargetText((prev: string) => prev + " " + generateWords("EN", 30, false, false));
+        }
+
+        // Update player 1 wpm internally, visually updated more rapidly by setInterval
+        const timeElapsedMin = Math.max(0.01, (60 - timeLeft) / 60);
+        const correctChars = val.split("").filter((char, i) => char === targetText[i]).length;
+        const wpm = Math.max(0, Math.floor((correctChars / 5) / timeElapsedMin));
+        const progress = Math.min(100, (correctChars / 600) * 100);
 
         setPlayers(p => p.map(player => {
             if (player.id === "p1") {
-                if (progress >= 100) {
-                    setRaceState("finished");
-                    return { ...player, progress: 100, wpm, status: "finished", place: 1 };
-                }
-                return { ...player, progress, wpm };
+                return { ...player, progress, wpm, correctChars };
             }
             return player;
         }));
     };
+
+    const renderText = () => {
+        const words = targetText.split(" ");
+        let globalIndex = 0;
+
+        return words.map((word, wIdx) => {
+            const wordLen = word.length;
+            const wordChars = word.split("");
+            const isLastWord = wIdx === words.length - 1;
+
+            const wordNodes = wordChars.map((char, cIdx) => {
+                const index = globalIndex + cIdx;
+                const typedChar = typedChars[index];
+
+                let charStatusClass = "text-text-dim";
+                if (typedChar != null) {
+                    if (typedChar === char) {
+                        charStatusClass = "text-accent drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]";
+                    } else {
+                        charStatusClass = "text-error-text bg-error-bg/60 rounded-sm";
+                    }
+                }
+
+                const isCurrent = index === typedChars.length;
+
+                return (
+                    <span
+                        key={cIdx}
+                        ref={isCurrent ? activeCharRef : null}
+                        className={`relative transition-colors duration-100 ${charStatusClass}`}
+                    >
+                        {isCurrent && raceState === "racing" && (
+                            <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
+                        )}
+                        {char}
+                    </span>
+                );
+            });
+
+            const spaceIndex = globalIndex + wordLen;
+            const spaceTyped = typedChars[spaceIndex];
+            const isSpaceCurrent = spaceIndex === typedChars.length;
+
+            let spaceStatusClass = "text-text-dim";
+            if (spaceTyped != null) {
+                if (spaceTyped === " ") {
+                    spaceStatusClass = "text-accent";
+                } else {
+                    spaceStatusClass = "text-error-text bg-error-bg/60 rounded-sm";
+                }
+            }
+
+            globalIndex += wordLen + (isLastWord ? 0 : 1);
+
+            return (
+                <span key={wIdx} className="inline-block">
+                    {wordNodes}
+                    {!isLastWord && (
+                        <span
+                            ref={isSpaceCurrent ? activeCharRef : null}
+                            className={`relative transition-colors duration-100 ${spaceStatusClass}`}
+                        >
+                            {isSpaceCurrent && raceState === "racing" && (
+                                <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
+                            )}
+                            {"\u00A0"}
+                        </span>
+                    )}
+                </span>
+            );
+        });
+    };
+
+    if (!mounted) return null;
+
+    if (raceState === "countdown") {
+        return (
+            <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background overflow-hidden">
+                <div className="absolute top-[30%] text-2xl font-mono text-text-dim tracking-[0.2em] uppercase">
+                    Match Starting In
+                </div>
+                <div className="relative flex items-center justify-center w-full h-full">
+                    <AnimatePresence>
+                        {countdown !== null && (
+                            <motion.div
+                                key={countdown}
+                                initial={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
+                                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                                exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
+                                transition={{ duration: 0.4 }}
+                                className="absolute text-[200px] leading-none font-display font-bold text-accent drop-shadow-[0_0_50px_rgba(99,102,241,0.4)]"
+                            >
+                                {countdown === 0 ? "GO!" : countdown}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full max-w-4xl flex flex-col font-sans relative">
@@ -104,131 +265,119 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
                     <div className="px-3 py-1 bg-white/10 rounded-md font-mono text-xs text-text-dim">R-4821</div>
                     <h2 className="text-xl font-display font-bold text-foreground">SpeedRace x</h2>
                 </div>
-                <div className="font-mono text-xl text-accent font-bold">
-                    00:{timeLeft.toString().padStart(2, '0')}
+                <div className="flex items-center gap-4">
+                    {raceState === "finished" && !showResults && (
+                        <button
+                            onClick={() => setShowResults(true)}
+                            className="px-4 py-1.5 bg-accent text-white font-bold rounded-lg text-sm transition-colors shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:bg-accent/90"
+                        >
+                            View Results
+                        </button>
+                    )}
+                    <div className="font-mono text-xl text-accent font-bold">
+                        00:{timeLeft.toString().padStart(2, '0')}
+                    </div>
                 </div>
             </div>
 
-            {/* Lanes */}
-            <div className="space-y-6 mb-12 flex-1">
-                {players.map(player => (
-                    <div key={player.id} className="w-full flex flex-col gap-2 group">
-                        <div className="flex justify-between items-end text-sm">
-                            <span className={`font-medium flex items-center gap-2 ${player.id === "p1" ? "text-foreground" : "text-text-dim"}`}>
-                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: player.color }} />
-                                {player.name}
-                            </span>
-                            <span className="font-mono text-xs text-text-dim opacity-70 group-hover:opacity-100 transition-opacity">
-                                {player.status === "finished" ? (
-                                    <span className="text-white flex items-center gap-1 font-bold">
-                                        ✓ FINISHED
-                                    </span>
-                                ) : `${player.wpm} WPM`}
-                            </span>
-                        </div>
-                        <div className="w-full h-8 bg-[#1A1A1A] rounded-md overflow-hidden relative border border-white/5">
-                            <motion.div
-                                className="h-full absolute left-0 top-0 bottom-0 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
-                                style={{ backgroundColor: player.color }}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${player.progress}%` }}
-                                transition={{ ease: "linear", duration: 0.5 }}
-                            />
-                            <div
-                                className="absolute inset-0 z-10 opacity-20 pointer-events-none"
-                                style={{
-                                    backgroundImage: "linear-gradient(90deg, transparent 96%, rgba(255,255,255,1) 96%)",
-                                    backgroundSize: "20px 100%"
-                                }}
-                            />
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Input Area (Only visible when racing) */}
-            <div className={`relative transition-all duration-500 bg-[#0F0F0F] rounded-2xl p-8 border border-white/5 ${raceState === "racing" ? "opacity-100 translate-y-0" : "opacity-50 pointer-events-none"}`}>
+            {/* Input Area (Moved above lanes) */}
+            <div className={`relative transition-all duration-500 bg-[#0F0F0F] rounded-[24px] p-6 sm:p-8 border border-white/5 shadow-xl overflow-hidden mb-6 mt-2 shrink-0 ${raceState === "racing" ? "opacity-100 translate-y-0" : "opacity-50 pointer-events-none"}`}>
                 <input
                     autoFocus
                     className="absolute inset-0 opacity-0 z-50 cursor-text"
                     value={typedChars}
                     onChange={handleInput}
                     disabled={raceState !== "racing"}
+                    spellCheck="false"
+                    autoComplete="off"
                 />
-                <div className="font-mono text-2xl leading-[1.8] text-text-dim/40 max-h-32 overflow-hidden relative">
-                    {targetText.split("").map((char, i) => {
-                        const typed = typedChars[i];
-                        let color = "inherit";
-                        if (typed != null) {
-                            color = typed === char ? "var(--color-accent)" : "var(--color-error-text)";
-                        }
-                        return (
-                            <span key={i} style={{ color }} className="relative transition-colors">
-                                {i === typedChars.length && raceState === "racing" && (
-                                    <span className="absolute left-0 bottom-1 w-[2px] h-[80%] bg-accent animate-pulse" />
-                                )}
-                                {char}
-                            </span>
-                        );
-                    })}
+
+                <div
+                    className="h-[3.2em] overflow-hidden relative z-10 w-full rounded-lg font-mono text-2xl sm:text-[2rem] leading-[1.6] tracking-tight"
+                    style={{
+                        maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+                    }}
+                >
+                    <div
+                        className="transition-transform duration-300 ease-out relative text-left"
+                        style={{ transform: `translateY(-${translateY}px)` }}
+                    >
+                        {renderText()}
+                    </div>
                 </div>
             </div>
 
-            {/* Overlays */}
-            <AnimatePresence>
-                {raceState === "countdown" && countdown !== null && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.5 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-3xl"
-                    >
-                        <motion.div
-                            key={countdown}
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="text-[120px] font-display font-bold text-accent drop-shadow-2xl"
-                        >
-                            {countdown === 0 ? "GO!" : countdown}
-                        </motion.div>
-                    </motion.div>
-                )}
+            {/* Lanes */}
+            <div className="space-y-2 mb-8 w-full flex-1">
+                {(() => {
+                    const sortedPlayers = [...players].sort((a, b) => b.wpm - a.wpm);
+                    const p1Index = sortedPlayers.findIndex(p => p.id === "p1");
+                    const lastIndex = sortedPlayers.length - 1;
+                    const visibleIndicesArray = Array.from(new Set([0, 1, 2, 3, p1Index, lastIndex].filter(i => i <= lastIndex && i >= 0))).sort((a, b) => a - b);
 
-                {raceState === "finished" && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md rounded-3xl border border-white/10"
-                    >
-                        <div className="bg-[#141414] p-10 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center max-w-sm w-full">
-                            <Trophy size={48} className="text-accent mb-6" />
-                            <h2 className="text-2xl font-display font-medium mb-8">RACE RESULTS</h2>
+                    return visibleIndicesArray.map((idx, i) => {
+                        const player = sortedPlayers[idx];
+                        const prevIdx = i > 0 ? visibleIndicesArray[i - 1] : -1;
+                        const showGap = idx - prevIdx > 1;
 
-                            <div className="w-full space-y-4 font-sans mb-10">
-                                {[...players].sort((a, b) => (b.wpm - a.wpm)).map((p, i) => (
-                                    <div key={p.id} className={`flex justify-between items-center p-3 rounded-lg border ${p.id === "p1" ? "border-accent/30 bg-accent/5 text-foreground" : "border-white/5 text-text-dim"}`}>
-                                        <div className="flex gap-4 items-center">
-                                            <span className="font-bold font-mono text-sm opacity-50">{i + 1}</span>
-                                            <span className="font-medium text-sm">{p.name}</span>
+                        let rankIcon = <span className="font-mono text-text-dim/50 font-bold text-lg w-6 text-center">{idx + 1}</span>;
+                        if (idx === 0) rankIcon = <Medal className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)] w-6 h-6" strokeWidth={2.5} />;
+                        else if (idx === 1) rankIcon = <Medal className="text-slate-300 drop-shadow-[0_0_10px_rgba(203,213,225,0.4)] w-6 h-6" strokeWidth={2.5} />;
+                        else if (idx === 2) rankIcon = <Medal className="text-amber-600 drop-shadow-[0_0_10px_rgba(217,119,6,0.4)] w-6 h-6" strokeWidth={2.5} />;
+
+                        return (
+                            <div key={player.id} className="w-full flex flex-col gap-2">
+                                {showGap && (
+                                    <div className="w-full flex justify-center py-1 opacity-50">
+                                        <div className="flex gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
                                         </div>
-                                        <span className="font-mono text-sm font-bold">{p.wpm} WPM</span>
                                     </div>
-                                ))}
-                            </div>
+                                )}
+                                <motion.div layout="position" className={`w-full flex items-center gap-4 group p-3 sm:p-4 rounded-xl transition-colors ${player.id === "p1" ? "bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(99,102,241,0.1)]" : "bg-[#141414] border border-white/5"}`}>
+                                    <div className="flex items-center justify-center w-6 shrink-0">
+                                        {rankIcon}
+                                    </div>
 
-                            <div className="flex gap-4 w-full">
-                                <button className="flex-1 py-3 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-colors">
-                                    <RotateCcw size={16} /> Play Again
-                                </button>
-                                <button onClick={onLeave} className="flex-1 py-3 flex items-center justify-center gap-2 border border-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-colors hover:bg-white/5">
-                                    <Home size={16} /> Leave
-                                </button>
+                                    <div className="flex-1 flex flex-col gap-1.5 relative">
+                                        <div className="flex justify-between items-end text-sm">
+                                            <span className={`font-medium flex items-center gap-2 ${player.id === "p1" ? "text-white" : "text-text-dim"}`}>
+                                                {player.name}
+                                                {player.id === "p1" && <span className="ml-2 px-1.5 py-0.5 bg-accent/20 text-accent text-[8px] rounded-full uppercase font-bold tracking-widest">You</span>}
+                                            </span>
+                                            <span className="font-mono text-xs text-text-dim/70">
+                                                {player.status === "finished" ? (
+                                                    <span className="text-white flex items-center gap-1 font-bold">
+                                                        ✓ FINISHED
+                                                    </span>
+                                                ) : `${player.wpm} WPM`}
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-3.5 bg-[#0F0F0F] rounded-full overflow-hidden relative border border-white/5">
+                                            <motion.div
+                                                className={`h-full absolute left-0 top-0 bottom-0 ${player.id === "p1" ? "bg-accent shadow-[0_0_10px_rgba(99,102,241,0.8)]" : "bg-text-dim/30"}`}
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${player.progress}%` }}
+                                                transition={{ ease: "linear", duration: 0.5 }}
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        );
+                    });
+                })()}
+            </div>
+            {/* Overlays */}
+            <RaceResultsModal
+                isOpen={raceState === "finished" && showResults}
+                players={players}
+                onClose={() => setShowResults(false)}
+                onLeave={onLeave}
+            />
 
         </div>
     );
