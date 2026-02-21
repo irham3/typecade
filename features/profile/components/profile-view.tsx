@@ -1,0 +1,166 @@
+import { useStore } from "@/lib/store";
+import { User, Activity, FileText, Zap } from "lucide-react";
+
+export function ProfileView() {
+    const stats = useStore(state => state.stats);
+
+    const formatHours = (mins: number) => {
+        const h = Math.floor(mins / 60);
+        const m = Math.floor(mins % 60);
+        return `${h}h ${m}m`;
+    };
+
+    return (
+        <div className="w-full max-w-5xl pt-4 lg:pt-8 font-sans">
+
+            {/* Header Profile */}
+            <div className="w-full bg-linear-to-br from-[#1A1A1A] to-[#0F0F0F] border border-white/5 rounded-[32px] p-8 flex flex-col md:flex-row items-center md:items-start gap-8 shadow-2xl relative overflow-hidden">
+
+                {/* Avatar */}
+                <div className="w-32 h-32 rounded-full bg-linear-to-tr from-accent/20 to-accent/5 p-[2px] shadow-[0_0_30px_rgba(245,166,35,0.15)] shrink-0">
+                    <div className="w-full h-full rounded-full bg-[#141414] border border-white/10 flex items-center justify-center relative overflow-hidden group hover:cursor-pointer">
+                        <User size={48} className="text-text-dim group-hover:text-foreground transition-colors" />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <span className="text-xs font-bold tracking-widest uppercase">Edit</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* User Info & Quick Stats */}
+                <div className="flex-1 flex flex-col w-full">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4">
+                        <div className="flex flex-col items-center md:items-start gap-2">
+                            <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">TypingNinja</h1>
+                            <span className="text-sm font-medium text-text-dim bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                                Member since Jan 2025
+                            </span>
+                        </div>
+
+                        <button className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-sm font-medium text-foreground transition-all">
+                            Edit Profile
+                        </button>
+                    </div>
+
+                    <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center md:text-left">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Personal Best</span>
+                            <span className="text-2xl font-mono font-bold text-accent">{stats.wpm} <span className="text-sm">WPM</span></span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Top Accuracy</span>
+                            <span className="text-2xl font-mono font-bold text-foreground">{stats.accuracy}%</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Total Tests</span>
+                            <span className="text-2xl font-mono font-bold text-foreground">{stats.tests}</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Time Typed</span>
+                            <span className="text-xl font-mono font-bold text-foreground mt-1">{formatHours(stats.timeTyped)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+
+                {/* Left Col: Additional Stats & Graph Placeholder */}
+                <div className="lg:col-span-2 space-y-8">
+
+                    <div className="bg-[#1A1A1A] border border-white/5 rounded-[24px] p-6 sm:p-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
+                                <Activity size={18} className="text-accent" /> Recent Performance
+                            </h3>
+                            <select className="bg-[#0F0F0F] border border-white/5 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none">
+                                <option>Last 30 days</option>
+                                <option>Last 7 days</option>
+                            </select>
+                        </div>
+
+                        {/* CSS-based Mock Chart */}
+                        <div className="w-full h-48 flex items-end gap-1 sm:gap-2 justify-between mt-6 group">
+                            {stats.history.slice(0, 15).reverse().map((test, i) => (
+                                <div key={i} className="relative flex-1 flex flex-col items-center justify-end h-full group/bar">
+                                    <div
+                                        className="w-full bg-[#333] group-hover:opacity-40 hover:opacity-100! hover:bg-accent hover:shadow-[0_0_15px_rgba(245,166,35,0.4)] transition-all rounded-t-sm"
+                                        style={{ height: `${Math.max(10, (test.wpm / 140) * 100)}%` }}
+                                    />
+                                    {/* Tooltip on hover */}
+                                    <div className="absolute -top-10 bg-[#0F0F0F] border border-white/10 px-3 py-1.5 rounded-lg text-xs font-mono opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap shadow-xl text-center">
+                                        <span className="text-accent font-bold block">{test.wpm} WPM</span>
+                                        <span className="text-text-dim text-[10px]">{test.date}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-[#1A1A1A] border border-white/5 rounded-[24px] overflow-hidden">
+                        <div className="p-6 border-b border-white/5">
+                            <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
+                                <FileText size={18} className="text-text-dim" /> Test History
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left font-sans text-sm">
+                                <thead>
+                                    <tr className="border-b border-white/5 bg-[#0F0F0F]/50">
+                                        <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">Date</th>
+                                        <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">Mode</th>
+                                        <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">WPM</th>
+                                        <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">Acc</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.history.slice(0, 5).map((test, i) => (
+                                        <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4 text-text-dim font-mono text-xs">{test.date}</td>
+                                            <td className="px-6 py-4 text-foreground">{test.mode}</td>
+                                            <td className="px-6 py-4 font-mono font-bold text-accent">{test.wpm}</td>
+                                            <td className="px-6 py-4 font-mono">{test.accuracy}%</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="p-4 bg-[#0F0F0F]/30 text-center">
+                            <button className="text-xs font-bold text-text-dim hover:text-white uppercase tracking-widest transition-colors">See complete history</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* Right Col: Details */}
+                <div className="bg-[#1A1A1A] border border-white/5 rounded-[24px] p-6 h-fit">
+                    <h3 className="text-lg font-display font-medium text-foreground mb-6 flex items-center gap-2">
+                        <Zap size={18} className="text-accent" /> Deep Insights
+                    </h3>
+
+                    <div className="space-y-6">
+                        <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
+                            <span className="text-text-dim text-xs">Average WPM (All time)</span>
+                            <span className="text-xl font-mono text-foreground font-medium">{stats.avgWpm}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
+                            <span className="text-text-dim text-xs">Average Accuracy</span>
+                            <span className="text-xl font-mono text-foreground font-medium">{stats.avgAccuracy}%</span>
+                        </div>
+                        <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
+                            <span className="text-text-dim text-xs">Favorite Mode</span>
+                            <span className="text-base text-foreground font-medium flex items-center gap-2 mt-1">
+                                <span className="px-2 py-1 bg-white/5 rounded text-xs border border-white/10 font-mono">Time 60s</span>
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-text-dim text-xs">Language</span>
+                            <span className="text-base text-foreground font-medium flex items-center gap-2 mt-1">
+                                English
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
