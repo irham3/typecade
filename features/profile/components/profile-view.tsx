@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { User, Activity, FileText, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getSupabaseClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -10,7 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ProfileView() {
-    const stats = useStore(state => state.stats);
+    const { user, supabaseReady } = useAuth();
+    const storeStats = useStore(state => state.stats);
+    const [stats, setStats] = useState(storeStats);
+    const [displayName, setDisplayName] = useState("Typecade User");
+    const [memberSince, setMemberSince] = useState("Member since");
     const [timeframe, setTimeframe] = useState("Last 30 days");
     const [timeframeOpen, setTimeframeOpen] = useState(false);
 
@@ -20,14 +26,109 @@ export function ProfileView() {
         return `${h}h ${m}m`;
     };
 
+    const formatMemberSince = useMemo(() => {
+        const date = user?.created_at ? new Date(user.created_at) : null;
+        if (!date) return "Member since";
+        return `Member since ${date.toLocaleString("en-US", { month: "short", year: "numeric" })}`;
+    }, [user?.created_at]);
+
+    useEffect(() => {
+        setMemberSince(formatMemberSince);
+    }, [formatMemberSince]);
+
+    useEffect(() => {
+        if (!supabaseReady || !user) return;
+        const client = getSupabaseClient();
+        if (!client) return;
+        const load = async () => {
+            const [{ data: profile }, { data: statsRow }, { data: history }] = await Promise.all([
+                client.from("profiles").select("display_name, username, created_at").eq("user_id", user.id).maybeSingle(),
+                client.from("user_stats").select("*").eq("user_id", user.id).maybeSingle(),
+                client
+                    .from("typing_tests")
+                    .select("created_at, mode, mode_value, wpm, accuracy, duration_seconds")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false })
+                    .limit(30),
+            ]);
+
+            const profileRow = (profile ?? null) as { display_name?: string; username?: string; created_at?: string } | null;
+            if (profileRow?.display_name) {
+                setDisplayName(profileRow.display_name);
+            } else if (profileRow?.username) {
+                setDisplayName(profileRow.username);
+            } else if (user.email) {
+                setDisplayName(user.email.split("@")[0]);
+            }
+
+            if (profileRow?.created_at) {
+                const date = new Date(profileRow.created_at);
+                setMemberSince(`Member since ${date.toLocaleString("en-US", { month: "short", year: "numeric" })}`);
+            }
+
+            const historyRows = ((history ?? []) as Array<{
+                created_at: string;
+                mode: string;
+                mode_value: number;
+                wpm: number;
+                accuracy: number;
+                duration_seconds: number;
+            }>).map((row) => ({
+                date: new Date(row.created_at).toISOString().split("T")[0],
+                mode: row.mode === "time" ? `Time ${row.mode_value}s` : row.mode === "words" ? `Words ${row.mode_value}` : row.mode,
+                wpm: row.wpm,
+                accuracy: row.accuracy,
+                duration: row.duration_seconds,
+            }));
+
+            const stats = (statsRow ?? null) as {
+                best_wpm?: number;
+                best_accuracy?: number;
+                total_tests?: number;
+                total_time_typed_seconds?: number;
+                avg_wpm?: number;
+                avg_accuracy?: number;
+            } | null;
+
+            if (stats) {
+                setStats({
+                    wpm: stats.best_wpm ?? 0,
+                    accuracy: stats.best_accuracy ?? 0,
+                    tests: stats.total_tests ?? 0,
+                    timeTyped: Math.floor((stats.total_time_typed_seconds ?? 0) / 60),
+                    avgWpm: stats.avg_wpm ?? 0,
+                    avgAccuracy: stats.avg_accuracy ?? 0,
+                    history: historyRows,
+                });
+            } else if (historyRows.length > 0) {
+                const bestWpm = Math.max(...historyRows.map(h => h.wpm));
+                const bestAccuracy = Math.max(...historyRows.map(h => h.accuracy));
+                const totalTests = historyRows.length;
+                const totalTime = historyRows.reduce((sum, h) => sum + h.duration, 0);
+                const avgWpm = Math.round(historyRows.reduce((sum, h) => sum + h.wpm, 0) / totalTests);
+                const avgAcc = Math.round(historyRows.reduce((sum, h) => sum + h.accuracy, 0) / totalTests);
+                setStats({
+                    wpm: bestWpm,
+                    accuracy: bestAccuracy,
+                    tests: totalTests,
+                    timeTyped: Math.floor(totalTime / 60),
+                    avgWpm,
+                    avgAccuracy: avgAcc,
+                    history: historyRows,
+                });
+            }
+        };
+        void load();
+    }, [supabaseReady, user]);
+
     return (
         <div className="w-full max-w-5xl pt-4 lg:pt-8 font-sans">
 
             {/* Header Profile */}
-            <div className="w-full bg-linear-to-br from-[#1A1A1A] to-[#0F0F0F] border border-white/5 rounded-[32px] p-8 flex flex-col md:flex-row items-center md:items-start gap-8 shadow-2xl relative overflow-hidden">
+            <div className="w-full bg-linear-to-br from-[#1A1A1A] to-[#0F0F0F] border border-white/5 rounded-4xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8 shadow-2xl relative overflow-hidden">
 
                 {/* Avatar */}
-                <div className="w-32 h-32 rounded-full bg-linear-to-tr from-accent/20 to-accent/5 p-[2px] shadow-[0_0_30px_rgba(245,166,35,0.15)] shrink-0">
+                <div className="w-32 h-32 rounded-full bg-linear-to-tr from-accent/20 to-accent/5 p-0.5 shadow-[0_0_30px_rgba(245,166,35,0.15)] shrink-0">
                     <div className="w-full h-full rounded-full bg-[#141414] border border-white/10 flex items-center justify-center relative overflow-hidden group hover:cursor-pointer">
                         <User size={48} className="text-text-dim group-hover:text-foreground transition-colors" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -40,9 +141,9 @@ export function ProfileView() {
                 <div className="flex-1 flex flex-col w-full">
                     <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4">
                         <div className="flex flex-col items-center md:items-start gap-2">
-                            <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">TypingNinja</h1>
+                            <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">{displayName}</h1>
                             <span className="text-sm font-medium text-text-dim bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                                Member since Jan 2025
+                                {memberSince}
                             </span>
                         </div>
                         <Button variant="outline" className="px-5 py-5 sm:py-2.5 rounded-xl text-sm font-medium">
@@ -76,7 +177,7 @@ export function ProfileView() {
                 {/* Left Col: Additional Stats & Graph Placeholder */}
                 <div className="lg:col-span-2 space-y-8">
 
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-[24px] p-6 sm:p-8">
+                    <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl p-6 sm:p-8">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
                                 <Activity size={18} className="text-accent" /> Recent Performance
@@ -112,7 +213,7 @@ export function ProfileView() {
                         </div>
                     </div>
 
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-[24px] overflow-hidden">
+                    <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl overflow-hidden">
                         <div className="p-6 border-b border-white/5">
                             <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
                                 <FileText size={18} className="text-text-dim" /> Test History
@@ -148,7 +249,7 @@ export function ProfileView() {
                 </div>
 
                 {/* Right Col: Details */}
-                <div className="bg-[#1A1A1A] border border-white/5 rounded-[24px] p-6 h-fit">
+                <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl p-6 h-fit">
                     <h3 className="text-lg font-display font-medium text-foreground mb-6 flex items-center gap-2">
                         <Zap size={18} className="text-accent" /> Deep Insights
                     </h3>

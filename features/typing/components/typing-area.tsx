@@ -5,8 +5,11 @@ import { useStore } from "@/lib/store";
 import { RotateCcw, Share2, ArrowRight, RefreshCw } from "lucide-react";
 import { generateWords } from "@/lib/words";
 import { Button } from "@/components/ui/button";
+import { getSupabaseClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export function TypingView({ activeTab, subOption }: { activeTab: string; subOption: string }) {
+    const { user, supabaseReady } = useAuth();
     const language = useStore(state => state.language);
     const usePunctuation = useStore(state => state.punctuation);
     const useNumbers = useStore(state => state.numbers);
@@ -31,6 +34,24 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
 
 
 
+    const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
+        if (!supabaseReady || !user) return;
+        const client = getSupabaseClient();
+        if (!client) return;
+        const modeValue = mode === "words" ? limit : duration;
+        await client.from("typing_tests").insert({
+            user_id: user.id,
+            mode,
+            mode_value: modeValue,
+            language,
+            wpm: finalWpm,
+            accuracy: finalAcc,
+            duration_seconds: timeTaken,
+        } as unknown as never);
+        const rpc = client.rpc as unknown as (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>;
+        await rpc("update_user_stats", { p_user_id: user.id });
+    }, [supabaseReady, user, mode, limit, duration, language]);
+
     const {
         status,
         timeLeft,
@@ -46,6 +67,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         mode,
         onFinish: (finalWpm, finalAcc, timeTaken) => {
             addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption} ` });
+            void saveResult(finalWpm, finalAcc, timeTaken);
         }
     });
 
@@ -140,7 +162,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                         className={`relative transition-colors duration-100 ${charStatusClass}`}
                     >
                         {isCurrent && status !== "finished" && (
-                            <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
+                            <span className="absolute -left-px top-[10%] w-0.75 h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
                         )}
                         {char}
                     </span>
@@ -172,7 +194,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                             className={`relative transition-colors duration-100 ${spaceStatusClass}`}
                         >
                             {isSpaceCurrent && status !== "finished" && (
-                                <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
+                                <span className="absolute -left-px top-[10%] w-0.75 h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
                             )}
                             {"\u00A0"}
                         </span>
@@ -190,7 +212,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
             <input
                 ref={inputRef}
                 type="text"
-                className="opacity-0 absolute top-[-9999px]"
+                className="opacity-0 absolute -top-2499.75"
                 value={typedChars}
                 onChange={handleInput}
                 autoFocus
@@ -231,7 +253,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
 
                         {/* Typing Area */}
                         <div
-                            className="w-full font-mono text-2xl sm:text-[2rem] leading-[1.6] tracking-tight text-left bg-panel-bg/20 p-8 sm:p-12 rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden"
+                            className="w-full font-mono text-2xl sm:text-[2rem] leading-[1.6] tracking-tight text-left bg-panel-bg/20 p-8 sm:p-12 rounded-4xl border border-white/5 shadow-2xl relative overflow-hidden"
                             style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}
                         >
                             {/* Using 4.8em for exactly 3 lines of visible text (3 * 1.6) with fade masks so cut-offs are unnoticeable */}

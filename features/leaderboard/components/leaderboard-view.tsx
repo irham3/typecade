@@ -1,21 +1,78 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Trophy, Medal, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getSupabaseClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export function LeaderboardView() {
+    const { user, supabaseReady } = useAuth();
     const [filterMode, setFilterMode] = useState("All Time");
+    const [rows, setRows] = useState<Array<{
+        user_id: string;
+        display_name: string;
+        best_wpm: number;
+        best_accuracy: number;
+        total_tests: number;
+    }>>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const DUMMY_BOARD = [
-        { rank: 1, user: "CodeWizard", wpm: 156, acc: 99.1, tests: 2341 },
-        { rank: 2, user: "UltraTyper", wpm: 148, acc: 98.7, tests: 1892 },
-        { rank: 3, user: "SpeedDemon", wpm: 142, acc: 97.3, tests: 4201 },
-        { rank: 4, user: "NeoTypist", wpm: 139, acc: 96.0, tests: 1120 },
-        { rank: 5, user: "MechBoard", wpm: 135, acc: 98.2, tests: 3405 },
-        { rank: 6, user: "qwerty_king", wpm: 128, acc: 95.5, tests: 852 },
-        { rank: 7, user: "Lexicon", wpm: 124, acc: 99.8, tests: 923 },
-        { rank: 8, user: "DvorakMaster", wpm: 120, acc: 97.2, tests: 110 },
-        { rank: 42, user: "TypingNinja", wpm: 94, acc: 98.2, tests: 847, isCurrentUser: true }, // Current User at lower rank
-    ];
+    const queryParams = useMemo(() => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (filterMode === "Today") {
+            return { mode: null, modeValue: null, since: today.toISOString() };
+        }
+        if (filterMode === "This Week") {
+            const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return { mode: null, modeValue: null, since: since.toISOString() };
+        }
+        if (filterMode === "Words 50") {
+            return { mode: "words", modeValue: 50, since: null };
+        }
+        if (filterMode === "Time 60s") {
+            return { mode: "time", modeValue: 60, since: null };
+        }
+        return { mode: null, modeValue: null, since: null };
+    }, [filterMode]);
+
+    useEffect(() => {
+        if (!supabaseReady) return;
+        const load = async () => {
+            const client = getSupabaseClient();
+            if (!client) return;
+            setIsLoading(true);
+            const rpc = client.rpc as unknown as (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>;
+            const { data, error } = await rpc("get_leaderboard", {
+                p_mode: queryParams.mode,
+                p_mode_value: queryParams.modeValue,
+                p_since: queryParams.since,
+            });
+            setIsLoading(false);
+            if (error) return;
+            setRows((data ?? []) as Array<{
+                user_id: string;
+                display_name: string;
+                best_wpm: number;
+                best_accuracy: number;
+                total_tests: number;
+            }>);
+        };
+        void load();
+    }, [supabaseReady, queryParams]);
+
+    const board = useMemo(() => {
+        return rows
+            .sort((a, b) => b.best_wpm - a.best_wpm)
+            .slice(0, 50)
+            .map((item, index) => ({
+                rank: index + 1,
+                user: item.display_name,
+                wpm: item.best_wpm,
+                acc: item.best_accuracy,
+                tests: item.total_tests,
+                isCurrentUser: user ? item.user_id === user.id : false,
+            }));
+    }, [rows, user]);
 
     return (
         <div className="w-full max-w-4xl flex flex-col pt-8">
@@ -40,7 +97,7 @@ export function LeaderboardView() {
                 ))}
             </div>
 
-            <div className="bg-[#1A1A1A] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden relative">
+            <div className="bg-[#1A1A1A] rounded-3xl border border-white/5 shadow-2xl overflow-hidden relative">
                 <table className="w-full text-left font-sans text-sm">
                     <thead>
                         <tr className="border-b border-white/5 bg-[#0F0F0F]">
@@ -51,7 +108,7 @@ export function LeaderboardView() {
                         </tr>
                     </thead>
                     <tbody>
-                        {DUMMY_BOARD.map((item, i) => (
+                        {board.map((item, i) => (
                             <tr
                                 key={i}
                                 className={`border-b border-white/5 hover:bg-white/5 transition-colors ${item.isCurrentUser ? "bg-accent/10 border-accent/20 hover:bg-accent/10 relative" : ""
@@ -64,7 +121,7 @@ export function LeaderboardView() {
                                     {item.rank === 1 && <Crown size={18} className="text-[#FFD700]" />}
                                     {item.rank === 2 && <Medal size={18} className="text-[#C0C0C0]" />}
                                     {item.rank === 3 && <Medal size={18} className="text-[#CD7F32]" />}
-                                    {item.rank > 3 && <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-[18px] inline-block text-center`}>{item.rank}</span>}
+                                    {item.rank > 3 && <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>}
                                 </td>
 
                                 <td className="px-6 py-4 font-semibold text-foreground flex items-center gap-2">
@@ -81,6 +138,13 @@ export function LeaderboardView() {
                                 </td>
                             </tr>
                         ))}
+                        {!isLoading && board.length === 0 && (
+                            <tr>
+                                <td colSpan={4} className="px-6 py-8 text-center text-text-dim">
+                                    No results yet.
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

@@ -1,12 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Keyboard, Trophy, Users, User, Settings, Play } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { Keyboard, Trophy, Users, User, Settings, Play, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export function Navbar() {
     const pathname = usePathname();
+    const router = useRouter();
+    const [accountOpen, setAccountOpen] = useState(false);
+    const { user, isLoading, supabaseReady, signOut } = useAuth();
 
     return (
         <header className="w-full max-w-6xl px-8 py-6 flex items-center justify-between z-10 relative">
@@ -44,17 +56,32 @@ export function Navbar() {
             </nav>
 
             <div className="flex items-center gap-3 text-text-dim">
-                <Button
-                    asChild
-                    variant={pathname === '/profile' ? 'active' : 'ghost'}
-                    size="icon"
-                    className="p-2.5"
-                    aria-label="Profile"
-                >
-                    <Link href="/profile">
-                        <User size={20} />
-                    </Link>
-                </Button>
+                {user ? (
+                    <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="gap-2 px-3">
+                                <User size={18} />
+                                <span className="hidden sm:inline max-w-35 truncate">{user.email ?? "Akun"}</span>
+                                <ChevronDown size={14} className={`opacity-60 transition-transform ${accountOpen ? "rotate-180" : ""}`} />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => router.push("/profile")}>Profile</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => router.push("/auth")}>Account</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => signOut()}>Sign out</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                    <Button
+                        asChild
+                        variant="primary"
+                        className="px-4"
+                        disabled={!supabaseReady || isLoading}
+                    >
+                        <Link href="/auth">Sign in</Link>
+                    </Button>
+                )}
                 <Button
                     variant="ghost"
                     size="icon"

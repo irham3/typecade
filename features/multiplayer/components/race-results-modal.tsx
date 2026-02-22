@@ -16,11 +16,14 @@ interface Player {
 interface RaceResultsModalProps {
     isOpen: boolean;
     players: Player[];
+    currentUserId?: string;
+    isHost: boolean;
     onClose: () => void;
     onLeave: () => void;
+    onRestart: () => void;
 }
 
-export function RaceResultsModal({ isOpen, players, onClose, onLeave }: RaceResultsModalProps) {
+export function RaceResultsModal({ isOpen, players, currentUserId, isHost, onClose, onLeave, onRestart }: RaceResultsModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -44,7 +47,7 @@ export function RaceResultsModal({ isOpen, players, onClose, onLeave }: RaceResu
 
                         <div className="w-full space-y-4 font-sans mb-10">
                             {[...players].sort((a, b) => (b.wpm - a.wpm)).map((p, i) => (
-                                <div key={p.id} className={`flex justify-between items-center p-3 rounded-lg border ${p.id === "p1" ? "border-accent/30 bg-accent/5 text-foreground" : "border-white/5 text-text-dim"}`}>
+                                <div key={p.id} className={`flex justify-between items-center p-3 rounded-lg border ${p.id === currentUserId || p.id === "p1" ? "border-accent/30 bg-accent/5 text-foreground" : "border-white/5 text-text-dim"}`}>
                                     <div className="flex gap-4 items-center">
                                         <span className="font-bold font-mono text-sm opacity-50">{i + 1}</span>
                                         <span className="font-medium text-sm">{p.name}</span>
@@ -55,9 +58,15 @@ export function RaceResultsModal({ isOpen, players, onClose, onLeave }: RaceResu
                         </div>
 
                         <div className="flex gap-4 w-full">
-                            <Button className="flex-1 py-6 gap-2 text-sm font-medium">
-                                <RotateCcw size={16} /> Play Again
-                            </Button>
+                            {isHost ? (
+                                <Button onClick={onRestart} className="flex-1 py-6 gap-2 text-sm font-medium">
+                                    <RotateCcw size={16} /> Play Again
+                                </Button>
+                            ) : (
+                                <Button disabled className="flex-1 py-6 gap-2 text-sm font-medium opacity-50 cursor-not-allowed">
+                                    Waiting for Host...
+                                </Button>
+                            )}
                             <Button variant="outline" onClick={onLeave} className="flex-1 py-6 gap-2 text-sm font-medium">
                                 <Home size={16} /> Leave
                             </Button>
