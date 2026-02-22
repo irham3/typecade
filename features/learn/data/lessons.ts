@@ -45,8 +45,8 @@ export const LEARN_MODULES: Module[] = [
         lessons: [
             {
                 id: "1-1",
-                title: "Introduction to ASDF JKL;",
-                instruction: "Place your left hand fingers on A S D F, and your right hand on J K L ;. The index fingers should feel the small bumps on F and J.",
+                title: "Introduction to F and J",
+                instruction: "Place your left hand fingers on F and J. The index fingers should feel the small bumps on F and J.",
                 text: "ffff jjjj ffff jjjj fjfj jfjf fj fj jf jf f j f j",
                 targetKeys: ["f", "j", " "]
             },
