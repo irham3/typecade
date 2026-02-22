@@ -1,5 +1,6 @@
 import { Trophy, Home, RotateCcw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 interface Player {
     id: string;
@@ -30,12 +31,14 @@ export function RaceResultsModal({ isOpen, players, onClose, onLeave }: RaceResu
                     className="fixed inset-0 z-100 flex items-center justify-center bg-background/90 backdrop-blur-md border border-white/10"
                 >
                     <div className="bg-[#141414] p-10 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center max-w-sm w-full relative">
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-full text-text-dim hover:text-white transition-colors"
+                            className="absolute top-6 right-6 rounded-full"
                         >
                             <X size={20} />
-                        </button>
+                        </Button>
                         <Trophy size={48} className="text-accent mb-6" />
                         <h2 className="text-2xl font-display font-medium mb-8">RACE RESULTS</h2>
 
@@ -52,12 +55,12 @@ export function RaceResultsModal({ isOpen, players, onClose, onLeave }: RaceResu
                         </div>
 
                         <div className="flex gap-4 w-full">
-                            <button className="flex-1 py-3 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-colors">
+                            <Button className="flex-1 py-6 gap-2 text-sm font-medium">
                                 <RotateCcw size={16} /> Play Again
-                            </button>
-                            <button onClick={onLeave} className="flex-1 py-3 flex items-center justify-center gap-2 border border-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-colors hover:bg-white/5">
+                            </Button>
+                            <Button variant="outline" onClick={onLeave} className="flex-1 py-6 gap-2 text-sm font-medium">
                                 <Home size={16} /> Leave
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </motion.div>

@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore } from "@/lib/store";
 import { Globe, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 // Features dynamically imported to prevent hydration errors from random text generation
 const TypingView = dynamic(
@@ -16,17 +23,8 @@ export function HomeClient() {
     const [activeTab, setActiveTab] = useState("Time");
     const [subOption, setSubOption] = useState("60s");
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setLangDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+
 
     const language = useStore(state => state.language);
     const setLanguage = useStore(state => state.setLanguage);
@@ -47,107 +45,92 @@ export function HomeClient() {
                 >
                     <div className="flex px-3 space-x-2 border-r border-white/5 pr-4 border-dashed">
                         {["Words", "Quote", "Time", "Custom"].map(tab => (
-                            <button
+                            <Button
                                 key={tab}
+                                variant={activeTab === tab ? "active" : "ghost"}
                                 onClick={() => {
                                     setActiveTab(tab);
                                     setSubOption(tab === "Words" ? "50" : tab === "Time" ? "60s" : "Medium");
                                 }}
-                                className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${activeTab === tab
-                                    ? "bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
-                                    : "hover:text-white hover:bg-white/5 hover:scale-105"
-                                    }`}
                             >
                                 {tab}
-                            </button>
+                            </Button>
                         ))}
                     </div>
 
                     <div className="flex px-4 space-x-2 border-r border-white/5 pr-4 border-dashed">
                         {activeTab === "Time" && ["15s", "30s", "60s", "120s"].map(opt => (
-                            <button
+                            <Button
                                 key={opt}
+                                variant={subOption === opt ? "activeGradient" : "ghost"}
                                 onClick={() => setSubOption(opt)}
-                                className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${subOption === opt ? "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]" : "hover:text-white hover:bg-white/5"
-                                    }`}
                             >
                                 {opt}
-                            </button>
+                            </Button>
                         ))}
                         {activeTab === "Words" && ["10", "25", "50", "100"].map(opt => (
-                            <button
+                            <Button
                                 key={opt}
+                                variant={subOption === opt ? "activeGradient" : "ghost"}
                                 onClick={() => setSubOption(opt)}
-                                className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${subOption === opt ? "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]" : "hover:text-white hover:bg-white/5"
-                                    }`}
                             >
                                 {opt}
-                            </button>
+                            </Button>
                         ))}
                         {(activeTab === "Quote" || activeTab === "Custom") && ["Easy", "Medium", "Hard"].map(opt => (
-                            <button
+                            <Button
                                 key={opt}
+                                variant={subOption === opt ? "activeGradient" : "ghost"}
                                 onClick={() => setSubOption(opt)}
-                                className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${subOption === opt ? "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]" : "hover:text-white hover:bg-white/5"
-                                    }`}
                             >
                                 {opt}
-                            </button>
+                            </Button>
                         ))}
                     </div>
 
-                    <div className="relative flex px-3 space-x-2 border-l border-white/5 pl-4 border-dashed" ref={dropdownRef}>
-                        <button
-                            onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 font-medium hover:bg-white/5 hover:text-white"
-                        >
-                            <Globe size={16} className="opacity-70" />
-                            <span>{language}</span>
-                            <ChevronDown size={14} className={`opacity-50 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
-                        </button>
-
-                        <AnimatePresence>
-                            {langDropdownOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute top-full left-4 mt-2 bg-[#141414] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 z-50 min-w-[120px]"
+                    <div className="relative flex px-3 space-x-2 border-l border-white/5 pl-4 border-dashed">
+                        <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="flex items-center gap-2"
                                 >
-                                    {[
-                                        { code: "EN", label: "English" },
-                                        { code: "ID", label: "Indonesia" }
-                                    ].map(lang => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => {
-                                                setLanguage(lang.code as "EN" | "ID");
-                                                setLangDropdownOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${language === lang.code ? "bg-accent/10 text-accent font-bold" : "hover:bg-white/5 text-text-dim hover:text-white"}`}
-                                        >
-                                            {lang.label}
-                                        </button>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    <Globe size={16} className="opacity-70" />
+                                    <span>{language}</span>
+                                    <ChevronDown size={14} className={`opacity-50 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {[
+                                    { code: "EN", label: "English" },
+                                    { code: "ID", label: "Indonesia" }
+                                ].map(lang => (
+                                    <DropdownMenuItem
+                                        key={lang.code}
+                                        active={language === lang.code}
+                                        onClick={() => setLanguage(lang.code as "EN" | "ID")}
+                                        className="justify-between min-w-[120px]"
+                                    >
+                                        {lang.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
                     <div className="flex px-3 space-x-2 border-l border-white/5 pl-4 border-dashed">
-                        <button
+                        <Button
+                            variant={punctuation ? "activeGradient" : "ghost"}
                             onClick={() => setPunctuation(!punctuation)}
-                            className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${punctuation ? "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]" : "hover:text-white hover:bg-white/5"}`}
                         >
                             @ Punctuation
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant={numbers ? "activeGradient" : "ghost"}
                             onClick={() => setNumbers(!numbers)}
-                            className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${numbers ? "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]" : "hover:text-white hover:bg-white/5"}`}
                         >
                             # Numbers
-                        </button>
+                        </Button>
                     </div>
                 </motion.div>
             </AnimatePresence>

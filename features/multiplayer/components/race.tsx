@@ -4,6 +4,7 @@ import { Medal } from "lucide-react";
 import { useRef } from "react";
 import { generateWords } from "@/lib/words";
 import { RaceResultsModal } from "./race-results-modal";
+import { Button } from "@/components/ui/button";
 
 export interface Player {
     id: string;
@@ -274,12 +275,13 @@ export function MultiplayerRace({ onLeave }: { onLeave: () => void }) {
                 </div>
                 <div className="flex items-center gap-4">
                     {raceState === "finished" && !showResults && (
-                        <button
+                        <Button
+                            variant="primary"
                             onClick={() => setShowResults(true)}
-                            className="px-4 py-1.5 bg-accent text-white font-bold rounded-lg text-sm transition-colors shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:bg-accent/90"
+                            className="font-bold rounded-lg text-sm"
                         >
                             View Results
-                        </button>
+                        </Button>
                     )}
                     <div className="font-mono text-xl text-accent font-bold">
                         00:{timeLeft.toString().padStart(2, '0')}

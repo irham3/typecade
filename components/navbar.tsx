@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Keyboard, Trophy, Users, User, Settings, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Navbar() {
     const pathname = usePathname();
@@ -18,7 +19,7 @@ export function Navbar() {
                 </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-2 font-sans text-sm font-medium text-text-dim px-2 py-1.5 bg-transparent">
+            <nav className="hidden md:flex items-center gap-2 font-sans text-sm font-medium px-2 py-1.5 bg-transparent">
                 {[
                     { path: "/", icon: Keyboard, label: "Core" },
                     { path: "/multiplayer", icon: Users, label: "Arena" },
@@ -27,35 +28,41 @@ export function Navbar() {
                 ].map((item) => {
                     const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
                     return (
-                        <Link
+                        <Button
+                            asChild
                             key={item.path}
-                            href={item.path}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 ${isActive
-                                ? "text-white bg-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
-                                : "hover:text-white hover:bg-white/5"
-                                }`}
+                            variant={isActive ? "active" : "ghost"}
+                            className="gap-2 px-5 py-2.5"
                         >
-                            <item.icon size={16} className={isActive ? "text-accent" : ""} />
-                            <span>{item.label}</span>
-                        </Link>
+                            <Link href={item.path}>
+                                <item.icon size={16} className={isActive ? "text-accent" : ""} />
+                                <span>{item.label}</span>
+                            </Link>
+                        </Button>
                     );
                 })}
             </nav>
 
             <div className="flex items-center gap-3 text-text-dim">
-                <Link
-                    href="/profile"
-                    className={`transition-all duration-300 p-2.5 rounded-xl border ${pathname === '/profile' ? 'text-white border-white/10 bg-white/5' : 'border-transparent hover:text-white hover:bg-white/5'}`}
+                <Button
+                    asChild
+                    variant={pathname === '/profile' ? 'active' : 'ghost'}
+                    size="icon"
+                    className="p-2.5"
                     aria-label="Profile"
                 >
-                    <User size={20} />
-                </Link>
-                <button
-                    className="transition-all duration-300 p-2.5 rounded-xl border border-transparent hover:text-white hover:bg-white/5"
+                    <Link href="/profile">
+                        <User size={20} />
+                    </Link>
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-2.5"
                     aria-label="Settings"
                 >
                     <Settings size={20} />
-                </button>
+                </Button>
             </div>
         </header>
     );

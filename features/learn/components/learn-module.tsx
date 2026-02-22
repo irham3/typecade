@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Lock, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function LearnModule() {
     const [activeLesson] = useState(1);
@@ -93,9 +94,9 @@ export function LearnModule() {
                         </div>
                     </div>
 
-                    <button className="w-full max-w-xs mx-auto mt-16 py-4 bg-white hover:bg-gray-200 text-black font-bold rounded-full transition-colors font-sans text-sm">
+                    <Button variant="primary" className="w-full max-w-xs mx-auto mt-16 py-6 font-bold rounded-full font-sans text-sm text-black bg-white hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                         Begin Practice Session
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Right: Path/Curriculum Tree */}

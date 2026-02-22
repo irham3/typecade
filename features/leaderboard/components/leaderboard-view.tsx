@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Trophy, Medal, Crown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function LeaderboardView() {
     const [filterMode, setFilterMode] = useState("All Time");
@@ -29,14 +30,13 @@ export function LeaderboardView() {
 
             <div className="flex flex-wrap items-center justify-center gap-2 mb-10 border border-white/5 p-2 rounded-2xl bg-[#1A1A1A] w-fit mx-auto">
                 {["All Time", "This Week", "Today", "Words 50", "Time 60s"].map(opt => (
-                    <button
+                    <Button
                         key={opt}
                         onClick={() => setFilterMode(opt)}
-                        className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors ${filterMode === opt ? "bg-white/10 text-foreground" : "text-text-dim hover:text-white/80"
-                            }`}
+                        variant={filterMode === opt ? "active" : "ghost"}
                     >
                         {opt}
-                    </button>
+                    </Button>
                 ))}
             </div>
 

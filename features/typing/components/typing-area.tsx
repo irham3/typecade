@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { RotateCcw, Share2, ArrowRight, RefreshCw } from "lucide-react";
 import { generateWords } from "@/lib/words";
+import { Button } from "@/components/ui/button";
 
 export function TypingView({ activeTab, subOption }: { activeTab: string; subOption: string }) {
     const language = useStore(state => state.language);
@@ -44,7 +45,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         duration,
         mode,
         onFinish: (finalWpm, finalAcc, timeTaken) => {
-            addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption}` });
+            addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption} ` });
         }
     });
 
@@ -208,7 +209,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                         className="w-full relative mt-8 mb-4"
                     >
                         {/* Status Bar */}
-                        <div className={`w-full flex items-center justify-between font-mono text-accent mb-6 transition-all duration-300 ${status === "playing" ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}>
+                        <div className={`w - full flex items - center justify - between font - mono text - accent mb - 6 transition - all duration - 300 ${status === "playing" ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"} `}>
                             <div className="flex gap-6 items-center bg-panel-bg/50 backdrop-blur-sm border border-border-dim px-6 py-2 rounded-2xl shadow-xl">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-text-dim uppercase tracking-widest">WPM</span>
@@ -250,29 +251,33 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                             </div>
                         </div>
 
-                        <div className="w-full flex justify-center gap-4 mt-12 mb-8">
-                            <button
+                        <div className="w-full flex justify-center gap-4 mt-12 mb-8 items-center bg-transparent z-20">
+                            <Button
+                                variant="outline"
+                                size="lg"
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="px-6 py-4 bg-panel-bg/50 border border-border-dim hover:bg-white/10 hover:border-white/20 rounded-2xl text-text-dim hover:text-white transition-all group shadow-xl flex items-center gap-3"
+                                className="group shadow-xl flex items-center gap-3 bg-panel-bg/50 border-border-dim hover:border-white/20 hover:bg-white/10"
                                 aria-label="Restart Test (Esc)"
                                 title="Restart identical test"
                             >
                                 <RotateCcw size={20} className="group-hover:-rotate-180 transition-transform duration-500 ease-in-out" />
                                 <span className="font-semibold text-sm">Restart</span>
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="lg"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="px-6 py-4 bg-panel-bg/50 border border-border-dim hover:bg-white/10 hover:border-white/20 rounded-2xl text-text-dim hover:text-white transition-all group shadow-xl flex items-center gap-3"
+                                className="group shadow-xl flex items-center gap-3 bg-panel-bg/50 border-border-dim hover:border-white/20 hover:bg-white/10"
                                 aria-label="Shuffle Words"
                                 title="Generate new words"
                             >
                                 <RefreshCw size={20} className="group-hover:rotate-180 transition-transform duration-500 ease-in-out" />
                                 <span className="font-semibold text-sm">Shuffle</span>
-                            </button>
+                            </Button>
                         </div>
                     </motion.div>
                 ) : (
@@ -314,28 +319,36 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
 
                         <div className="w-full h-px bg-linear-to-r from-transparent via-white/10 to-transparent my-10" />
 
-                        <div className="flex flex-wrap gap-4 font-sans font-bold text-sm justify-between items-center relative z-10">
+                        <div className="flex flex-wrap gap-4 font-sans justify-between items-center relative z-20">
                             <div className="flex gap-4">
-                                <button
+                                <Button
+                                    variant="secondary"
+                                    size="lg"
                                     onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                    className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all shadow-lg"
+                                    className="gap-2 px-8 py-6 rounded-2xl shadow-lg border-white/10 text-white font-bold"
                                 >
                                     <RotateCcw size={18} /> Retry Test
-                                </button>
-                                <button className="flex items-center gap-2 px-8 py-4 rounded-2xl border border-white/5 hover:border-white/20 hover:bg-white/5 text-text-dim hover:text-white transition-all">
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="gap-2 px-8 py-6 rounded-2xl font-bold"
+                                >
                                     <Share2 size={18} /> Copy Results
-                                </button>
+                                </Button>
                             </div>
-                            <button
+                            <Button
+                                variant="primary"
+                                size="lg"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="flex items-center gap-3 px-10 py-4 rounded-2xl bg-accent text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] hover:scale-105 transition-all"
+                                className="gap-3 px-10 py-6 rounded-2xl font-bold"
                             >
                                 Next Test <ArrowRight size={18} />
-                            </button>
+                            </Button>
                         </div>
                     </motion.div>
                 )}

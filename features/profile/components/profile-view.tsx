@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { User, Activity, FileText, Zap } from "lucide-react";
+import { User, Activity, FileText, Zap, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export function ProfileView() {
     const stats = useStore(state => state.stats);
+    const [timeframe, setTimeframe] = useState("Last 30 days");
+    const [timeframeOpen, setTimeframeOpen] = useState(false);
 
     const formatHours = (mins: number) => {
         const h = Math.floor(mins / 60);
@@ -35,10 +45,9 @@ export function ProfileView() {
                                 Member since Jan 2025
                             </span>
                         </div>
-
-                        <button className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-sm font-medium text-foreground transition-all">
+                        <Button variant="outline" className="px-5 py-5 sm:py-2.5 rounded-xl text-sm font-medium">
                             Edit Profile
-                        </button>
+                        </Button>
                     </div>
 
                     <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center md:text-left">
@@ -72,10 +81,17 @@ export function ProfileView() {
                             <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
                                 <Activity size={18} className="text-accent" /> Recent Performance
                             </h3>
-                            <select className="bg-[#0F0F0F] border border-white/5 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none">
-                                <option>Last 30 days</option>
-                                <option>Last 7 days</option>
-                            </select>
+                            <DropdownMenu open={timeframeOpen} onOpenChange={setTimeframeOpen}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-auto bg-[#0F0F0F] border border-white/5 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none gap-2">
+                                        {timeframe} <ChevronDown size={12} className="opacity-50" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setTimeframe("Last 30 days")}>Last 30 days</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTimeframe("Last 7 days")}>Last 7 days</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
 
                         {/* CSS-based Mock Chart */}
@@ -124,8 +140,8 @@ export function ProfileView() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="p-4 bg-[#0F0F0F]/30 text-center">
-                            <button className="text-xs font-bold text-text-dim hover:text-white uppercase tracking-widest transition-colors">See complete history</button>
+                        <div className="p-4 bg-[#0F0F0F]/30 text-center flex justify-center">
+                            <Button variant="ghost" className="text-xs font-bold text-text-dim hover:text-white uppercase tracking-widest px-4">See complete history</Button>
                         </div>
                     </div>
 

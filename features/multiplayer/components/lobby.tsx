@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Users, Plus, Shield, Search, ArrowRight } from "lucide-react";
+import { Users, Plus, Shield, Search, ArrowRight, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 const DUMMY_ROOMS = [
     { id: "R-4821", name: "SpeedRace x", host: "TypingNinja", players: 3, max: 5, lang: "EN", diff: "Medium", status: "Waiting" },
@@ -9,6 +16,10 @@ const DUMMY_ROOMS = [
 
 export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void }) {
     const [roomCode, setRoomCode] = useState("");
+    const [createLang, setCreateLang] = useState("English");
+    const [createMode, setCreateMode] = useState("Time (60s)");
+    const [langOpen, setLangOpen] = useState(false);
+    const [modeOpen, setModeOpen] = useState(false);
 
     return (
         <div className="w-full max-w-5xl flex flex-col md:flex-row gap-8 lg:gap-16 pt-8 items-start">
@@ -37,17 +48,33 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Language</label>
-                            <select className="w-full bg-[#0F0F0F] border border-white/10 rounded-xl px-4 py-3 text-foreground appearance-none focus:outline-none focus:border-accent/50 font-medium">
-                                <option>English</option>
-                                <option>Bahasa Indonesia</option>
-                            </select>
+                            <DropdownMenu open={langOpen} onOpenChange={setLangOpen}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between h-auto px-4 py-3 bg-[#0F0F0F] border-white/10 text-foreground font-medium rounded-xl">
+                                        {createLang}
+                                        <ChevronDown size={14} className="opacity-50" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-full min-w-(--radix-dropdown-menu-trigger-width)">
+                                    <DropdownMenuItem onClick={() => setCreateLang("English")}>English</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setCreateLang("Bahasa Indonesia")}>Bahasa Indonesia</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Mode</label>
-                            <select className="w-full bg-[#0F0F0F] border border-white/10 rounded-xl px-4 py-3 text-foreground appearance-none focus:outline-none focus:border-accent/50 font-medium">
-                                <option>Time (60s)</option>
-                                <option>Words (50)</option>
-                            </select>
+                            <DropdownMenu open={modeOpen} onOpenChange={setModeOpen}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between h-auto px-4 py-3 bg-[#0F0F0F] border-white/10 text-foreground font-medium rounded-xl">
+                                        {createMode}
+                                        <ChevronDown size={14} className="opacity-50" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-full min-w-(--radix-dropdown-menu-trigger-width)">
+                                    <DropdownMenuItem onClick={() => setCreateMode("Time (60s)")}>Time (60s)</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setCreateMode("Words (50)")}>Words (50)</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
 
@@ -64,12 +91,13 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                         </div>
                     </div>
 
-                    <button
+                    <Button
+                        variant="primary"
                         onClick={() => onJoin("NEW")}
-                        className="w-full mt-auto py-4 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        className="w-full mt-auto py-6 font-bold flex items-center justify-center gap-2"
                     >
                         Create & Join <ArrowRight size={18} />
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -90,12 +118,13 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                             maxLength={6}
                             className="bg-[#1A1A1A] border border-white/10 rounded-full pl-10 pr-24 py-2 text-sm text-foreground focus:outline-none focus:border-accent/40 w-full font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans placeholder:text-text-dim"
                         />
-                        <button
+                        <Button
+                            variant="secondary"
                             onClick={() => roomCode.length > 3 && onJoin(roomCode)}
-                            className="absolute right-1 top-1 bottom-1 bg-white/10 hover:bg-white/20 px-3 rounded-full text-xs font-semibold text-foreground transition-colors"
+                            className="absolute right-1 top-1 bottom-1 px-3 rounded-full text-xs font-semibold"
                         >
                             Join
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -127,9 +156,9 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                     </div>
                                     <span className="text-xs font-mono text-text-dim w-8 text-right">{room.players}/{room.max}</span>
                                 </div>
-                                <button className="hidden sm:flex items-center gap-2 text-sm font-semibold text-accent opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
+                                <div className="hidden sm:flex items-center gap-2 text-sm font-semibold text-accent opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
                                     Join <ArrowRight size={16} />
-                                </button>
+                                </div>
                             </div>
                         </div>
                     ))}
