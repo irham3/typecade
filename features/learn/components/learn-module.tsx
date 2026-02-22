@@ -1,34 +1,33 @@
 import { useState } from "react";
-import { Lock, Star } from "lucide-react";
+import Link from "next/link";
+import { Star, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { LEARN_MODULES } from "../data/lessons";
+import { useLearnStore } from "../store/learn-store";
 
 export function LearnModule() {
-    const [activeLesson] = useState(1);
+    const { getLessonStat } = useLearnStore();
+    const [activeModuleId, setActiveModuleId] = useState<string>(LEARN_MODULES[0].id);
+    const [activeLessonId, setActiveLessonId] = useState<string>(LEARN_MODULES[0].lessons[0].id);
+    const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
+        [LEARN_MODULES[0].id]: true
+    });
 
-    const modules = [
-        {
-            id: 1,
-            title: "MODULE 1: Home Row Keys",
-            lessons: [
-                { id: 1.1, name: "Introduction to ASDF JKL;", progress: 100, stars: 3, locked: false },
-                { id: 1.2, name: "Drill: A & F Focus", progress: 70, stars: 1, locked: false },
-                { id: 1.3, name: "Combination ASDF", progress: 0, stars: 0, locked: false },
-                { id: 1.4, name: "Review & Test", progress: 0, stars: 0, locked: true },
-            ]
-        },
-        {
-            id: 2,
-            title: "MODULE 2: Top Row Keys",
-            locked: true,
-            lessons: []
-        },
-        {
-            id: 3,
-            title: "MODULE 3: Bottom Row Keys",
-            locked: true,
-            lessons: []
-        }
-    ];
+    const toggleModule = (id: string) => {
+        setExpandedModules(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
+    };
+
+    const currentModule = LEARN_MODULES.find(m => m.id === activeModuleId) || LEARN_MODULES[0];
+    const currentLesson = currentModule.lessons.find(l => l.id === activeLessonId) || currentModule.lessons[0];
+
+    const handleLessonSelect = (modId: string, lessId: string) => {
+        setActiveModuleId(modId);
+        setActiveLessonId(lessId);
+    };
 
     return (
         <div className="w-full max-w-5xl flex flex-col items-center pt-8">
@@ -40,39 +39,135 @@ export function LearnModule() {
                 </p>
             </div>
 
-            <div className="w-full grid grid-cols-1 md:grid-cols-[1fr_400px] gap-12">
+            <div className="w-full grid grid-cols-1 md:grid-cols-[350px_1fr] gap-12 items-start">
 
-                {/* Left: Keyboard Viz Simulation / Mock Lesson Viewer */}
-                <div className="w-full bg-[#1A1A1A] rounded-[24px] border border-white/5 p-8 flex flex-col justify-between shadow-xl order-2 md:order-1 relative overflow-hidden">
+                {/* Left: Path/Curriculum Tree */}
+                <div className="w-full flex justify-center md:block order-1">
+                    <div className="flex flex-col gap-8 w-full">
+                        {LEARN_MODULES.map(module => {
+                            const isExpanded = expandedModules[module.id];
+                            return (
+                                <div key={module.id} className="flex flex-col">
+                                    <button
+                                        onClick={() => toggleModule(module.id)}
+                                        className="w-full flex items-center justify-between group mb-4 text-left"
+                                    >
+                                        <h4 className="text-xs font-bold font-sans text-text-dim uppercase tracking-widest flex items-center gap-2 group-hover:text-white transition-colors">
+                                            <motion.div
+                                                animate={{ rotate: isExpanded ? 0 : -90 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="text-accent"
+                                            >
+                                                <ChevronDown size={14} className={isExpanded ? "text-accent" : "text-text-dim"} />
+                                            </motion.div>
+                                            {module.title}
+                                        </h4>
+                                        <span className="text-[10px] font-mono text-white/10 group-hover:text-white/30 transition-colors uppercase">
+                                            {module.lessons.length} {module.lessons.length === 1 ? 'Lesson' : 'Lessons'}
+                                        </span>
+                                    </button>
 
-                    <div className="absolute top-0 right-0 p-4">
-                        <span className="text-xs font-mono px-3 py-1 bg-white/5 border border-white/10 rounded-full text-text-dim">LESSON {activeLesson}.2</span>
+                                    <AnimatePresence initial={false}>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="flex flex-col gap-1 relative pl-6 pb-4">
+                                                    {/* Path line connected dots */}
+                                                    <div className="absolute left-[13px] top-0 bottom-6 w-[2px] bg-white/10" />
+
+                                                    {module.lessons.map((lesson) => {
+                                                        const lessonStat = getLessonStat(lesson.id);
+                                                        const stat = {
+                                                            progress: lessonStat.completed ? 100 : 0,
+                                                            stars: lessonStat.stars,
+                                                            locked: false
+                                                        };
+                                                        const isSelected = activeLessonId === lesson.id;
+                                                        return (
+                                                            <div
+                                                                key={lesson.id}
+                                                                onClick={() => handleLessonSelect(module.id, lesson.id)}
+                                                                className={`relative group flex flex-col p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-colors border border-transparent ${isSelected ? 'bg-white/5 border-white/10' : ''}`}
+                                                            >
+                                                                {/* Dot */}
+                                                                <div className={`absolute -left-[19px] top-[1.6rem] w-3 h-3 rounded-full border-2 z-10 transition-colors ${stat.progress === 100 ? 'bg-accent border-accent' :
+                                                                    stat.progress > 0 ? 'bg-background border-accent' :
+                                                                        'bg-[#0F0F0F] border-white/20 group-hover:border-white/40'
+                                                                    }`} />
+
+                                                                <div className="flex items-start justify-between">
+                                                                    <div className="flex flex-col pr-4">
+                                                                        <span className={`text-sm font-medium transition-colors ${isSelected ? 'text-accent' : 'text-foreground'} `}>
+                                                                            {lesson.title}
+                                                                        </span>
+
+                                                                        {stat.progress > 0 && (
+                                                                            <div className="w-full bg-[#0F0F0F] h-1.5 rounded-full mt-3 overflow-hidden">
+                                                                                <div
+                                                                                    className="h-full bg-accent"
+                                                                                    style={{ width: `${stat.progress}%` }}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="flex gap-0.5">
+                                                                        {stat.progress > 0 && Array.from({ length: 3 }).map((_, i) => (
+                                                                            <Star
+                                                                                key={i}
+                                                                                size={12}
+                                                                                className={i < stat.stars ? "fill-accent text-accent" : "text-white/10"}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Right: Mock Lesson Viewer */}
+                <div className="w-full bg-[#1A1A1A] rounded-[24px] border border-white/5 p-10 flex flex-col justify-between shadow-2xl order-2 overflow-hidden min-h-[500px] sticky top-8">
+
+                    <div className="absolute top-0 right-0 p-6">
+                        <span className="text-xs font-mono px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-text-dim tracking-wider">LESSON {currentLesson.id}</span>
                     </div>
 
-                    <div className="mb-12 pt-8">
-                        <h3 className="text-xl font-display text-accent mb-2">Rest on Home Row</h3>
-                        <p className="text-text-dim text-sm leading-relaxed max-w-sm">
-                            Place your left hand fingers on A S D F, and right hand fingers on J K L ;. Let your thumbs rest naturally on the spacebar.
+                    <div className="mb-14 pt-4">
+                        <h3 className="text-3xl font-display font-medium text-white mb-4">{currentLesson.title}</h3>
+                        <p className="text-text-dim text-base leading-relaxed max-w-lg">
+                            {currentLesson.instruction}
                         </p>
                     </div>
 
                     {/* SVG Keyboard Mock */}
-                    <div className="w-full aspect-2.5/1 bg-[#0F0F0F] rounded-xl border border-white/5 relative flex flex-col items-center justify-center gap-2 p-4">
+                    <div className="w-full aspect-2/1 bg-[#0F0F0F] rounded-2xl border border-white/5 relative flex flex-col items-center justify-center gap-3 p-8 shadow-inner">
                         {/* Top Row */}
-                        <div className="flex gap-1.5 opacity-30">
+                        <div className="flex gap-2 opacity-20">
                             {"QWERTYUIOP".split("").map((key, i) => (
-                                <div key={i} className="w-10 h-10 rounded border border-white/10 flex items-center justify-center text-xs font-mono">{key}</div>
+                                <div key={i} className="w-11 h-11 rounded-lg border border-white/10 flex items-center justify-center text-xs font-mono">{key}</div>
                             ))}
                         </div>
                         {/* Home Row (Highlighted) */}
-                        <div className="flex gap-1.5 relative left-3">
+                        <div className="flex gap-2 relative left-4">
                             {"ASDFGHJKL;".split("").map((key, i) => {
-                                const isActive = key === "F" || key === "J";
-                                const isTarget = key === "A" || key === "S" || key === "D" || key === "F";
+                                const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
                                 return (
-                                    <div key={i} className={`w-10 h-10 rounded flex items-center justify-center text-xs font-mono transition-colors ${isActive ? "bg-accent/20 border-accent text-accent shadow-[0_0_10px_rgba(245,166,35,0.2)]" :
-                                        isTarget ? "bg-white/10 border-white/20 text-white shadow-xl" :
-                                            "border border-white/10 text-white/50 opacity-40"
+                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
+                                        "border-white/5 text-white/20 opacity-30"
                                         }`}>
                                         {key}
                                     </div>
@@ -80,88 +175,29 @@ export function LearnModule() {
                             })}
                         </div>
                         {/* Bottom Row */}
-                        <div className="flex gap-1.5 opacity-30 relative left-6">
+                        <div className="flex gap-2 opacity-20 relative left-8">
                             {"ZXCVBNM,.".split("").map((key, i) => (
-                                <div key={i} className="w-10 h-10 rounded border border-white/10 flex items-center justify-center text-xs font-mono">{key}</div>
+                                <div key={i} className="w-11 h-11 rounded-lg border border-white/10 flex items-center justify-center text-xs font-mono">{key}</div>
                             ))}
                         </div>
                         {/* Space */}
-                        <div className="w-[40%] h-10 rounded border border-white/10 mt-1 opacity-40" />
+                        <div className="w-[50%] h-11 rounded-lg border border-white/10 mt-2 opacity-20" />
 
-                        <div className="absolute -bottom-8 w-full flex justify-center gap-16 text-[10px] uppercase font-bold text-accent/50 tracking-widest">
+                        <div className="absolute bottom-6 w-full flex justify-center gap-20 text-[10px] uppercase font-bold text-white/10 tracking-[0.2em]">
                             <span>Left Hand</span>
                             <span>Right Hand</span>
                         </div>
                     </div>
 
-                    <Button variant="primary" className="w-full max-w-xs mx-auto mt-16 py-6 font-bold rounded-full font-sans text-sm text-black bg-white hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-                        Begin Practice Session
-                    </Button>
-                </div>
-
-                {/* Right: Path/Curriculum Tree */}
-                <div className="w-full flex justify-center md:block order-1 md:order-2">
-                    <div className="flex flex-col gap-8 max-w-[300px]">
-                        {modules.map(module => (
-                            <div key={module.id} className={`flex flex-col ${module.locked ? 'opacity-40' : ''}`}>
-                                <h4 className="text-xs font-bold font-sans text-text-dim uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    {module.locked && <Lock size={12} />}
-                                    {module.title}
-                                </h4>
-
-                                {module.locked ? (
-                                    <div className="w-12 h-12 rounded-full bg-[#1A1A1A] border border-white/10 flex items-center justify-center ml-4 mt-2 object-cover">
-                                        <div className="w-3 h-3 rotate-45 border-2 border-white/20" />
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-1 relative pl-6">
-                                        {/* Path line connected dots */}
-                                        <div className="absolute left-[13px] top-6 bottom-6 w-[2px] bg-white/10" />
-
-                                        {module.lessons.map((lesson) => (
-                                            <div
-                                                key={lesson.id}
-                                                className={`relative group flex flex-col p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-colors border border-transparent ${activeLesson === module.id && !lesson.locked ? 'bg-white/5 border-white/10' : ''}`}
-                                            >
-                                                {/* Dot */}
-                                                <div className={`absolute -left-[19px] top-[1.6rem] w-3 h-3 rounded-full border-2 z-10 transition-colors ${lesson.progress === 100 ? 'bg-accent border-accent' :
-                                                    lesson.progress > 0 ? 'bg-background border-accent' :
-                                                        'bg-[#0F0F0F] border-white/20 group-hover:border-white/40'
-                                                    }`} />
-
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex flex-col pr-4">
-                                                        <span className={`text-sm font-medium transition-colors ${lesson.locked ? 'text-text-dim' : 'text-foreground'}`}>
-                                                            {lesson.name}
-                                                        </span>
-
-                                                        {!lesson.locked && (
-                                                            <div className="w-full bg-[#0F0F0F] h-1.5 rounded-full mt-3 overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-accent"
-                                                                    style={{ width: `${lesson.progress}%` }}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex gap-0.5">
-                                                        {!lesson.locked && Array.from({ length: 3 }).map((_, i) => (
-                                                            <Star
-                                                                key={i}
-                                                                size={12}
-                                                                className={i < lesson.stars ? "fill-accent text-accent" : "text-white/10"}
-                                                            />
-                                                        ))}
-                                                        {lesson.locked && <Lock size={14} className="text-white/20 mt-1" />}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                    <div className="mt-12 flex justify-center">
+                        <Link href={`/learn/${currentModule.id}/${currentLesson.id}`} className="w-full max-w-sm">
+                            <Button
+                                variant="primary"
+                                className="w-full py-8 text-lg font-bold rounded-2xl font-sans text-white bg-accent hover:bg-accent/80 transition-all shadow-[0_20px_40px_rgba(99,102,241,0.2)] hover:shadow-[0_20px_40px_rgba(99,102,241,0.4)]"
+                            >
+                                Start Training Now
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>
