@@ -1,17 +1,18 @@
-[<div align="center"><img src="https://img.shields.io/badge/PLAY_TYPECADE-6366f1?style=for-the-badge&logo=vercel&logoColor=white" /></div>](https://typecade.pages.dev/)
+[<div align="center"><img height="40" src="https://raw.githubusercontent.com/irham3/typecade/main/public/typecade-logo.svg" /><br><strong>PLAY TYPECADE</strong></div>](https://typecade.pages.dev/)
 <br />
-
+<div align="center">
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+</div>
 
 <br />
 
 # About
 
-Typecade is a minimalistic and professional [typing platform](https://typecade.pages.dev) designed to enhance your typing speed and accuracy. It features a robust real-time typing engine, comprehensive analytical tracking, and competitive mechanics. Typecade prioritizes a "Cyber-Minimalism" aesthetic by stripping away distractions, presenting infinite scrolling text generation, and providing instant visual feedback on precision and tempo.
+Typecade is a minimalistic and professional typing platform designed to enhance your typing speed and accuracy. It features a robust real-time typing engine, comprehensive analytical tracking, and competitive mechanics. Typecade prioritizes a "Cyber-Minimalism" aesthetic by stripping away distractions, presenting infinite scrolling text generation, and providing instant visual feedback on precision and tempo.
 
 # Features
 
