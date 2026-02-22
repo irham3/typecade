@@ -1,11 +1,21 @@
-[<div align="center"><img height="40" src="https://raw.githubusercontent.com/irham3/typecade/main/public/typecade-logo.svg" /><br><strong>PLAY TYPECADE</strong></div>](https://typecade.pages.dev/)
-<br />
 <div align="center">
+    <a href="https://typecade.pages.dev/">
+        <img height="40" src="https://github.com/irham3/typecade/blob/f8fe6006c9c8e46d654799dceb1af5d1ac65f6d8/public/typecade-logo.svg" />
+        <br>
+        <strong>PLAY TYPECADE</strong>
+    </a>
+</div>
+
+<br />
+
+<div align="center">
+
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+
 </div>
 
 <br />
