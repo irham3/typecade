@@ -40,10 +40,16 @@ export function AuthClient() {
             return;
         }
 
+        // Force redirect to production if not on localhost to avoid Supabase default behavior
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const redirectUrl = isLocal 
+            ? "http://localhost:3000/profile" 
+            : "https://typecade.pages.dev/profile";
+
         await client.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: window.location.origin + "/profile"
+                redirectTo: redirectUrl
             }
         });
     };
@@ -90,7 +96,9 @@ export function AuthClient() {
                 email: email.trim(),
                 password: password.trim(),
                 options: {
-                    emailRedirectTo: window.location.origin + "/profile"
+                    emailRedirectTo: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+                        ? "http://localhost:3000/profile"
+                        : "https://typecade.pages.dev/profile"
                 }
             });
 
