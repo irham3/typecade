@@ -34,15 +34,16 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
 
     const activeCharRef = useRef<HTMLSpanElement>(null);
     const [translateY, setTranslateY] = useState(0);
+    const pendingResultRef = useRef<{ wpm: number; acc: number; timeTaken: number } | null>(null);
 
 
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
-        if (!supabaseReady || !user) return;
+        if (!supabaseReady || !user) return false;
         const client = getSupabaseClient();
-        if (!client) return;
+        if (!client) return false;
         const modeValue = mode === "words" ? limit : duration;
-        await client.from("typing_tests").insert({
+        const { error } = await client.from("typing_tests").insert({
             user_id: user.id,
             mode,
             mode_value: modeValue,
@@ -51,8 +52,11 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
             accuracy: finalAcc,
             duration_seconds: timeTaken,
         } as unknown as never);
+        if (error) return false;
         const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
-        await rpc("update_user_stats", { p_user_id: user.id });
+        const { error: rpcError } = await rpc("update_user_stats", { p_user_id: user.id });
+        if (rpcError) return false;
+        return true;
     }, [supabaseReady, user, mode, limit, duration, language]);
 
     const {
@@ -70,7 +74,10 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         mode,
         onFinish: (finalWpm, finalAcc, timeTaken) => {
             addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption} ` });
-            void saveResult(finalWpm, finalAcc, timeTaken);
+            pendingResultRef.current = { wpm: finalWpm, acc: finalAcc, timeTaken };
+            void saveResult(finalWpm, finalAcc, timeTaken).then((ok) => {
+                if (ok) pendingResultRef.current = null;
+            });
         }
     });
 
@@ -132,6 +139,14 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
     useEffect(() => {
         focusInput();
     }, [activeTab, subOption, focusInput]);
+
+    useEffect(() => {
+        const pending = pendingResultRef.current;
+        if (!pending) return;
+        void saveResult(pending.wpm, pending.acc, pending.timeTaken).then((ok) => {
+            if (ok) pendingResultRef.current = null;
+        });
+    }, [saveResult, supabaseReady, user]);
 
     // Format text for rendering
     const renderText = () => {

@@ -74,6 +74,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     const livePlayersRef = useRef<Record<string, LivePlayerSyncPayload>>({});
     const savedRef = useRef(false);
     const finishSyncedRef = useRef(false);
+    const pendingResultRef = useRef<{ wpm: number; acc: number; timeTaken: number } | null>(null);
 
     const isRealtime = useMemo(() => Boolean(roomId && user && supabaseReady), [roomId, user, supabaseReady]);
     const currentUserId = useMemo(() => (isRealtime && user ? user.id : "p1"), [isRealtime, user]);
@@ -420,14 +421,11 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         
         const updateData: Record<string, unknown> = { status };
         
-        // If finished, ensure we send final stats
         if (status === "finished") {
-            const me = playersRef.current.find(p => p.id === user.id);
-            if (me) {
-                updateData.wpm = me.wpm;
-                updateData.progress = me.progress;
-                updateData.correct_chars = Math.floor(me.correctChars);
-            }
+            const stats = calculateLiveStats(typedCharsRef.current);
+            updateData.wpm = stats.wpm;
+            updateData.progress = stats.progress;
+            updateData.correct_chars = Math.floor(stats.correctChars);
         }
 
         void client
@@ -435,7 +433,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .update(updateData as unknown as never)
             .eq("room_id", roomId)
             .eq("user_id", user.id);
-    }, [raceState, isRealtime, user, roomId]);
+    }, [raceState, isRealtime, user, roomId, calculateLiveStats]);
 
     useEffect(() => {
         if (raceState === "racing") {
@@ -506,15 +504,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
         if (raceState !== "finished") return;
-        const me = playersRef.current.find(p => p.id === user.id);
-        if (!me) return;
+        const stats = calculateLiveStats(typedCharsRef.current);
         syncLive({
-            progress: me.progress,
-            wpm: me.wpm,
-            correctChars: Math.floor(me.correctChars),
+            progress: stats.progress,
+            wpm: stats.wpm,
+            correctChars: Math.floor(stats.correctChars),
             status: "finished",
         });
-    }, [isRealtime, raceState, roomId, user, syncLive]);
+    }, [isRealtime, raceState, roomId, user, syncLive, calculateLiveStats]);
 
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
@@ -531,11 +528,11 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     }, [isRealtime, raceState, roomId, user, hostId]);
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
-        if (!supabaseReady || !user) return;
+        if (!supabaseReady || !user) return false;
         const client = getSupabaseClient();
-        if (!client) return;
+        if (!client) return false;
         
-        await client.from("typing_tests").insert({
+        const { error } = await client.from("typing_tests").insert({
             user_id: user.id,
             mode: raceConfig.mode,
             mode_value: raceConfig.value,
@@ -544,9 +541,12 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             accuracy: finalAcc,
             duration_seconds: timeTaken,
         } as unknown as never);
+        if (error) return false;
 
         const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
-        await rpc("update_user_stats", { p_user_id: user.id });
+        const { error: rpcError } = await rpc("update_user_stats", { p_user_id: user.id });
+        if (rpcError) return false;
+        return true;
     }, [supabaseReady, user, raceConfig]);
 
     useEffect(() => {
@@ -556,9 +556,32 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             savedRef.current = true;
             const stats = calculateLiveStats(typedCharsRef.current);
             const timeTaken = Math.max(0, Math.floor(stats.elapsedMs / 1000));
-            void saveResult(stats.wpm, stats.accuracy, timeTaken);
+            setPlayers(p => p.map(player => {
+                if (player.id !== currentUserId) return player;
+                return { ...player, wpm: stats.wpm, progress: stats.progress, correctChars: stats.correctChars, status: "finished" };
+            }));
+            if (isRealtime && user && roomId) {
+                syncLive({
+                    progress: stats.progress,
+                    wpm: stats.wpm,
+                    correctChars: Math.floor(stats.correctChars),
+                    status: "finished",
+                });
+            }
+            pendingResultRef.current = { wpm: stats.wpm, acc: stats.accuracy, timeTaken };
+            void saveResult(stats.wpm, stats.accuracy, timeTaken).then((ok) => {
+                if (ok) pendingResultRef.current = null;
+            });
         }
-    }, [raceState, saveResult, calculateLiveStats]);
+    }, [raceState, saveResult, calculateLiveStats, currentUserId, isRealtime, roomId, syncLive, user]);
+
+    useEffect(() => {
+        const pending = pendingResultRef.current;
+        if (!pending) return;
+        void saveResult(pending.wpm, pending.acc, pending.timeTaken).then((ok) => {
+            if (ok) pendingResultRef.current = null;
+        });
+    }, [saveResult, supabaseReady, user]);
 
     useEffect(() => {
         if (raceState === "countdown") {
@@ -906,13 +929,10 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                                             <span className={`font-medium flex items-center gap-2 ${player.id === currentUserId ? "text-white" : "text-text-dim"}`}>
                                                 {player.name}
                                                 {player.id === currentUserId && <span className="ml-2 px-1.5 py-0.5 bg-accent/20 text-accent text-[8px] rounded-full uppercase font-bold tracking-widest">You</span>}
+                                                {player.status === "finished" && <span className="px-1.5 py-0.5 bg-white/10 text-white/80 text-[8px] rounded-full uppercase font-bold tracking-widest">Finished</span>}
                                             </span>
                                             <span className="font-mono text-xs text-text-dim/70">
-                                                {player.status === "finished" ? (
-                                                    <span className="text-white flex items-center gap-1 font-bold">
-                                                        ✓ FINISHED
-                                                    </span>
-                                                ) : `${player.wpm} WPM`}
+                                                {player.wpm} WPM
                                             </span>
                                         </div>
                                         <div className="w-full h-3.5 bg-[#0F0F0F] rounded-full overflow-hidden relative border border-white/5">
