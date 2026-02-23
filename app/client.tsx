@@ -109,7 +109,7 @@ export function HomeClient() {
                                         key={lang.code}
                                         active={language === lang.code}
                                         onClick={() => setLanguage(lang.code as "EN" | "ID")}
-                                        className="justify-between min-w-[120px]"
+                                        className="justify-between min-w-30"
                                     >
                                         {lang.label}
                                     </DropdownMenuItem>

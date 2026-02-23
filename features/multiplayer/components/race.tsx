@@ -69,6 +69,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     const channelRef = useRef<RealtimeChannel | null>(null);
     const livePlayersRef = useRef<Record<string, LivePlayerSyncPayload>>({});
     const savedRef = useRef(false);
+    const finishSyncedRef = useRef(false);
 
     const isRealtime = useMemo(() => Boolean(roomId && user && supabaseReady), [roomId, user, supabaseReady]);
     const currentUserId = useMemo(() => (isRealtime && user ? user.id : "p1"), [isRealtime, user]);
@@ -117,7 +118,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         const now = Date.now();
         const mapped = (data as PlayerRow[]).map((row, index) => {
             const live = livePlayersRef.current[row.user_id] ?? null;
-            const hasLive = Boolean(live && now - live.sentAt < 2000);
+            const hasLive = Boolean(live && now - live.sentAt < 10000);
             return {
                 id: row.user_id,
                 name: row.display_name,
@@ -162,6 +163,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
     const applyLiveUpdate = useCallback((payload: LivePlayerSyncPayload) => {
         if (payload.userId === currentUserId) return;
+        const existing = livePlayersRef.current[payload.userId];
+        if (existing && payload.sentAt <= existing.sentAt) return;
         livePlayersRef.current[payload.userId] = payload;
         setPlayers(prev => prev.map(player => {
             if (player.id !== payload.userId) return player;
@@ -294,7 +297,12 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .channel(`room-${roomId}`)
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
+                { event: "INSERT", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
+                () => void loadPlayers()
+            )
+            .on(
+                "postgres_changes",
+                { event: "DELETE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
                 () => void loadPlayers()
             )
             .on(
@@ -312,6 +320,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         setTypedChars("");
                         setTranslateY(0);
                         applyRaceStart(payload.new.updated_at ?? null);
+                        finishSyncedRef.current = false;
                         
                         // Reset local player stats visually
                         setPlayers(prev => prev.map(p => ({
@@ -325,6 +334,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                          setRaceState("waiting");
                          setShowResults(false);
                          setRaceStartedAt(null);
+                         finishSyncedRef.current = false;
                          setTypedChars("");
                          setTranslateY(0);
                          setPlayers(prev => prev.map(p => ({
@@ -338,6 +348,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         setRaceState("finished");
                         setShowResults(true);
                         setRaceStartedAt(null);
+                        finishSyncedRef.current = true;
                     }
                 }
             )
@@ -405,20 +416,6 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     }, [raceState, isRealtime, user, roomId]);
 
     useEffect(() => {
-        if (!isRealtime || raceState !== "racing") return;
-        const initial = window.setTimeout(() => {
-            void loadPlayers();
-        }, 0);
-        const interval = window.setInterval(() => {
-            void loadPlayers();
-        }, 100);
-        return () => {
-            window.clearTimeout(initial);
-            window.clearInterval(interval);
-        };
-    }, [isRealtime, raceState, loadPlayers]);
-
-    useEffect(() => {
         if (raceState === "racing") {
             const timer = setInterval(() => {
                 if (startTimeRef.current) {
@@ -483,6 +480,33 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             return () => clearInterval(timer);
         }
     }, [raceState, isRealtime, raceConfig]);
+
+    useEffect(() => {
+        if (!isRealtime || !user || !roomId) return;
+        if (raceState !== "finished") return;
+        const me = playersRef.current.find(p => p.id === user.id);
+        if (!me) return;
+        syncLive({
+            progress: me.progress,
+            wpm: me.wpm,
+            correctChars: Math.floor(me.correctChars),
+            status: "finished",
+        });
+    }, [isRealtime, raceState, roomId, user, syncLive]);
+
+    useEffect(() => {
+        if (!isRealtime || !user || !roomId) return;
+        if (raceState !== "finished") return;
+        if (hostId !== user.id) return;
+        if (finishSyncedRef.current) return;
+        finishSyncedRef.current = true;
+        const client = getSupabaseClient();
+        if (!client) return;
+        void client
+            .from("multiplayer_rooms")
+            .update({ status: "finished" } as unknown as never)
+            .eq("id", roomId);
+    }, [isRealtime, raceState, roomId, user, hostId]);
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
         if (!supabaseReady || !user) return;
