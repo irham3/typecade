@@ -23,6 +23,20 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Typecade | Type faster. Think clearer.",
   description: "A platform to improve your typing speed and accuracy.",
+  metadataBase: new URL("https://typecade.pages.dev"),
+  openGraph: {
+    title: "Typecade | Type faster. Think clearer.",
+    description: "A platform to improve your typing speed and accuracy.",
+    siteName: "Typecade",
+    url: "https://typecade.pages.dev",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Typecade | Type faster. Think clearer.",
+    description: "A platform to improve your typing speed and accuracy.",
+  },
 };
 
 export default function RootLayout({

@@ -49,6 +49,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         const { data, error } = await client
             .from("room_overview")
             .select("*")
+            .eq("status", "waiting")
             .order("created_at", { ascending: false })
             .limit(50);
         if (error) return;
@@ -119,10 +120,10 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                 is_private: isPrivate,
                 status: "waiting",
             } as unknown as never)
-            .select("id")
+            .select("id, code")
             .single();
 
-        const roomRow = (room ?? null) as { id: string } | null;
+        const roomRow = (room ?? null) as { id: string, code: string } | null;
         if (error || !roomRow) {
             setIsLoading(false);
             setStatus(error?.message ?? "Failed to create room.");
@@ -146,7 +147,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             setStatus(joinError.message);
             return;
         }
-        onJoin(roomRow.id);
+        onJoin(roomRow.code);
     };
 
     const handleJoinRoom = async (code: string) => {
@@ -160,10 +161,10 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         setStatus("");
         const { data: room, error } = await client
             .from("multiplayer_rooms")
-            .select("id")
+            .select("id, code")
             .eq("code", code)
             .maybeSingle();
-        const roomRow = (room ?? null) as { id: string } | null;
+        const roomRow = (room ?? null) as { id: string, code: string } | null;
         if (error || !roomRow) {
             setIsLoading(false);
             setStatus("Room code not found.");
@@ -186,7 +187,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             setStatus(joinError.message);
             return;
         }
-        onJoin(roomRow.id);
+        onJoin(roomRow.code);
     };
 
     return (
@@ -316,7 +317,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                         <div
                             key={room.id}
                             className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 rounded-[20px] bg-[#1A1A1A] hover:bg-[#222] border border-transparent hover:border-white/5 transition-all cursor-pointer"
-                            onClick={() => onJoin(room.id)}
+                            onClick={() => onJoin(room.code)}
                         >
                             <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-3">

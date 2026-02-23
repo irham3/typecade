@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Medal } from "lucide-react";
+import { Medal, Copy, Check } from "lucide-react";
 import { generateWords } from "@/lib/words";
 import { RaceResultsModal } from "./race-results-modal";
 import { Button } from "@/components/ui/button";
@@ -31,15 +31,16 @@ type PlayerRow = {
 
 const palette = ["var(--color-accent)", "#38bdf8", "#f472b6", "#facc15", "#22c55e", "#a78bfa", "#fb923c"];
 
-export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; roomId?: string | null }) {
+export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; roomCode?: string | null }) {
     const { user, supabaseReady } = useAuth();
+    const [roomId, setRoomId] = useState<string | null>(null);
     const [countdown, setCountdown] = useState<number | null>(3);
     const [timeLeft, setTimeLeft] = useState(60);
     const [raceState, setRaceState] = useState<"waiting" | "countdown" | "racing" | "finished">("waiting");
     const [showResults, setShowResults] = useState(true);
     const [raceConfig, setRaceConfig] = useState<{ mode: "time" | "words"; value: number; language: "EN" | "ID" }>({ mode: "time", value: 60, language: "EN" });
-    const [roomCode, setRoomCode] = useState<string>("");
     const [hostId, setHostId] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     const [players, setPlayers] = useState<Player[]>([
         { id: "p1", name: "TypingNinja (You)", wpm: 0, progress: 0, correctChars: 0, color: "var(--color-accent)", status: "waiting" },
@@ -67,6 +68,13 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
 
     const isRealtime = useMemo(() => Boolean(roomId && user && supabaseReady), [roomId, user, supabaseReady]);
     const currentUserId = useMemo(() => (isRealtime && user ? user.id : "p1"), [isRealtime, user]);
+
+    const copyLink = () => {
+        const url = `${window.location.origin}/race?code=${roomCode}`;
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const resolveDisplayName = useCallback(async () => {
         const client = getSupabaseClient();
@@ -137,7 +145,8 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
 
     useEffect(() => {
         const setup = async () => {
-            if (!isRealtime || !roomId) {
+            // Offline fallback
+            if (!supabaseReady || !user || !roomCode) {
                 setTargetText(generateWords("EN", 50, false, false));
                 setRaceState("countdown");
                 setMounted(true);
@@ -147,19 +156,21 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
             const client = getSupabaseClient();
             if (!client) return;
 
+            // Fetch room by code
             const { data } = await client
                 .from("multiplayer_rooms")
-                .select("code, mode, mode_value, language, status, host_user_id")
-                .eq("id", roomId)
+                .select("id, code, mode, mode_value, language, status, host_user_id")
+                .eq("code", roomCode)
                 .single();
             
             if (data) {
-                const roomData = data as { code: string; mode: string; mode_value: number; language: string; status: string; host_user_id: string };
+                const roomData = data as { id: string; code: string; mode: string; mode_value: number; language: string; status: string; host_user_id: string };
+                setRoomId(roomData.id); // Set resolved ID
+                
                 const mode = roomData.mode as "time" | "words";
                 const value = roomData.mode_value;
                 const lang = roomData.language as "EN" | "ID";
                 setRaceConfig({ mode, value, language: lang });
-                setRoomCode(roomData.code);
                 setTimeLeft(mode === "time" ? value : 300);
                 setHostId(roomData.host_user_id);
 
@@ -177,13 +188,17 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
                 setTargetText(text);
                 setPlayers([]); // Clear bots to avoid flash
                 setMounted(true);
+            } else {
+                // Room not found fallback
+                setTargetText(generateWords("EN", 50, false, false));
+                setMounted(true);
             }
         };
         void setup();
-    }, [isRealtime, roomId]);
+    }, [supabaseReady, user, roomCode]);
 
     useEffect(() => {
-        if (!isRealtime || !user || !roomId) return;
+        if (!isRealtime || !roomId) return;
         const client = getSupabaseClient();
         if (!client) return;
         const setup = async () => {
@@ -192,7 +207,7 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
                 .from("multiplayer_room_players")
                 .upsert({
                     room_id: roomId,
-                    user_id: user.id,
+                    user_id: user!.id,
                     display_name: displayName,
                     status: "waiting",
                     progress: 0,
@@ -261,7 +276,7 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
                 .from("multiplayer_room_players")
                 .delete()
                 .eq("room_id", roomId)
-                .eq("user_id", user.id);
+                .eq("user_id", user!.id);
             void client.removeChannel(channel);
         };
     }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode]);
@@ -296,7 +311,7 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
             if (me) {
                 updateData.wpm = me.wpm;
                 updateData.progress = me.progress;
-                updateData.correct_chars = me.correctChars;
+                updateData.correct_chars = Math.floor(me.correctChars);
             }
         }
 
@@ -604,6 +619,28 @@ export function MultiplayerRace({ onLeave, roomId }: { onLeave: () => void; room
         return (
             <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background p-4">
                  <h2 className="text-3xl font-display font-bold mb-8">Waiting for players...</h2>
+                 
+                 {roomCode && (
+                     <div className="mb-8 flex flex-col items-center gap-2">
+                        <div className="text-sm text-text-dim uppercase tracking-wider font-semibold">Room Code</div>
+                        <div className="flex items-center gap-2 bg-[#1A1A1A] p-2 pr-4 rounded-xl border border-white/10">
+                            <span className="text-2xl font-mono font-bold px-4 py-2 bg-black/30 rounded-lg tracking-widest text-accent">
+                                {roomCode}
+                            </span>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={copyLink}
+                                className="hover:bg-white/10"
+                                title="Copy Invite Link"
+                            >
+                                {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                            </Button>
+                        </div>
+                        <div className="text-xs text-text-dim/50">Share this code or link to invite friends</div>
+                     </div>
+                 )}
+
                  <div className="w-full max-w-md space-y-4 mb-8">
                      {players.map(p => (
                          <div key={p.id} className="flex items-center gap-4 p-4 bg-[#141414] rounded-xl border border-white/5">

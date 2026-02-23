@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { RaceClient } from './client';
 
 export const metadata: Metadata = {
@@ -28,7 +29,9 @@ export default function RacePage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            <RaceClient />
+            <Suspense fallback={<div className="w-full min-h-screen flex items-center justify-center text-text-dim">Loading race...</div>}>
+                <RaceClient />
+            </Suspense>
         </>
     );
 }
