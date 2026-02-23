@@ -3,7 +3,7 @@ import { useTypingEngine } from "../hooks/use-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { RotateCcw, Share2, ArrowRight, RefreshCw } from "lucide-react";
-import { generateWords } from "@/lib/words";
+import { generateQuote, generateWords } from "@/lib/words";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -18,6 +18,9 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
     const limit = parseInt(subOption.replace("s", ""));
 
     const getNewText = useCallback(() => {
+        if (mode === "quote") {
+            return generateQuote(language);
+        }
         return generateWords(language, mode === "words" ? limit : 50, usePunctuation, useNumbers);
     }, [language, mode, limit, usePunctuation, useNumbers]);
 

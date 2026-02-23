@@ -54,13 +54,17 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         { id: "p6", name: "Keyboard_Slayer", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
         { id: "p7", name: "TypeGod_T800", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
     ]);
+    const [typedChars, setTypedChars] = useState("");
+    const typedCharsRef = useRef(typedChars);
     const playersRef = useRef(players);
     useEffect(() => {
         playersRef.current = players;
     }, [players]);
+    useEffect(() => {
+        typedCharsRef.current = typedChars;
+    }, [typedChars]);
 
     // Dummy typing engine
-    const [typedChars, setTypedChars] = useState("");
     const [targetText, setTargetText] = useState<string>("");
     const activeCharRef = useRef<HTMLSpanElement>(null);
     const startTimeRef = useRef<number | null>(null);
@@ -81,6 +85,24 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         dbIntervalMs: 50,
         broadcastIntervalMs: 16,
     });
+
+    const calculateLiveStats = useCallback((value: string) => {
+        const elapsedMs = startTimeRef.current ? Math.max(1, Date.now() - startTimeRef.current) : 1;
+        const correctChars = value.split("").filter((char, i) => char === targetText[i]).length;
+        const wpmRaw = (correctChars / 5) / (elapsedMs / 60000);
+        const wpm = Math.max(0, Math.round(wpmRaw * 10) / 10);
+        const accuracy = value.length > 0 ? Math.max(0, Math.round((correctChars / value.length) * 100)) : 100;
+
+        let totalChars = 600;
+        if (raceConfig.mode === "words") {
+            totalChars = raceConfig.value * 5;
+        } else {
+            totalChars = (100 * 5) * (raceConfig.value / 60);
+        }
+
+        const progress = Math.min(100, (correctChars / totalChars) * 100);
+        return { wpm, accuracy, progress, correctChars, elapsedMs };
+    }, [raceConfig.mode, raceConfig.value, targetText]);
 
     const copyLink = () => {
         const url = `${window.location.origin}/race?code=${roomCode}`;
@@ -532,15 +554,11 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             savedRef.current = false;
         } else if (raceState === "finished" && !savedRef.current) {
             savedRef.current = true;
-            const me = players.find(p => p.id === currentUserId);
-            if (me) {
-                const timeTaken = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
-                // Calculate accuracy from typedChars
-                const acc = typedChars.length > 0 ? Math.floor((me.correctChars / typedChars.length) * 100) : 100;
-                void saveResult(me.wpm, acc, timeTaken);
-            }
+            const stats = calculateLiveStats(typedCharsRef.current);
+            const timeTaken = Math.max(0, Math.floor(stats.elapsedMs / 1000));
+            void saveResult(stats.wpm, stats.accuracy, timeTaken);
         }
-    }, [raceState, players, currentUserId, typedChars, saveResult]);
+    }, [raceState, saveResult, calculateLiveStats]);
 
     useEffect(() => {
         if (raceState === "countdown") {
@@ -575,21 +593,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             setTargetText((prev: string) => prev + " " + generateWords(raceConfig.language, 30, false, false));
         }
 
-        // Update player 1 wpm internally, visually updated more rapidly by setInterval
-        const elapsedMin = startTimeRef.current ? Math.max(0.01, (Date.now() - startTimeRef.current) / 1000 / 60) : 0.01;
-        const correctChars = val.split("").filter((char, i) => char === targetText[i]).length;
-        const wpm = Math.max(0, Math.floor((correctChars / 5) / elapsedMin));
-        
-        let totalChars = 600;
-        if (raceConfig.mode === "words") {
-            totalChars = raceConfig.value * 5;
-        } else {
-             // Time mode: Estimate based on 100 WPM
-             totalChars = (100 * 5) * (raceConfig.value / 60); 
-        }
-
-        const progress = Math.min(100, (correctChars / totalChars) * 100);
-        const isFinished = progress >= 100;
+        const stats = calculateLiveStats(val);
+        const isFinished = raceConfig.mode === "words" && stats.progress >= 100;
 
         if (isFinished) {
             setRaceState("finished");
@@ -597,20 +602,41 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
         setPlayers(p => p.map(player => {
             if (player.id === currentUserId) {
-                return { ...player, progress, wpm, correctChars, status: isFinished ? "finished" : "playing" };
+                return { ...player, progress: stats.progress, wpm: stats.wpm, correctChars: stats.correctChars, status: isFinished ? "finished" : "playing" };
             }
             return player;
         }));
 
         if (isRealtime && user && roomId) {
             syncLive({
-                progress,
-                wpm,
-                correctChars: Math.floor(correctChars),
+                progress: stats.progress,
+                wpm: stats.wpm,
+                correctChars: Math.floor(stats.correctChars),
                 status: isFinished ? "finished" : "playing",
             });
         }
     };
+
+    useEffect(() => {
+        if (raceState !== "racing") return;
+        const timer = window.setInterval(() => {
+            const stats = calculateLiveStats(typedCharsRef.current);
+            setPlayers(p => p.map(player => {
+                if (player.id !== currentUserId) return player;
+                if (player.status === "finished") return player;
+                return { ...player, wpm: stats.wpm, progress: stats.progress, correctChars: stats.correctChars };
+            }));
+            if (isRealtime && user && roomId) {
+                syncLive({
+                    progress: stats.progress,
+                    wpm: stats.wpm,
+                    correctChars: Math.floor(stats.correctChars),
+                    status: "playing",
+                });
+            }
+        }, 50);
+        return () => window.clearInterval(timer);
+    }, [raceState, calculateLiveStats, currentUserId, isRealtime, roomId, syncLive, user]);
 
     const renderText = () => {
         const words = targetText.split(" ");
