@@ -17,13 +17,13 @@ interface RaceResultsModalProps {
     isOpen: boolean;
     players: Player[];
     currentUserId?: string;
-    isHost: boolean;
+    showRestart: boolean;
     onClose: () => void;
     onLeave: () => void;
     onRestart: () => void;
 }
 
-export function RaceResultsModal({ isOpen, players, currentUserId, isHost, onClose, onLeave, onRestart }: RaceResultsModalProps) {
+export function RaceResultsModal({ isOpen, players, currentUserId, showRestart, onClose, onLeave, onRestart }: RaceResultsModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -58,18 +58,20 @@ export function RaceResultsModal({ isOpen, players, currentUserId, isHost, onClo
                         </div>
 
                         <div className="flex gap-4 w-full">
-                            {isHost ? (
-                                <Button onClick={onRestart} className="flex-1 py-6 gap-2 text-sm font-medium">
-                                    <RotateCcw size={16} /> Play Again
-                                </Button>
+                            {showRestart ? (
+                                <>
+                                    <Button onClick={onRestart} className="flex-1 py-6 gap-2 text-sm font-medium">
+                                        <RotateCcw size={16} /> Play Again
+                                    </Button>
+                                    <Button variant="outline" onClick={onLeave} className="flex-1 py-6 gap-2 text-sm font-medium">
+                                        <Home size={16} /> Leave
+                                    </Button>
+                                </>
                             ) : (
-                                <Button disabled className="flex-1 py-6 gap-2 text-sm font-medium opacity-50 cursor-not-allowed">
-                                    Waiting for Host...
+                                <Button variant="outline" onClick={onLeave} className="w-full py-6 gap-2 text-sm font-medium">
+                                    <Home size={16} /> Leave
                                 </Button>
                             )}
-                            <Button variant="outline" onClick={onLeave} className="flex-1 py-6 gap-2 text-sm font-medium">
-                                <Home size={16} /> Leave
-                            </Button>
                         </div>
                     </div>
                 </motion.div>

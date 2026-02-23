@@ -41,6 +41,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     const [raceConfig, setRaceConfig] = useState<{ mode: "time" | "words"; value: number; language: "EN" | "ID" }>({ mode: "time", value: 60, language: "EN" });
     const [hostId, setHostId] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [raceStartedAt, setRaceStartedAt] = useState<number | null>(null);
 
     const [players, setPlayers] = useState<Player[]>([
         { id: "p1", name: "TypingNinja (You)", wpm: 0, progress: 0, correctChars: 0, color: "var(--color-accent)", status: "waiting" },
@@ -143,6 +144,44 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         });
     }, [roomId, currentUserId, raceState]);
 
+    const applyRaceStart = useCallback((startedAt: string | null | undefined) => {
+        const duration = raceConfig.mode === "time" ? raceConfig.value : 300;
+        const startedMs = startedAt ? new Date(startedAt).getTime() : null;
+        if (!startedMs) {
+            setCountdown(3);
+            setRaceState("countdown");
+            setTimeLeft(duration);
+            setShowResults(false);
+            startTimeRef.current = null;
+            return;
+        }
+
+        const now = Date.now();
+        const raceStartMs = startedMs + 3000;
+        setRaceStartedAt(startedMs);
+        startTimeRef.current = raceStartMs;
+
+        if (now < raceStartMs) {
+            const secs = Math.max(1, Math.ceil((raceStartMs - now) / 1000));
+            setCountdown(secs);
+            setRaceState("countdown");
+            setTimeLeft(duration);
+            setShowResults(false);
+            return;
+        }
+
+        const elapsed = Math.floor((now - raceStartMs) / 1000);
+        const remaining = Math.max(0, duration - elapsed);
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+            setRaceState("finished");
+            setShowResults(true);
+        } else {
+            setRaceState("racing");
+            setShowResults(false);
+        }
+    }, [raceConfig.mode, raceConfig.value]);
+
     useEffect(() => {
         const setup = async () => {
             // Offline fallback
@@ -159,12 +198,12 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             // Fetch room by code
             const { data } = await client
                 .from("multiplayer_rooms")
-                .select("id, code, mode, mode_value, language, status, host_user_id")
+                .select("id, code, mode, mode_value, language, status, host_user_id, updated_at")
                 .eq("code", roomCode)
                 .single();
             
             if (data) {
-                const roomData = data as { id: string; code: string; mode: string; mode_value: number; language: string; status: string; host_user_id: string };
+                const roomData = data as { id: string; code: string; mode: string; mode_value: number; language: string; status: string; host_user_id: string; updated_at?: string | null };
                 setRoomId(roomData.id); // Set resolved ID
                 
                 const mode = roomData.mode as "time" | "words";
@@ -175,11 +214,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 setHostId(roomData.host_user_id);
 
                 if (roomData.status === "racing") {
-                    setRaceState("countdown");
+                    applyRaceStart(roomData.updated_at ?? null);
                 } else if (roomData.status === "finished") {
                     setRaceState("finished");
+                    setShowResults(true);
                 } else {
                     setRaceState("waiting");
+                    setShowResults(false);
+                    setRaceStartedAt(null);
                 }
 
                 const count = mode === "words" ? value : 300;
@@ -195,7 +237,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             }
         };
         void setup();
-    }, [supabaseReady, user, roomCode]);
+    }, [supabaseReady, user, roomCode, applyRaceStart]);
 
     useEffect(() => {
         if (!isRealtime || !roomId) return;
@@ -230,9 +272,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 (payload) => {
                     const newStatus = payload.new.status;
                     if (newStatus === "racing") {
-                        // Use updated_at as part of seed if available, otherwise just use status change
                         const seedSuffix = payload.new.updated_at || Date.now().toString();
-                        // Re-generate text with new seed. Use stored roomCode.
                         const code = payload.new.code || roomCode;
                         const count = raceConfig.mode === "words" ? raceConfig.value : 300;
                         const newText = generateWords(raceConfig.language, count, false, false, code + seedSuffix);
@@ -240,9 +280,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         
                         setTypedChars("");
                         setTranslateY(0);
-                        setCountdown(3);
-                        setRaceState("countdown");
-                        setShowResults(false);
+                        applyRaceStart(payload.new.updated_at ?? null);
                         
                         // Reset local player stats visually
                         setPlayers(prev => prev.map(p => ({
@@ -255,6 +293,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     } else if (newStatus === "waiting") {
                          setRaceState("waiting");
                          setShowResults(false);
+                         setRaceStartedAt(null);
                          setTypedChars("");
                          setTranslateY(0);
                          setPlayers(prev => prev.map(p => ({
@@ -267,6 +306,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     } else if (newStatus === "finished") {
                         setRaceState("finished");
                         setShowResults(true);
+                        setRaceStartedAt(null);
                     }
                 }
             )
@@ -279,7 +319,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 .eq("user_id", user!.id);
             void client.removeChannel(channel);
         };
-    }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode]);
+    }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode, applyRaceStart]);
 
     useEffect(() => {
         if (raceState === "countdown" && countdown !== null) {
@@ -289,13 +329,13 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             } else if (countdown === 0) {
                 const timer = setTimeout(() => {
                     setRaceState("racing");
-                    startTimeRef.current = Date.now();
+                    startTimeRef.current = startTimeRef.current ?? (raceStartedAt ? raceStartedAt + 3000 : Date.now());
                     setPlayers(p => p.map(player => ({ ...player, status: "playing" })));
                 }, 0);
                 return () => clearTimeout(timer);
             }
         }
-    }, [countdown, raceState]);
+    }, [countdown, raceState, raceStartedAt]);
 
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
@@ -599,22 +639,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             setShowResults(false);
             return;
         }
-
-        if (!user || !roomId) return;
-        const client = getSupabaseClient();
-        if (!client) return;
-        
-        // Reset all players first
-        await client
-            .from("multiplayer_room_players")
-            .update({ status: "waiting", progress: 0, wpm: 0, correct_chars: 0 } as unknown as never)
-            .eq("room_id", roomId);
-
-        // Then set room to waiting
-        await client
-            .from("multiplayer_rooms")
-            .update({ status: "waiting" } as unknown as never)
-            .eq("id", roomId);
+        return;
     };
 
     const handleStartRace = async () => {
@@ -829,7 +854,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 isOpen={raceState === "finished" && showResults}
                 players={players}
                 currentUserId={currentUserId}
-                isHost={!isRealtime || Boolean(user && hostId === user.id)}
+                showRestart={!isRealtime}
                 onClose={() => setShowResults(false)}
                 onLeave={onLeave}
                 onRestart={handleRestart}
