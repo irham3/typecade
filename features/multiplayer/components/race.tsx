@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Medal, Copy, Check } from "lucide-react";
 import { generateWords } from "@/lib/words";
 import { RaceResultsModal } from "./race-results-modal";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useLivePlayerSync, type LivePlayerSyncPayload } from "../hooks/use-live-player-sync";
 
 export interface Player {
     id: string;
@@ -64,11 +66,20 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     const startTimeRef = useRef<number | null>(null);
     const [translateY, setTranslateY] = useState(0);
     const [mounted, setMounted] = useState(false);
-    const lastSyncRef = useRef(0);
+    const channelRef = useRef<RealtimeChannel | null>(null);
+    const livePlayersRef = useRef<Record<string, LivePlayerSyncPayload>>({});
     const savedRef = useRef(false);
 
     const isRealtime = useMemo(() => Boolean(roomId && user && supabaseReady), [roomId, user, supabaseReady]);
     const currentUserId = useMemo(() => (isRealtime && user ? user.id : "p1"), [isRealtime, user]);
+    const { syncLive } = useLivePlayerSync({
+        isRealtime,
+        roomId,
+        userId: user?.id ?? null,
+        channelRef,
+        dbIntervalMs: 50,
+        broadcastIntervalMs: 16,
+    });
 
     const copyLink = () => {
         const url = `${window.location.origin}/race?code=${roomCode}`;
@@ -103,15 +114,20 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
         if (!data) return;
 
-        const mapped = (data as PlayerRow[]).map((row, index) => ({
-            id: row.user_id,
-            name: row.display_name,
-            wpm: row.wpm ?? 0,
-            progress: row.progress ?? 0,
-            color: palette[index % palette.length],
-            status: row.status,
-            correctChars: row.correct_chars ?? 0,
-        }));
+        const now = Date.now();
+        const mapped = (data as PlayerRow[]).map((row, index) => {
+            const live = livePlayersRef.current[row.user_id] ?? null;
+            const hasLive = Boolean(live && now - live.sentAt < 2000);
+            return {
+                id: row.user_id,
+                name: row.display_name,
+                wpm: hasLive && live ? live.wpm : (row.wpm ?? 0),
+                progress: hasLive && live ? live.progress : (row.progress ?? 0),
+                color: palette[index % palette.length],
+                status: hasLive && live ? live.status : row.status,
+                correctChars: hasLive && live ? live.correctChars : (row.correct_chars ?? 0),
+            };
+        });
 
         setPlayers(prev => {
             // Merge strategy: Update all players, but preserve local player's stats 
@@ -143,6 +159,21 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             });
         });
     }, [roomId, currentUserId, raceState]);
+
+    const applyLiveUpdate = useCallback((payload: LivePlayerSyncPayload) => {
+        if (payload.userId === currentUserId) return;
+        livePlayersRef.current[payload.userId] = payload;
+        setPlayers(prev => prev.map(player => {
+            if (player.id !== payload.userId) return player;
+            return {
+                ...player,
+                wpm: payload.wpm,
+                progress: payload.progress,
+                correctChars: payload.correctChars,
+                status: payload.status,
+            };
+        }));
+    }, [currentUserId]);
 
     const applyRaceStart = useCallback((startedAt: string | null | undefined) => {
         const duration = raceConfig.mode === "time" ? raceConfig.value : 300;
@@ -310,16 +341,27 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     }
                 }
             )
+            .on(
+                "broadcast",
+                { event: "player_update" },
+                (message) => {
+                    const payload = message.payload as LivePlayerSyncPayload | null;
+                    if (!payload || !payload.userId) return;
+                    applyLiveUpdate(payload);
+                }
+            )
             .subscribe();
+        channelRef.current = channel;
         return () => {
             void client
                 .from("multiplayer_room_players")
                 .delete()
                 .eq("room_id", roomId)
                 .eq("user_id", user!.id);
+            channelRef.current = null;
             void client.removeChannel(channel);
         };
-    }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode, applyRaceStart]);
+    }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode, applyRaceStart, applyLiveUpdate]);
 
     useEffect(() => {
         if (raceState === "countdown" && countdown !== null) {
@@ -537,23 +579,12 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         }));
 
         if (isRealtime && user && roomId) {
-            const now = Date.now();
-            if (now - lastSyncRef.current > 60 || isFinished) {
-                lastSyncRef.current = now;
-                const client = getSupabaseClient();
-                if (client) {
-                    void client
-                        .from("multiplayer_room_players")
-                        .update({
-                            progress,
-                            wpm,
-                            correct_chars: Math.floor(correctChars),
-                            status: isFinished ? "finished" : "playing",
-                        } as unknown as never)
-                        .eq("room_id", roomId)
-                        .eq("user_id", user.id);
-                }
-            }
+            syncLive({
+                progress,
+                wpm,
+                correctChars: Math.floor(correctChars),
+                status: isFinished ? "finished" : "playing",
+            });
         }
     };
 
