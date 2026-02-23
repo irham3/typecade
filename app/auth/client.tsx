@@ -43,7 +43,7 @@ export function AuthClient() {
         await client.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: `${window.location.origin}/profile`
+                redirectTo: window.location.origin + "/profile"
             }
         });
     };
@@ -90,7 +90,7 @@ export function AuthClient() {
                 email: email.trim(),
                 password: password.trim(),
                 options: {
-                    emailRedirectTo: `${window.location.origin}/profile`
+                    emailRedirectTo: window.location.origin + "/profile"
                 }
             });
 
