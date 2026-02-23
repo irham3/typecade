@@ -41,7 +41,7 @@ export function LeaderboardView() {
             const client = getSupabaseClient();
             if (!client) return;
             setIsLoading(true);
-            const rpc = client.rpc as unknown as (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>;
+            const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
             const { data, error } = await rpc("get_leaderboard", {
                 p_mode: queryParams.mode,
                 p_mode_value: queryParams.modeValue,

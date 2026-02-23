@@ -213,7 +213,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     progress: 0,
                     wpm: 0,
                     correct_chars: 0,
-                } as unknown as never);
+                } as unknown as never, { onConflict: "room_id,user_id" });
             await loadPlayers();
         };
         void setup();
@@ -402,8 +402,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             accuracy: finalAcc,
             duration_seconds: timeTaken,
         } as unknown as never);
-        
-        const rpc = client.rpc as unknown as (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>;
+
+        const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
         await rpc("update_user_stats", { p_user_id: user.id });
     }, [supabaseReady, user, raceConfig]);
 

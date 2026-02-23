@@ -140,7 +140,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                 progress: 0,
                 wpm: 0,
                 correct_chars: 0,
-            } as unknown as never);
+            } as unknown as never, { onConflict: "room_id,user_id" });
 
         setIsLoading(false);
         if (joinError) {
@@ -181,7 +181,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                 progress: 0,
                 wpm: 0,
                 correct_chars: 0,
-            } as unknown as never);
+            } as unknown as never, { onConflict: "room_id,user_id" });
         setIsLoading(false);
         if (joinError) {
             setStatus(joinError.message);

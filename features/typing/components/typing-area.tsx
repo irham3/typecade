@@ -48,7 +48,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
             accuracy: finalAcc,
             duration_seconds: timeTaken,
         } as unknown as never);
-        const rpc = client.rpc as unknown as (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>;
+        const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
         await rpc("update_user_stats", { p_user_id: user.id });
     }, [supabaseReady, user, mode, limit, duration, language]);
 
