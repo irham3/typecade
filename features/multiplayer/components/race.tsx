@@ -323,6 +323,20 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     }, [raceState, isRealtime, user, roomId]);
 
     useEffect(() => {
+        if (!isRealtime || raceState !== "racing") return;
+        const initial = window.setTimeout(() => {
+            void loadPlayers();
+        }, 0);
+        const interval = window.setInterval(() => {
+            void loadPlayers();
+        }, 100);
+        return () => {
+            window.clearTimeout(initial);
+            window.clearInterval(interval);
+        };
+    }, [isRealtime, raceState, loadPlayers]);
+
+    useEffect(() => {
         if (raceState === "racing") {
             const timer = setInterval(() => {
                 if (startTimeRef.current) {
@@ -484,7 +498,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
         if (isRealtime && user && roomId) {
             const now = Date.now();
-            if (now - lastSyncRef.current > 300 || isFinished) {
+            if (now - lastSyncRef.current > 60 || isFinished) {
                 lastSyncRef.current = now;
                 const client = getSupabaseClient();
                 if (client) {
