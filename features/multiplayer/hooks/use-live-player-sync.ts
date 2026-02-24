@@ -69,7 +69,12 @@ export function useLivePlayerSync({
                     status: input.status,
                 } as unknown as never)
                 .eq("room_id", roomId)
-                .eq("user_id", userId);
+                .eq("user_id", userId)
+                .then(({ error }) => {
+                    if (error) {
+                        console.error("DB sync error (multiplayer_room_players):", error.message);
+                    }
+                });
         }
     }, [broadcastIntervalMs, channelRef, dbIntervalMs, isRealtime, roomId, userId]);
 

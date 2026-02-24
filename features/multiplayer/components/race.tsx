@@ -179,6 +179,17 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         };
                     }
                 }
+                // Preserve finished players' final stats even if server rows fall back to 0
+                const localPlayer = prev.find(p => p.id === serverPlayer.id);
+                if (localPlayer && localPlayer.status === "finished") {
+                    return {
+                        ...serverPlayer,
+                        wpm: localPlayer.wpm,
+                        progress: localPlayer.progress,
+                        correctChars: localPlayer.correctChars,
+                        status: localPlayer.status,
+                    };
+                }
                 return serverPlayer;
             });
         });
@@ -360,12 +371,10 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                          finishSyncedRef.current = false;
                          setTypedChars("");
                          setTranslateY(0);
+                         // Preserve final WPM/progress; only mark status as waiting
                          setPlayers(prev => prev.map(p => ({
                             ...p,
                             status: "waiting",
-                            progress: 0,
-                            wpm: 0,
-                            correctChars: 0
                         })));
                     } else if (newStatus === "finished") {
                         setRaceState("finished");
@@ -432,7 +441,12 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .from("multiplayer_room_players")
             .update(updateData as unknown as never)
             .eq("room_id", roomId)
-            .eq("user_id", user.id);
+            .eq("user_id", user.id)
+            .then(({ error }) => {
+                if (error) {
+                    console.error("DB finish update error:", error.message);
+                }
+            });
     }, [raceState, isRealtime, user, roomId, calculateLiveStats]);
 
     useEffect(() => {
