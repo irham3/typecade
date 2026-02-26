@@ -21,9 +21,9 @@
   --color-panel-bg: #18181b;
   --color-border-dim: #27272a;
 
-  --font-sans: var(--font-dm-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
-  --font-display: var(--font-syne);
+  --font-display: var(--font-space-grotesk);
 
   --animate-caret-blink: caret-blink 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 
