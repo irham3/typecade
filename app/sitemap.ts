@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 import { LEARN_MODULES } from '@/features/learn/data/lessons';
 
+export const dynamic = "force-static";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://typecade.pages.dev';
 
