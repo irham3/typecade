@@ -9,107 +9,111 @@ export const wordsID = [
 ];
 
 export const quotesEN = [
-    "Small steps still move the dream forward, and small habits become steady victories over time.",
-    "Love grows where patience is practiced, and it deepens when two people keep choosing each other.",
-    "A calm mind can hear the quiet win, the kind that arrives when no one is watching.",
-    "The best plans start with a brave start, then survive by consistency and honest effort.",
-    "Kindness is a language every heart understands, even when words fall short.",
-    "Focus is the secret rhythm of progress, keeping the day steady when the world feels loud.",
-    "True confidence is gentle, not loud, and it lets others shine without shrinking you.",
-    "Romance is built from ordinary moments, repeated with care until they become a home.",
-    "A good idea needs a better habit, because inspiration is only the spark, not the engine.",
-    "Trust turns distance into closeness, and time into a quiet promise.",
-    "The future belongs to those who show up, especially on the days they do not feel like it.",
-    "Soft words can carry strong feelings, and gentle honesty can hold a relationship together.",
-    "Growth happens where comfort ends, but it lasts when you learn to love the climb.",
-    "Love is a daily choice, not a sudden spark, and it survives in the small decisions.",
-    "Joy multiplies when it is shared, and it becomes strength when it is remembered.",
-    "Be steady when the world is noisy, because calm is a powerful kind of courage.",
-    "A thoughtful pause can save a long regret, and a kind reply can change a whole day.",
-    "Friendship is the family you choose, and loyalty is the language it speaks.",
-    "Simplicity is the art of clarity, and clarity is the doorway to peace.",
-    "A curious mind stays young, because it keeps asking better questions.",
-    "Great work is patience in motion, and patience is faith in the process.",
-    "Honesty is the foundation of every bond, and respect is the structure that holds it.",
-    "Stay close to people who make you better, and be that person for someone else.",
-    "Hope is a quiet kind of courage, whispering that tomorrow can be kinder than today.",
-    "Real love listens before it speaks, and forgives before it forgets.",
-    "The heart remembers what the mind forgets, especially the way someone made you feel.",
-    "Consistency beats intensity over time, especially when no one is applauding.",
-    "The right timing meets the right effort, and together they build the right result.",
-    "Respect makes every relationship safer, and safety makes every love stronger.",
-    "Dreams need discipline to become real, and discipline needs a reason to stay alive.",
-    "Love is not perfect, it is present, and presence is the most beautiful gift.",
-    "A good day starts with a clear intention and ends with honest gratitude.",
-    "Laughter is the shortest bridge between souls, and it keeps distance from growing.",
-    "Your pace is still progress, and progress is still something to be proud of.",
-    "Gratitude keeps the heart warm, even when the season feels cold.",
-    "The best team is built on trust, and trust is built one promise at a time.",
-    "Silence can be a powerful answer, especially when words would do harm.",
-    "Affection is attention in small doses, repeated until it becomes security.",
-    "Strong relationships are built on gentle honesty, not harsh perfection.",
-    "Every ending teaches a better beginning, and every lesson becomes a lantern.",
-    "Love thrives in honesty, not perfection, and grows in the room between two truths.",
-    "A balanced life is a brave decision, because it refuses to worship extremes.",
-    "Courage is a habit you practice, not a moment you wait for.",
-    "Care is love with time attached, and time is love made visible.",
-    "Shall I compare thee to a summer's day? Thou art more lovely and more temperate.",
-    "Two roads diverged in a yellow wood, and I took the one less traveled by.",
-    "Hope is the thing with feathers that perches in the soul and sings without words.",
-    "It was the best of times, it was the worst of times, yet still we choose how to live.",
-    "Let me not to the marriage of true minds admit impediment; love is not love which alters."
+    // ── Easy (short, under 70 chars) ──
+    "Done is better than perfect.",
+    "Start before you are ready.",
+    "Fall in love with the process.",
+    "Revenue solves all problems.",
+    "Love is a verb, not a noun.",
+    "Ship it, then fix it.",
+    "Be so good they can't ignore you.",
+    "Stay hungry, stay foolish.",
+    "Your vibe attracts your tribe.",
+    "Risk more than others think is safe.",
+    "The best time to start is now.",
+    "Love is attention sustained over time.",
+    "Move fast and learn things.",
+    "Every expert was once a beginner.",
+    "Great things never come from comfort zones.",
+    "Doubt kills more dreams than failure ever will.",
+    "Build something people actually want.",
+    "Love is not finding the perfect person.",
+    "Success is rented, never owned.",
+
+    // ── Medium (70–140 chars) ──
+    "The biggest risk is not taking any risk. In a world that is changing fast, the only strategy that fails is not taking risks.",
+    "A startup is a company designed to grow fast. Nothing else matters if you don't get that right.",
+    "Love does not consist of gazing at each other, but in looking outward together in the same direction.",
+    "The best founders are not the smartest people in the room. They are the ones who refuse to quit and keep learning.",
+    "Your most unhappy customers are your greatest source of learning. Listen to them closely.",
+    "Being deeply loved gives you strength, while loving someone deeply gives you courage to face anything.",
+    "Price is what you pay. Value is what you get. Never confuse the two when building or buying.",
+    "The heart was made to be broken, and love was made to be risked. That is its entire purpose.",
+    "People do not buy what you do, they buy why you do it. Start with purpose, not product.",
+    "Love is when the other person's happiness matters more than your own, and it does not feel like sacrifice.",
+    "You do not need permission to build something great. You need discipline, consistency, and patience.",
+    "The graveyard is the richest place on earth, full of ideas that were never pursued and songs never sung.",
+    "I have decided to stick with love because hate is too great a burden to carry through life.",
+    "The only way to do great work is to love what you do. If you have not found it yet, keep looking.",
+    "Romance is the glamour which turns the dust of everyday life into a golden haze of wonder.",
+    "Innovation distinguishes between a leader and a follower. Choose to lead, even when it is harder.",
+    "The best relationships are built on trust, communication, and a willingness to grow together.",
+    "Ideas are easy. Implementation is hard. The difference between a dreamer and a founder is execution.",
+    "To love and be loved is to feel the sun from both sides, warming you inside and out.",
+
+    // ── Hard (over 140 chars) ──
+    "It is not the critic who counts; not the man who points out how the strong stumble, or where the doer could have done better. The credit belongs to the person who is actually in the arena.",
+    "Success is not final, failure is not fatal: it is the courage to continue that counts. Keep going even when every part of you wants to stop, because that is where the breakthrough lives.",
+    "The most important thing in communication is hearing what is not said. Great leaders listen between the lines, great lovers listen between the silences, and great founders listen between the complaints.",
+    "You can fail at what you do not want, so you might as well take a chance on doing what you love. The worst that happens is you end up exactly where you would have been anyway, but with fewer regrets.",
+    "The moment you feel like you have to prove your worth to someone is the moment to absolutely and utterly walk away. Love should never require you to shrink yourself to fit inside someone else's comfort zone.",
+    "If you want to build a ship, do not drum up the men to gather wood, divide the work, and give orders. Instead, teach them to yearn for the vast and endless sea, and they will build the ship themselves.",
+    "We loved with a love that was more than love. It grew between the cracks of our ordinary days and filled every silence with meaning, every glance with belonging, every argument with a reason to stay.",
+    "Entrepreneurship is living a few years of your life like most people will not, so that you can spend the rest of your life like most people cannot. The sacrifice is temporary, but the freedom is forever.",
+    "Love is not about how much you say I love you, but how much you prove that it is true through the small, consistent, unglamorous acts of showing up for someone when it would be easier not to.",
+    "Building a company is like eating glass and staring into the abyss of death. If you are wired for that kind of pain, there is nothing else in the world you would rather do, because the mission matters more than the comfort.",
+    "The real test of love is not how you feel at the peak of passion, but how you treat each other in the quiet valleys when the excitement fades and all that remains is the decision to keep choosing one another, day after day.",
 ];
 
 export const quotesID = [
-    "Langkah kecil tetap membawa mimpi maju, apalagi jika dilakukan setiap hari tanpa menyerah.",
-    "Cinta tumbuh di tempat yang sabar, dan bertahan karena dua hati mau belajar.",
-    "Pikiran tenang menangkap kemenangan sunyi, kemenangan yang tidak butuh sorak.",
-    "Rencana terbaik dimulai dari keberanian kecil, lalu dijaga oleh konsistensi.",
-    "Kebaikan adalah bahasa yang dipahami hati, bahkan saat lidah tak sanggup bicara.",
-    "Fokus adalah irama rahasia dari kemajuan, menjaga langkah tetap lurus di tengah ribut.",
-    "Kepercayaan diri yang sehat itu lembut, tidak perlu membesar untuk terlihat kuat.",
-    "Romansa dibangun dari momen biasa, lalu dirawat dengan perhatian yang sederhana.",
-    "Ide bagus butuh kebiasaan yang tepat, karena yang hebat lahir dari pengulangan.",
-    "Kepercayaan mengubah jarak jadi dekat, dan waktu jadi bukti.",
-    "Masa depan milik mereka yang hadir, terutama di hari-hari paling sulit.",
-    "Kata lembut bisa membawa rasa kuat, dan kejujuran yang halus menguatkan.",
-    "Bertumbuh terjadi saat nyaman ditinggal, namun indah saat tujuan tetap diingat.",
-    "Cinta adalah pilihan harian, bukan kebetulan, dan ia bertahan karena niat.",
-    "Bahagia bertambah saat dibagikan, dan semakin kuat ketika disyukuri.",
-    "Tetap tenang saat dunia berisik, karena ketenangan adalah keberanian.",
-    "Jeda bijak mencegah penyesalan panjang, dan sabar adalah sahabat keputusan.",
-    "Persahabatan adalah keluarga yang dipilih, dan kesetiaan adalah jembatannya.",
-    "Sederhana adalah seni yang jelas, dan jelas membuat hati lebih damai.",
-    "Rasa ingin tahu menjaga jiwa muda, karena ia terus bertanya dan belajar.",
-    "Kerja hebat adalah sabar yang bergerak, bukan buru-buru yang melelahkan.",
-    "Kejujuran adalah pondasi semua hubungan, dan rasa hormat adalah atapnya.",
-    "Dekatlah dengan orang yang membuatmu lebih baik, dan jadilah orang itu juga.",
-    "Harapan adalah keberanian yang hening, menuntun langkah saat jalan gelap.",
-    "Cinta sejati mendengar sebelum bicara, dan memeluk sebelum menghakimi.",
-    "Hati mengingat yang pikiran lupakan, terutama tentang bagaimana ia disayangi.",
-    "Konsisten mengalahkan intensitas sesaat, karena perjalanan panjang butuh napas.",
-    "Waktu yang tepat bertemu usaha yang tepat, lalu hasil baik mengikuti.",
-    "Rasa hormat membuat hubungan lebih aman, dan aman membuat cinta lebih kuat.",
-    "Mimpi butuh disiplin agar nyata, dan disiplin butuh alasan untuk bertahan.",
-    "Cinta bukan sempurna, tapi hadir, dan kehadiran adalah hadiah yang tulus.",
-    "Hari baik dimulai dari niat jernih, lalu diakhiri dengan syukur yang ringan.",
-    "Tawa adalah jembatan terpendek antar jiwa, menghubungkan tanpa syarat.",
-    "Laju pelan tetap disebut maju, selama langkahmu tidak berhenti.",
-    "Syukur menjaga hati tetap hangat, meski musim terasa dingin.",
-    "Tim terbaik dibangun dari kepercayaan, dan kepercayaan dibangun dari janji.",
-    "Diam bisa jadi jawaban paling kuat, terutama saat emosi ingin menang.",
-    "Kasih sayang adalah perhatian yang kecil, namun terus diulang setiap hari.",
-    "Hubungan kuat lahir dari jujur yang lembut, bukan dari benar yang keras.",
-    "Setiap akhir mengajar awal yang lebih baik, dan setiap luka menjadi pelajaran.",
-    "Cinta sehat tumbuh dari kejujuran, bukan dari kepura-puraan yang manis.",
-    "Hidup seimbang adalah keputusan berani, menolak hidup yang tergesa.",
-    "Keberanian adalah kebiasaan yang dilatih, bukan menunggu momen yang pas.",
-    "Peduli adalah cinta yang diberi waktu, dan waktu adalah bukti kasih.",
-    "Pulau pandan jauh ke tengah, gunung Daik bercabang tiga, hancur badan dikandung tanah, budi baik dikenang juga.",
-    "Pisang emas dibawa berlayar, masak sebiji di atas peti, hutang emas dapat dibayar, hutang budi dibawa mati.",
-    "Kalau ada sumur di ladang, boleh kita menumpang mandi, kalau ada umur yang panjang, boleh kita berjumpa lagi.",
-    "Bunga melati di tepi kali, harum semerbak menyejukkan hati, janji tulus tak akan lari, ia tinggal di dada selamanya.",
-    "Aku ingin hidup seribu tahun lagi, karena rindu dan mimpi belum selesai."
+    // ── Easy (short, under 70 chars) ──
+    "Mulai saja dulu, sempurnakan sambil jalan.",
+    "Jatuh cinta itu gratis, bangun bisnis tidak.",
+    "Gagal itu guru, bukan musuh.",
+    "Cinta itu kata kerja, bukan kata benda.",
+    "Lakukan yang kamu takuti setiap hari.",
+    "Rejeki tidak pernah tertukar.",
+    "Kerja keras mengalahkan bakat yang malas.",
+    "Cinta tumbuh dari kebiasaan, bukan kebetulan.",
+    "Jangan tunggu sempurna, mulai dari cukup.",
+    "Risiko terbesar adalah tidak mengambil risiko.",
+    "Bangun sesuatu yang orang benar-benar butuhkan.",
+    "Hati yang ikhlas menarik rezeki yang baik.",
+    "Kesuksesan disewa, tidak pernah dimiliki.",
+    "Cinta sejati tidak pernah menuntut kamu berubah.",
+    "Fokus pada solusi, bukan masalah.",
+    "Yang terbaik belum datang.",
+    "Mimpi tanpa eksekusi hanya ilusi.",
+    "Jadilah alasan seseorang tersenyum hari ini.",
+
+    // ── Medium (70–140 chars) ──
+    "Jangan pernah menyerah pada mimpi hanya karena waktu yang dibutuhkan untuk mencapainya. Waktu akan berlalu bagaimanapun juga.",
+    "Kesuksesan bukanlah kunci kebahagiaan. Kebahagiaanlah yang menjadi kunci kesuksesan. Cintai apa yang kamu lakukan.",
+    "Cinta tidak terdiri dari saling memandang, tetapi bersama-sama melihat ke arah yang sama dengan penuh harapan.",
+    "Seorang pengusaha melihat peluang di mana orang lain melihat hambatan, dan membangun jembatan di mana orang lain melihat jurang.",
+    "Harga yang kamu bayar untuk sesuatu dan nilai yang kamu dapat adalah dua hal berbeda. Jangan pernah mencampurkan keduanya.",
+    "Dicintai secara mendalam memberimu kekuatan, sementara mencintai secara mendalam memberimu keberanian menghadapi segalanya.",
+    "Pelanggan yang paling tidak puas adalah sumber pembelajaran terbesar. Dengarkan keluhan mereka dengan telinga terbuka.",
+    "Orang tidak membeli apa yang kamu jual, mereka membeli alasan kamu menjualnya. Mulailah dari tujuan, bukan produk.",
+    "Inovasi membedakan pemimpin dari pengikut. Pilihlah untuk memimpin, bahkan ketika jalan itu lebih sulit dari yang dibayangkan.",
+    "Cinta adalah ketika kebahagiaan orang lain lebih penting dari kebahagiaanmu sendiri, dan itu tidak terasa seperti pengorbanan.",
+    "Hubungan terbaik dibangun dari kepercayaan, komunikasi yang jujur, dan kemauan untuk bertumbuh bersama melewati segala musim.",
+    "Kuburan adalah tempat terkaya di bumi, penuh dengan ide yang tidak pernah diwujudkan dan lagu yang tidak pernah dinyanyikan.",
+    "Romansa adalah sihir yang mengubah debu kehidupan sehari-hari menjadi kabut emas penuh keajaiban dan rasa syukur.",
+    "Ide itu mudah didapat. Eksekusi yang sulit. Perbedaan antara pemimpi dan pendiri adalah keberanian untuk bertindak.",
+    "Aku memutuskan untuk tetap memilih cinta, karena kebencian adalah beban yang terlalu berat untuk dibawa sepanjang hidup.",
+
+    // ── Hard (over 140 chars) ──
+    "Bukan kritikus yang patut dihargai, bukan mereka yang menunjukkan bagaimana orang kuat tersandung. Penghargaan itu milik mereka yang benar-benar berada di arena, yang wajahnya kotor oleh debu dan keringat perjuangan.",
+    "Kesuksesan bukanlah akhir, kegagalan bukanlah hal yang fatal. Yang terpenting adalah keberanian untuk terus melangkah, bahkan ketika seluruh tubuhmu ingin berhenti, karena di situlah terobosan sesungguhnya menunggu.",
+    "Hal terpenting dalam komunikasi adalah mendengar apa yang tidak diucapkan. Pemimpin hebat mendengar di antara kata-kata, kekasih hebat mendengar di antara keheningan, dan pendiri hebat mendengar di antara keluhan pelanggan.",
+    "Kamu bisa gagal melakukan hal yang tidak kamu sukai, jadi lebih baik ambil kesempatan untuk melakukan hal yang kamu cintai. Yang terburuk yang bisa terjadi adalah kamu kembali ke titik awal, tapi dengan lebih sedikit penyesalan.",
+    "Saat kamu merasa harus membuktikan nilaimu kepada seseorang, itulah saat yang tepat untuk pergi. Cinta sejati tidak pernah memintamu untuk mengecilkan dirimu agar muat di dalam zona nyaman orang lain yang tidak mau bertumbuh.",
+    "Jika ingin membangun kapal, jangan suruh orang mengumpulkan kayu, membagi tugas, dan memberi perintah. Sebaliknya, ajari mereka merindukan lautan luas yang tak berujung, dan mereka akan membangun kapal itu sendiri dengan penuh semangat.",
+    "Menjadi pengusaha berarti menjalani beberapa tahun hidupmu seperti yang kebanyakan orang tidak mau, agar kamu bisa menghabiskan sisa hidupmu seperti yang kebanyakan orang tidak bisa. Pengorbanannya sementara, tapi kebebasannya selamanya.",
+    "Cinta bukan soal seberapa sering kamu mengucapkan aku cinta kamu, tapi seberapa besar kamu membuktikannya lewat tindakan kecil, konsisten, dan tanpa glamor, yaitu hadir untuk seseorang ketika akan lebih mudah untuk tidak melakukannya.",
+    "Membangun perusahaan itu seperti memakan kaca dan menatap jurang kematian. Jika otakmu memang dirancang untuk rasa sakit seperti itu, tidak ada hal lain di dunia yang lebih ingin kamu lakukan, karena misinya lebih besar dari kenyamananmu.",
+    "Ujian cinta yang sesungguhnya bukan bagaimana perasaanmu di puncak gairah, tapi bagaimana kalian memperlakukan satu sama lain di lembah yang sunyi, ketika kegembiraan pudar dan yang tersisa hanyalah keputusan untuk terus saling memilih setiap hari.",
 ];
 
 const createRandom = (seed?: string) => {
@@ -156,8 +160,21 @@ export function generateWords(language: "EN" | "ID", count: number, usePunctuati
     return result.join(" ");
 }
 
-export function generateQuote(language: "EN" | "ID", seed?: string): string {
+export function generateQuote(language: "EN" | "ID", difficulty?: "Easy" | "Medium" | "Hard", seed?: string): string {
     const list = language === "EN" ? quotesEN : quotesID;
     const random = createRandom(seed);
-    return list[Math.floor(random() * list.length)];
+
+    let filtered = list;
+    if (difficulty === "Easy") {
+        filtered = list.filter(q => q.length <= 60);
+    } else if (difficulty === "Medium") {
+        filtered = list.filter(q => q.length > 60 && q.length <= 150);
+    } else if (difficulty === "Hard") {
+        filtered = list.filter(q => q.length > 150);
+    }
+
+    // Fallback to full list if no quotes match the difficulty bracket
+    if (filtered.length === 0) filtered = list;
+
+    return filtered[Math.floor(random() * filtered.length)];
 }
