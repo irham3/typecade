@@ -37,29 +37,54 @@ export default function Image() {
                         marginBottom: "40px",
                     }}
                 >
-                    {/* Replica of the typecade-logo.svg but perfectly scaled for the banner */}
+                    {/* Logo mark - geometric T with keyboard-key feel */}
                     <div
                         style={{
                             width: "120px",
                             height: "120px",
-                            backgroundColor: "#6366f1", // The exact color from your SVG
-                            borderRadius: "30px", // Scaled rx=10
+                            backgroundColor: "#6366f1",
+                            borderRadius: "30px",
                             display: "flex",
+                            flexDirection: "column",
                             alignItems: "center",
                             justifyContent: "center",
-                            boxShadow: "0 20px 40px rgba(99, 102, 241, 0.3)",
+                            boxShadow:
+                                "0 20px 40px rgba(99, 102, 241, 0.3), 0 0 60px rgba(99, 102, 241, 0.15)",
                             marginRight: "40px",
+                            position: "relative",
                         }}
                     >
-                        <span
+                        {/* Top bar of T */}
+                        <div
                             style={{
-                                fontSize: "72px",
-                                fontWeight: "bold",
-                                color: "white",
+                                width: "64px",
+                                height: "14px",
+                                background: "white",
+                                borderRadius: "3px",
                             }}
-                        >
-                            T
-                        </span>
+                        />
+                        {/* Vertical stroke of T */}
+                        <div
+                            style={{
+                                width: "18px",
+                                height: "48px",
+                                background: "white",
+                                borderRadius: "3px",
+                                marginTop: "-2px",
+                            }}
+                        />
+                        {/* Cursor accent */}
+                        <div
+                            style={{
+                                position: "absolute",
+                                right: "18px",
+                                bottom: "16px",
+                                width: "4px",
+                                height: "24px",
+                                background: "rgba(255,255,255,0.5)",
+                                borderRadius: "2px",
+                            }}
+                        />
                     </div>
 
                     <h1
@@ -78,7 +103,7 @@ export default function Image() {
                 <p
                     style={{
                         fontSize: "42px",
-                        color: "#a1a1aa", // text-zinc-400
+                        color: "#a1a1aa",
                         marginTop: 0,
                         fontWeight: "500",
                         letterSpacing: "-0.5px",

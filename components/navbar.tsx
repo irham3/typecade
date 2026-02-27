@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Keyboard, Trophy, Users, User, Settings, Play, ChevronDown } from "lucide-react";
@@ -23,9 +24,13 @@ export function Navbar() {
     return (
         <header className="w-full max-w-6xl px-8 py-6 flex items-center justify-between z-10 relative">
             <Link href="/" className="flex items-center gap-4 cursor-pointer group">
-                <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-bold font-display text-2xl shadow-[0_0_20px_rgba(99,102,241,0.4)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] transition-all duration-300">
-                    T
-                </div>
+                <Image
+                    src="/typecade-logo.png"
+                    alt="Typecade"
+                    width={40}
+                    height={40}
+                    className="rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] transition-all duration-300"
+                />
                 <span className="font-display font-bold text-2xl tracking-tight opacity-90 group-hover:opacity-100 transition-opacity">
                     Typecade
                 </span>
