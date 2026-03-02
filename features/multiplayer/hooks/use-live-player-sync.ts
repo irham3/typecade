@@ -63,9 +63,9 @@ export function useLivePlayerSync({
             void client
                 .from("multiplayer_room_players")
                 .update({
-                    progress: input.progress,
-                    wpm: input.wpm,
-                    correct_chars: input.correctChars,
+                    progress: Math.floor(input.progress),
+                    wpm: Math.floor(input.wpm),
+                    correct_chars: Math.floor(input.correctChars),
                     status: input.status,
                 } as unknown as never)
                 .eq("room_id", roomId)

@@ -459,8 +459,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
         if (status === "finished") {
             const stats = calculateLiveStats(typedCharsRef.current);
-            updateData.wpm = stats.wpm;
-            updateData.progress = stats.progress;
+            updateData.wpm = Math.floor(stats.wpm);
+            updateData.progress = Math.floor(stats.progress);
             updateData.correct_chars = Math.floor(stats.correctChars);
         }
 
@@ -603,8 +603,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         } as unknown as never);
         if (error) return false;
 
-        const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
-        const { error: rpcError } = await rpc("update_user_stats", { p_user_id: user.id });
+        const { error: rpcError } = await (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc("update_user_stats", { p_user_id: user.id });
         if (rpcError) return false;
         return true;
     }, [supabaseReady, user, raceConfig]);
