@@ -36,6 +36,7 @@ const palette = ["var(--color-accent)", "#38bdf8", "#f472b6", "#facc15", "#22c55
 export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; roomCode?: string | null }) {
     const { user, supabaseReady } = useAuth();
     const [roomId, setRoomId] = useState<string | null>(null);
+    const [roomNotFound, setRoomNotFound] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(3);
     const [timeLeft, setTimeLeft] = useState(60);
     const [raceState, setRaceState] = useState<"waiting" | "countdown" | "racing" | "finished">("waiting");
@@ -265,8 +266,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 setPlayers([]); // Clear bots to avoid flash
                 setMounted(true);
             } else {
-                // Room not found fallback
-                setTargetText(generateWords("EN", 50, false, false));
+                // Room not found — block the game entirely
+                setRoomNotFound(true);
                 setMounted(true);
             }
         };
@@ -366,7 +367,28 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     applyLiveUpdate(payload);
                 }
             )
-            .subscribe();
+            .on("presence", { event: "leave" }, ({ leftPresences }) => {
+                // When a client disconnects, remove them from the room in the DB.
+                // The existing postgres_changes DELETE listener will then refresh
+                // the player list for everyone still connected.
+                const leftUserIds = (leftPresences as unknown as { userId: string }[])
+                    .map((p) => p.userId)
+                    .filter(Boolean);
+                if (leftUserIds.length === 0) return;
+                const c = getSupabaseClient();
+                if (!c) return;
+                void c
+                    .from("multiplayer_room_players")
+                    .delete()
+                    .eq("room_id", roomId)
+                    .in("user_id", leftUserIds);
+            })
+            .subscribe((status) => {
+                if (status === "SUBSCRIBED") {
+                    // Track our own presence so the server knows we're online.
+                    void channel.track({ userId: user!.id });
+                }
+            });
         channelRef.current = channel;
         return () => {
             void client
@@ -732,6 +754,21 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     };
 
     if (!mounted) return null;
+
+    if (roomNotFound) {
+        return (
+            <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background gap-6 p-4">
+                <div className="text-6xl">🚫</div>
+                <h2 className="text-3xl font-display font-bold">Room Not Found</h2>
+                <p className="text-text-dim text-center max-w-sm">
+                    The room code <span className="font-mono text-accent font-bold">{roomCode}</span> does not exist or has already ended.
+                </p>
+                <Button onClick={onLeave} className="mt-2">
+                    Back to Multiplayer
+                </Button>
+            </div>
+        );
+    }
 
     if (raceState === "waiting") {
         return (
