@@ -36,6 +36,7 @@ const palette = ["var(--color-accent)", "#38bdf8", "#f472b6", "#facc15", "#22c55
 export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; roomCode?: string | null }) {
     const { user, supabaseReady } = useAuth();
     const [roomId, setRoomId] = useState<string | null>(null);
+    const [roomNotFound, setRoomNotFound] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(3);
     const [timeLeft, setTimeLeft] = useState(60);
     const [raceState, setRaceState] = useState<"waiting" | "countdown" | "racing" | "finished">("waiting");
@@ -83,7 +84,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         roomId,
         userId: user?.id ?? null,
         channelRef,
-        dbIntervalMs: 50,
+        dbIntervalMs: 3000,
         broadcastIntervalMs: 16,
     });
 
@@ -157,13 +158,13 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             // Merge strategy: Update all players, but preserve local player's stats 
             // if we are currently racing to prevent UI jitter/rollback from server latency.
             // Only overwrite local player if the server says they are finished (or if we are not racing).
-            
+
             // Note: If mapped is empty, it means something is wrong or room is empty.
             if (mapped.length === 0) return prev;
 
             // We want to keep existing players if they are not in the new list? 
             // No, the server list is authoritative for who is in the room.
-            
+
             return mapped.map(serverPlayer => {
                 // If it's me
                 if (serverPlayer.id === currentUserId) {
@@ -269,11 +270,11 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 .select("id, code, mode, mode_value, language, status, host_user_id, updated_at")
                 .eq("code", roomCode)
                 .single();
-            
+
             if (data) {
                 const roomData = data as { id: string; code: string; mode: string; mode_value: number; language: string; status: string; host_user_id: string; updated_at?: string | null };
                 setRoomId(roomData.id); // Set resolved ID
-                
+
                 const mode = roomData.mode as "time" | "words";
                 const value = roomData.mode_value;
                 const lang = roomData.language as "EN" | "ID";
@@ -299,8 +300,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 setPlayers([]); // Clear bots to avoid flash
                 setMounted(true);
             } else {
-                // Room not found fallback
-                setTargetText(generateWords("EN", 50, false, false));
+                // Room not found — block the game entirely
+                setRoomNotFound(true);
                 setMounted(true);
             }
         };
@@ -341,6 +342,11 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             )
             .on(
                 "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
+                () => void loadPlayers()
+            )
+            .on(
+                "postgres_changes",
                 { event: "UPDATE", schema: "public", table: "multiplayer_rooms", filter: `id=eq.${roomId}` },
                 (payload) => {
                     const newStatus = payload.new.status;
@@ -350,12 +356,12 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         const count = raceConfig.mode === "words" ? raceConfig.value : 300;
                         const newText = generateWords(raceConfig.language, count, false, false, code + seedSuffix);
                         setTargetText(newText);
-                        
+
                         setTypedChars("");
                         setTranslateY(0);
                         applyRaceStart(payload.new.updated_at ?? null);
                         finishSyncedRef.current = false;
-                        
+
                         // Reset local player stats visually
                         setPlayers(prev => prev.map(p => ({
                             ...p,
@@ -365,14 +371,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                             correctChars: 0
                         })));
                     } else if (newStatus === "waiting") {
-                         setRaceState("waiting");
-                         setShowResults(false);
-                         setRaceStartedAt(null);
-                         finishSyncedRef.current = false;
-                         setTypedChars("");
-                         setTranslateY(0);
-                         // Preserve final WPM/progress; only mark status as waiting
-                         setPlayers(prev => prev.map(p => ({
+                        setRaceState("waiting");
+                        setShowResults(false);
+                        setRaceStartedAt(null);
+                        finishSyncedRef.current = false;
+                        setTypedChars("");
+                        setTranslateY(0);
+                        // Preserve final WPM/progress; only mark status as waiting
+                        setPlayers(prev => prev.map(p => ({
                             ...p,
                             status: "waiting",
                         })));
@@ -393,7 +399,28 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     applyLiveUpdate(payload);
                 }
             )
-            .subscribe();
+            .on("presence", { event: "leave" }, ({ leftPresences }) => {
+                // When a client disconnects, remove them from the room in the DB.
+                // The existing postgres_changes DELETE listener will then refresh
+                // the player list for everyone still connected.
+                const leftUserIds = (leftPresences as unknown as { userId: string }[])
+                    .map((p) => p.userId)
+                    .filter(Boolean);
+                if (leftUserIds.length === 0) return;
+                const c = getSupabaseClient();
+                if (!c) return;
+                void c
+                    .from("multiplayer_room_players")
+                    .delete()
+                    .eq("room_id", roomId)
+                    .in("user_id", leftUserIds);
+            })
+            .subscribe((status) => {
+                if (status === "SUBSCRIBED") {
+                    // Track our own presence so the server knows we're online.
+                    void channel.track({ userId: user!.id });
+                }
+            });
         channelRef.current = channel;
         return () => {
             void client
@@ -427,9 +454,9 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         const client = getSupabaseClient();
         if (!client) return;
         const status = raceState === "racing" ? "playing" : raceState === "finished" ? "finished" : "waiting";
-        
+
         const updateData: Record<string, unknown> = { status };
-        
+
         if (status === "finished") {
             const stats = calculateLiveStats(typedCharsRef.current);
             updateData.wpm = stats.wpm;
@@ -461,6 +488,25 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     if (remaining <= 0) {
                         setRaceState("finished");
                         clearInterval(timer);
+
+                        // Force calculate WPM one last time from target duration to avoid zero WPM bug
+                        if (isRealtime && user && roomId) {
+                            setPlayers(p => p.map(player => {
+                                if (player.id === currentUserId) {
+                                    const elapsedMin = Math.max(0.01, duration / 60);
+                                    const wpm = Math.max(0, Math.floor((player.correctChars / 5) / elapsedMin));
+                                    syncLive({
+                                        progress: player.progress,
+                                        wpm,
+                                        correctChars: Math.floor(player.correctChars),
+                                        status: "finished",
+                                    });
+                                    return { ...player, wpm, status: "finished" };
+                                }
+                                return player;
+                            }));
+                        }
+
                         return;
                     }
                 }
@@ -478,7 +524,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                                 if (raceConfig.mode === "words") {
                                     totalChars = raceConfig.value * 5;
                                 } else {
-                                     totalChars = (100 * 5) * (raceConfig.value / 60); 
+                                    totalChars = (100 * 5) * (raceConfig.value / 60);
                                 }
                                 const newProgress = Math.min(100, (player.correctChars / totalChars) * 100);
                                 return { ...player, wpm: newWpm, progress: newProgress };
@@ -496,14 +542,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                             const currentWpm = baseSpeed + (Math.random() * 10 - 5);
                             const charsAdded = (currentWpm * 5) / 120; // 500ms segment
                             const newCorrectChars = player.correctChars + charsAdded;
-                            
+
                             let totalChars = 600;
                             if (raceConfig.mode === "words") {
                                 totalChars = raceConfig.value * 5;
                             } else {
-                                totalChars = (100 * 5) * (raceConfig.value / 60); 
+                                totalChars = (100 * 5) * (raceConfig.value / 60);
                             }
-                            
+
                             const newProgress = Math.min(100, (newCorrectChars / totalChars) * 100);
 
                             return { ...player, correctChars: newCorrectChars, progress: newProgress, wpm: Math.floor(currentWpm), status: newProgress >= 100 ? "finished" : "playing" };
@@ -545,7 +591,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         if (!supabaseReady || !user) return false;
         const client = getSupabaseClient();
         if (!client) return false;
-        
+
         const { error } = await client.from("typing_tests").insert({
             user_id: user.id,
             mode: raceConfig.mode,
@@ -630,8 +676,21 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             setTargetText((prev: string) => prev + " " + generateWords(raceConfig.language, 30, false, false));
         }
 
-        const stats = calculateLiveStats(val);
-        const isFinished = raceConfig.mode === "words" && stats.progress >= 100;
+        // Update player 1 wpm internally, visually updated more rapidly by setInterval
+        const elapsedMin = startTimeRef.current ? Math.max(0.01, (Date.now() - startTimeRef.current) / 1000 / 60) : 0.01;
+        const correctChars = val.split("").filter((char, i) => char === targetText[i]).length;
+        const wpm = Math.max(0, Math.floor((correctChars / 5) / elapsedMin));
+
+        let totalChars = 600;
+        if (raceConfig.mode === "words") {
+            totalChars = raceConfig.value * 5;
+        } else {
+            // Time mode: Estimate based on 100 WPM
+            totalChars = (100 * 5) * (raceConfig.value / 60);
+        }
+
+        const progress = Math.min(100, (correctChars / totalChars) * 100);
+        const isFinished = progress >= 100;
 
         if (isFinished) {
             setRaceState("finished");
@@ -639,16 +698,16 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
         setPlayers(p => p.map(player => {
             if (player.id === currentUserId) {
-                return { ...player, progress: stats.progress, wpm: stats.wpm, correctChars: stats.correctChars, status: isFinished ? "finished" : "playing" };
+                return { ...player, progress: progress, wpm: wpm, correctChars: correctChars, status: isFinished ? "finished" : "playing" };
             }
             return player;
         }));
 
         if (isRealtime && user && roomId) {
             syncLive({
-                progress: stats.progress,
-                wpm: stats.wpm,
-                correctChars: Math.floor(stats.correctChars),
+                progress: progress,
+                wpm: wpm,
+                correctChars: Math.floor(correctChars),
                 status: isFinished ? "finished" : "playing",
             });
         }
@@ -772,21 +831,36 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
     if (!mounted) return null;
 
+    if (roomNotFound) {
+        return (
+            <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background gap-6 p-4">
+                <div className="text-6xl">🚫</div>
+                <h2 className="text-3xl font-display font-bold">Room Not Found</h2>
+                <p className="text-text-dim text-center max-w-sm">
+                    The room code <span className="font-mono text-accent font-bold">{roomCode}</span> does not exist or has already ended.
+                </p>
+                <Button onClick={onLeave} className="mt-2">
+                    Back to Multiplayer
+                </Button>
+            </div>
+        );
+    }
+
     if (raceState === "waiting") {
         return (
             <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background p-4">
-                 <h2 className="text-3xl font-display font-bold mb-8">Waiting for players...</h2>
-                 
-                 {roomCode && (
-                     <div className="mb-8 flex flex-col items-center gap-2">
+                <h2 className="text-3xl font-display font-bold mb-8">Waiting for players...</h2>
+
+                {roomCode && (
+                    <div className="mb-8 flex flex-col items-center gap-2">
                         <div className="text-sm text-text-dim uppercase tracking-wider font-semibold">Room Code</div>
                         <div className="flex items-center gap-2 bg-[#1A1A1A] p-2 pr-4 rounded-xl border border-white/10">
                             <span className="text-2xl font-mono font-bold px-4 py-2 bg-black/30 rounded-lg tracking-widest text-accent">
                                 {roomCode}
                             </span>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={copyLink}
                                 className="hover:bg-white/10"
                                 title="Copy Invite Link"
@@ -795,27 +869,27 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                             </Button>
                         </div>
                         <div className="text-xs text-text-dim/50">Share this code or link to invite friends</div>
-                     </div>
-                 )}
+                    </div>
+                )}
 
-                 <div className="w-full max-w-md space-y-4 mb-8">
-                     {players.map(p => (
-                         <div key={p.id} className="flex items-center gap-4 p-4 bg-[#141414] rounded-xl border border-white/5">
-                             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold">
-                                 {p.name.charAt(0).toUpperCase()}
-                             </div>
-                             <span className="font-medium flex-1">{p.name}</span>
-                             <span className="text-xs text-text-dim px-2 py-1 bg-white/5 rounded uppercase tracking-wider">Ready</span>
-                         </div>
-                     ))}
-                 </div>
-                 {user && hostId === user.id ? (
-                     <Button onClick={handleStartRace} className="w-full max-w-md py-6 text-lg font-bold">
-                         Start Race
-                     </Button>
-                 ) : (
-                     <div className="text-text-dim animate-pulse">Waiting for host to start...</div>
-                 )}
+                <div className="w-full max-w-md space-y-4 mb-8">
+                    {players.map(p => (
+                        <div key={p.id} className="flex items-center gap-4 p-4 bg-[#141414] rounded-xl border border-white/5">
+                            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold">
+                                {p.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-medium flex-1">{p.name}</span>
+                            <span className="text-xs text-text-dim px-2 py-1 bg-white/5 rounded uppercase tracking-wider">Ready</span>
+                        </div>
+                    ))}
+                </div>
+                {user && hostId === user.id ? (
+                    <Button onClick={handleStartRace} className="w-full max-w-md py-6 text-lg font-bold">
+                        Start Race
+                    </Button>
+                ) : (
+                    <div className="text-text-dim animate-pulse">Waiting for host to start...</div>
+                )}
             </div>
         );
     }
