@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { User, Activity, FileText, Zap, ChevronDown } from "lucide-react";
+import { User, Activity, FileText, Zap, ChevronDown, TrendingUp, Target, Clock, Hash } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -81,7 +83,7 @@ export function ProfileView() {
                 duration: row.duration_seconds,
             }));
 
-            const stats = (statsRow ?? null) as {
+            const s = (statsRow ?? null) as {
                 best_wpm?: number;
                 best_accuracy?: number;
                 total_tests?: number;
@@ -90,14 +92,14 @@ export function ProfileView() {
                 avg_accuracy?: number;
             } | null;
 
-            if (stats) {
+            if (s) {
                 setStats({
-                    wpm: stats.best_wpm ?? 0,
-                    accuracy: stats.best_accuracy ?? 0,
-                    tests: stats.total_tests ?? 0,
-                    timeTyped: Math.floor((stats.total_time_typed_seconds ?? 0) / 60),
-                    avgWpm: stats.avg_wpm ?? 0,
-                    avgAccuracy: stats.avg_accuracy ?? 0,
+                    wpm: s.best_wpm ?? 0,
+                    accuracy: s.best_accuracy ?? 0,
+                    tests: s.total_tests ?? 0,
+                    timeTyped: Math.floor((s.total_time_typed_seconds ?? 0) / 60),
+                    avgWpm: s.avg_wpm ?? 0,
+                    avgAccuracy: s.avg_accuracy ?? 0,
                     history: historyRows,
                 });
             } else if (historyRows.length > 0) {
@@ -121,71 +123,98 @@ export function ProfileView() {
         void load();
     }, [supabaseReady, user]);
 
+    const statCards = [
+        { label: "Personal Best", value: stats.wpm, suffix: " WPM", icon: TrendingUp, color: "text-accent", delay: 0 },
+        { label: "Top Accuracy", value: stats.accuracy, suffix: "%", icon: Target, color: "text-accent-secondary", delay: 100 },
+        { label: "Total Tests", value: stats.tests, suffix: "", icon: Hash, color: "text-foreground", delay: 200 },
+        { label: "Time Typed", value: null, display: formatHours(stats.timeTyped), icon: Clock, color: "text-foreground", delay: 300 },
+    ];
+
     return (
         <div className="w-full max-w-5xl pt-4 lg:pt-8 font-sans">
 
             {/* Header Profile */}
-            <div className="w-full bg-linear-to-br from-[#1A1A1A] to-[#0F0F0F] border border-white/5 rounded-4xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8 shadow-2xl relative overflow-hidden">
+            <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full glass rounded-3xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8 shadow-2xl relative overflow-hidden"
+            >
+                {/* Decorative accent glow */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/6 rounded-full blur-[100px] pointer-events-none" />
 
                 {/* Avatar */}
-                <div className="w-32 h-32 rounded-full bg-linear-to-tr from-accent/20 to-accent/5 p-0.5 shadow-[0_0_30px_rgba(245,166,35,0.15)] shrink-0">
-                    <div className="w-full h-full rounded-full bg-[#141414] border border-white/10 flex items-center justify-center relative overflow-hidden group hover:cursor-pointer">
-                        <User size={48} className="text-text-dim group-hover:text-foreground transition-colors" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <div className="w-28 h-28 rounded-full p-[2px] shrink-0 relative group">
+                    <div className="absolute inset-0 rounded-full bg-linear-to-tr from-accent/40 to-accent-secondary/30 blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative w-full h-full rounded-full bg-panel-bg border border-white/8 flex items-center justify-center overflow-hidden cursor-pointer">
+                        <User size={40} className="text-text-dim group-hover:text-foreground transition-colors" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                             <span className="text-xs font-bold tracking-widest uppercase">Edit</span>
                         </div>
                     </div>
                 </div>
 
-                {/* User Info & Quick Stats */}
+                {/* User Info */}
                 <div className="flex-1 flex flex-col w-full">
                     <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4">
                         <div className="flex flex-col items-center md:items-start gap-2">
                             <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">{displayName}</h1>
-                            <span className="text-sm font-medium text-text-dim bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                            <span className="text-xs font-medium text-text-dim bg-white/4 px-3 py-1 rounded-full border border-white/6">
                                 {memberSince}
                             </span>
                         </div>
-                        <Button variant="outline" className="px-5 py-5 sm:py-2.5 rounded-xl text-sm font-medium">
+                        <Button variant="outline" className="px-5 py-2.5 rounded-xl text-sm font-medium">
                             Edit Profile
                         </Button>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center md:text-left">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Personal Best</span>
-                            <span className="text-2xl font-mono font-bold text-accent">{stats.wpm} <span className="text-sm">WPM</span></span>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Top Accuracy</span>
-                            <span className="text-2xl font-mono font-bold text-foreground">{stats.accuracy}%</span>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Total Tests</span>
-                            <span className="text-2xl font-mono font-bold text-foreground">{stats.tests}</span>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <span className="text-text-dim text-xs uppercase font-bold tracking-wider">Time Typed</span>
-                            <span className="text-xl font-mono font-bold text-foreground mt-1">{formatHours(stats.timeTyped)}</span>
-                        </div>
+                    {/* Quick stats grid with CountUp */}
+                    <div className="mt-8 pt-8 border-t border-white/6 grid grid-cols-2 lg:grid-cols-4 gap-4 text-center md:text-left">
+                        {statCards.map((stat, i) => (
+                            <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 + i * 0.08 }}
+                                className="flex flex-col gap-1"
+                            >
+                                <div className="flex items-center gap-1.5 justify-center md:justify-start">
+                                    <stat.icon size={12} className="text-text-dim" />
+                                    <span className="text-text-dim text-xs uppercase font-bold tracking-wider">{stat.label}</span>
+                                </div>
+                                <span className={`text-2xl font-mono font-bold ${stat.color}`}>
+                                    {stat.value !== null ? (
+                                        <CountUp end={stat.value} duration={1200} delay={stat.delay} decimals={stat.label === "Top Accuracy" ? 1 : 0} suffix={stat.suffix} />
+                                    ) : (
+                                        stat.display
+                                    )}
+                                </span>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
-                {/* Left Col: Additional Stats & Graph Placeholder */}
-                <div className="lg:col-span-2 space-y-8">
+                {/* Left Col: Performance + History */}
+                <div className="lg:col-span-2 space-y-6">
 
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl p-6 sm:p-8">
+                    {/* Performance Chart */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="glass rounded-3xl p-6 sm:p-8"
+                    >
                         <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
-                                <Activity size={18} className="text-accent" /> Recent Performance
+                            <h3 className="text-base font-display font-medium text-foreground flex items-center gap-2">
+                                <Activity size={16} className="text-accent" /> Recent Performance
                             </h3>
                             <DropdownMenu open={timeframeOpen} onOpenChange={setTimeframeOpen}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-auto bg-[#0F0F0F] border border-white/5 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none gap-2">
-                                        {timeframe} <ChevronDown size={12} className="opacity-50" />
+                                    <Button variant="ghost" className="h-auto bg-white/3 border border-white/6 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none gap-2">
+                                        {timeframe} <ChevronDown size={12} className="opacity-40" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -195,34 +224,49 @@ export function ProfileView() {
                             </DropdownMenu>
                         </div>
 
-                        {/* CSS-based Mock Chart */}
+                        {/* Bar Chart */}
                         <div className="w-full h-48 flex items-end gap-1 sm:gap-2 justify-between mt-6 group">
                             {stats.history.slice(0, 15).reverse().map((test, i) => (
-                                <div key={i} className="relative flex-1 flex flex-col items-center justify-end h-full group/bar">
+                                <motion.div
+                                    key={i}
+                                    initial={{ scaleY: 0 }}
+                                    animate={{ scaleY: 1 }}
+                                    transition={{ delay: 0.5 + i * 0.03, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                                    className="relative flex-1 flex flex-col items-center justify-end h-full group/bar origin-bottom"
+                                >
                                     <div
-                                        className="w-full bg-[#333] group-hover:opacity-40 hover:opacity-100! hover:bg-accent hover:shadow-[0_0_15px_rgba(245,166,35,0.4)] transition-all rounded-t-sm"
-                                        style={{ height: `${Math.max(10, (test.wpm / 140) * 100)}%` }}
+                                        className="w-full rounded-t-md transition-all duration-200 group-hover:opacity-30 hover:opacity-100!"
+                                        style={{
+                                            height: `${Math.max(10, (test.wpm / 140) * 100)}%`,
+                                            background: `linear-gradient(to top, rgba(var(--accent-rgb), 0.4), rgba(var(--accent-rgb), 0.15))`,
+                                        }}
                                     />
-                                    {/* Tooltip on hover */}
-                                    <div className="absolute -top-10 bg-[#0F0F0F] border border-white/10 px-3 py-1.5 rounded-lg text-xs font-mono opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap shadow-xl text-center">
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-10 glass px-3 py-1.5 rounded-lg text-xs font-mono opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap shadow-xl text-center">
                                         <span className="text-accent font-bold block">{test.wpm} WPM</span>
                                         <span className="text-text-dim text-[10px]">{test.date}</span>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl overflow-hidden">
+                    {/* History Table */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="glass rounded-3xl overflow-hidden"
+                    >
                         <div className="p-6 border-b border-white/5">
-                            <h3 className="text-lg font-display font-medium text-foreground flex items-center gap-2">
-                                <FileText size={18} className="text-text-dim" /> Test History
+                            <h3 className="text-base font-display font-medium text-foreground flex items-center gap-2">
+                                <FileText size={16} className="text-text-dim" /> Test History
                             </h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left font-sans text-sm">
                                 <thead>
-                                    <tr className="border-b border-white/5 bg-[#0F0F0F]/50">
+                                    <tr className="border-b border-white/4">
                                         <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">Date</th>
                                         <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">Mode</th>
                                         <th className="px-6 py-4 text-xs uppercase font-bold tracking-wider text-text-dim">WPM</th>
@@ -231,42 +275,57 @@ export function ProfileView() {
                                 </thead>
                                 <tbody>
                                     {stats.history.slice(0, 5).map((test, i) => (
-                                        <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                        <motion.tr
+                                            key={i}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 0.6 + i * 0.05 }}
+                                            className="border-b border-white/4 hover:bg-white/3 transition-colors"
+                                        >
                                             <td className="px-6 py-4 text-text-dim font-mono text-xs">{test.date}</td>
                                             <td className="px-6 py-4 text-foreground">{test.mode}</td>
                                             <td className="px-6 py-4 font-mono font-bold text-accent">{test.wpm}</td>
                                             <td className="px-6 py-4 font-mono">{test.accuracy}%</td>
-                                        </tr>
+                                        </motion.tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <div className="p-4 bg-[#0F0F0F]/30 text-center flex justify-center">
+                        <div className="p-4 text-center flex justify-center border-t border-white/4">
                             <Button variant="ghost" className="text-xs font-bold text-text-dim hover:text-white uppercase tracking-widest px-4">See complete history</Button>
                         </div>
-                    </div>
+                    </motion.div>
 
                 </div>
 
-                {/* Right Col: Details */}
-                <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl p-6 h-fit">
-                    <h3 className="text-lg font-display font-medium text-foreground mb-6 flex items-center gap-2">
-                        <Zap size={18} className="text-accent" /> Deep Insights
+                {/* Right Col: Deep Insights */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.45 }}
+                    className="glass rounded-3xl p-6 h-fit"
+                >
+                    <h3 className="text-base font-display font-medium text-foreground mb-6 flex items-center gap-2">
+                        <Zap size={16} className="text-accent" /> Deep Insights
                     </h3>
 
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
                             <span className="text-text-dim text-xs">Average WPM (All time)</span>
-                            <span className="text-xl font-mono text-foreground font-medium">{stats.avgWpm}</span>
+                            <span className="text-xl font-mono text-foreground font-medium">
+                                <CountUp end={stats.avgWpm} duration={1000} delay={500} />
+                            </span>
                         </div>
                         <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
                             <span className="text-text-dim text-xs">Average Accuracy</span>
-                            <span className="text-xl font-mono text-foreground font-medium">{stats.avgAccuracy}%</span>
+                            <span className="text-xl font-mono text-foreground font-medium">
+                                <CountUp end={stats.avgAccuracy} duration={1000} delay={600} decimals={1} suffix="%" />
+                            </span>
                         </div>
                         <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
                             <span className="text-text-dim text-xs">Favorite Mode</span>
                             <span className="text-base text-foreground font-medium flex items-center gap-2 mt-1">
-                                <span className="px-2 py-1 bg-white/5 rounded text-xs border border-white/10 font-mono">Time 60s</span>
+                                <span className="px-2.5 py-1 bg-white/4 rounded-lg text-xs border border-white/6 font-mono">Time 60s</span>
                             </span>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -276,8 +335,9 @@ export function ProfileView() {
                             </span>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
         </div>
     );
 }
+

@@ -22,15 +22,11 @@ const DropdownMenuContent = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
 >(({ className, sideOffset = 8, ...props }, ref) => (
     <DropdownMenuPrimitive.Portal>
-        {/* We use an AnimatePresence wrapper when using it outside, or just use CSS animations, 
-        but to match the requested design perfectly we can use Radix UI CSS animations, 
-        or Framer Motion inside asChild. For simplicity with Radix, we style using tailwind and keyframes. 
-        However, the user had nice framer motion: initial={{opacity:0, y:10, scale:0.95}} */}
         <DropdownMenuPrimitive.Content
             ref={ref}
             sideOffset={sideOffset}
             className={cn(
-                "z-50 min-w-[120px] overflow-hidden rounded-xl border border-white/10 bg-[#141414] py-1 shadow-2xl",
+                "z-50 min-w-[120px] overflow-hidden rounded-xl border border-white/8 py-1 shadow-2xl glass",
                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
                 className
             )}
@@ -50,10 +46,10 @@ const DropdownMenuItem = React.forwardRef<
     <DropdownMenuPrimitive.Item
         ref={ref}
         className={cn(
-            "relative flex cursor-pointer select-none items-center rounded-sm px-4 py-2 text-sm outline-none transition-colors",
-            "text-text-dim hover:bg-white/5 hover:text-white",
+            "relative flex cursor-pointer select-none items-center rounded-lg mx-1 px-3 py-2 text-sm outline-none transition-colors",
+            "text-text-dim hover:bg-white/6 hover:text-white",
             "data-disabled:pointer-events-none data-disabled:opacity-50",
-            active && "bg-accent/10 text-accent font-bold hover:bg-accent/10 hover:text-accent",
+            active && "bg-accent/8 text-accent font-bold hover:bg-accent/10 hover:text-accent",
             inset && "pl-8",
             className
         )}
@@ -104,3 +100,4 @@ export {
     DropdownMenuSub,
     DropdownMenuRadioGroup,
 }
+

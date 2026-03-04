@@ -3,8 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Keyboard, Trophy, Users, User, Settings, Play, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Keyboard, Trophy, Users, User, Settings, Play, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -15,59 +16,113 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth/auth-context";
 
+const navItems = [
+    { path: "/", icon: Keyboard, label: "Core" },
+    { path: "/multiplayer", icon: Users, label: "Arena" },
+    { path: "/learn", icon: Play, label: "Academy" },
+    { path: "/leaderboard", icon: Trophy, label: "Rankings" },
+];
+
 export function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
     const [accountOpen, setAccountOpen] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
     const { user, isLoading, supabaseReady, signOut } = useAuth();
+    const navRef = useRef<HTMLDivElement>(null);
+    const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav) return;
+
+        const activeIndex = navItems.findIndex(
+            (item) => pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path))
+        );
+
+        const links = nav.querySelectorAll<HTMLAnchorElement>("[data-nav-link]");
+        const activeLink = links[activeIndex];
+
+        if (activeLink) {
+            setPillStyle({
+                left: activeLink.offsetLeft,
+                width: activeLink.offsetWidth,
+                opacity: 1,
+            });
+        } else {
+            setPillStyle((prev) => ({ ...prev, opacity: 0 }));
+        }
+    }, [pathname]);
 
     return (
-        <header className="w-full max-w-6xl px-8 py-6 flex items-center justify-between z-10 relative">
-            <Link href="/" className="flex items-center gap-4 cursor-pointer group">
-                <Image
-                    src="/typecade-logo.png"
-                    alt="Typecade"
-                    width={40}
-                    height={40}
-                    className="rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] transition-all duration-300"
-                />
-                <span className="font-display font-bold text-2xl tracking-tight opacity-90 group-hover:opacity-100 transition-opacity">
+        <header className="w-full max-w-6xl px-6 lg:px-8 py-5 flex items-center justify-between z-20 relative">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-3 cursor-pointer group shrink-0">
+                <div className="relative">
+                    <Image
+                        src="/typecade-logo.png"
+                        alt="Typecade"
+                        width={36}
+                        height={36}
+                        className="rounded-xl group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 rounded-xl bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+                <span className="font-display font-bold text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors">
                     Typecade
                 </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-2 font-sans text-sm font-medium px-2 py-1.5 bg-transparent">
-                {[
-                    { path: "/", icon: Keyboard, label: "Core" },
-                    { path: "/multiplayer", icon: Users, label: "Arena" },
-                    { path: "/learn", icon: Play, label: "Academy" },
-                    { path: "/leaderboard", icon: Trophy, label: "Rankings" },
-                ].map((item) => {
+            {/* Desktop Nav */}
+            <nav
+                ref={navRef}
+                className="hidden md:flex items-center relative glass rounded-2xl px-1.5 py-1.5"
+            >
+                {/* Animated pill */}
+                <motion.div
+                    className="absolute top-1.5 bottom-1.5 rounded-xl bg-white/8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
+                    animate={{
+                        left: pillStyle.left,
+                        width: pillStyle.width,
+                        opacity: pillStyle.opacity,
+                    }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 28,
+                    }}
+                />
+
+                {navItems.map((item) => {
                     const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
                     return (
-                        <Button
-                            asChild
+                        <Link
                             key={item.path}
-                            variant={isActive ? "active" : "ghost"}
-                            className="gap-2 px-5 py-2.5"
+                            href={item.path}
+                            data-nav-link
+                            className={`relative z-10 flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-xl ${isActive
+                                ? "text-white"
+                                : "text-text-dim hover:text-white/80"
+                                }`}
                         >
-                            <Link href={item.path}>
-                                <item.icon size={16} className={isActive ? "text-accent" : ""} />
-                                <span>{item.label}</span>
-                            </Link>
-                        </Button>
+                            <item.icon size={15} className={isActive ? "text-accent" : ""} />
+                            <span>{item.label}</span>
+                        </Link>
                     );
                 })}
             </nav>
 
-            <div className="flex items-center gap-3 text-text-dim">
+            {/* Right side actions */}
+            <div className="flex items-center gap-2">
                 {user ? (
                     <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="gap-2 px-3">
-                                <User size={18} />
-                                <span className="hidden sm:inline max-w-35 truncate">{user.email ?? "Akun"}</span>
-                                <ChevronDown size={14} className={`opacity-60 transition-transform ${accountOpen ? "rotate-180" : ""}`} />
+                                <div className="w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20">
+                                    <User size={14} className="text-accent" />
+                                </div>
+                                <span className="hidden sm:inline max-w-35 truncate text-sm">{user.email ?? "Account"}</span>
+                                <ChevronDown size={12} className={`opacity-50 transition-transform duration-200 ${accountOpen ? "rotate-180" : ""}`} />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -81,21 +136,61 @@ export function Navbar() {
                     <Button
                         asChild
                         variant="primary"
-                        className="px-4"
+                        className="px-5 text-sm"
                         disabled={!supabaseReady || isLoading}
                     >
                         <Link href="/auth">Sign in</Link>
                     </Button>
                 )}
+
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="p-2.5"
+                    className="p-2.5 hidden md:flex"
                     aria-label="Settings"
                 >
-                    <Settings size={20} />
+                    <Settings size={18} />
+                </Button>
+
+                {/* Mobile hamburger */}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-2.5 md:hidden"
+                    aria-label="Menu"
+                    onClick={() => setMobileOpen(!mobileOpen)}
+                >
+                    {mobileOpen ? <X size={20} /> : <Menu size={20} />}
                 </Button>
             </div>
+
+            {/* Mobile nav drawer */}
+            {mobileOpen && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-4 right-4 glass rounded-2xl p-3 md:hidden z-50 mt-2"
+                >
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
+                        return (
+                            <Link
+                                key={item.path}
+                                href={item.path}
+                                onClick={() => setMobileOpen(false)}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive
+                                    ? "text-white bg-white/6"
+                                    : "text-text-dim hover:text-white hover:bg-white/4"
+                                    }`}
+                            >
+                                <item.icon size={16} className={isActive ? "text-accent" : ""} />
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </motion.div>
+            )}
         </header>
     );
 }

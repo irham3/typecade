@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTypingEngine } from "../hooks/use-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { RotateCcw, Share2, ArrowRight, RefreshCw } from "lucide-react";
+import { RotateCcw, Share2, ArrowRight, RefreshCw, Target, Clock, Type } from "lucide-react";
 import { generateQuote, generateWords } from "@/lib/words";
 import { Button } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
@@ -39,6 +40,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         typeof document !== "undefined" && document.activeElement === document.querySelector("input[autofocus]")
     );
     const containerRef = useRef<HTMLDivElement>(null);
+    const [resultKey, setResultKey] = useState(0);
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
         if (!supabaseReady || !user) return false;
@@ -77,6 +79,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         onFinish: (finalWpm, finalAcc, timeTaken) => {
             addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption} ` });
             pendingResultRef.current = { wpm: finalWpm, acc: finalAcc, timeTaken };
+            setResultKey(prev => prev + 1);
             void saveResult(finalWpm, finalAcc, timeTaken).then((ok) => {
                 if (ok) pendingResultRef.current = null;
             });
@@ -111,7 +114,6 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         }
     }, [inputRef, status]);
 
-    // Track focus state
     useEffect(() => {
         const input = inputRef.current;
         if (!input) return;
@@ -128,7 +130,6 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         };
     }, [inputRef]);
 
-    // Line tracking for scroll
     useEffect(() => {
         if (status === "idle") {
             const timer = setTimeout(() => setTranslateY(0), 0);
@@ -138,7 +139,6 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         if (!activeCharRef.current) return;
         const charTop = activeCharRef.current.offsetTop;
 
-        // Use the container's actual computed line-height to ensure we scroll the correct amount
         const parentElem = activeCharRef.current.parentElement?.parentElement;
         if (!parentElem) return;
 
@@ -147,9 +147,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
 
         if (lineHeight === 0) return;
 
-        // Add a tiny buffer (2px) to charTop to avoid subpixel rounding issues that might place it on the previous line index
         const lineIndex = Math.floor((charTop + 2) / lineHeight);
-        // Keep 3 lines visible: scroll up if line index exceeds 1
         const newTranslate = lineIndex > 1 ? (lineIndex - 1) * lineHeight : 0;
         const timer = setTimeout(() => setTranslateY(newTranslate), 0);
         return () => clearTimeout(timer);
@@ -167,12 +165,10 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         });
     }, [saveResult, supabaseReady, user]);
 
-    // Progress percentage for Words/Quote modes
     const progress = mode !== "time"
         ? Math.min(100, Math.floor((typedChars.length / (text.length || 1)) * 100))
         : null;
 
-    // Format text for rendering
     const renderText = () => {
         const words = text.split(" ");
         let globalIndex = 0;
@@ -186,7 +182,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                 const index = globalIndex + cIdx;
                 const typedChar = typedChars[index];
 
-                let charStatusClass = "text-text-dim/50";
+                let charStatusClass = "text-text-dim/40";
                 if (typedChar != null) {
                     if (typedChar === char) {
                         charStatusClass = "text-foreground";
@@ -211,12 +207,11 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                 );
             });
 
-            // Space character
             const spaceIndex = globalIndex + wordLen;
             const spaceTyped = typedChars[spaceIndex];
             const isSpaceCurrent = spaceIndex === typedChars.length;
 
-            let spaceStatusClass = "text-text-dim/50";
+            let spaceStatusClass = "text-text-dim/40";
             if (spaceTyped != null) {
                 if (spaceTyped === " ") {
                     spaceStatusClass = "text-foreground";
@@ -270,16 +265,16 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="w-full relative mt-6"
+                        className="w-full relative mt-4"
                     >
-                        {/* Live stats bar — only visible while playing */}
-                        <div className={`flex items-center justify-between font-mono mb-5 transition-all duration-300 ${status === "playing" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+                        {/* Live stats bar */}
+                        <div className={`flex items-center justify-between font-mono mb-4 transition-all duration-300 ${status === "playing" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
                             <div className="flex items-center gap-5">
                                 <div className="flex items-baseline gap-1.5">
-                                    <span className="text-2xl font-bold text-accent tabular-nums">{wpm}</span>
+                                    <span className="text-2xl font-bold text-accent tabular-nums text-glow-accent">{wpm}</span>
                                     <span className="text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
                                 </div>
-                                <div className="w-px h-4 bg-white/10" />
+                                <div className="w-px h-4 bg-white/6" />
                                 <div className="flex items-baseline gap-1.5">
                                     <span className="text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
                                     <span className="text-[10px] text-text-dim uppercase tracking-widest">%</span>
@@ -300,7 +295,6 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                             <div
                                 className="w-full font-mono text-2xl sm:text-[1.75rem] leading-[1.8] tracking-tight text-left py-4 relative cursor-text select-none"
                             >
-                                {/* Text window — exactly 3 lines with fade masks */}
                                 <div
                                     className="h-[5.4em] overflow-hidden relative w-full"
                                     style={{
@@ -325,7 +319,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer rounded-2xl backdrop-blur-[6px] bg-background/40"
+                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer rounded-2xl backdrop-blur-[6px] bg-background/50"
                                         onClick={focusInput}
                                     >
                                         <span className="text-text-dim text-sm font-sans font-medium tracking-wide">
@@ -336,25 +330,23 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                             </AnimatePresence>
                         </div>
 
-                        {/* Bottom progress line for time mode */}
-                        {status === "playing" && mode === "time" && (
-                            <div className="w-full h-0.5 bg-white/5 rounded-full mt-2 overflow-hidden">
+                        {/* Progress line */}
+                        {status === "playing" && (
+                            <div className="w-full h-0.5 bg-white/4 rounded-full mt-2 overflow-hidden">
                                 <motion.div
-                                    className="h-full bg-accent/40 rounded-full"
-                                    initial={{ width: "100%" }}
-                                    animate={{ width: `${(timeLeft / duration) * 100}%` }}
-                                    transition={{ duration: 0.5, ease: "linear" }}
-                                />
-                            </div>
-                        )}
-
-                        {/* Bottom progress line for words/quote mode */}
-                        {status === "playing" && mode !== "time" && (
-                            <div className="w-full h-0.5 bg-white/5 rounded-full mt-2 overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-accent/40 rounded-full"
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    className="h-full rounded-full"
+                                    style={{
+                                        background: "linear-gradient(90deg, rgba(129,140,248,0.6), rgba(52,211,153,0.4))",
+                                    }}
+                                    animate={{
+                                        width: mode === "time"
+                                            ? `${(timeLeft / duration) * 100}%`
+                                            : `${progress}%`,
+                                    }}
+                                    transition={{
+                                        duration: mode === "time" ? 0.5 : 0.3,
+                                        ease: "linear",
+                                    }}
                                 />
                             </div>
                         )}
@@ -388,38 +380,64 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                         </div>
                     </motion.div>
                 ) : (
-                    /* ── Results Screen ── */
+                    /* ── Results Screen — redesigned with CountUp ── */
                     <motion.div
-                        key="typing-finished"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        key={`typing-finished-${resultKey}`}
+                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                         className="w-full flex flex-col mt-8"
                     >
-                        {/* Primary stat */}
+                        {/* Primary stat with CountUp */}
                         <div className="flex flex-col items-center text-center mb-10">
-                            <span className="text-[7rem] sm:text-[9rem] font-mono font-bold text-foreground leading-none tracking-tighter">
-                                {wpm}
-                            </span>
+                            <div className="text-[7rem] sm:text-[9rem] font-mono font-bold text-foreground leading-none tracking-tighter text-glow-accent">
+                                <CountUp
+                                    end={wpm}
+                                    duration={1500}
+                                    className="tabular-nums"
+                                />
+                            </div>
                             <span className="text-sm font-mono text-accent uppercase tracking-[0.25em] font-semibold mt-1">
                                 words per minute
                             </span>
                         </div>
 
-                        {/* Secondary stats grid */}
-                        <div className="grid grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5 mx-auto w-full max-w-lg">
-                            <div className="bg-background flex flex-col items-center py-5 px-4">
+                        {/* Secondary stats grid — premium cards */}
+                        <div className="grid grid-cols-3 gap-3 mx-auto w-full max-w-lg">
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.15 }}
+                                className="glass rounded-2xl flex flex-col items-center py-5 px-4 group hover:glow-accent transition-shadow duration-300"
+                            >
+                                <Target size={16} className="text-accent-secondary mb-2 opacity-60" />
                                 <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Accuracy</span>
-                                <span className="text-2xl font-mono font-bold text-foreground">{accuracy}%</span>
-                            </div>
-                            <div className="bg-background flex flex-col items-center py-5 px-4">
+                                <span className="text-2xl font-mono font-bold text-foreground">
+                                    <CountUp end={accuracy} duration={1200} delay={200} suffix="%" />
+                                </span>
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.25 }}
+                                className="glass rounded-2xl flex flex-col items-center py-5 px-4"
+                            >
+                                <Clock size={16} className="text-accent mb-2 opacity-60" />
                                 <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Time</span>
                                 <span className="text-2xl font-mono font-bold text-foreground">{mode === "time" ? `${limit}s` : `${Math.ceil(typedChars.length / 5)}s`}</span>
-                            </div>
-                            <div className="bg-background flex flex-col items-center py-5 px-4">
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.35 }}
+                                className="glass rounded-2xl flex flex-col items-center py-5 px-4"
+                            >
+                                <Type size={16} className="text-accent mb-2 opacity-60" />
                                 <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Characters</span>
-                                <span className="text-2xl font-mono font-bold text-foreground">{typedChars.length}</span>
-                            </div>
+                                <span className="text-2xl font-mono font-bold text-foreground">
+                                    <CountUp end={typedChars.length} duration={1000} delay={300} />
+                                </span>
+                            </motion.div>
                         </div>
 
                         {/* Action buttons */}

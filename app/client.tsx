@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { useStore } from "@/lib/store";
 import { Globe, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Typewriter } from "@/components/ui/typewriter";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -13,14 +15,23 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-// Features dynamically imported to prevent hydration errors from random text generation
 const TypingView = dynamic(
     () => import("@/features/typing/components/typing-area").then((mod) => mod.TypingView),
     { ssr: false }
 );
 
+const modeOptions = ["Words", "Quote", "Time", "Custom"] as const;
+type ModeOption = (typeof modeOptions)[number];
+
+const subOptions: Record<string, string[]> = {
+    Words: ["10", "25", "50", "100"],
+    Time: ["15s", "30s", "60s", "120s"],
+    Quote: ["Easy", "Medium", "Hard"],
+    Custom: ["Easy", "Medium", "Hard"],
+};
+
 export function HomeClient() {
-    const [activeTab, setActiveTab] = useState("Time");
+    const [activeTab, setActiveTab] = useState<ModeOption>("Time");
     const [subOption, setSubOption] = useState("60s");
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
 
@@ -31,88 +42,85 @@ export function HomeClient() {
     const numbers = useStore(state => state.numbers);
     const setNumbers = useStore(state => state.setNumbers);
 
-    const modeOptions = ["Words", "Quote", "Time", "Custom"];
-
-    const subOptions: Record<string, string[]> = {
-        Words: ["10", "25", "50", "100"],
-        Time: ["15s", "30s", "60s", "120s"],
-        Quote: ["Easy", "Medium", "Hard"],
-        Custom: ["Easy", "Medium", "Hard"],
-    };
-
     return (
-        <main className="flex-1 w-full max-w-5xl px-6 flex flex-col items-center justify-start pb-20 relative pt-10">
+        <main className="flex-1 w-full max-w-5xl px-6 flex flex-col items-center justify-start pb-20 relative pt-6">
+
+            {/* ── Hero tagline ── */}
+            <div className="text-center mb-8">
+                <h1 className="text-sm font-mono text-text-dim tracking-widest uppercase mb-2">
+                    Type faster. Think clearer.
+                </h1>
+                <div className="text-lg sm:text-xl font-display font-semibold text-foreground/60">
+                    Master your{" "}
+                    <Typewriter
+                        words={["speed", "accuracy", "rhythm", "flow", "consistency"]}
+                        typingSpeed={90}
+                        deletingSpeed={60}
+                        pauseDuration={2500}
+                        className="text-accent"
+                    />
+                </div>
+            </div>
+
             {/* ── Settings Row ── */}
-            <div className="w-full flex flex-wrap items-center justify-center gap-x-1 gap-y-2 mb-2">
-                {/* Mode selector */}
-                <div className="flex items-center gap-1 text-sm font-sans">
-                    {modeOptions.map(tab => (
-                        <Button
-                            key={tab}
-                            variant={activeTab === tab ? "active" : "ghost"}
-                            className="px-3.5 py-1.5 text-sm"
-                            onClick={() => {
-                                setActiveTab(tab);
-                                setSubOption(
-                                    tab === "Words" ? "50"
-                                        : tab === "Time" ? "60s"
-                                            : "Medium"
-                                );
-                            }}
-                        >
-                            {tab}
-                        </Button>
-                    ))}
-                </div>
+            <div className="w-full flex flex-wrap items-center justify-center gap-3 mb-4">
+                {/* Mode selector using SegmentedControl */}
+                <SegmentedControl
+                    options={[...modeOptions]}
+                    value={activeTab}
+                    onChange={(val) => {
+                        setActiveTab(val as ModeOption);
+                        setSubOption(
+                            val === "Words" ? "50"
+                                : val === "Time" ? "60s"
+                                    : "Medium"
+                        );
+                    }}
+                />
 
-                <span className="text-white/10 mx-1.5 select-none">|</span>
+                <span className="text-white/6 mx-0.5 select-none hidden sm:block">|</span>
 
-                {/* Sub-options */}
-                <div className="flex items-center gap-1 text-sm font-sans">
-                    {subOptions[activeTab]?.map(opt => (
-                        <Button
-                            key={opt}
-                            variant={subOption === opt ? "activeGradient" : "ghost"}
-                            className="px-3 py-1.5 text-sm"
-                            onClick={() => setSubOption(opt)}
-                        >
-                            {opt}
-                        </Button>
-                    ))}
-                </div>
+                {/* Sub-options using SegmentedControl with gradient variant */}
+                <SegmentedControl
+                    options={subOptions[activeTab]}
+                    value={subOption}
+                    onChange={setSubOption}
+                    variant="gradient"
+                    size="sm"
+                />
 
-                <span className="text-white/10 mx-1.5 select-none">|</span>
+                <span className="text-white/6 mx-0.5 select-none hidden sm:block">|</span>
 
                 {/* Toggles */}
-                <div className="flex items-center gap-1 text-sm font-sans">
+                <div className="flex items-center gap-1.5 text-sm font-sans">
                     <Button
                         variant={punctuation ? "activeGradient" : "ghost"}
-                        className="px-3 py-1.5 text-sm"
+                        className="px-3 py-1.5 text-xs"
                         onClick={() => setPunctuation(!punctuation)}
                     >
                         @ punctuation
                     </Button>
                     <Button
                         variant={numbers ? "activeGradient" : "ghost"}
-                        className="px-3 py-1.5 text-sm"
+                        className="px-3 py-1.5 text-xs"
                         onClick={() => setNumbers(!numbers)}
                     >
                         # numbers
                     </Button>
                 </div>
 
-                <span className="text-white/10 mx-1.5 select-none">|</span>
+                <span className="text-white/6 mx-0.5 select-none hidden sm:block">|</span>
 
                 {/* Language */}
                 <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="ghost"
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs"
                         >
-                            <Globe size={14} className="opacity-60" />
+                            <Globe size={13} className="opacity-50" />
                             <span>{language}</span>
-                            <ChevronDown size={12} className={`opacity-40 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
+                            <ChevronDown size={11} className={`opacity-30 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
