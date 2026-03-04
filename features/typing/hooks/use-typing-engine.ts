@@ -6,7 +6,7 @@ interface UseTypingEngineProps {
     text: string;
     duration?: number;
     wordCount?: number;
-    mode: "time" | "words" | "quote";
+    mode: "time" | "words" | "quote" | "custom";
     isFocused?: boolean;
     onFinish?: (wpm: number, acc: number, time: number) => void;
 }

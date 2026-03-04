@@ -2,28 +2,39 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTypingEngine } from "../hooks/use-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { RotateCcw, Share2, ArrowRight, RefreshCw, Target, Clock, Type } from "lucide-react";
+import { RotateCcw, Share2, ArrowRight, Target, Clock, Type, TrendingUp } from "lucide-react";
 import { generateQuote, generateWords } from "@/lib/words";
 import { Button } from "@/components/ui/button";
 import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
-export function TypingView({ activeTab, subOption }: { activeTab: string; subOption: string }) {
+export function TypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
     const { user, supabaseReady } = useAuth();
     const language = useStore(state => state.language);
     const usePunctuation = useStore(state => state.punctuation);
     const useNumbers = useStore(state => state.numbers);
 
-    const mode = activeTab.toLowerCase() as "time" | "words" | "quote";
+    const mode = activeTab.toLowerCase() as "time" | "words" | "quote" | "custom";
     const limit = parseInt(subOption.replace("s", ""));
 
     const getNewText = useCallback(() => {
+        if (mode === "custom" && customText) {
+            if (customShuffle) {
+                const words = customText.split(/\s+/).filter(Boolean);
+                for (let i = words.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [words[i], words[j]] = [words[j], words[i]];
+                }
+                return words.join(" ");
+            }
+            return customText;
+        }
         if (mode === "quote") {
             return generateQuote(language, subOption as "Easy" | "Medium" | "Hard");
         }
         return generateWords(language, mode === "words" ? limit : 50, usePunctuation, useNumbers);
-    }, [language, mode, limit, subOption, usePunctuation, useNumbers]);
+    }, [language, mode, limit, subOption, usePunctuation, useNumbers, customText, customShuffle]);
 
     const [text, setText] = useState(() => {
         if (typeof window === 'undefined') return "";
@@ -379,8 +390,9 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                                 aria-label="Shuffle Words"
                                 title="Generate new words"
                             >
-                                <RefreshCw size={16} className="group-hover:rotate-180 transition-transform duration-500 ease-in-out" />
-                                <span className="text-sm">Shuffle</span>
+                                <TrendingUp size={16} className="group-hover:rotate-12 transition-transform duration-300 ease-in-out opacity-0 w-0" /> {/* dummy spacer for transition */}
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 group-hover:opacity-100 transition-opacity"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
+                                <span className="text-sm">Shuffle Text</span>
                             </Button>
                         </div>
                     </motion.div>
