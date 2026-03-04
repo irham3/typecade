@@ -53,8 +53,8 @@ export function SegmentedControl<T extends string>({
                 className={cn(
                     "absolute top-1 bottom-1 rounded-xl z-0",
                     variant === "gradient"
-                        ? "bg-linear-to-r from-accent/20 to-accent/10 shadow-[0_0_12px_rgba(99,102,241,0.15)]"
-                        : "bg-white/8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
+                        ? "bg-linear-to-r from-accent/15 to-accent/8 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
+                        : "bg-white/8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
                 )}
                 animate={{
                     left: indicatorStyle.left,

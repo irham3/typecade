@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore } from "@/lib/store";
 import { Globe, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Typewriter } from "@/components/ui/typewriter";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -43,110 +42,110 @@ export function HomeClient() {
     const setNumbers = useStore(state => state.setNumbers);
 
     return (
-        <main className="flex-1 w-full max-w-5xl px-6 flex flex-col items-center justify-start pb-20 relative pt-6">
+        <main className="flex-1 w-full max-w-6xl px-6 lg:px-8 flex flex-col items-center justify-center pb-16 relative">
 
-            {/* ── Hero tagline ── */}
-            <div className="text-center mb-8">
-                <h1 className="text-sm font-mono text-text-dim tracking-widest uppercase mb-2">
-                    Type faster. Think clearer.
-                </h1>
-                <div className="text-lg sm:text-xl font-display font-semibold text-foreground/60">
-                    Master your{" "}
-                    <Typewriter
-                        words={["speed", "accuracy", "rhythm", "flow", "consistency"]}
-                        typingSpeed={90}
-                        deletingSpeed={60}
-                        pauseDuration={2500}
-                        className="text-accent"
+            {/* ── Settings toolbar — compact, secondary to navbar ── */}
+            <motion.div layout className="flex items-center justify-center gap-2 mb-8 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <motion.div layout>
+                    <SegmentedControl
+                        options={[...modeOptions]}
+                        value={activeTab}
+                        onChange={(val) => {
+                            setActiveTab(val as ModeOption);
+                            setSubOption(
+                                val === "Words" ? "50"
+                                    : val === "Time" ? "60s"
+                                        : "Medium"
+                            );
+                        }}
+                        className="bg-transparent border-transparent p-0"
                     />
-                </div>
-            </div>
+                </motion.div>
 
-            {/* ── Settings Row ── */}
-            <div className="w-full flex flex-wrap items-center justify-center gap-3 mb-4">
-                {/* Mode selector using SegmentedControl */}
-                <SegmentedControl
-                    options={[...modeOptions]}
-                    value={activeTab}
-                    onChange={(val) => {
-                        setActiveTab(val as ModeOption);
-                        setSubOption(
-                            val === "Words" ? "50"
-                                : val === "Time" ? "60s"
-                                    : "Medium"
-                        );
-                    }}
-                />
+                <motion.div layout className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
 
-                <span className="text-white/6 mx-0.5 select-none hidden sm:block">|</span>
+                <motion.div layout>
+                    <SegmentedControl
+                        options={subOptions[activeTab]}
+                        value={subOption}
+                        onChange={setSubOption}
+                        variant="gradient"
+                        className="bg-transparent border-transparent p-0"
+                    />
+                </motion.div>
 
-                {/* Sub-options using SegmentedControl with gradient variant */}
-                <SegmentedControl
-                    options={subOptions[activeTab]}
-                    value={subOption}
-                    onChange={setSubOption}
-                    variant="gradient"
-                    size="sm"
-                />
-
-                <span className="text-white/6 mx-0.5 select-none hidden sm:block">|</span>
-
-                {/* Toggles */}
-                <div className="flex items-center gap-1.5 text-sm font-sans">
-                    <Button
-                        variant={punctuation ? "activeGradient" : "ghost"}
-                        className="px-3 py-1.5 text-xs"
-                        onClick={() => setPunctuation(!punctuation)}
-                    >
-                        @ punctuation
-                    </Button>
-                    <Button
-                        variant={numbers ? "activeGradient" : "ghost"}
-                        className="px-3 py-1.5 text-xs"
-                        onClick={() => setNumbers(!numbers)}
-                    >
-                        # numbers
-                    </Button>
-                </div>
-
-                <span className="text-white/6 mx-0.5 select-none hidden sm:block">|</span>
-
-                {/* Language */}
-                <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs"
+                <AnimatePresence mode="popLayout">
+                    {(activeTab === "Words" || activeTab === "Time") && (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
+                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
                         >
-                            <Globe size={13} className="opacity-50" />
-                            <span>{language}</span>
-                            <ChevronDown size={11} className={`opacity-30 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {[
-                            { code: "EN", label: "English" },
-                            { code: "ID", label: "Indonesia" }
-                        ].map(lang => (
-                            <DropdownMenuItem
-                                key={lang.code}
-                                active={language === lang.code}
-                                onClick={() => setLanguage(lang.code as "EN" | "ID")}
-                                className="justify-between min-w-30"
+                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+
+                            <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                    variant={punctuation ? "activeGradient" : "ghost"}
+                                    className="px-3 py-1.5 text-sm"
+                                    onClick={() => setPunctuation(!punctuation)}
+                                >
+                                    @ punctuation
+                                </Button>
+                                <Button
+                                    variant={numbers ? "activeGradient" : "ghost"}
+                                    className="px-3 py-1.5 text-sm"
+                                    onClick={() => setNumbers(!numbers)}
+                                >
+                                    # numbers
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <motion.div layout className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+
+                <motion.div layout>
+                    <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0"
                             >
-                                {lang.label}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                                <Globe size={14} className="opacity-50" />
+                                <span>{language}</span>
+                                <ChevronDown size={12} className={`opacity-30 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {[
+                                { code: "EN", label: "English" },
+                                { code: "ID", label: "Indonesia" }
+                            ].map(lang => (
+                                <DropdownMenuItem
+                                    key={lang.code}
+                                    active={language === lang.code}
+                                    onClick={() => setLanguage(lang.code as "EN" | "ID")}
+                                    className="justify-between min-w-30"
+                                >
+                                    {lang.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </motion.div>
+            </motion.div>
+
+            {/* ── Typing Area — contained with accent indicator ── */}
+            <div className="typing-panel w-full px-6 sm:px-8 py-6">
+                <AnimatePresence>
+                    <TypingView activeTab={activeTab} subOption={subOption} />
+                </AnimatePresence>
             </div>
 
-            {/* ── Typing Area ── */}
-            <AnimatePresence>
-                <div className="w-full flex justify-center mt-2 z-0">
-                    <TypingView activeTab={activeTab} subOption={subOption} />
-                </div>
-            </AnimatePresence>
         </main>
     );
 }

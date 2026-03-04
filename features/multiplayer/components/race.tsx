@@ -559,7 +559,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             }, 500);
             return () => clearInterval(timer);
         }
-    }, [raceState, isRealtime, raceConfig]);
+    }, [raceState, isRealtime, raceConfig, currentUserId, roomId, syncLive, user]);
 
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;

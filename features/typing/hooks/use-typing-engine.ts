@@ -7,10 +7,11 @@ interface UseTypingEngineProps {
     duration?: number;
     wordCount?: number;
     mode: "time" | "words" | "quote";
+    isFocused?: boolean;
     onFinish?: (wpm: number, acc: number, time: number) => void;
 }
 
-export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypingEngineProps) {
+export function useTypingEngine({ text, duration = 60, mode, isFocused = true, onFinish }: UseTypingEngineProps) {
     const [status, setStatus] = useState<GameStatus>("idle");
     const [timeLeft, setTimeLeft] = useState(duration);
     const [typedChars, setTypedChars] = useState("");
@@ -18,17 +19,32 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
     const [wpm, setWpm] = useState(0);
     const [accuracy, setAccuracy] = useState(100);
     const [startTime, setStartTime] = useState<number | null>(null);
+    const [accumulatedPause, setAccumulatedPause] = useState(0);
 
     const inputRef = useRef<HTMLInputElement>(null);
+    const pauseStartRef = useRef<number | null>(null);
 
     // Refs for stable callbacks
     const typedCharsRef = useRef(typedChars);
     const textRef = useRef(text);
     const startTimeRef = useRef(startTime);
+    const accumulatedPauseRef = useRef(accumulatedPause);
 
     useEffect(() => { typedCharsRef.current = typedChars; }, [typedChars]);
     useEffect(() => { textRef.current = text; }, [text]);
     useEffect(() => { startTimeRef.current = startTime; }, [startTime]);
+    useEffect(() => { accumulatedPauseRef.current = accumulatedPause; }, [accumulatedPause]);
+
+    useEffect(() => {
+        if (status !== "playing") return;
+        if (!isFocused && pauseStartRef.current === null) {
+            pauseStartRef.current = Date.now();
+        } else if (isFocused && pauseStartRef.current !== null) {
+            const pauseTime = Date.now() - pauseStartRef.current;
+            setAccumulatedPause(prev => prev + pauseTime);
+            pauseStartRef.current = null;
+        }
+    }, [isFocused, status]);
 
     const calculateStats = useCallback(() => {
         const _startTime = startTimeRef.current;
@@ -36,7 +52,11 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
         const _text = textRef.current;
 
         if (!_startTime) return { wpm: 0, accuracy: 100 };
-        const timeElapsed = (Date.now() - _startTime) / 1000 / 60; // in minutes
+        let totalPause = accumulatedPauseRef.current;
+        if (pauseStartRef.current !== null) {
+            totalPause += Date.now() - pauseStartRef.current;
+        }
+        const timeElapsed = (Date.now() - _startTime - totalPause) / 1000 / 60; // in minutes
         if (timeElapsed <= 0) return { wpm: 0, accuracy: 100 };
 
         const correctChars = _typedChars.split("").filter((char, i) => char === _text[i]).length;
@@ -51,7 +71,11 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
         const stats = calculateStats();
         setWpm(stats.wpm);
         setAccuracy(stats.accuracy);
-        const timeTaken = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
+        let totalPause = accumulatedPauseRef.current;
+        if (pauseStartRef.current !== null) {
+            totalPause += Date.now() - pauseStartRef.current;
+        }
+        const timeTaken = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current - totalPause) / 1000) : 0;
         if (onFinish) onFinish(stats.wpm, stats.accuracy, timeTaken);
     }, [calculateStats, onFinish]);
 
@@ -76,7 +100,11 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
 
         // Update stats aggressively during typing for instant feedback
         const _startTime = startTime || Date.now();
-        const timeElapsed = Math.max(0.001, (Date.now() - _startTime) / 1000 / 60);
+        let totalPause = accumulatedPauseRef.current;
+        if (pauseStartRef.current !== null) {
+            totalPause += Date.now() - pauseStartRef.current;
+        }
+        const timeElapsed = Math.max(0.001, (Date.now() - _startTime - totalPause) / 1000 / 60);
         const correctChars = value.split("").filter((char, i) => char === text[i]).length;
         setWpm(Math.max(0, Math.floor((correctChars / 5) / timeElapsed)));
         setAccuracy(Math.max(0, Math.floor((correctChars / Math.max(1, value.length)) * 100)));
@@ -92,7 +120,7 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
     // Timer logic for Time mode
     useEffect(() => {
         let interval: NodeJS.Timeout;
-        if (status === "playing" && mode === "time") {
+        if (status === "playing" && mode === "time" && isFocused) {
             interval = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
@@ -107,7 +135,7 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [status, mode, calculateStats]);
+    }, [status, mode, isFocused, calculateStats]);
 
     // Trigger test completion when timer hits 0
     useEffect(() => {
@@ -125,6 +153,8 @@ export function useTypingEngine({ text, duration = 60, mode, onFinish }: UseTypi
         setStartTime(null);
         setWpm(0);
         setAccuracy(100);
+        setAccumulatedPause(0);
+        pauseStartRef.current = null;
         if (inputRef.current) inputRef.current.focus();
     }, [duration]);
 

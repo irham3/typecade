@@ -1,21 +1,35 @@
 @import "tailwindcss";
 
+/* ──────────────────────────────────────
+   Typecade Color System — "Warm Precision"
+   
+   Design rationale:
+   - Warm off-white text on cool-dark bg → inviting, not cold
+   - Violet primary → distinctive, not used by Monkeytype/other typing sites
+   - Teal secondary → complementary to violet, arcade-inspired
+   - text-dim (#858794) passes WCAG AA 4.5:1 on bg
+   - All accent colors pass WCAG AA 3:1 on bg for UI elements
+   ────────────────────────────────────── */
+
 :root {
-  --background: #06060a;
-  --foreground: #eeeef0;
-  --accent: #818cf8;
-  --accent-rgb: 129, 140, 248;
-  --accent-secondary: #34d399;
-  --accent-secondary-rgb: 52, 211, 153;
-  --error-bg: #4c0519;
-  --error-text: #fb7185;
-  --text-dim: #64648a;
-  --panel-bg: #0f0f18;
-  --panel-bg-elevated: #141422;
-  --border-dim: #1e1e35;
-  --gold: #fbbf24;
+  --background: #0c0d14;
+  --background-raised: #111219;
+  --foreground: #e6e4df;
+  --accent: #6366f1;
+  --accent-rgb: 99, 102, 241;
+  --accent-secondary: #5eead4;
+  --accent-secondary-rgb: 94, 234, 212;
+  --error-bg: #3f1521;
+  --error-text: #f0717b;
+  --text-dim: #858794;
+  --text-dim-rgb: 133, 135, 148;
+  --panel-bg: #111219;
+  --panel-bg-elevated: #16171f;
+  --border-dim: #1f2029;
+  --border-accent: rgba(99, 102, 241, 0.12);
+  --gold: #f5c542;
   --silver: #94a3b8;
-  --bronze: #d97706;
+  --bronze: #cd7f32;
 }
 
 @theme inline {
@@ -25,7 +39,7 @@
   --color-accent-secondary: var(--accent-secondary);
   --color-error-bg: var(--error-bg);
   --color-error-text: var(--error-text);
-  --color-text-dim: var(--text-dim);
+  sasassdad --color-text-dim: var(--text-dim);
   --color-panel-bg: var(--panel-bg);
   --color-panel-elevated: var(--panel-bg-elevated);
   --color-border-dim: var(--border-dim);
@@ -38,9 +52,9 @@
   --font-display: var(--font-space-grotesk);
 
   --animate-caret-blink: caret-blink 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  --animate-aurora-1: aurora-drift-1 18s ease-in-out infinite;
-  --animate-aurora-2: aurora-drift-2 22s ease-in-out infinite;
-  --animate-aurora-3: aurora-drift-3 26s ease-in-out infinite;
+  --animate-aurora-1: aurora-drift-1 24s ease-in-out infinite;
+  --animate-aurora-2: aurora-drift-2 30s ease-in-out infinite;
+  --animate-aurora-3: aurora-drift-3 36s ease-in-out infinite;
   --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
   --animate-shimmer: shimmer 2.5s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
@@ -63,19 +77,18 @@
 
     0%,
     100% {
-      transform: translate(0%, 0%) rotate(0deg) scale(1);
+      transform: translate(0%, 0%) scale(1);
+      opacity: 0.18;
     }
 
-    25% {
-      transform: translate(15%, -10%) rotate(45deg) scale(1.1);
+    33% {
+      transform: translate(8%, -6%) scale(1.08);
+      opacity: 0.24;
     }
 
-    50% {
-      transform: translate(-5%, 15%) rotate(90deg) scale(0.95);
-    }
-
-    75% {
-      transform: translate(-15%, -5%) rotate(135deg) scale(1.05);
+    66% {
+      transform: translate(-6%, 8%) scale(0.95);
+      opacity: 0.16;
     }
   }
 
@@ -83,19 +96,18 @@
 
     0%,
     100% {
-      transform: translate(0%, 0%) rotate(0deg) scale(1);
+      transform: translate(0%, 0%) scale(1);
+      opacity: 0.14;
     }
 
-    25% {
-      transform: translate(-20%, 10%) rotate(-60deg) scale(1.15);
+    40% {
+      transform: translate(-10%, 6%) scale(1.12);
+      opacity: 0.2;
     }
 
-    50% {
-      transform: translate(10%, -15%) rotate(-120deg) scale(0.9);
-    }
-
-    75% {
-      transform: translate(20%, 5%) rotate(-180deg) scale(1.1);
+    70% {
+      transform: translate(8%, -8%) scale(0.92);
+      opacity: 0.12;
     }
   }
 
@@ -103,15 +115,13 @@
 
     0%,
     100% {
-      transform: translate(0%, 0%) rotate(0deg) scale(1);
+      transform: translate(0%, 0%) scale(1);
+      opacity: 0.1;
     }
 
-    33% {
-      transform: translate(10%, 20%) rotate(72deg) scale(1.08);
-    }
-
-    66% {
-      transform: translate(-20%, -10%) rotate(144deg) scale(0.92);
+    50% {
+      transform: translate(6%, 10%) scale(1.06);
+      opacity: 0.16;
     }
   }
 
@@ -152,7 +162,7 @@
   }
 }
 
-/* ── Base styles ── */
+/* ── Base ── */
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -160,7 +170,25 @@ body {
   min-height: 100vh;
 }
 
-/* ── Aurora Background ── */
+/* ──────────────────────────────────────
+   Background layering system
+   ────────────────────────────────────── */
+
+/* Dot grid — fades from center outward */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle,
+      rgba(var(--accent-rgb), 0.06) 1px,
+      transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, black 15%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, black 15%, transparent 75%);
+}
+
+/* Aurora ambient blobs */
 .aurora-container {
   position: relative;
   overflow: hidden;
@@ -177,60 +205,129 @@ body {
 .aurora-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.12;
+  will-change: transform, opacity;
 }
 
 .aurora-blob-1 {
-  width: 600px;
-  height: 600px;
-  top: -200px;
-  left: -100px;
-  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.6), transparent 70%);
-  animation: aurora-drift-1 18s ease-in-out infinite;
+  width: 900px;
+  height: 900px;
+  top: -35%;
+  left: -15%;
+  background: radial-gradient(circle,
+      rgba(var(--accent-rgb), 0.3) 0%,
+      rgba(var(--accent-rgb), 0.06) 40%,
+      transparent 70%);
+  filter: blur(100px);
+  animation: aurora-drift-1 24s ease-in-out infinite;
 }
 
 .aurora-blob-2 {
-  width: 500px;
-  height: 500px;
-  top: 30%;
-  right: -100px;
-  background: radial-gradient(circle, rgba(var(--accent-secondary-rgb), 0.5), transparent 70%);
-  animation: aurora-drift-2 22s ease-in-out infinite;
+  width: 700px;
+  height: 700px;
+  bottom: -25%;
+  right: -10%;
+  background: radial-gradient(circle,
+      rgba(var(--accent-secondary-rgb), 0.2) 0%,
+      rgba(var(--accent-secondary-rgb), 0.04) 40%,
+      transparent 70%);
+  filter: blur(120px);
+  animation: aurora-drift-2 30s ease-in-out infinite;
 }
 
 .aurora-blob-3 {
-  width: 450px;
-  height: 450px;
-  bottom: -100px;
-  left: 30%;
-  background: radial-gradient(circle, rgba(129, 140, 248, 0.4), rgba(52, 211, 153, 0.2), transparent 70%);
-  animation: aurora-drift-3 26s ease-in-out infinite;
+  width: 550px;
+  height: 550px;
+  top: 45%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle,
+      rgba(var(--accent-rgb), 0.12) 0%,
+      rgba(var(--accent-secondary-rgb), 0.06) 35%,
+      transparent 65%);
+  filter: blur(140px);
+  animation: aurora-drift-3 36s ease-in-out infinite;
 }
 
-/* ── Subtle noise texture overlay ── */
+/* Center spotlight */
+.bg-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 50% 45% at 50% 45%,
+      rgba(var(--accent-rgb), 0.015) 0%,
+      transparent 60%);
+}
+
+/* Edge darkening */
+.bg-vignette-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 80% at 50% 50%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.45) 100%);
+}
+
+/* Noise texture */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.015;
+  opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 128px 128px;
 }
 
-/* ── Glassmorphism utilities ── */
+/* ──────────────────────────────────────
+   Typing Panel — Typecade's signature element
+   Contained card that wraps settings + typing area
+   Differentiates from Monkeytype's floating layout
+   ────────────────────────────────────── */
+.typing-panel {
+  background: rgba(17, 18, 25, 0.7);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(var(--accent-rgb), 0.08);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 8px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent top edge line on the panel */
+.typing-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(var(--accent-rgb), 0.4),
+      rgba(var(--accent-secondary-rgb), 0.2),
+      transparent);
+  z-index: 1;
+}
+
+/* ── Glassmorphism ── */
 .glass {
-  background: rgba(15, 15, 24, 0.6);
+  background: rgba(17, 18, 25, 0.65);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .glass-subtle {
-  background: rgba(15, 15, 24, 0.4);
+  background: rgba(17, 18, 25, 0.4);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -239,21 +336,21 @@ body::before {
 /* ── Glow effects ── */
 .glow-accent {
   box-shadow:
-    0 0 20px rgba(var(--accent-rgb), 0.15),
-    0 0 60px rgba(var(--accent-rgb), 0.05);
+    0 0 20px rgba(var(--accent-rgb), 0.12),
+    0 0 60px rgba(var(--accent-rgb), 0.04);
 }
 
 .glow-accent-strong {
   box-shadow:
-    0 0 30px rgba(var(--accent-rgb), 0.25),
-    0 0 80px rgba(var(--accent-rgb), 0.1);
+    0 0 30px rgba(var(--accent-rgb), 0.2),
+    0 0 80px rgba(var(--accent-rgb), 0.08);
 }
 
 .text-glow-accent {
-  text-shadow: 0 0 30px rgba(var(--accent-rgb), 0.4);
+  text-shadow: 0 0 30px rgba(var(--accent-rgb), 0.35);
 }
 
-/* ── Custom scrollbar ── */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -271,7 +368,7 @@ body::before {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* ── Shimmer / highlight text effect ── */
+/* ── Shimmer text ── */
 .shimmer-text {
   background: linear-gradient(110deg,
       var(--foreground) 35%,
@@ -286,6 +383,6 @@ body::before {
 
 /* ── Selection ── */
 ::selection {
-  background: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.25);
   color: var(--foreground);
 }

@@ -10,16 +10,16 @@ const buttonVariants = cva(
         variants: {
             variant: {
                 default:
-                    "bg-white/6 text-foreground hover:bg-white/12 border border-white/6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]",
+                    "bg-white/6 text-foreground hover:bg-white/10 border border-white/6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]",
                 primary:
-                    "bg-accent text-white hover:bg-accent/90 shadow-[0_0_20px_rgba(129,140,248,0.3),inset_0_1px_1px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(129,140,248,0.4)]",
+                    "bg-accent text-white hover:bg-accent/90 shadow-[0_0_20px_rgba(99,102,241,0.25),inset_0_1px_1px_rgba(255,255,255,0.1)] hover:shadow-[0_0_28px_rgba(99,102,241,0.35)]",
                 secondary:
-                    "bg-white/4 text-text-dim hover:text-white hover:bg-white/8 border border-transparent",
+                    "bg-white/4 text-text-dim hover:text-foreground hover:bg-white/8 border border-transparent",
                 outline:
-                    "border border-white/[0.08] bg-transparent hover:bg-white/4 hover:border-white/[0.15] text-text-dim hover:text-white",
-                ghost: "hover:bg-white/5 hover:text-white text-text-dim",
-                active: "bg-white/8 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]",
-                activeGradient: "text-accent bg-accent/8 shadow-[0_0_12px_rgba(129,140,248,0.15)] border border-accent/20",
+                    "border border-white/8 bg-transparent hover:bg-white/4 hover:border-white/15 text-text-dim hover:text-foreground",
+                ghost: "hover:bg-white/5 hover:text-foreground text-text-dim",
+                active: "bg-white/8 text-foreground shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]",
+                activeGradient: "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.1)] border border-accent/20",
                 danger: "bg-error-bg/60 text-error-text hover:bg-error-bg/80",
             },
             size: {
@@ -57,4 +57,3 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
-

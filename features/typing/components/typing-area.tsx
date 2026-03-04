@@ -57,8 +57,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
             duration_seconds: timeTaken,
         } as unknown as never);
         if (error) return false;
-        const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
-        const { error: rpcError } = await rpc("update_user_stats", { p_user_id: user.id });
+        const { error: rpcError } = await (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc("update_user_stats", { p_user_id: user.id });
         if (rpcError) return false;
         return true;
     }, [supabaseReady, user, mode, limit, duration, language]);
@@ -76,6 +75,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         text,
         duration,
         mode,
+        isFocused,
         onFinish: (finalWpm, finalAcc, timeTaken) => {
             addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption} ` });
             pendingResultRef.current = { wpm: finalWpm, acc: finalAcc, timeTaken };
@@ -265,10 +265,15 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="w-full relative mt-4"
+                        className="w-full relative"
                     >
-                        {/* Live stats bar */}
-                        <div className={`flex items-center justify-between font-mono mb-4 transition-all duration-300 ${status === "playing" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+                        {/* Live stats bar — collapses when not playing */}
+                        <div
+                            className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out ${status === "playing"
+                                ? "opacity-100 h-10 mb-3"
+                                : "opacity-0 h-0 mb-0"
+                                }`}
+                        >
                             <div className="flex items-center gap-5">
                                 <div className="flex items-baseline gap-1.5">
                                     <span className="text-2xl font-bold text-accent tabular-nums text-glow-accent">{wpm}</span>
@@ -319,7 +324,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer rounded-2xl backdrop-blur-[6px] bg-background/50"
+                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer backdrop-blur-[6px]"
                                         onClick={focusInput}
                                     >
                                         <span className="text-text-dim text-sm font-sans font-medium tracking-wide">
@@ -336,7 +341,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                                 <motion.div
                                     className="h-full rounded-full"
                                     style={{
-                                        background: "linear-gradient(90deg, rgba(129,140,248,0.6), rgba(52,211,153,0.4))",
+                                        background: "linear-gradient(90deg, rgba(99,102,241,0.8), rgba(94,234,212,0.6))",
                                     }}
                                     animate={{
                                         width: mode === "time"
