@@ -58,6 +58,90 @@
   --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
   --animate-shimmer: shimmer 2.5s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
+  --animate-veil-drift: veil-drift 28s ease-in-out infinite;
+  --animate-veil-drift-reverse: veil-drift-reverse 32s ease-in-out infinite;
+  --animate-ray-1: ray-1 12s ease-in-out infinite alternate;
+  --animate-ray-2: ray-2 15s ease-in-out infinite alternate;
+  --animate-ray-3: ray-3 20s ease-in-out infinite alternate;
+
+  @keyframes veil-drift {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+
+    50% {
+      transform: translateY(-3%) scale(1.05);
+    }
+
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes veil-drift-reverse {
+    0% {
+      transform: translateY(0) scale(1.05);
+    }
+
+    50% {
+      transform: translateY(-4%) scale(1);
+    }
+
+    100% {
+      transform: translateY(0) scale(1.05);
+    }
+  }
+
+  @keyframes ray-1 {
+    0% {
+      opacity: 0.3;
+      transform: rotate(-20deg) scaleY(1);
+    }
+
+    50% {
+      opacity: 0.8;
+      transform: rotate(-18deg) scaleY(1.1);
+    }
+
+    100% {
+      opacity: 0.3;
+      transform: rotate(-20deg) scaleY(1);
+    }
+  }
+
+  @keyframes ray-2 {
+    0% {
+      opacity: 0.2;
+      transform: rotate(15deg) scaleY(1.1);
+    }
+
+    50% {
+      opacity: 0.6;
+      transform: rotate(18deg) scaleY(1);
+    }
+
+    100% {
+      opacity: 0.2;
+      transform: rotate(15deg) scaleY(1.1);
+    }
+  }
+
+  @keyframes ray-3 {
+    0% {
+      opacity: 0.25;
+      transform: rotate(2deg) scaleY(1);
+    }
+
+    50% {
+      opacity: 0.5;
+      transform: rotate(5deg) scaleY(1.15);
+    }
+
+    100% {
+      opacity: 0.25;
+      transform: rotate(2deg) scaleY(1);
+    }
+  }
 
   @keyframes caret-blink {
 
@@ -289,17 +373,8 @@ body::before {
    Differentiates from Monkeytype's floating layout
    ────────────────────────────────────── */
 .typing-panel {
-  background: rgba(17, 18, 25, 0.7);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border: 1px solid rgba(var(--accent-rgb), 0.08);
-  border-radius: 1.5rem;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.02),
-    0 8px 40px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
   position: relative;
-  overflow: hidden;
+  /* Removed heavy glass borders/background to prevent the "cut-off box" look */
 }
 
 /* Accent top edge line on the panel */

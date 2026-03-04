@@ -324,7 +324,7 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer backdrop-blur-[6px]"
+                                        className="absolute -inset-4 z-20 flex items-center justify-center cursor-pointer backdrop-blur-[6px] rounded-lg"
                                         onClick={focusInput}
                                     >
                                         <span className="text-text-dim text-sm font-sans font-medium tracking-wide">
