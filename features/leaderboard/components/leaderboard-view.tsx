@@ -79,7 +79,7 @@ export function LeaderboardView() {
     }, [supabaseReady, queryParams]);
 
     const board = useMemo(() => {
-        return rows
+        return [...rows]
             .sort((a, b) => b.best_wpm - a.best_wpm)
             .slice(0, 50)
             .map((item, index) => ({
@@ -157,15 +157,16 @@ export function LeaderboardView() {
                     >
                         {board.map((item, i) => (
                             <motion.tr
-                                key={i}
+                                key={item.user + i}
                                 custom={i}
+                                initial="hidden"
+                                animate="visible"
                                 variants={listItemVariants}
                                 className={`border-b border-white/4 hover:bg-white/3 transition-colors ${item.isCurrentUser ? "bg-accent/6 border-accent/20 hover:bg-accent/8 relative" : ""
                                     }`}
                             >
-                                {item.isCurrentUser && <td className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent rounded-r-full" />}
-
-                                <td className="px-6 py-4 font-mono">
+                                <td className="px-6 py-4 font-mono relative">
+                                    {item.isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent rounded-r-full" />}
                                     {getRankIcon(item.rank) || (
                                         <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>
                                     )}
@@ -195,7 +196,7 @@ export function LeaderboardView() {
                                 <td colSpan={4} className="px-6 py-12 text-center text-text-dim">
                                     <div className="flex flex-col items-center gap-2">
                                         <Trophy size={24} className="opacity-20" />
-                                        <span>No results yet.</span>
+                                        <span>{!supabaseReady ? "Database connecting... (If this persists, please restart your 'npm run dev' to load .env variables)" : "No results yet."}</span>
                                     </div>
                                 </td>
                             </tr>
