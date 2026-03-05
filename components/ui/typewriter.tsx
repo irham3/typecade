@@ -43,9 +43,11 @@ export function Typewriter({
                     setCurrentText(currentWord.slice(0, currentText.length - 1));
                 }, deletingSpeed);
             } else {
-                setIsDeleting(false);
-                setCurrentWordIndex((prev) => (prev + 1) % words.length);
-                return undefined;
+                const timeoutId = setTimeout(() => {
+                    setIsDeleting(false);
+                    setCurrentWordIndex((prev) => (prev + 1) % words.length);
+                }, 10);
+                return timeoutId;
             }
         }
     }, [currentText, isDeleting, currentWordIndex, words, typingSpeed, deletingSpeed, pauseDuration]);
