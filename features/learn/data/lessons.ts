@@ -39,50 +39,57 @@ export interface Module {
 export const LEARN_MODULES: Module[] = [
     {
         id: "m1",
-        title: "MODULE 1: Home Row Keys",
+        title: "MODULE 1: Home Row Foundation",
         description: "Start from zero and progressively build your muscle memory on the home row.",
         locked: false,
         lessons: [
             {
                 id: "1-1",
                 title: "Introduction to F and J",
-                instruction: "Place your left hand fingers on F and J. The index fingers should feel the small bumps on F and J.",
+                instruction: "Place your index fingers on F and J. Feel the small physical bumps on the keys to anchor your position.",
                 text: "ffff jjjj ffff jjjj fjfj jfjf fj fj jf jf f j f j",
                 targetKeys: ["f", "j", " "]
             },
             {
                 id: "1-2",
                 title: "Adding D and K",
-                instruction: "Now use your middle fingers for D and K. Remember to return them to their home position.",
+                instruction: "Now use your middle fingers for D and K. Remember to return them to their home position immediately after pressing.",
                 text: "dddd kkkk dfjk kjfd dfdf kjkj dkf dkf fk djk fdjk",
                 targetKeys: ["d", "k", "f", "j", " "]
             },
             {
                 id: "1-3",
                 title: "Adding S and L",
-                instruction: "Use your ring fingers for S and L. Ring fingers can be tricky, take it slow.",
+                instruction: "Use your ring fingers for S and L. Ring fingers can be quite stiff at first, take it slow.",
                 text: "ssss llll slsl lsls sldk ksls jlfs fals sdlk dsf",
                 targetKeys: ["s", "l", "d", "k", "f", "j", " "]
             },
             {
                 id: "1-4",
                 title: "Adding A and ;",
-                instruction: "Finally, the pinky fingers on A and semicolon (;).",
+                instruction: "Finally, deploy the pinky fingers on A and semicolon (;). Keep your wrists elevated.",
                 text: "aaaa ;;;; asdf jkl; fdsa ;lkj asdj jsda fl;a dkjs",
                 targetKeys: ["a", ";", "s", "l", "d", "k", "f", "j", " "]
+            },
+            {
+                id: "1-5",
+                title: "The Center Reach: G and H",
+                instruction: "Reach to the center keys. Left index for G, right index for H. Always snap back to F and J immediately.",
+                text: "fgfg jhjh gfgh hjgj gas dash flash glass hall lash",
+                targetKeys: ["g", "h", "f", "j", "a", "s", "d", "l", "k"]
             }
         ]
     },
     {
         id: "m2",
-        title: "MODULE 2: Top Row Keys",
-        description: "Reach up to the top row while keeping your base on the home row.",
+        title: "MODULE 2: Top Row Expansion",
+        description: "Reach up to the top row while keeping your base anchored firmly on the home row.",
         locked: false,
         lessons: [
             {
                 id: "2-1",
                 title: "R and U",
-                instruction: "Reach your index fingers up to R and U. Then bring them back to F and J.",
+                instruction: "Reach your index fingers up to R and U. Then quickly bring them back down.",
                 text: "frfr juju frju jufr fur fur jur jur rufu ruf urj",
                 targetKeys: ["f", "r", "j", "u", " "]
             },
@@ -103,9 +110,124 @@ export const LEARN_MODULES: Module[] = [
             {
                 id: "2-4",
                 title: "Q and P",
-                instruction: "Pinky fingers reach for Q and P.",
-                text: "aqaq ;p;p aqp; p;qa pap pop qoq qua prop quip",
-                targetKeys: ["a", "q", ";", "p", " "]
+                instruction: "Pinky fingers reach diagonally up for Q and P.",
+                text: "aqaq ;p;p aqp; p;qa pap pop qoq qua prop quip pipe",
+                targetKeys: ["a", "q", ";", "p", " ", "i", "o", "u"]
+            },
+            {
+                id: "2-5",
+                title: "The Center Top: T and Y",
+                instruction: "A wider stretch for your index fingers. Left for T, right for Y.",
+                text: "ftft jyjy try toy out duty youth true your truly story",
+                targetKeys: ["t", "y", "r", "u", "o", "a", "s", "e"]
+            }
+        ]
+    },
+    {
+        id: "m3",
+        title: "MODULE 3: Bottom Row Descent",
+        description: "Tackle the trickiest row. Curl your fingers downwards without moving your wrists.",
+        locked: false,
+        lessons: [
+            {
+                id: "3-1",
+                title: "V and M",
+                instruction: "Left index reaches down-right for V, right index reaches down-left for M.",
+                text: "fvmv jmjm vim mac much move give have come room",
+                targetKeys: ["v", "m", "f", "j", " "]
+            },
+            {
+                id: "3-2",
+                title: "C and , (Comma)",
+                instruction: "Left middle drops to C, right middle drops to comma (,).",
+                text: "dcdc k,k, mic doc, care, vice, nice, face, mace,",
+                targetKeys: ["c", ",", "d", "k"]
+            },
+            {
+                id: "3-3",
+                title: "X and . (Period)",
+                instruction: "Left ring drops to X, right ring drops to period (.).",
+                text: "sxsx l.l. six. box. fix. mix. next. ox. max. lax.",
+                targetKeys: ["x", ".", "s", "l"]
+            },
+            {
+                id: "3-4",
+                title: "Z and / (Slash)",
+                instruction: "Left pinky drops to Z, right pinky drops to forward slash (/).",
+                text: "azaz ;/;/ zip/ zag/ size/ quiz/ lazy/ crazy/ haze/ maze/",
+                targetKeys: ["z", "/", "a", ";"]
+            },
+            {
+                id: "3-5",
+                title: "The Center Bottom: B and N",
+                instruction: "Left index reaches far down-right to B, right index reaches down to N.",
+                text: "fbfb jnjn bind none bone noon brain name rain turn",
+                targetKeys: ["b", "n", "i", "r", "t"]
+            }
+        ]
+    },
+    {
+        id: "m4",
+        title: "MODULE 4: The Shift Key",
+        description: "Learn how to capitalize letters without breaking rhythm by using opposite shift keys.",
+        locked: false,
+        lessons: [
+            {
+                id: "4-1",
+                title: "Right Shift (Left Hand Capitalization)",
+                instruction: "Use your RIGHT pinky to hold Shift while typing letters with your LEFT hand.",
+                text: "A B C D E F G Q R S T V W X Z A S D F G",
+                targetKeys: ["a", "b", "c", "d", "e", "f", "g", "q", "r", "s", "t", "v", "w", "x", "z"]
+            },
+            {
+                id: "4-2",
+                title: "Left Shift (Right Hand Capitalization)",
+                instruction: "Use your LEFT pinky to hold Shift while typing letters with your RIGHT hand.",
+                text: "H I J K L M N O P U Y H J K L N M P O I",
+                targetKeys: ["h", "i", "j", "k", "l", "m", "n", "o", "p", "u", "y"]
+            },
+            {
+                id: "4-3",
+                title: "Alternating Shifts",
+                instruction: "Alternate gracefully. Remember: Left key = Right Shift, Right key = Left Shift.",
+                text: "The Quick Brown Fox Jumps Over The Lazy Dog",
+                targetKeys: ["Shift", " "]
+            }
+        ]
+    },
+    {
+        id: "m5",
+        title: "MODULE 5: Numbers & Mastery",
+        description: "The top numerical row and advanced flowing paragraphs to achieve total fluency.",
+        locked: false,
+        lessons: [
+            {
+                id: "5-1",
+                title: "Left Numbers: 1 to 5",
+                instruction: "Stretch from your left home row up to the numbers. 1(Pinky), 2(Ring), 3(Middle), 4(Index), 5(Index).",
+                text: "1 2 3 4 5 123 45 54 321 41 52 35 15 a1 s2 d3 f4 f5",
+                targetKeys: ["1", "2", "3", "4", "5"]
+            },
+            {
+                id: "5-2",
+                title: "Right Numbers: 6 to 0",
+                instruction: "Stretch your right hand. 6(Index), 7(Index), 8(Middle), 9(Ring), 0(Pinky).",
+                text: "6 7 8 9 0 67 890 09 876 60 79 80 j6 j7 k8 l9 ;0",
+                targetKeys: ["6", "7", "8", "9", "0"]
+            },
+            {
+                id: "5-3",
+                title: "Total Keyboard Integration",
+                instruction: "All rows and numbers combined in complex words.",
+                text: "Update 101: The system needs 45 packages via 2 servers. Contact me 9 times.",
+                targetKeys: []
+            },
+            {
+                id: "5-4",
+                title: "Mastery: Flow State",
+                instruction: "Type this paragraph smoothly without looking. Don't rush; let the muscle memory do the work.",
+                text: "Water comprises roughly 60 percent of the adult human body. It acts as a building block for cells, regulates our internal temperature, and transports carbohydrates into the bloodstream. It is essential to life, yet everyday we lose 2 to 3 liters through breathing, sweating, and digestion.",
+                targetKeys: []
             }
         ]
     }
