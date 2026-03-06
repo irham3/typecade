@@ -15,6 +15,8 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth/auth-context";
+import { AuthModal } from "@/components/auth-modal";
+import { ConfirmModal } from "@/components/confirm-modal";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Core" },
@@ -28,6 +30,8 @@ export function Navbar() {
     const router = useRouter();
     const [accountOpen, setAccountOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [authModalOpen, setAuthModalOpen] = useState(false);
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const { user, isLoading, supabaseReady, signOut } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
@@ -128,19 +132,18 @@ export function Navbar() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onSelect={() => router.push("/profile")}>Profile</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => router.push("/auth")}>Account</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => signOut()}>Sign out</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setLogoutConfirmOpen(true)}>Sign out</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
                     <Button
-                        asChild
                         variant="primary"
                         className="px-5 text-sm"
                         disabled={!supabaseReady || isLoading}
+                        onClick={() => setAuthModalOpen(true)}
                     >
-                        <Link href="/auth">Sign in</Link>
+                        Sign in
                     </Button>
                 )}
 
@@ -192,6 +195,21 @@ export function Navbar() {
                     })}
                 </motion.div>
             )}
+
+            <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+
+            <ConfirmModal
+                isOpen={logoutConfirmOpen}
+                title="Sign out of Typecade?"
+                message="Are you sure you want to sign out? You will be disconnected from any active arenas."
+                confirmText="Sign Out"
+                cancelText="Cancel"
+                onConfirm={() => {
+                    setLogoutConfirmOpen(false);
+                    signOut();
+                }}
+                onCancel={() => setLogoutConfirmOpen(false)}
+            />
         </header>
     );
 }
