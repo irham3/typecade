@@ -57,21 +57,23 @@ export function Navbar() {
     return (
         <header className="w-full max-w-6xl px-6 lg:px-8 py-5 flex items-center justify-between z-20 relative">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 cursor-pointer group shrink-0">
-                <div className="relative">
-                    <Image
-                        src="/typecade-logo.png"
-                        alt="Typecade"
-                        width={36}
-                        height={36}
-                        className="rounded-xl group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 rounded-xl bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-                <span className="font-display font-bold text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors">
-                    Typecade
-                </span>
-            </Link>
+            <div className="flex flex-1 items-center justify-start">
+                <Link href="/" className="flex items-center gap-3 cursor-pointer group shrink-0">
+                    <div className="relative">
+                        <Image
+                            src="/typecade-logo.png"
+                            alt="Typecade"
+                            width={36}
+                            height={36}
+                            className="rounded-xl group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 rounded-xl bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                    <span className="font-display font-bold text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors">
+                        Typecade
+                    </span>
+                </Link>
+            </div>
 
             {/* Desktop Nav */}
             <nav
@@ -113,15 +115,14 @@ export function Navbar() {
             </nav>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center justify-end gap-2">
                 {user ? (
                     <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="gap-2 px-3">
+                            <Button variant="ghost" className="gap-2 px-2">
                                 <div className="w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20">
                                     <User size={14} className="text-accent" />
                                 </div>
-                                <span className="hidden sm:inline max-w-35 truncate text-sm">{user.email ?? "Account"}</span>
                                 <ChevronDown size={12} className={`opacity-50 transition-transform duration-200 ${accountOpen ? "rotate-180" : ""}`} />
                             </Button>
                         </DropdownMenuTrigger>
