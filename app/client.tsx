@@ -51,7 +51,7 @@ export function HomeClient() {
         <main className="flex-1 w-full max-w-6xl px-6 lg:px-8 flex flex-col items-center justify-center pb-16 relative">
 
             {/* ── Settings toolbar — compact, secondary to navbar ── */}
-            <motion.div layout className="flex items-center justify-center gap-2 mb-8 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <motion.div layout className="flex items-center justify-center gap-2 mb-8 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <motion.div layout>
                     <SegmentedControl
                         options={[...modeOptions]}
