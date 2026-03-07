@@ -38,6 +38,15 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
 
     useEffect(() => focusInput(), [focusInput]);
 
+    // Escape key to go back
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onBack();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [onBack]);
+
     // Handle smooth scrolling like the main typing area
     useEffect(() => {
         if (status === "idle") {
@@ -151,16 +160,26 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto flex flex-col pt-4">
-            <Button variant="ghost" className="w-fit mb-6 text-text-dim hover:text-white" onClick={onBack}>
-                <ArrowLeft size={16} className="mr-2" /> Back to Lessons
-            </Button>
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
+            {/* Top bar — minimal */}
+            <div className="w-full flex items-center justify-between mb-6">
+                <Button variant="ghost" className="text-text-dim hover:text-white gap-2 px-3" onClick={onBack}>
+                    <ArrowLeft size={16} /> Back
+                </Button>
+                <span className="text-xs font-mono text-text-dim/50 tracking-widest uppercase">
+                    LESSON {lesson.id}
+                </span>
+            </div>
 
-            <div className="bg-[#1A1A1A] rounded-[24px] border border-white/5 p-8 shadow-2xl relative overflow-hidden">
-                {/* Lesson Header */}
-                <div className="mb-10 text-center">
-                    <h2 className="text-3xl font-display font-medium text-foreground mb-3">{lesson.title}</h2>
-                    <p className="text-text-dim max-w-2xl mx-auto">{lesson.instruction}</p>
+            {/* Main card */}
+            <div className="w-full glass rounded-[24px] border border-white/5 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                {/* Ambient glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[150px] bg-accent/8 blur-[100px] rounded-full pointer-events-none" />
+
+                {/* Lesson Header — compact */}
+                <div className="relative z-10 mb-6 text-center">
+                    <h2 className="text-2xl sm:text-3xl font-display font-medium text-white mb-2">{lesson.title}</h2>
+                    <p className="text-text-dim text-sm max-w-xl mx-auto leading-relaxed">{lesson.instruction}</p>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -170,30 +189,32 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="flex flex-col items-center py-12"
+                            className="relative z-10 flex flex-col items-center py-10"
                         >
-                            <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6 text-accent">
-                                <CheckCircle size={40} />
+                            <div className="w-16 h-16 bg-accent/15 border border-accent/20 rounded-full flex items-center justify-center mb-5 text-accent">
+                                <CheckCircle size={32} />
                             </div>
-                            <h3 className="text-2xl font-bold mb-6">Lesson Completed!</h3>
+                            <h3 className="text-xl font-display font-medium mb-8 text-white">Lesson Completed</h3>
 
-                            <div className="flex gap-8 mb-10">
+                            <div className="flex gap-12 mb-10">
                                 <div className="text-center">
-                                    <span className="block text-text-dim text-sm uppercase tracking-widest mb-1">Speed</span>
+                                    <span className="block text-text-dim text-[11px] uppercase tracking-[0.2em] mb-2 font-mono">Speed</span>
                                     <span className="text-4xl font-mono text-accent font-bold">{wpm}</span>
+                                    <span className="text-sm text-text-dim/50 ml-1">wpm</span>
                                 </div>
                                 <div className="text-center">
-                                    <span className="block text-text-dim text-sm uppercase tracking-widest mb-1">Accuracy</span>
-                                    <span className="text-4xl font-mono text-white font-bold">{accuracy}%</span>
+                                    <span className="block text-text-dim text-[11px] uppercase tracking-[0.2em] mb-2 font-mono">Accuracy</span>
+                                    <span className="text-4xl font-mono text-white font-bold">{accuracy}</span>
+                                    <span className="text-sm text-text-dim/50 ml-1">%</span>
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <Button variant="secondary" onClick={restartText}>
-                                    <RotateCcw size={16} className="mr-2" /> Retry
+                            <div className="flex gap-3">
+                                <Button variant="secondary" className="gap-2 px-5" onClick={restartText}>
+                                    <RotateCcw size={15} /> Retry
                                 </Button>
-                                <Button variant="primary" onClick={() => onComplete({ wpm, accuracy })}>
-                                    Continue <ArrowRight size={16} className="ml-2" />
+                                <Button variant="primary" className="gap-2 px-6" onClick={() => onComplete({ wpm, accuracy })}>
+                                    Continue <ArrowRight size={15} />
                                 </Button>
                             </div>
                         </motion.div>
@@ -203,10 +224,9 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex flex-col"
+                            className="relative z-10 flex flex-col"
                         >
-                            {/* Hidden Input field for mobile/system capture */}
-                            {/* Need full coverage like typing-area */}
+                            {/* Hidden Input field for capture */}
                             <div
                                 className="absolute inset-0 z-50 cursor-text"
                                 onClick={focusInput}
@@ -225,9 +245,9 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             </div>
 
                             {/* Text Area */}
-                            <div className="bg-[#0F0F0F] border border-white/5 rounded-2xl p-6 sm:p-10 mb-8 font-mono text-2xl sm:text-3xl leading-relaxed tracking-tight relative">
+                            <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 sm:p-8 mb-6 font-mono text-xl sm:text-2xl leading-relaxed tracking-tight relative">
                                 <div
-                                    className="h-[4.8em] overflow-hidden"
+                                    className="h-[4.5em] overflow-hidden"
                                     style={{
                                         maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
                                         WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
@@ -243,7 +263,7 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             </div>
 
                             {/* Keyboard Visualizer & Fingers merged overlay */}
-                            <div className="relative w-full max-w-2xl mx-auto flex flex-col items-center select-none pointer-events-none mt-4">
+                            <div className="relative w-full max-w-2xl mx-auto flex flex-col items-center select-none pointer-events-none mt-2">
                                 <KeyboardVisualizer targetKeys={lesson.targetKeys} nextKey={nextChar} />
                                 <div className="absolute inset-x-0 -bottom-10 pointer-events-none transform translate-y-16">
                                     <HandVisualizer activeFingers={activeFingers} activeKey={nextChar} />
@@ -253,6 +273,12 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Bottom shortcut hint */}
+            <p className="text-text-dim/30 text-[11px] font-mono mt-6 flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-white/30">Esc</kbd>
+                <span>to go back</span>
+            </p>
         </div>
     );
 }

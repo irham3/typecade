@@ -219,7 +219,7 @@ export function LearnModule() {
                     </div>
 
                     <div className="mt-8 flex justify-center">
-                        <Link href={`/learn/${currentModule.id}/${currentLesson.id}`} className="w-full">
+                        <Link href={`/learn/${currentModule.slug}/${currentLesson.slug}`} className="w-full">
                             <Button
                                 variant="primary"
                                 className="w-full py-6 text-base font-bold rounded-xl font-sans text-white hover:bg-accent hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all"
