@@ -1,12 +1,12 @@
-import { Finger } from "../data/lessons";
+import { Finger, KEY_FINGER_MAP } from "../data/lessons";
 import { motion, AnimatePresence } from "framer-motion";
 
 type HandProp = {
-    activeFinger: Finger | null;
+    activeFingers: Finger[];
     activeKey?: string | null;
 };
 
-export function HandVisualizer({ activeFinger, activeKey }: HandProp) {
+export function HandVisualizer({ activeFingers, activeKey }: HandProp) {
 
     const FINGER_NAMES: Record<string, string> = {
         "L_PINKY": "A", "L_RING": "S", "L_MIDDLE": "D", "L_INDEX": "F", "L_THUMB": "SPACE",
@@ -14,8 +14,8 @@ export function HandVisualizer({ activeFinger, activeKey }: HandProp) {
     };
 
     // Hand shifting based on row logic removed per user request
-    const isLeftActive = activeFinger?.startsWith('L_');
-    const isRightActive = activeFinger?.startsWith('R_');
+    const isLeftActive = activeFingers.some(f => f.startsWith('L_'));
+    const isRightActive = activeFingers.some(f => f.startsWith('R_'));
 
     // Hands no longer shift forward/back physically (User requested static position)
     const leftHandY = 0;
@@ -26,7 +26,7 @@ export function HandVisualizer({ activeFinger, activeKey }: HandProp) {
     const rightHandX = 0;
 
     const renderFinger = (fingerId: Finger, baseHeight: number, width: string, bottom: string, left?: string, right?: string, rotate: string = "0deg", labelRotate: string = "0deg") => {
-        const isActive = activeFinger === fingerId;
+        const isActive = activeFingers.includes(fingerId);
         const isThumb = fingerId.includes("THUMB");
         const defaultKey = FINGER_NAMES[fingerId as string];
 
@@ -91,7 +91,16 @@ export function HandVisualizer({ activeFinger, activeKey }: HandProp) {
                                 className="text-[10px] font-mono font-bold text-white mt-auto pb-4 absolute bottom-0"
                                 style={{ transform: `rotate(${labelRotate})` }}
                             >
-                                {activeKey ? activeKey.toUpperCase() : defaultKey}
+                                {(() => {
+                                    if (!activeKey) return defaultKey;
+                                    const primaryFinger = KEY_FINGER_MAP[activeKey.toLowerCase()];
+                                    if (primaryFinger === fingerId) {
+                                        return activeKey === ' ' ? 'SPACE' : activeKey.toUpperCase();
+                                    } else if (fingerId === 'L_PINKY' || fingerId === 'R_PINKY') {
+                                        return 'SHIFT';
+                                    }
+                                    return defaultKey;
+                                })()}
                             </motion.span>
                         )}
                     </AnimatePresence>

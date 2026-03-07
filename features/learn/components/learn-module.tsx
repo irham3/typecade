@@ -62,6 +62,21 @@ export function LearnModule() {
         setActiveLessonId(lessId);
     };
 
+    const KEYBOARD_ROWS = [
+        [
+            { id: '`', label: '`', w: 'w-8 lg:w-10' }, { id: '1', label: '1', w: 'w-8 lg:w-10' }, { id: '2', label: '2', w: 'w-8 lg:w-10' }, { id: '3', label: '3', w: 'w-8 lg:w-10' }, { id: '4', label: '4', w: 'w-8 lg:w-10' }, { id: '5', label: '5', w: 'w-8 lg:w-10' }, { id: '6', label: '6', w: 'w-8 lg:w-10' }, { id: '7', label: '7', w: 'w-8 lg:w-10' }, { id: '8', label: '8', w: 'w-8 lg:w-10' }, { id: '9', label: '9', w: 'w-8 lg:w-10' }, { id: '0', label: '0', w: 'w-8 lg:w-10' }, { id: '-', label: '-', w: 'w-8 lg:w-10' }, { id: '=', label: '=', w: 'w-8 lg:w-10' }, { id: 'Backspace', label: '←', w: 'w-[70px] lg:w-[88px]' }
+        ],
+        [
+            { id: 'Tab', label: 'Tab', w: 'w-[51px] lg:w-[64px]' }, { id: 'q', label: 'q', w: 'w-8 lg:w-10' }, { id: 'w', label: 'w', w: 'w-8 lg:w-10' }, { id: 'e', label: 'e', w: 'w-8 lg:w-10' }, { id: 'r', label: 'r', w: 'w-8 lg:w-10' }, { id: 't', label: 't', w: 'w-8 lg:w-10' }, { id: 'y', label: 'y', w: 'w-8 lg:w-10' }, { id: 'u', label: 'u', w: 'w-8 lg:w-10' }, { id: 'i', label: 'i', w: 'w-8 lg:w-10' }, { id: 'o', label: 'o', w: 'w-8 lg:w-10' }, { id: 'p', label: 'p', w: 'w-8 lg:w-10' }, { id: '[', label: '[', w: 'w-8 lg:w-10' }, { id: ']', label: ']', w: 'w-8 lg:w-10' }, { id: '\\', label: '\\', w: 'w-[51px] lg:w-[64px]' }
+        ],
+        [
+            { id: 'Caps', label: 'Caps', w: 'w-[61px] lg:w-[76px]' }, { id: 'a', label: 'a', w: 'w-8 lg:w-10' }, { id: 's', label: 's', w: 'w-8 lg:w-10' }, { id: 'd', label: 'd', w: 'w-8 lg:w-10' }, { id: 'f', label: 'f', w: 'w-8 lg:w-10' }, { id: 'g', label: 'g', w: 'w-8 lg:w-10' }, { id: 'h', label: 'h', w: 'w-8 lg:w-10' }, { id: 'j', label: 'j', w: 'w-8 lg:w-10' }, { id: 'k', label: 'k', w: 'w-8 lg:w-10' }, { id: 'l', label: 'l', w: 'w-8 lg:w-10' }, { id: ';', label: ';', w: 'w-8 lg:w-10' }, { id: '\'', label: '\'', w: 'w-8 lg:w-10' }, { id: 'Enter', label: 'Enter', w: 'w-[79px] lg:w-[100px]' }
+        ],
+        [
+            { id: 'Shift', label: 'Shift', w: 'w-[79px] lg:w-[100px]' }, { id: 'z', label: 'z', w: 'w-8 lg:w-10' }, { id: 'x', label: 'x', w: 'w-8 lg:w-10' }, { id: 'c', label: 'c', w: 'w-8 lg:w-10' }, { id: 'v', label: 'v', w: 'w-8 lg:w-10' }, { id: 'b', label: 'b', w: 'w-8 lg:w-10' }, { id: 'n', label: 'n', w: 'w-8 lg:w-10' }, { id: 'm', label: 'm', w: 'w-8 lg:w-10' }, { id: ',', label: ',', w: 'w-8 lg:w-10' }, { id: '.', label: '.', w: 'w-8 lg:w-10' }, { id: '/', label: '/', w: 'w-8 lg:w-10' }, { id: 'Shift', label: 'Shift', w: 'w-[99px] lg:w-[124px]' }
+        ]
+    ];
+
     return (
         <div className="w-full">
             <div className="w-full grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 items-start">
@@ -186,61 +201,21 @@ export function LearnModule() {
                     </div>
 
                     {/* SVG Keyboard Mock */}
-                    <div className="w-full aspect-[2.2/1] bg-[#0A0A0A] rounded-2xl border border-white/5 relative flex flex-col items-center justify-center gap-2 p-6 shadow-inner">
-                        {/* Number Row */}
-                        <div className="flex gap-2">
-                            {"1234567890".split("").map((key, i) => {
-                                const isTarget = currentLesson.targetKeys.includes(key);
-                                return (
-                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
-                                        "border-white/5 text-white/20 opacity-30"
-                                        }`}>
-                                        {key}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        {/* Top Row */}
-                        <div className="flex gap-2 relative left-3">
-                            {"QWERTYUIOP".split("").map((key, i) => {
-                                const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
-                                return (
-                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
-                                        "border-white/5 text-white/20 opacity-30"
-                                        }`}>
-                                        {key}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        {/* Home Row (Highlighted) */}
-                        <div className="flex gap-2 relative left-5">
-                            {"ASDFGHJKL;".split("").map((key, i) => {
-                                const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
-                                return (
-                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
-                                        "border-white/5 text-white/20 opacity-30"
-                                        }`}>
-                                        {key}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        {/* Bottom Row */}
-                        <div className="flex gap-2 relative left-8">
-                            {"ZXCVBNM,.".split("").map((key, i) => {
-                                const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
-                                return (
-                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
-                                        "border-white/5 text-white/20 opacity-30"
-                                        }`}>
-                                        {key}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                    <div className="w-full aspect-[2.2/1] bg-[#0A0A0A] rounded-2xl border border-white/5 relative flex flex-col items-center justify-center gap-1.5 lg:gap-2 p-4 lg:p-6 shadow-inner overflow-hidden">
+                        {KEYBOARD_ROWS.map((row, rIdx) => (
+                            <div key={rIdx} className="flex gap-1.5 lg:gap-2 w-full justify-center">
+                                {row.map((k, i) => {
+                                    const isTarget = currentLesson.targetKeys.some(tk => tk.toLowerCase() === k.id.toLowerCase());
+                                    return (
+                                        <div key={i} className={`${k.w} h-8 lg:h-10 rounded-md lg:rounded-lg border flex items-center justify-center text-[10px] lg:text-xs font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" : "border-white/5 text-white/20 opacity-30"}`}>
+                                            {k.label}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ))}
                         {/* Space */}
-                        <div className={`w-[50%] h-11 rounded-lg border mt-2 transition-all duration-300 ${currentLesson.targetKeys.includes(" ") ? "bg-accent/20 border-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-105" : "border-white/10 opacity-20"}`} />
+                        <div className={`w-[50%] h-8 lg:h-10 rounded-md lg:rounded-lg border mt-1 lg:mt-2 transition-all duration-300 ${currentLesson.targetKeys.includes(" ") ? "bg-accent/20 border-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-105" : "border-white/10 opacity-20"}`} />
                     </div>
 
                     <div className="mt-8 flex justify-center">

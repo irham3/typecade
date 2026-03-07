@@ -177,14 +177,14 @@ export const LEARN_MODULES: Module[] = [
                 title: "Right Shift (Left Hand Capitalization)",
                 instruction: "Use your RIGHT pinky to hold Shift while typing letters with your LEFT hand.",
                 text: "A B C D E F G Q R S T V W X Z A S D F G",
-                targetKeys: ["a", "b", "c", "d", "e", "f", "g", "q", "r", "s", "t", "v", "w", "x", "z"]
+                targetKeys: ["a", "b", "c", "d", "e", "f", "g", "q", "r", "s", "t", "v", "w", "x", "z", "Shift"]
             },
             {
                 id: "4-2",
                 title: "Left Shift (Right Hand Capitalization)",
                 instruction: "Use your LEFT pinky to hold Shift while typing letters with your RIGHT hand.",
                 text: "H I J K L M N O P U Y H J K L N M P O I",
-                targetKeys: ["h", "i", "j", "k", "l", "m", "n", "o", "p", "u", "y"]
+                targetKeys: ["h", "i", "j", "k", "l", "m", "n", "o", "p", "u", "y", "Shift"]
             },
             {
                 id: "4-3",
@@ -220,14 +220,14 @@ export const LEARN_MODULES: Module[] = [
                 title: "Total Keyboard Integration",
                 instruction: "All rows and numbers combined in complex words.",
                 text: "Update 101: The system needs 45 packages via 2 servers. Contact me 9 times.",
-                targetKeys: []
+                targetKeys: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", " ", "Shift", ":", ".", ","]
             },
             {
                 id: "5-4",
                 title: "Mastery: Flow State",
                 instruction: "Type this paragraph smoothly without looking. Don't rush; let the muscle memory do the work.",
                 text: "Water comprises roughly 60 percent of the adult human body. It acts as a building block for cells, regulates our internal temperature, and transports carbohydrates into the bloodstream. It is essential to life, yet everyday we lose 2 to 3 liters through breathing, sweating, and digestion.",
-                targetKeys: []
+                targetKeys: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", " ", "Shift", ":", ".", ","]
             }
         ]
     }
