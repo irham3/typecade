@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { LEARN_MODULES, findBySlug } from "@/features/learn/data/lessons";
 import { notFound } from "next/navigation";
-import { PracticeClient } from "./client";
+import { PracticeClient } from "@/features/learn/components/practice-client";
 
 export async function generateStaticParams() {
     const params: { moduleSlug: string, lessonSlug: string }[] = [];
