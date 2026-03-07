@@ -247,6 +247,7 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
 // Simple Keyboard Visualizer
 function KeyboardVisualizer({ targetKeys, nextKey }: { targetKeys: string[], nextKey: string | null }) {
     const rows = [
+        "1234567890".split(""),
         "QWERTYUIOP".split(""),
         "ASDFGHJKL;".split(""),
         "ZXCVBNM,.".split("")

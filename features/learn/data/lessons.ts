@@ -55,28 +55,28 @@ export const LEARN_MODULES: Module[] = [
                 title: "Adding D and K",
                 instruction: "Now use your middle fingers for D and K. Remember to return them to their home position immediately after pressing.",
                 text: "dddd kkkk dfjk kjfd dfdf kjkj dkf dkf fk djk fdjk",
-                targetKeys: ["d", "k", "f", "j", " "]
+                targetKeys: ["d", "k"]
             },
             {
                 id: "1-3",
                 title: "Adding S and L",
                 instruction: "Use your ring fingers for S and L. Ring fingers can be quite stiff at first, take it slow.",
                 text: "ssss llll slsl lsls sldk ksls jlfs fals sdlk dsf",
-                targetKeys: ["s", "l", "d", "k", "f", "j", " "]
+                targetKeys: ["s", "l"]
             },
             {
                 id: "1-4",
                 title: "Adding A and ;",
                 instruction: "Finally, deploy the pinky fingers on A and semicolon (;). Keep your wrists elevated.",
                 text: "aaaa ;;;; asdf jkl; fdsa ;lkj asdj jsda fl;a dkjs",
-                targetKeys: ["a", ";", "s", "l", "d", "k", "f", "j", " "]
+                targetKeys: ["a", ";"]
             },
             {
                 id: "1-5",
                 title: "The Center Reach: G and H",
                 instruction: "Reach to the center keys. Left index for G, right index for H. Always snap back to F and J immediately.",
                 text: "fgfg jhjh gfgh hjgj gas dash flash glass hall lash",
-                targetKeys: ["g", "h", "f", "j", "a", "s", "d", "l", "k"]
+                targetKeys: ["g", "h"]
             }
         ]
     },
@@ -91,35 +91,35 @@ export const LEARN_MODULES: Module[] = [
                 title: "R and U",
                 instruction: "Reach your index fingers up to R and U. Then quickly bring them back down.",
                 text: "frfr juju frju jufr fur fur jur jur rufu ruf urj",
-                targetKeys: ["f", "r", "j", "u", " "]
+                targetKeys: ["r", "u"]
             },
             {
                 id: "2-2",
                 title: "E and I",
                 instruction: "Use your middle fingers for E and I. It's a quick push upwards.",
                 text: "dede kiki deki kide did did kid fire dire fir kire",
-                targetKeys: ["d", "e", "k", "i", " "]
+                targetKeys: ["e", "i"]
             },
             {
                 id: "2-3",
                 title: "W and O",
                 instruction: "Ring fingers reach up to W and O.",
                 text: "swsw lolo swlo losw sow low ows owl word soor",
-                targetKeys: ["s", "w", "l", "o", " "]
+                targetKeys: ["w", "o"]
             },
             {
                 id: "2-4",
                 title: "Q and P",
                 instruction: "Pinky fingers reach diagonally up for Q and P.",
                 text: "aqaq ;p;p aqp; p;qa pap pop qoq qua prop quip pipe",
-                targetKeys: ["a", "q", ";", "p", " ", "i", "o", "u"]
+                targetKeys: ["q", "p"]
             },
             {
                 id: "2-5",
                 title: "The Center Top: T and Y",
                 instruction: "A wider stretch for your index fingers. Left for T, right for Y.",
                 text: "ftft jyjy try toy out duty youth true your truly story",
-                targetKeys: ["t", "y", "r", "u", "o", "a", "s", "e"]
+                targetKeys: ["t", "y"]
             }
         ]
     },
@@ -134,35 +134,35 @@ export const LEARN_MODULES: Module[] = [
                 title: "V and M",
                 instruction: "Left index reaches down-right for V, right index reaches down-left for M.",
                 text: "fvmv jmjm vim mac much move give have come room",
-                targetKeys: ["v", "m", "f", "j", " "]
+                targetKeys: ["v", "m"]
             },
             {
                 id: "3-2",
                 title: "C and , (Comma)",
                 instruction: "Left middle drops to C, right middle drops to comma (,).",
                 text: "dcdc k,k, mic doc, care, vice, nice, face, mace,",
-                targetKeys: ["c", ",", "d", "k"]
+                targetKeys: ["c", ","]
             },
             {
                 id: "3-3",
                 title: "X and . (Period)",
                 instruction: "Left ring drops to X, right ring drops to period (.).",
                 text: "sxsx l.l. six. box. fix. mix. next. ox. max. lax.",
-                targetKeys: ["x", ".", "s", "l"]
+                targetKeys: ["x", "."]
             },
             {
                 id: "3-4",
                 title: "Z and / (Slash)",
                 instruction: "Left pinky drops to Z, right pinky drops to forward slash (/).",
                 text: "azaz ;/;/ zip/ zag/ size/ quiz/ lazy/ crazy/ haze/ maze/",
-                targetKeys: ["z", "/", "a", ";"]
+                targetKeys: ["z", "/"]
             },
             {
                 id: "3-5",
                 title: "The Center Bottom: B and N",
                 instruction: "Left index reaches far down-right to B, right index reaches down to N.",
                 text: "fbfb jnjn bind none bone noon brain name rain turn",
-                targetKeys: ["b", "n", "i", "r", "t"]
+                targetKeys: ["b", "n"]
             }
         ]
     },

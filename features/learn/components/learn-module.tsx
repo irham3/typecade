@@ -67,7 +67,7 @@ export function LearnModule() {
             <div className="w-full grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 items-start">
 
                 {/* Left: Path/Curriculum Tree */}
-                <div className="w-full lg:h-[calc(100vh-280px)] lg:min-h-[500px] lg:py-8 flex flex-col order-1 relative">
+                <div className="w-full lg:h-[calc(100vh-260px)] lg:min-h-[500px] lg:py-4 flex flex-col order-1 relative">
                     <div
                         ref={scrollRef}
                         onScroll={checkScroll}
@@ -187,14 +187,34 @@ export function LearnModule() {
 
                     {/* SVG Keyboard Mock */}
                     <div className="w-full aspect-[2.2/1] bg-[#0A0A0A] rounded-2xl border border-white/5 relative flex flex-col items-center justify-center gap-2 p-6 shadow-inner">
+                        {/* Number Row */}
+                        <div className="flex gap-2">
+                            {"1234567890".split("").map((key, i) => {
+                                const isTarget = currentLesson.targetKeys.includes(key);
+                                return (
+                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
+                                        "border-white/5 text-white/20 opacity-30"
+                                        }`}>
+                                        {key}
+                                    </div>
+                                )
+                            })}
+                        </div>
                         {/* Top Row */}
-                        <div className="flex gap-2 opacity-20">
-                            {"QWERTYUIOP".split("").map((key, i) => (
-                                <div key={i} className="w-11 h-11 rounded-lg border border-white/10 flex items-center justify-center text-xs font-mono">{key}</div>
-                            ))}
+                        <div className="flex gap-2 relative left-3">
+                            {"QWERTYUIOP".split("").map((key, i) => {
+                                const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
+                                return (
+                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
+                                        "border-white/5 text-white/20 opacity-30"
+                                        }`}>
+                                        {key}
+                                    </div>
+                                )
+                            })}
                         </div>
                         {/* Home Row (Highlighted) */}
-                        <div className="flex gap-2 relative left-4">
+                        <div className="flex gap-2 relative left-5">
                             {"ASDFGHJKL;".split("").map((key, i) => {
                                 const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
                                 return (
@@ -207,18 +227,20 @@ export function LearnModule() {
                             })}
                         </div>
                         {/* Bottom Row */}
-                        <div className="flex gap-2 opacity-20 relative left-8">
-                            {"ZXCVBNM,.".split("").map((key, i) => (
-                                <div key={i} className="w-11 h-11 rounded-lg border border-white/10 flex items-center justify-center text-xs font-mono">{key}</div>
-                            ))}
+                        <div className="flex gap-2 relative left-8">
+                            {"ZXCVBNM,.".split("").map((key, i) => {
+                                const isTarget = currentLesson.targetKeys.includes(key.toLowerCase());
+                                return (
+                                    <div key={i} className={`w-11 h-11 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-300 ${isTarget ? "bg-accent/20 border-accent text-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-110 z-10" :
+                                        "border-white/5 text-white/20 opacity-30"
+                                        }`}>
+                                        {key}
+                                    </div>
+                                )
+                            })}
                         </div>
                         {/* Space */}
-                        <div className="w-[50%] h-11 rounded-lg border border-white/10 mt-2 opacity-20" />
-
-                        <div className="absolute bottom-6 w-full flex justify-center gap-20 text-[10px] uppercase font-bold text-white/10 tracking-[0.2em]">
-                            <span>Left Hand</span>
-                            <span>Right Hand</span>
-                        </div>
+                        <div className={`w-[50%] h-11 rounded-lg border mt-2 transition-all duration-300 ${currentLesson.targetKeys.includes(" ") ? "bg-accent/20 border-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-105" : "border-white/10 opacity-20"}`} />
                     </div>
 
                     <div className="mt-8 flex justify-center">

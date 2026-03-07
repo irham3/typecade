@@ -13,63 +13,32 @@ export function HandVisualizer({ activeFinger, activeKey }: HandProp) {
         "R_PINKY": ";", "R_RING": "L", "R_MIDDLE": "K", "R_INDEX": "J", "R_THUMB": "SPACE"
     };
 
-    // Calculate how much the hand and finger should move to "press" the target key
-    const getKeyOffset = (): { row: number, lateral: number } => {
-        if (!activeKey) return { row: 0, lateral: 0 };
-        const k = activeKey.toLowerCase();
-
-        // rows: -2 (number), -1 (top), 0 (home), 1 (bottom)
-        const rows: Record<string, number> = {
-            '1': -2, '2': -2, '3': -2, '4': -2, '5': -2, '6': -2, '7': -2, '8': -2, '9': -2, '0': -2, '-': -2, '=': -2,
-            'q': -1, 'w': -1, 'e': -1, 'r': -1, 't': -1, 'y': -1, 'u': -1, 'i': -1, 'o': -1, 'p': -1, '[': -1, ']': -1,
-            'a': 0, 's': 0, 'd': 0, 'f': 0, 'g': 0, 'h': 0, 'j': 0, 'k': 0, 'l': 0, ';': 0, '\'': 0,
-            'z': 1, 'x': 1, 'c': 1, 'v': 1, 'b': 1, 'n': 1, 'm': 1, ',': 1, '.': 1, '/': 1,
-            ' ': 0
-        };
-
-        // horizontal stretching relative to neutral finger position
-        const cols: Record<string, number> = {
-            't': -1, 'g': -1, 'b': -1, '5': -1, // L_INDEX reaches right
-            'y': 1, 'h': 1, 'n': 1, '6': 1, // R_INDEX reaches left
-            'c': -0.5, 'x': 0.5, 'z': 1 // bottom row shifts
-        };
-
-        return {
-            row: rows[k] ?? 0,
-            lateral: cols[k] ?? 0
-        };
-    };
-
-    const offset = getKeyOffset();
+    // Hand shifting based on row logic removed per user request
     const isLeftActive = activeFinger?.startsWith('L_');
     const isRightActive = activeFinger?.startsWith('R_');
 
-    // Hands shift slightly forward/back to reach rows
-    const leftHandY = isLeftActive ? offset.row * 8 : 0;
-    const rightHandY = isRightActive ? offset.row * 8 : 0;
+    // Hands no longer shift forward/back physically (User requested static position)
+    const leftHandY = 0;
+    const rightHandY = 0;
 
-    // Slight panning of the hand for horizontal reaches
-    const leftHandX = isLeftActive ? offset.lateral * -4 : 0;
-    const rightHandX = isRightActive ? offset.lateral * -4 : 0;
+    // No longer panning horizontally
+    const leftHandX = 0;
+    const rightHandX = 0;
 
     const renderFinger = (fingerId: Finger, baseHeight: number, width: string, bottom: string, left?: string, right?: string, rotate: string = "0deg", labelRotate: string = "0deg") => {
         const isActive = activeFinger === fingerId;
         const isThumb = fingerId.includes("THUMB");
         const defaultKey = FINGER_NAMES[fingerId as string];
 
-        // Active finger stretches/curls and presses
-        let fingerY = 0;
+        // Active finger stretches/curls and presses disabled
+        const fingerY = 0;
         let fingerScale = 1;
-        let fingerH = baseHeight;
+        const fingerH = baseHeight;
 
         if (isActive && !isThumb) {
-            fingerY = offset.row * 15; // move along Y
-            if (offset.row === -1 || offset.row === -2) fingerH += Math.abs(offset.row) * 10; // lengthen finger
-            if (offset.row === 1) fingerH -= 10; // curl finger shorter
             fingerScale = 1.05; // slight pop when pressing
         } else if (isActive && isThumb) {
             fingerScale = 1.05;
-            fingerY = 5; // thumb pressing down
         }
 
         return (
