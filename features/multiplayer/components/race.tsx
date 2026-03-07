@@ -348,7 +348,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .on(
                 "postgres_changes",
                 { event: "UPDATE", schema: "public", table: "multiplayer_rooms", filter: `id=eq.${roomId}` },
-                (payload) => {
+                (payload: { new: Record<string, string> }) => {
                     const newStatus = payload.new.status;
                     if (newStatus === "racing") {
                         const seedSuffix = payload.new.updated_at || Date.now().toString();
@@ -393,13 +393,13 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .on(
                 "broadcast",
                 { event: "player_update" },
-                (message) => {
+                (message: { payload: unknown }) => {
                     const payload = message.payload as LivePlayerSyncPayload | null;
                     if (!payload || !payload.userId) return;
                     applyLiveUpdate(payload);
                 }
             )
-            .on("presence", { event: "leave" }, ({ leftPresences }) => {
+            .on("presence", { event: "leave" }, ({ leftPresences }: { leftPresences: unknown[] }) => {
                 // When a client disconnects, remove them from the room in the DB.
                 // The existing postgres_changes DELETE listener will then refresh
                 // the player list for everyone still connected.
@@ -415,7 +415,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     .eq("room_id", roomId)
                     .in("user_id", leftUserIds);
             })
-            .subscribe((status) => {
+            .subscribe((status: string) => {
                 if (status === "SUBSCRIBED") {
                     // Track our own presence so the server knows we're online.
                     void channel.track({ userId: user!.id });
@@ -469,7 +469,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .update(updateData as unknown as never)
             .eq("room_id", roomId)
             .eq("user_id", user.id)
-            .then(({ error }) => {
+            .then(({ error }: { error: { message: string } | null }) => {
                 if (error) {
                     console.error("DB finish update error:", error.message);
                 }
