@@ -30,10 +30,10 @@ export async function generateMetadata({ params }: { params: Promise<{ moduleId:
     }
 
     return {
-        title: `${lesson.title} - ${foundModule.title} | Typecade Academy`,
+        title: `${lesson.title} - ${foundModule.title} | Typecade Learn`,
         description: lesson.instruction,
         openGraph: {
-            title: `${lesson.title} | Typecade Academy`,
+            title: `${lesson.title} | Typecade Learn`,
             description: lesson.instruction,
             type: "website",
         }

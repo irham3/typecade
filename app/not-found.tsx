@@ -61,7 +61,7 @@ export default function NotFound() {
                     </Button>
                     <Button asChild variant="ghost" className="gap-2 px-5 py-3 text-text-dim">
                         <Link href="/leaderboard">
-                            Rankings
+                            Leaderboard
                             <ArrowRight size={14} />
                         </Link>
                     </Button>

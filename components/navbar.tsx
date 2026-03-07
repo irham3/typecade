@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -20,10 +21,10 @@ import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
 
 const navItems = [
-    { path: "/", icon: Keyboard, label: "Core" },
-    { path: "/multiplayer", icon: Users, label: "Arena" },
-    { path: "/learn", icon: Play, label: "Academy" },
-    { path: "/leaderboard", icon: Trophy, label: "Rankings" },
+    { path: "/", icon: Keyboard, label: "Practice" },
+    { path: "/multiplayer", icon: Users, label: "Multiplayer" },
+    { path: "/learn", icon: Play, label: "Learn" },
+    { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
 ];
 
 export function Navbar() {
