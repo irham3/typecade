@@ -50,13 +50,13 @@ export function HomeClient() {
     const setNumbers = useStore(state => state.setNumbers);
 
     return (
-        <main className="flex-1 w-full max-w-6xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center pb-8 sm:pb-16 relative">
+        <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center pb-8 lg:pb-16 relative">
 
-            {/* ── Settings Trigger Button ── */}
-            <div className="flex items-center justify-center mb-6 sm:mb-10 w-full z-10 relative">
+            {/* ── Settings Trigger Button (Mobile & Tablet) ── */}
+            <div className="flex lg:hidden items-center justify-center mb-6 w-full z-10 relative">
                 <Button
                     variant="ghost"
-                    className="flexItems-center gap-3 rounded-2xl px-5 py-6 sm:py-7 shadow-lg shadow-black/20 hover:shadow-accent/10 transition-all border border-white/5 glass group text-base sm:text-lg"
+                    className="flex items-center gap-3 rounded-2xl px-5 py-6 shadow-lg shadow-black/20 hover:shadow-accent/10 transition-all border border-white/5 glass group text-base"
                     onClick={() => setIsSettingsModalOpen(true)}
                 >
                     <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -73,7 +73,7 @@ export function HomeClient() {
                         {(punctuation || numbers) && activeTab !== "Custom" && (
                             <>
                                 <span className="text-text-dim/40">•</span>
-                                <span className="text-accent flex gap-1 text-sm tracking-widest bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
+                                <span className="text-accent flex gap-1 text-[11px] tracking-widest bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
                                     {punctuation && <span>@</span>}
                                     {numbers && <span>#</span>}
                                 </span>
@@ -82,8 +82,8 @@ export function HomeClient() {
                         {activeTab !== "Custom" && (
                             <>
                                 <span className="text-text-dim/40">•</span>
-                                <span className="text-text-dim uppercase text-sm flex items-center gap-1">
-                                    <Globe size={12} className="opacity-50" />
+                                <span className="text-text-dim uppercase text-[11px] flex items-center gap-1">
+                                    <Globe size={10} className="opacity-50" />
                                     {language}
                                 </span>
                             </>
@@ -91,6 +91,140 @@ export function HomeClient() {
                     </div>
                 </Button>
             </div>
+
+            {/* ── Settings Bar (Desktop only) ── */}
+            <motion.div layout className="hidden lg:flex items-center justify-center gap-2 mb-10 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full z-10 relative">
+                <motion.div layout>
+                    <SegmentedControl
+                        options={[...modeOptions]}
+                        value={activeTab}
+                        onChange={(val) => {
+                            setActiveTab(val as ModeOption);
+                            setSubOption(
+                                val === "Words" ? "50"
+                                    : val === "Time" ? "60s"
+                                        : val === "Custom" ? ""
+                                            : "Medium"
+                            );
+                        }}
+                        className="bg-transparent border-transparent p-0"
+                    />
+                </motion.div>
+
+                <AnimatePresence mode="popLayout">
+                    {activeTab !== "Custom" && (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
+                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                        >
+                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <SegmentedControl
+                                options={subOptions[activeTab]}
+                                value={subOption}
+                                onChange={setSubOption}
+                                variant="gradient"
+                                className="bg-transparent border-transparent p-0"
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence mode="popLayout">
+                    {(activeTab === "Words" || activeTab === "Time") && (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
+                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                        >
+                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+
+                            <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                    variant={punctuation ? "activeGradient" : "ghost"}
+                                    className="px-3 py-1.5 text-sm"
+                                    onClick={() => setPunctuation(!punctuation)}
+                                >
+                                    @ punctuation
+                                </Button>
+                                <Button
+                                    variant={numbers ? "activeGradient" : "ghost"}
+                                    className="px-3 py-1.5 text-sm"
+                                    onClick={() => setNumbers(!numbers)}
+                                >
+                                    # numbers
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === "Custom" && (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
+                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                        >
+                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <Button
+                                variant="outline"
+                                className="px-3 py-1.5 text-sm gap-2"
+                                onClick={() => {
+                                    setCustomTextDraft(customText);
+                                    setIsCustomModalOpen(true);
+                                }}
+                            >
+                                <PenLine size={14} />
+                                Edit Text
+                            </Button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence mode="popLayout">
+                    {activeTab !== "Custom" && (
+                        <>
+                            <motion.div layout className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <motion.div layout>
+                                <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0"
+                                        >
+                                            <Globe size={14} className="opacity-50" />
+                                            <span>{language}</span>
+                                            <ChevronDown size={12} className={`opacity-30 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {[
+                                            { code: "EN", label: "English" },
+                                            { code: "ID", label: "Indonesia" }
+                                        ].map(lang => (
+                                            <DropdownMenuItem
+                                                key={lang.code}
+                                                onClick={() => setLanguage(lang.code as "EN" | "ID")}
+                                                className={`justify-between min-w-30 ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
+                                            >
+                                                {lang.label}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+            </motion.div>
 
             {/* ── Typing Area — contained with accent indicator ── */}
             <div className="typing-panel w-full px-2 sm:px-6 md:px-8 py-4 sm:py-6">

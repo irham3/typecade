@@ -255,7 +255,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     const showBlurOverlay = !isFocused && status !== "finished";
 
     return (
-        <div className="w-full max-w-5xl flex flex-col items-center relative" ref={containerRef} onClick={focusInput}>
+        <div className="w-full flex flex-col items-center relative" ref={containerRef} onClick={focusInput}>
 
             <input
                 ref={inputRef}
@@ -309,13 +309,13 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         {/* Typing Area */}
                         <div className="w-full relative">
                             <div
-                                className="w-full font-mono text-xl sm:text-3xl md:text-[2rem] leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none"
+                                className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none"
                             >
                                 <div
                                     className="h-[5.4em] overflow-hidden relative w-full"
                                     style={{
-                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 92%, transparent 100%)",
-                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 92%, transparent 100%)",
+                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
+                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
                                     }}
                                 >
                                     <div
