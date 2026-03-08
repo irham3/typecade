@@ -195,7 +195,7 @@ export function LearnModule() {
 
                     <div className="mb-5 sm:mb-8 pt-2">
                         <h3 className="text-2xl sm:text-3xl font-display font-medium text-white mb-2 sm:mb-3">{currentLesson.title}</h3>
-                        <p className="text-text-dim text-xs sm:text-sm leading-relaxed max-w-lg">
+                        <p className="text-text-dim text-xs sm:text-sm leading-relaxed max-w-full">
                             {currentLesson.instruction}
                         </p>
                     </div>

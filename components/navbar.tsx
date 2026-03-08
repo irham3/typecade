@@ -22,7 +22,7 @@ import { ConfirmModal } from "@/components/confirm-modal";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
-    { path: "/multiplayer", icon: Users, label: "Multiplayer" },
+    { path: "/arena", icon: Users, label: "Arena" },
     { path: "/learn", icon: Play, label: "Learn" },
     { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
 ];
