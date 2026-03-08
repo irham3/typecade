@@ -192,22 +192,23 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     };
 
     return (
-        <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 pt-4 pb-12 relative z-10 font-sans">
+        <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-6 sm:gap-8 pt-2 sm:pt-4 pb-8 sm:pb-12 relative z-10 font-sans">
 
             {/* Left Column: Create Room Form */}
             <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
-                className="w-full lg:w-5/12 h-fit lg:sticky lg:top-24 glass rounded-3xl p-8 flex flex-col shadow-2xl relative overflow-hidden glow-accent border border-white/5"
+                className="w-full lg:w-5/12 h-fit lg:sticky lg:top-24 glass rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col shadow-2xl relative overflow-hidden glow-accent border border-white/5"
             >
                 {/* Decorative background accent inside the card */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
                 <div className="absolute left-0 bottom-0 w-48 h-48 bg-accent-secondary/5 rounded-full blur-2xl pointer-events-none translate-y-1/2 -translate-x-1/2" />
 
-                <h2 className="text-3xl font-display font-bold text-foreground flex items-center gap-3 mb-2 relative z-10">
-                    <div className="p-2.5 bg-accent/15 rounded-xl border border-accent/20">
-                        <Plus size={24} className="text-accent" />
+                <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground flex items-center gap-3 mb-2 relative z-10">
+                    <div className="p-2 sm:p-2.5 bg-accent/15 rounded-xl border border-accent/20">
+                        <Plus size={20} className="text-accent sm:hidden" />
+                        <Plus size={24} className="text-accent hidden sm:block" />
                     </div>
                     Host Arena
                 </h2>
@@ -235,7 +236,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                         <ChevronDown size={16} className="opacity-50 text-text-dim" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-full min-w-[200px] glass rounded-xl border-white/10 p-1">
+                                <DropdownMenuContent className="w-full min-w-[200px] rounded-xl border-white/10 p-1">
                                     <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateLang("English")}>English</DropdownMenuItem>
                                     <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateLang("Bahasa Indonesia")}>Bahasa Indonesia</DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -250,7 +251,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                         <ChevronDown size={16} className="opacity-50 text-text-dim" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-full min-w-[200px] glass rounded-xl border-white/10 p-1">
+                                <DropdownMenuContent className="w-full min-w-[200px] rounded-xl border-white/10 p-1">
                                     <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateMode("Time (60s)")}>Time (60s)</DropdownMenuItem>
                                     <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateMode("Words (50)")}>Words (50)</DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -291,7 +292,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                             variant="primary"
                             onClick={handleCreateRoom}
                             disabled={isLoading || !supabaseReady}
-                            className={`w-full py-7 font-display font-bold text-lg rounded-2xl flex items-center justify-center gap-2 group transition-all duration-300 ${!isLoading && supabaseReady ? "hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]" : "opacity-70"}`}
+                            className={`w-full py-5 sm:py-7 font-display font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 group transition-all duration-300 ${!isLoading && supabaseReady ? "hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]" : "opacity-70"}`}
                         >
                             {isLoading ? "Provisioning Server..." : "Deploy Arena"}
                             {!isLoading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
@@ -307,9 +308,9 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                 transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
                 className="w-full lg:w-7/12 flex flex-col"
             >
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6 px-2">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 sm:mb-8 gap-4 sm:gap-6 px-2">
                     <div>
-                        <h2 className="text-3xl font-display font-bold text-foreground flex items-center gap-3 mb-2">
+                        <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
                             <Users size={28} className="text-accent-secondary" />
                             Active Arenas
                         </h2>

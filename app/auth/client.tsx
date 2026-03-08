@@ -42,8 +42,8 @@ export function AuthClient() {
 
         // Force redirect to production if not on localhost to avoid Supabase default behavior
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        const redirectUrl = isLocal 
-            ? "http://localhost:3000/profile" 
+        const redirectUrl = isLocal
+            ? "http://localhost:3000/profile"
             : "https://typecade.pages.dev/profile";
 
         await client.auth.signInWithOAuth({
@@ -140,8 +140,8 @@ export function AuthClient() {
     }, [cooldownSeconds]);
 
     return (
-        <main className="flex-1 w-full max-w-5xl px-6 flex flex-col items-center justify-start pb-20 relative pt-12">
-            <div className="w-full max-w-xl bg-[#111111] border border-white/10 rounded-2xl p-8 shadow-2xl font-sans">
+        <main className="flex-1 w-full max-w-5xl px-4 sm:px-6 flex flex-col items-center justify-start pb-12 sm:pb-20 relative pt-6 sm:pt-12">
+            <div className="w-full max-w-xl bg-[#111111] border border-white/10 rounded-2xl p-5 sm:p-8 shadow-2xl font-sans">
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
                         <ShieldCheck size={20} />

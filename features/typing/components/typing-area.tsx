@@ -281,26 +281,26 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         {/* Live stats bar — collapses when not playing */}
                         <div
                             className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out ${status === "playing"
-                                ? "opacity-100 h-10 mb-3"
+                                ? "opacity-100 h-8 sm:h-10 mb-2 sm:mb-3"
                                 : "opacity-0 h-0 mb-0"
                                 }`}
                         >
-                            <div className="flex items-center gap-5">
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-2xl font-bold text-accent tabular-nums text-glow-accent">{wpm}</span>
-                                    <span className="text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
+                            <div className="flex items-center gap-3 sm:gap-5">
+                                <div className="flex items-baseline gap-1 sm:gap-1.5">
+                                    <span className="text-lg sm:text-2xl font-bold text-accent tabular-nums text-glow-accent">{wpm}</span>
+                                    <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
                                 </div>
-                                <div className="w-px h-4 bg-white/6" />
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
-                                    <span className="text-[10px] text-text-dim uppercase tracking-widest">%</span>
+                                <div className="w-px h-3 sm:h-4 bg-white/6" />
+                                <div className="flex items-baseline gap-1 sm:gap-1.5">
+                                    <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
+                                    <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">%</span>
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-1.5">
-                                <span className="text-2xl font-bold text-foreground/80 tabular-nums">
+                            <div className="flex items-baseline gap-1 sm:gap-1.5">
+                                <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">
                                     {mode === "time" ? timeLeft : `${progress}%`}
                                 </span>
-                                <span className="text-[10px] text-text-dim uppercase tracking-widest">
+                                <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">
                                     {mode === "time" ? "sec" : "done"}
                                 </span>
                             </div>
@@ -309,7 +309,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         {/* Typing Area */}
                         <div className="w-full relative">
                             <div
-                                className="w-full font-mono text-2xl sm:text-[1.75rem] leading-[1.8] tracking-tight text-left py-4 relative cursor-text select-none"
+                                className="w-full font-mono text-xl sm:text-3xl md:text-[2rem] leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none"
                             >
                                 <div
                                     className="h-[5.4em] overflow-hidden relative w-full"
@@ -368,7 +368,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         )}
 
                         {/* Action buttons */}
-                        <div className="w-full flex justify-center gap-3 mt-8 items-center">
+                        <div className="w-full flex justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 items-center flex-wrap">
                             <Button
                                 variant="ghost"
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
@@ -406,8 +406,8 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         className="w-full flex flex-col mt-8"
                     >
                         {/* Primary stat with CountUp */}
-                        <div className="flex flex-col items-center text-center mb-10">
-                            <div className="text-[7rem] sm:text-[9rem] font-mono font-bold text-foreground leading-none tracking-tighter text-glow-accent">
+                        <div className="flex flex-col items-center text-center mb-6 sm:mb-10">
+                            <div className="text-[5rem] sm:text-[7rem] md:text-[9rem] font-mono font-bold text-foreground leading-none tracking-tighter text-glow-accent">
                                 <CountUp
                                     end={wpm}
                                     duration={1500}
@@ -420,16 +420,16 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         </div>
 
                         {/* Secondary stats grid — premium cards */}
-                        <div className="grid grid-cols-3 gap-3 mx-auto w-full max-w-lg">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mx-auto w-full max-w-lg">
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.15 }}
-                                className="glass rounded-2xl flex flex-col items-center py-5 px-4 group hover:glow-accent transition-shadow duration-300"
+                                className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-3 sm:py-5 px-2 sm:px-4 group hover:glow-accent transition-shadow duration-300"
                             >
-                                <Target size={16} className="text-accent-secondary mb-2 opacity-60" />
-                                <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Accuracy</span>
-                                <span className="text-2xl font-mono font-bold text-foreground">
+                                <Target size={14} className="text-accent-secondary mb-1 sm:mb-2 opacity-60" />
+                                <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Accuracy</span>
+                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">
                                     <CountUp end={accuracy} duration={1200} delay={200} suffix="%" />
                                 </span>
                             </motion.div>
@@ -437,28 +437,28 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.25 }}
-                                className="glass rounded-2xl flex flex-col items-center py-5 px-4"
+                                className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-3 sm:py-5 px-2 sm:px-4"
                             >
-                                <Clock size={16} className="text-accent mb-2 opacity-60" />
-                                <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Time</span>
-                                <span className="text-2xl font-mono font-bold text-foreground">{mode === "time" ? `${limit}s` : `${Math.ceil(typedChars.length / 5)}s`}</span>
+                                <Clock size={14} className="text-accent mb-1 sm:mb-2 opacity-60" />
+                                <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Time</span>
+                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">{mode === "time" ? `${limit}s` : `${Math.ceil(typedChars.length / 5)}s`}</span>
                             </motion.div>
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.35 }}
-                                className="glass rounded-2xl flex flex-col items-center py-5 px-4"
+                                className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-3 sm:py-5 px-2 sm:px-4"
                             >
-                                <Type size={16} className="text-accent mb-2 opacity-60" />
-                                <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Characters</span>
-                                <span className="text-2xl font-mono font-bold text-foreground">
+                                <Type size={14} className="text-accent mb-1 sm:mb-2 opacity-60" />
+                                <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Characters</span>
+                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">
                                     <CountUp end={typedChars.length} duration={1000} delay={300} />
                                 </span>
                             </motion.div>
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex gap-3 justify-center mt-10">
+                        <div className="flex gap-2 sm:gap-3 justify-center mt-6 sm:mt-10 flex-wrap">
                             <Button
                                 variant="outline"
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}

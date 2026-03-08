@@ -48,7 +48,7 @@ export default function NotFound() {
     }, [router]);
 
     return (
-        <main className="flex-1 w-full max-w-5xl px-6 flex flex-col items-center justify-center pb-20 relative pt-8 min-h-[65vh]">
+        <main className="flex-1 w-full max-w-5xl px-4 sm:px-6 flex flex-col items-center justify-center pb-12 sm:pb-20 relative pt-4 sm:pt-8 min-h-[55vh] sm:min-h-[65vh]">
             <div className="flex flex-col items-center text-center">
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}

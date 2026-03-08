@@ -172,14 +172,14 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
             </div>
 
             {/* Main card */}
-            <div className="w-full glass rounded-[24px] border border-white/5 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="w-full glass rounded-[20px] sm:rounded-[24px] border border-white/5 p-4 sm:p-6 md:p-8 shadow-2xl relative overflow-hidden">
                 {/* Ambient glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[150px] bg-accent/8 blur-[100px] rounded-full pointer-events-none" />
 
                 {/* Lesson Header — compact */}
-                <div className="relative z-10 mb-6 text-center">
-                    <h2 className="text-2xl sm:text-3xl font-display font-medium text-white mb-2">{lesson.title}</h2>
-                    <p className="text-text-dim text-sm max-w-xl mx-auto leading-relaxed">{lesson.instruction}</p>
+                <div className="relative z-10 mb-4 sm:mb-6 text-center">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-display font-medium text-white mb-1.5 sm:mb-2">{lesson.title}</h2>
+                    <p className="text-text-dim text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">{lesson.instruction}</p>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -196,16 +196,16 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             </div>
                             <h3 className="text-xl font-display font-medium mb-8 text-white">Lesson Completed</h3>
 
-                            <div className="flex gap-12 mb-10">
+                            <div className="flex gap-6 sm:gap-12 mb-8 sm:mb-10 flex-wrap justify-center">
                                 <div className="text-center">
-                                    <span className="block text-text-dim text-[11px] uppercase tracking-[0.2em] mb-2 font-mono">Speed</span>
-                                    <span className="text-4xl font-mono text-accent font-bold">{wpm}</span>
-                                    <span className="text-sm text-text-dim/50 ml-1">wpm</span>
+                                    <span className="block text-text-dim text-[10px] sm:text-[11px] uppercase tracking-[0.2em] mb-1.5 sm:mb-2 font-mono">Speed</span>
+                                    <span className="text-3xl sm:text-4xl font-mono text-accent font-bold">{wpm}</span>
+                                    <span className="text-xs sm:text-sm text-text-dim/50 ml-1">wpm</span>
                                 </div>
                                 <div className="text-center">
-                                    <span className="block text-text-dim text-[11px] uppercase tracking-[0.2em] mb-2 font-mono">Accuracy</span>
-                                    <span className="text-4xl font-mono text-white font-bold">{accuracy}</span>
-                                    <span className="text-sm text-text-dim/50 ml-1">%</span>
+                                    <span className="block text-text-dim text-[10px] sm:text-[11px] uppercase tracking-[0.2em] mb-1.5 sm:mb-2 font-mono">Accuracy</span>
+                                    <span className="text-3xl sm:text-4xl font-mono text-white font-bold">{accuracy}</span>
+                                    <span className="text-xs sm:text-sm text-text-dim/50 ml-1">%</span>
                                 </div>
                             </div>
 
@@ -245,7 +245,7 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             </div>
 
                             {/* Text Area */}
-                            <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 sm:p-8 mb-6 font-mono text-xl sm:text-2xl leading-relaxed tracking-tight relative">
+                            <div className="bg-[#0A0A0A] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 mb-4 sm:mb-6 font-mono text-lg sm:text-2xl md:text-3xl leading-relaxed tracking-tight relative">
                                 <div
                                     className="h-[4.5em] overflow-hidden"
                                     style={{
@@ -262,8 +262,8 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                                 </div>
                             </div>
 
-                            {/* Keyboard Visualizer & Fingers merged overlay */}
-                            <div className="relative w-full max-w-2xl mx-auto flex flex-col items-center select-none pointer-events-none mt-2">
+                            {/* Keyboard Visualizer & Fingers merged overlay — hidden on mobile */}
+                            <div className="relative w-full max-w-2xl mx-auto hidden sm:flex flex-col items-center select-none pointer-events-none mt-2">
                                 <KeyboardVisualizer targetKeys={lesson.targetKeys} nextKey={nextChar} />
                                 <div className="absolute inset-x-0 -bottom-10 pointer-events-none transform translate-y-16">
                                     <HandVisualizer activeFingers={activeFingers} activeKey={nextChar} />

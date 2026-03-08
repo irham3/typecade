@@ -79,10 +79,10 @@ export function LearnModule() {
 
     return (
         <div className="w-full">
-            <div className="w-full grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 items-start">
+            <div className="w-full grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 sm:gap-8 items-start">
 
                 {/* Left: Path/Curriculum Tree */}
-                <div className="w-full lg:h-[calc(100vh-260px)] lg:min-h-[500px] lg:py-4 flex flex-col order-1 relative">
+                <div className="w-full lg:h-[calc(100vh-260px)] lg:min-h-[500px] lg:py-4 flex flex-col order-2 lg:order-1 relative">
                     <div
                         ref={scrollRef}
                         onScroll={checkScroll}
@@ -187,21 +187,21 @@ export function LearnModule() {
                 </div>
 
                 {/* Right: Mock Lesson Viewer */}
-                <div className="w-full bg-[#111111] rounded-[24px] border border-white/5 p-8 flex flex-col justify-between shadow-2xl order-2 overflow-hidden lg:h-[calc(100vh-280px)] lg:max-h-[600px] lg:min-h-[500px] glass glow-accent relative">
+                <div className="w-full bg-[#111111] rounded-[20px] sm:rounded-[24px] border border-white/5 p-5 sm:p-8 flex flex-col justify-between shadow-2xl order-1 lg:order-2 overflow-hidden lg:h-[calc(100vh-280px)] lg:max-h-[600px] lg:min-h-[500px] glass glow-accent relative">
 
-                    <div className="absolute top-0 right-0 p-6">
-                        <span className="text-xs font-mono px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-text-dim tracking-wider">LESSON {currentLesson.id}</span>
+                    <div className="absolute top-0 right-0 p-4 sm:p-6">
+                        <span className="text-[10px] sm:text-xs font-mono px-3 sm:px-4 py-1 sm:py-1.5 bg-white/5 border border-white/10 rounded-full text-text-dim tracking-wider">LESSON {currentLesson.id}</span>
                     </div>
 
-                    <div className="mb-8 pt-2">
-                        <h3 className="text-3xl font-display font-medium text-white mb-3">{currentLesson.title}</h3>
-                        <p className="text-text-dim text-sm leading-relaxed max-w-lg">
+                    <div className="mb-5 sm:mb-8 pt-2">
+                        <h3 className="text-2xl sm:text-3xl font-display font-medium text-white mb-2 sm:mb-3">{currentLesson.title}</h3>
+                        <p className="text-text-dim text-xs sm:text-sm leading-relaxed max-w-lg">
                             {currentLesson.instruction}
                         </p>
                     </div>
 
-                    {/* SVG Keyboard Mock */}
-                    <div className="w-full aspect-[2.2/1] bg-[#0A0A0A] rounded-2xl border border-white/5 relative flex flex-col items-center justify-center gap-1.5 lg:gap-2 p-4 lg:p-6 shadow-inner overflow-hidden">
+                    {/* SVG Keyboard Mock — hidden on mobile where physical keyboard isn't present */}
+                    <div className="hidden sm:flex w-full aspect-[2.2/1] bg-[#0A0A0A] rounded-2xl border border-white/5 relative flex-col items-center justify-center gap-1.5 lg:gap-2 p-4 lg:p-6 shadow-inner overflow-hidden">
                         {KEYBOARD_ROWS.map((row, rIdx) => (
                             <div key={rIdx} className="flex gap-1.5 lg:gap-2 w-full justify-center">
                                 {row.map((k, i) => {
@@ -218,7 +218,7 @@ export function LearnModule() {
                         <div className={`w-[50%] h-8 lg:h-10 rounded-md lg:rounded-lg border mt-1 lg:mt-2 transition-all duration-300 ${currentLesson.targetKeys.includes(" ") ? "bg-accent/20 border-accent shadow-[0_0_15px_rgba(99,102,241,0.3)] scale-105" : "border-white/10 opacity-20"}`} />
                     </div>
 
-                    <div className="mt-8 flex justify-center">
+                    <div className="mt-5 sm:mt-8 flex justify-center">
                         <Link href={`/learn/${currentModule.slug}/${currentLesson.slug}`} className="w-full">
                             <Button
                                 variant="primary"

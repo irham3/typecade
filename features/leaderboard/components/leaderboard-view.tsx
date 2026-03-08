@@ -100,7 +100,7 @@ export function LeaderboardView() {
     };
 
     return (
-        <div className="w-full max-w-4xl flex flex-col pt-8">
+        <div className="w-full max-w-4xl flex flex-col pt-4 sm:pt-8">
 
             {/* Header */}
             <div className="flex flex-col text-center mb-10 items-center">
@@ -108,15 +108,16 @@ export function LeaderboardView() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 glass glow-accent"
+                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 glass glow-accent"
                 >
-                    <Trophy size={30} className="text-accent" />
+                    <Trophy size={24} className="text-accent sm:hidden" />
+                    <Trophy size={30} className="text-accent hidden sm:block" />
                 </motion.div>
                 <motion.h1
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 tracking-tight"
+                    className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-2 sm:mb-3 tracking-tight"
                 >
                     Hall of Fame
                 </motion.h1>
@@ -131,7 +132,7 @@ export function LeaderboardView() {
             </div>
 
             {/* Filter using SegmentedControl */}
-            <div className="flex justify-center mb-10">
+            <div className="flex justify-center mb-6 sm:mb-10 overflow-x-auto hide-scrollbar px-2">
                 <SegmentedControl
                     options={[...filterOptions]}
                     value={filterMode}
@@ -141,14 +142,14 @@ export function LeaderboardView() {
             </div>
 
             {/* Table */}
-            <div className="glass rounded-3xl shadow-2xl overflow-hidden relative">
-                <table className="w-full text-left font-sans text-sm">
+            <div className="glass rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden relative">
+                <table className="w-full text-left font-sans text-xs sm:text-sm">
                     <thead>
                         <tr className="border-b border-white/5">
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim">Rank</th>
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim">User</th>
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim">WPM</th>
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim text-right">Accuracy</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">Rank</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">User</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">WPM</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim text-right">Accuracy</th>
                         </tr>
                     </thead>
                     <motion.tbody
@@ -165,15 +166,15 @@ export function LeaderboardView() {
                                 className={`border-b border-white/4 hover:bg-white/3 transition-colors ${item.isCurrentUser ? "bg-accent/6 border-accent/20 hover:bg-accent/8 relative" : ""
                                     }`}
                             >
-                                <td className="px-6 py-4 font-mono relative">
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono relative">
                                     {item.isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent rounded-r-full" />}
                                     {getRankIcon(item.rank) || (
                                         <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>
                                     )}
                                 </td>
 
-                                <td className="px-6 py-4 font-semibold text-foreground flex items-center gap-2">
-                                    {item.user}
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                                    <span className="truncate max-w-[100px] sm:max-w-none">{item.user}</span>
                                     {item.isCurrentUser && (
                                         <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
                                     )}
@@ -182,11 +183,11 @@ export function LeaderboardView() {
                                     )}
                                 </td>
 
-                                <td className="px-6 py-4 font-mono text-lg font-bold text-accent">
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-base sm:text-lg font-bold text-accent">
                                     <CountUp end={item.wpm} duration={800} delay={i * 30} />
                                 </td>
 
-                                <td className="px-6 py-4 font-mono text-right text-text-dim">
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-right text-text-dim">
                                     {item.acc}%
                                 </td>
                             </motion.tr>

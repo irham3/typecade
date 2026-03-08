@@ -61,21 +61,21 @@ export function Navbar() {
     }, [pathname]);
 
     return (
-        <header className="w-full max-w-6xl px-6 lg:px-8 py-5 flex items-center justify-between z-20 relative">
+        <header className="w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between z-20 relative">
             {/* Logo */}
             <div className="flex flex-1 items-center justify-start">
-                <Link href="/" className="flex items-center gap-3 cursor-pointer group shrink-0">
+                <Link href="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0">
                     <div className="relative">
                         <Image
                             src="/typecade-logo.png"
                             alt="Typecade"
-                            width={36}
-                            height={36}
-                            className="rounded-xl group-hover:scale-110 transition-transform duration-300"
+                            width={32}
+                            height={32}
+                            className="rounded-xl group-hover:scale-110 transition-transform duration-300 sm:w-9 sm:h-9"
                         />
                         <div className="absolute inset-0 rounded-xl bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
-                    <span className="font-display font-bold text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors">
+                    <span className="font-display font-bold text-lg sm:text-xl tracking-tight text-foreground/90 group-hover:text-foreground transition-colors">
                         Typecade
                     </span>
                 </Link>
@@ -202,7 +202,7 @@ export function Navbar() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-4 right-4 glass rounded-2xl p-3 md:hidden z-50 mt-2"
+                    className="absolute top-full left-2 right-2 sm:left-4 sm:right-4 glass rounded-2xl p-3 md:hidden z-50 mt-2"
                 >
                     {navItems.map((item) => {
                         const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));

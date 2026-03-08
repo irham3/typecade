@@ -359,6 +359,31 @@ body {
   animation: aurora-drift-3 36s ease-in-out infinite;
 }
 
+/* Mobile-optimized aurora — smaller, less GPU intensive */
+@media (max-width: 768px) {
+  .aurora-blob-1 {
+    width: 400px;
+    height: 400px;
+    filter: blur(80px);
+  }
+
+  .aurora-blob-2 {
+    width: 300px;
+    height: 300px;
+    filter: blur(80px);
+  }
+
+  .aurora-blob-3 {
+    width: 250px;
+    height: 250px;
+    filter: blur(90px);
+  }
+
+  .bg-grid {
+    background-size: 24px 24px;
+  }
+}
+
 /* Center spotlight */
 .bg-vignette {
   position: fixed;
@@ -487,4 +512,40 @@ body::before {
 ::selection {
   background: rgba(var(--accent-rgb), 0.25);
   color: var(--foreground);
+}
+
+/* ── Mobile scroll utilities ── */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Safe area padding for notched devices ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ── Touch-friendly interactive elements ── */
+@media (pointer: coarse) {
+
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ── Responsive text helpers ── */
+@media (max-width: 640px) {
+  .typing-panel::before {
+    left: 5%;
+    right: 5%;
+  }
 }

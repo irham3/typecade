@@ -10,7 +10,7 @@ export function PracticeClient({ lesson, moduleSlug, nextLessonSlug }: { lesson:
     const updateProgress = useLearnStore(state => state.updateProgress);
 
     return (
-        <div className="w-full max-w-5xl px-6 flex flex-col items-center justify-center flex-1">
+        <div className="w-full max-w-5xl px-3 sm:px-6 flex flex-col items-center justify-center flex-1">
             <PracticeArea
                 lesson={lesson}
                 onBack={() => router.push("/learn")}

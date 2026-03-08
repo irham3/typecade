@@ -3,7 +3,7 @@ import { Github } from "lucide-react";
 
 export function Footer() {
     return (
-        <footer className="w-full max-w-5xl px-6 py-8 flex justify-center text-text-dim text-xs font-mono border-t border-white/4 mt-auto relative z-10">
+        <footer className="w-full max-w-5xl px-4 sm:px-6 py-6 sm:py-8 flex justify-center text-text-dim text-xs font-mono border-t border-white/4 mt-auto relative z-10">
             <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild className="gap-1.5">
                     <a href="https://github.com/irham3/typecade" target="_blank" rel="noreferrer">
