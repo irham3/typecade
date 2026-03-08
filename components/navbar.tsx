@@ -202,7 +202,7 @@ export function Navbar() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-2 right-2 sm:left-4 sm:right-4 glass rounded-2xl p-3 md:hidden z-50 mt-2"
+                    className="absolute top-full left-2 right-2 sm:left-4 sm:right-4 bg-panel-elevated/95 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/50 rounded-2xl p-3 md:hidden z-50 mt-2"
                 >
                     {navItems.map((item) => {
                         const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
