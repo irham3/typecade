@@ -100,110 +100,112 @@ export function LeaderboardView() {
     };
 
     return (
-        <div className="w-full max-w-4xl flex flex-col pt-4 sm:pt-8">
-
-            {/* Header */}
-            <div className="flex flex-col text-center mb-10 items-center">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 glass glow-accent"
-                >
-                    <Trophy size={24} className="text-accent sm:hidden" />
-                    <Trophy size={30} className="text-accent hidden sm:block" />
-                </motion.div>
-                <motion.h1
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-2 sm:mb-3 tracking-tight"
-                >
-                    Hall of Fame
-                </motion.h1>
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-text-dim text-base"
-                >
-                    Top speed typists from across the globe.
-                </motion.p>
-            </div>
-
-            {/* Filter using SegmentedControl */}
-            <div className="flex justify-center mb-6 sm:mb-10 overflow-x-auto hide-scrollbar px-2">
-                <SegmentedControl
-                    options={[...filterOptions]}
-                    value={filterMode}
-                    onChange={(val) => setFilterMode(val as FilterOption)}
-                    size="sm"
-                />
+        <div className="w-full max-w-4xl flex flex-col pt-6 sm:pt-10">
+            {/* Header: actions only, no redundant title */}
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-5 sm:mb-6 gap-3 px-1">
+                <p className="text-text-dim text-sm hidden sm:block">Top speed typists from across the globe.</p>
+                <div className="flex justify-start sm:justify-end overflow-x-auto hide-scrollbar">
+                    <SegmentedControl
+                        options={[...filterOptions]}
+                        value={filterMode}
+                        onChange={(val) => setFilterMode(val as FilterOption)}
+                        size="sm"
+                    />
+                </div>
             </div>
 
             {/* Table */}
-            <div className="glass rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden relative">
-                <table className="w-full text-left font-sans text-xs sm:text-sm">
-                    <thead>
-                        <tr className="border-b border-white/5">
-                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">Rank</th>
-                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">User</th>
-                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">WPM</th>
-                            <th className="px-3 sm:px-6 py-3 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim text-right">Accuracy</th>
-                        </tr>
-                    </thead>
-                    <motion.tbody
-                        initial="hidden"
-                        animate="visible"
-                    >
-                        {board.map((item, i) => (
-                            <motion.tr
-                                key={item.user + i}
-                                custom={i}
-                                initial="hidden"
-                                animate="visible"
-                                variants={listItemVariants}
-                                className={`border-b border-white/4 hover:bg-white/3 transition-colors ${item.isCurrentUser ? "bg-accent/6 border-accent/20 hover:bg-accent/8 relative" : ""
-                                    }`}
-                            >
-                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono relative">
-                                    {item.isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent rounded-r-full" />}
-                                    {getRankIcon(item.rank) || (
-                                        <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>
-                                    )}
-                                </td>
-
-                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
-                                    <span className="truncate max-w-[100px] sm:max-w-none">{item.user}</span>
-                                    {item.isCurrentUser && (
-                                        <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
-                                    )}
-                                    {item.rank <= 3 && (
-                                        <Flame size={12} className="text-accent-secondary opacity-50" />
-                                    )}
-                                </td>
-
-                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-base sm:text-lg font-bold text-accent">
-                                    <CountUp end={item.wpm} duration={800} delay={i * 30} />
-                                </td>
-
-                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-right text-text-dim">
-                                    {item.acc}%
-                                </td>
-                            </motion.tr>
-                        ))}
-                        {!isLoading && board.length === 0 && (
+            <div className="glass rounded-2xl sm:rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
+                {/* Header table (NOT SCROLLABLE) */}
+                <div className="pr-1 sm:pr-2 bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-sm z-20">
+                    <table className="w-full text-left font-sans text-xs sm:text-sm">
+                        <colgroup>
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[50%] sm:w-[55%]" />
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[20%] sm:w-[15%]" />
+                        </colgroup>
+                        <thead>
                             <tr>
-                                <td colSpan={4} className="px-6 py-12 text-center text-text-dim">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Trophy size={24} className="opacity-20" />
-                                        <span>{!supabaseReady ? "Database connecting... (If this persists, please restart your 'npm run dev' to load .env variables)" : "No results yet."}</span>
-                                    </div>
-                                </td>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">Rank</th>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">User</th>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">WPM</th>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim text-right">Accuracy</th>
                             </tr>
-                        )}
-                    </motion.tbody>
-                </table>
+                        </thead>
+                    </table>
+                </div>
+
+                {/* Body table (SCROLLABLE) */}
+                <div className="max-h-[500px] sm:max-h-[750px] overflow-y-auto pr-1 sm:pr-2 
+                    [&::-webkit-scrollbar]:w-2 
+                    [&::-webkit-scrollbar-track]:bg-transparent 
+                    [&::-webkit-scrollbar-thumb]:bg-white/10 
+                    [&::-webkit-scrollbar-thumb]:rounded-full 
+                    hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+                    <table className="w-full text-left font-sans text-xs sm:text-sm">
+                        <colgroup>
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[50%] sm:w-[55%]" />
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[20%] sm:w-[15%]" />
+                        </colgroup>
+                        <motion.tbody
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            {board.map((item, i) => (
+                                <motion.tr
+                                    key={item.user + i}
+                                    custom={i}
+                                    initial="hidden"
+                                    animate="visible"
+                                    variants={listItemVariants}
+                                    className={`border-b border-white/4 hover:bg-white/3 transition-colors ${item.isCurrentUser ? "bg-accent/6 border-accent/20 hover:bg-accent/8 relative" : ""
+                                        }`}
+                                >
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono relative">
+                                        {item.isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent rounded-r-full" />}
+                                        {getRankIcon(item.rank) || (
+                                            <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>
+                                        )}
+                                    </td>
+
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                                        <span className="truncate max-w-[100px] sm:max-w-none">{item.user}</span>
+                                        {item.isCurrentUser && (
+                                            <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
+                                        )}
+                                        {item.rank <= 3 && (
+                                            <Flame size={12} className="text-accent-secondary opacity-50" />
+                                        )}
+                                    </td>
+
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-base sm:text-lg font-bold text-accent">
+                                        <CountUp end={item.wpm} duration={800} delay={i * 30} />
+                                    </td>
+
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-right text-text-dim">
+                                        {item.acc}%
+                                    </td>
+                                </motion.tr>
+                            ))}
+                            {!isLoading && board.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-12 text-center text-text-dim">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Trophy size={24} className="opacity-20" />
+                                            <span>{!supabaseReady ? "Database connecting... (If this persists, please restart your 'npm run dev' to load .env variables)" : "No results yet."}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </motion.tbody>
+                    </table>
+                </div>
+
+                {/* Soft bottom fade/blur effect */}
+                <div className="absolute bottom-0 left-0 right-3 h-16 bg-linear-to-t from-background/90 to-transparent pointer-events-none z-10" />
             </div>
 
         </div>

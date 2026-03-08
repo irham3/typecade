@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, User, Settings, Play, ChevronDown, Menu, X } from "lucide-react";
+import { Keyboard, Trophy, Users, User, Settings, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -23,7 +23,7 @@ import { ConfirmModal } from "@/components/confirm-modal";
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
     { path: "/arena", icon: Users, label: "Arena" },
-    { path: "/learn", icon: Play, label: "Learn" },
+    { path: "/learn", icon: GraduationCap, label: "Learn" },
     { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
 ];
 

@@ -334,7 +334,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                 </div>
 
                 {/* Soft bottom fade/blur effect */}
-                <div className="absolute bottom-0 left-0 right-3 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+                <div className="absolute bottom-0 left-0 right-3 h-16 bg-linear-to-t from-background to-transparent pointer-events-none z-10" />
             </div>
 
             {/* Host Arena Modal */}
