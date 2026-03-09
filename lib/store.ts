@@ -17,6 +17,7 @@ interface UserStats {
 }
 
 interface TypecadeState {
+    typingStyle: "modern" | "classic";
     theme: "dark" | "light";
     sound: "off" | "soft" | "mechanical";
     caretStyle: "line" | "block" | "underscore";
@@ -25,6 +26,7 @@ interface TypecadeState {
     punctuation: boolean;
     numbers: boolean;
     stats: UserStats;
+    setTypingStyle: (style: "modern" | "classic") => void;
     setTheme: (theme: "dark" | "light") => void;
     setSound: (sound: "off" | "soft" | "mechanical") => void;
     setCaretStyle: (style: "line" | "block" | "underscore") => void;
@@ -45,6 +47,7 @@ const dummyHistory = Array.from({ length: 15 }).map(() => ({
 }));
 
 export const useStore = create<TypecadeState>((set) => ({
+    typingStyle: "modern",
     theme: "dark",
     sound: "off",
     caretStyle: "line",
@@ -61,6 +64,7 @@ export const useStore = create<TypecadeState>((set) => ({
         avgAccuracy: 96.4,
         history: dummyHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     },
+    setTypingStyle: (typingStyle) => set({ typingStyle }),
     setTheme: (theme) => set({ theme }),
     setSound: (sound) => set({ sound }),
     setCaretStyle: (caretStyle) => set({ caretStyle }),

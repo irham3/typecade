@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore } from "@/lib/store";
-import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight } from "lucide-react";
+import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -16,6 +16,11 @@ import {
 
 const TypingView = dynamic(
     () => import("@/features/typing/components/typing-area").then((mod) => mod.TypingView),
+    { ssr: false }
+);
+
+const ClassicTypingView = dynamic(
+    () => import("@/features/typing/components/classic-typing-area").then((mod) => mod.ClassicTypingView),
     { ssr: false }
 );
 
@@ -33,6 +38,8 @@ export function HomeClient() {
     const [activeTab, setActiveTab] = useState<ModeOption>("Time");
     const [subOption, setSubOption] = useState("60s");
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+    const [styleDesktopOpen, setStyleDesktopOpen] = useState(false);
+    const [styleMobileOpen, setStyleMobileOpen] = useState(false);
 
     // Custom Text state
     // Modal states
@@ -48,6 +55,8 @@ export function HomeClient() {
     const setPunctuation = useStore(state => state.setPunctuation);
     const numbers = useStore(state => state.numbers);
     const setNumbers = useStore(state => state.setNumbers);
+    const typingStyle = useStore(state => state.typingStyle);
+    const setTypingStyle = useStore(state => state.setTypingStyle);
 
     return (
         <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center pb-8 lg:pb-16 relative">
@@ -205,7 +214,7 @@ export function HomeClient() {
                                             <ChevronDown size={12} className={`opacity-30 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
                                         {[
                                             { code: "EN", label: "English" },
                                             { code: "ID", label: "Indonesia" }
@@ -224,17 +233,67 @@ export function HomeClient() {
                         </>
                     )}
                 </AnimatePresence>
+
+                <AnimatePresence mode="popLayout">
+                    <motion.div
+                        layout
+                        initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                        animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
+                        exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                    >
+                        <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                        <DropdownMenu open={styleDesktopOpen} onOpenChange={setStyleDesktopOpen}>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0"
+                                >
+                                    <Keyboard size={14} className="opacity-50" />
+                                    <span>{typingStyle === "modern" ? "Modern" : "Classic"}</span>
+                                    <ChevronDown size={12} className={`opacity-30 transition-transform duration-300 ${styleDesktopOpen ? "rotate-180" : ""}`} />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                                {[
+                                    { code: "modern", label: "Modern" },
+                                    { code: "classic", label: "Classic" }
+                                ].map(style => (
+                                    <DropdownMenuItem
+                                        key={style.code}
+                                        onClick={() => setTypingStyle(style.code as "modern" | "classic")}
+                                        className={`justify-between min-w-36 ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
+                                    >
+                                        {style.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </motion.div>
+                </AnimatePresence>
             </motion.div>
 
             {/* ── Typing Area — contained with accent indicator ── */}
             <div className="typing-panel w-full px-2 sm:px-6 md:px-8 py-4 sm:py-6">
-                <AnimatePresence>
-                    <TypingView
-                        activeTab={activeTab}
-                        subOption={subOption}
-                        customText={customText}
-                        customShuffle={isCustomShuffled}
-                    />
+                <AnimatePresence mode="wait">
+                    {typingStyle === "classic" ? (
+                        <ClassicTypingView
+                            key="classic-view"
+                            activeTab={activeTab}
+                            subOption={subOption}
+                            customText={customText}
+                            customShuffle={isCustomShuffled}
+                        />
+                    ) : (
+                        <TypingView
+                            key="modern-view"
+                            activeTab={activeTab}
+                            subOption={subOption}
+                            customText={customText}
+                            customShuffle={isCustomShuffled}
+                        />
+                    )}
                 </AnimatePresence>
             </div>
 
@@ -303,6 +362,39 @@ export function HomeClient() {
                                         />
                                     </motion.div>
                                 )}
+
+                                {/* Typing Style Selection */}
+                                <div className="space-y-3 pt-6 sm:pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-base font-medium text-foreground">Typing Style</label>
+                                            <span className="text-xs text-text-dim">Choose your preferred typing flow</span>
+                                        </div>
+                                        <DropdownMenu open={styleMobileOpen} onOpenChange={setStyleMobileOpen}>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-white/10 hover:border-white/20">
+                                                    <Keyboard size={16} className="text-accent" />
+                                                    <span className="font-semibold">{typingStyle === "modern" ? "Modern" : "Classic"}</span>
+                                                    <ChevronDown size={14} className={`opacity-50 ml-2 transition-transform duration-300 ${styleMobileOpen ? "rotate-180" : ""}`} />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-44 border-white/10 rounded-xl p-2" onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                {[
+                                                    { code: "modern", label: "Modern" },
+                                                    { code: "classic", label: "Classic" }
+                                                ].map(style => (
+                                                    <DropdownMenuItem
+                                                        key={style.code}
+                                                        onClick={() => setTypingStyle(style.code as "modern" | "classic")}
+                                                        className={`justify-between rounded-lg py-2.5 px-3 cursor-pointer ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : "text-foreground hover:bg-white/5"}`}
+                                                    >
+                                                        {style.label}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
 
                                 {/* Extra Modifiers */}
                                 {(activeTab === "Words" || activeTab === "Time") && (
@@ -385,7 +477,7 @@ export function HomeClient() {
                                                         <ChevronDown size={14} className="opacity-50 ml-2" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-44 border-white/10 rounded-xl p-2">
+                                                <DropdownMenuContent align="end" className="w-44 border-white/10 rounded-xl p-2" onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     {[
                                                         { code: "EN", label: "English" },
                                                         { code: "ID", label: "Indonesia" }

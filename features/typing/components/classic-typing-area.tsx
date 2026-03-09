@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useTypingEngine } from "../hooks/use-typing-engine";
+import { useClassicTypingEngine } from "../hooks/use-classic-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { RotateCcw, Share2, ArrowRight, Target, Clock, Type, TrendingUp } from "lucide-react";
@@ -9,7 +9,7 @@ import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
-export function TypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
+export function ClassicTypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
     const { user, supabaseReady } = useAuth();
     const language = useStore(state => state.language);
     const usePunctuation = useStore(state => state.punctuation);
@@ -44,13 +44,10 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     const duration = mode === "time" ? limit : 60;
     const addTestResult = useStore(state => state.addTestResult);
 
-    const activeCharRef = useRef<HTMLSpanElement>(null);
-    const [translateY, setTranslateY] = useState(0);
     const pendingResultRef = useRef<{ wpm: number; acc: number; timeTaken: number } | null>(null);
     const [isFocused, setIsFocused] = useState(() =>
         typeof document !== "undefined" && document.activeElement === document.querySelector("input[autofocus]")
     );
-    const containerRef = useRef<HTMLDivElement>(null);
     const [resultKey, setResultKey] = useState(0);
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
@@ -76,13 +73,16 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     const {
         status,
         timeLeft,
-        typedChars,
+        words,
+        currentWordIndex,
+        currentInput,
+        wordHistory,
         wpm,
         accuracy,
         inputRef,
         handleInput,
         restartText,
-    } = useTypingEngine({
+    } = useClassicTypingEngine({
         text,
         duration,
         mode,
@@ -100,14 +100,14 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     // Auto-append words for infinite typing (Time mode)
     useEffect(() => {
         if (mode === "time" && typeof window !== 'undefined') {
-            if (text.length > 0 && (text.length - typedChars.length) < 150) {
+            if (words.length > 0 && (words.length - currentWordIndex) < 20) {
                 const timer = setTimeout(() => {
                     setText(prev => prev + " " + generateWords(language, 30, usePunctuation, useNumbers));
                 }, 0);
                 return () => clearTimeout(timer);
             }
         }
-    }, [typedChars.length, text.length, mode, language, usePunctuation, useNumbers]);
+    }, [currentWordIndex, words.length, mode, language, usePunctuation, useNumbers]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -169,29 +169,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     }, [focusInput, inputRef]);
 
     useEffect(() => {
-        if (status === "idle") {
-            const timer = setTimeout(() => setTranslateY(0), 0);
-            return () => clearTimeout(timer);
-        }
-
-        if (!activeCharRef.current) return;
-        const charTop = activeCharRef.current.offsetTop;
-
-        const parentElem = activeCharRef.current.parentElement?.parentElement;
-        if (!parentElem) return;
-
-        const computedLineHeight = window.getComputedStyle(parentElem).lineHeight;
-        const lineHeight = parseFloat(computedLineHeight) || activeCharRef.current.offsetHeight;
-
-        if (lineHeight === 0) return;
-
-        const lineIndex = Math.floor((charTop + 2) / lineHeight);
-        const newTranslate = lineIndex > 1 ? (lineIndex - 1) * lineHeight : 0;
-        const timer = setTimeout(() => setTranslateY(newTranslate), 0);
-        return () => clearTimeout(timer);
-    }, [typedChars, status]);
-
-    useEffect(() => {
         const timer = setTimeout(focusInput, 150);
         return () => clearTimeout(timer);
     }, [text, focusInput]);
@@ -204,77 +181,72 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         });
     }, [saveResult, supabaseReady, user]);
 
+    // Calculate progress limit for display logic based on "mode"
+    const totalWords = words.length || 1;
     const progress = mode !== "time"
-        ? Math.min(100, Math.floor((typedChars.length / (text.length || 1)) * 100))
+        ? Math.min(100, Math.floor((currentWordIndex / totalWords) * 100))
         : null;
 
+    // Scrolling logic
+    const [translateY, setTranslateY] = useState(0);
+    const activeWordRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        if (status === "idle") {
+            const timer = setTimeout(() => setTranslateY(0), 0);
+            return () => clearTimeout(timer);
+        }
+
+        if (!activeWordRef.current) return;
+        const charTop = activeWordRef.current.offsetTop;
+
+        const parentElem = activeWordRef.current.parentElement?.parentElement;
+        if (!parentElem) return;
+
+        const computedLineHeight = window.getComputedStyle(parentElem).lineHeight;
+        const lineHeight = parseFloat(computedLineHeight) || activeWordRef.current.offsetHeight;
+
+        if (lineHeight === 0) return;
+
+        const lineIndex = Math.floor((charTop + 2) / lineHeight);
+        const newTranslate = Math.floor(lineIndex / 2) * 2 * lineHeight;
+        const timer = setTimeout(() => setTranslateY(newTranslate), 0);
+        return () => clearTimeout(timer);
+    }, [currentWordIndex, status]);
+
+
     const renderText = () => {
-        const words = text.split(" ");
-        let globalIndex = 0;
+        return words.map((targetWord, wIdx) => {
+            let className = "px-1 rounded bg-transparent transition-colors ";
 
-        return words.map((word, wIdx) => {
-            const wordLen = word.length;
-            const wordChars = word.split("");
-            const isLastWord = wIdx === words.length - 1;
-
-            const wordNodes = wordChars.map((char, cIdx) => {
-                const index = globalIndex + cIdx;
-                const typedChar = typedChars[index];
-
-                let charStatusClass = "text-text-dim/40";
-                if (typedChar != null) {
-                    if (typedChar === char) {
-                        charStatusClass = "text-foreground";
-                    } else {
-                        charStatusClass = "text-error-text bg-error-bg/50 rounded-sm";
-                    }
-                }
-
-                const isCurrent = index === typedChars.length;
-
-                return (
-                    <span
-                        key={cIdx}
-                        ref={isCurrent ? activeCharRef : null}
-                        className={`relative transition-colors duration-75 ${charStatusClass}`}
-                    >
-                        {isCurrent && status !== "finished" && (
-                            <span className="absolute -left-px top-[10%] w-0.75 h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
-                        )}
-                        {char}
-                    </span>
-                );
-            });
-
-            const spaceIndex = globalIndex + wordLen;
-            const spaceTyped = typedChars[spaceIndex];
-            const isSpaceCurrent = spaceIndex === typedChars.length;
-
-            let spaceStatusClass = "text-text-dim/40";
-            if (spaceTyped != null) {
-                if (spaceTyped === " ") {
-                    spaceStatusClass = "text-foreground";
+            if (wIdx < currentWordIndex) {
+                // Past words
+                const history = wordHistory[wIdx];
+                if (history?.isCorrect) {
+                    className += "text-accent bg-accent/10";
                 } else {
-                    spaceStatusClass = "text-error-text bg-error-bg/50 rounded-sm";
+                    className += "text-error-text bg-error-bg/30 line-through decoration-error-text/50";
                 }
+            } else if (wIdx === currentWordIndex) {
+                // Current word
+                const isTypo = currentInput.length > 0 && !targetWord.startsWith(currentInput);
+                if (isTypo) {
+                    className += "bg-error-bg/30 text-error-text ring-1 ring-error-text/50";
+                } else {
+                    className += "bg-white/10 text-foreground ring-1 ring-white/20";
+                }
+            } else {
+                // Future words
+                className += "text-text-dim";
             }
 
-            globalIndex += wordLen + (isLastWord ? 0 : 1);
-
             return (
-                <span key={wIdx} className="inline-block">
-                    {wordNodes}
-                    {!isLastWord && (
-                        <span
-                            ref={isSpaceCurrent ? activeCharRef : null}
-                            className={`relative transition-colors duration-75 ${spaceStatusClass}`}
-                        >
-                            {isSpaceCurrent && status !== "finished" && (
-                                <span className="absolute -left-px top-[10%] w-0.75 h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
-                            )}
-                            {"\u00A0"}
-                        </span>
-                    )}
+                <span
+                    key={wIdx}
+                    ref={wIdx === currentWordIndex ? activeWordRef : null}
+                    className={`inline-block mx-1 leading-tight ${className}`}
+                >
+                    {targetWord}
                 </span>
             );
         });
@@ -283,19 +255,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     const showBlurOverlay = !isFocused && status !== "finished";
 
     return (
-        <div className="w-full flex flex-col items-center relative" ref={containerRef} onClick={focusInput}>
-
-            <input
-                ref={inputRef}
-                type="text"
-                className="opacity-0 absolute -top-2499.75"
-                value={typedChars}
-                onChange={handleInput}
-                autoFocus
-                autoComplete="off"
-                spellCheck="false"
-                autoCorrect="off"
-            />
+        <div className="w-full flex flex-col items-center relative" onClick={focusInput}>
 
             <AnimatePresence mode="wait">
                 {status !== "finished" ? (
@@ -306,10 +266,10 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         exit={{ opacity: 0 }}
                         className="w-full relative"
                     >
-                        {/* Live stats bar — collapses when not playing */}
+                        {/* Live stats bar */}
                         <div
                             className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out ${status === "playing"
-                                ? "opacity-100 h-8 sm:h-10 mb-2 sm:mb-3"
+                                ? "opacity-100 h-8 sm:h-10 mb-2 sm:mb-3 px-2"
                                 : "opacity-0 h-0 mb-0"
                                 }`}
                         >
@@ -334,28 +294,47 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                             </div>
                         </div>
 
-                        {/* Typing Area */}
-                        <div className="w-full relative">
+                        {/* Classic Typing Area containing Words */}
+                        <div className="w-full relative glass border border-white/5 rounded-2xl p-4 sm:p-6 shadow-lg mb-6">
                             <div
-                                className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none"
+                                className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none"
+                                style={{ lineHeight: 1.8 }}
                             >
                                 <div
-                                    className="h-[5.4em] overflow-hidden relative w-full"
-                                    style={{
-                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
-                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
-                                    }}
+                                    className="overflow-hidden relative w-full"
+                                    style={{ height: "3.6em" }} // Exactly 2 lines (2 * 1.8em)
                                 >
                                     <div
                                         className="transition-transform duration-300 ease-out relative text-left"
                                         style={{ transform: `translateY(-${translateY}px)` }}
                                     >
-                                        {renderText()}
+                                        <div className="-mx-1">
+                                            {renderText()}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Blur / focus overlay */}
+                        {/* Classic Input Area */}
+                        <div className="flex justify-center w-full mb-6 relative">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                className={`w-full bg-black/20 border-2 transition-colors rounded-xl font-mono text-2xl text-center py-4 px-6 outline-none shadow-inner ${currentInput && currentInput !== words[currentWordIndex]?.substring(0, currentInput.length)
+                                    ? "border-error-text/50 text-error-text bg-error-bg/10"
+                                    : "border-white/10 hover:border-white/20 focus:border-accent/50 text-foreground"
+                                    }`}
+                                value={currentInput}
+                                onChange={handleInput}
+                                autoFocus
+                                autoComplete="off"
+                                spellCheck="false"
+                                autoCorrect="off"
+                                placeholder={status === "idle" ? "Type the words here..." : ""}
+                            />
+
+                            {/* Blur overlay on input only */}
                             <AnimatePresence>
                                 {showBlurOverlay && (
                                     <motion.div
@@ -363,20 +342,23 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute -inset-4 z-20 flex items-center justify-center cursor-pointer backdrop-blur-[6px] rounded-lg"
+                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
                                         onClick={focusInput}
                                     >
-                                        <span className="text-text-dim text-sm font-sans font-medium tracking-wide">
-                                            Click here or press any key to focus
-                                        </span>
+                                        <div className="bg-panel-bg/80 border border-white/10 px-6 py-3 rounded-full flex gap-3 items-center shadow-xl">
+                                            <span className="text-foreground text-sm font-sans font-medium tracking-wide">
+                                                Click here or press any key to focus
+                                            </span>
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
 
+
                         {/* Progress line */}
                         {status === "playing" && (
-                            <div className="w-full h-0.5 bg-white/4 rounded-full mt-2 overflow-hidden">
+                            <div className="w-full h-0.5 bg-white/4 rounded-full mt-4 overflow-hidden max-w-2xl mx-auto">
                                 <motion.div
                                     className="h-full rounded-full"
                                     style={{
@@ -418,14 +400,14 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 aria-label="Shuffle Words"
                                 title="Generate new words"
                             >
-                                <TrendingUp size={16} className="group-hover:rotate-12 transition-transform duration-300 ease-in-out opacity-0 w-0" /> {/* dummy spacer for transition */}
+                                <TrendingUp size={16} className="group-hover:rotate-12 transition-transform duration-300 ease-in-out opacity-0 w-0" />
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 group-hover:opacity-100 transition-opacity"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
                                 <span className="text-sm">Shuffle Text</span>
                             </Button>
                         </div>
                     </motion.div>
                 ) : (
-                    /* ── Results Screen — redesigned with CountUp ── */
+                    /* ── Results Screen — Same as Modern ── */
                     <motion.div
                         key={`typing-finished-${resultKey}`}
                         initial={{ opacity: 0, y: 15, scale: 0.98 }}
@@ -433,7 +415,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                         className="w-full flex flex-col mt-8"
                     >
-                        {/* Primary stat with CountUp */}
                         <div className="flex flex-col items-center text-center mb-6 sm:mb-10">
                             <div className="text-[5rem] sm:text-[7rem] md:text-[9rem] font-mono font-bold text-foreground leading-none tracking-tighter text-glow-accent">
                                 <CountUp
@@ -447,7 +428,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                             </span>
                         </div>
 
-                        {/* Secondary stats grid — premium cards */}
                         <div className="grid grid-cols-3 gap-2 sm:gap-3 mx-auto w-full max-w-lg">
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
@@ -469,7 +449,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                             >
                                 <Clock size={14} className="text-accent mb-1 sm:mb-2 opacity-60" />
                                 <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Time</span>
-                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">{mode === "time" ? `${limit}s` : `${Math.ceil(typedChars.length / 5)}s`}</span>
+                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">{mode === "time" ? `${limit}s` : `${Math.ceil((words.join(' ').length) / 5)}s`}</span>
                             </motion.div>
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
@@ -480,12 +460,11 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 <Type size={14} className="text-accent mb-1 sm:mb-2 opacity-60" />
                                 <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Characters</span>
                                 <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">
-                                    <CountUp end={typedChars.length} duration={1000} delay={300} />
+                                    <CountUp end={words.join(' ').length} duration={1000} delay={300} />
                                 </span>
                             </motion.div>
                         </div>
 
-                        {/* Action buttons */}
                         <div className="flex gap-2 sm:gap-3 justify-center mt-6 sm:mt-10 flex-wrap">
                             <Button
                                 variant="outline"
