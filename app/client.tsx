@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore } from "@/lib/store";
@@ -13,6 +13,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { HeroSection } from "@/components/hero-section";
 
 const TypingView = dynamic(
     () => import("@/features/typing/components/typing-area").then((mod) => mod.TypingView),
@@ -57,6 +58,44 @@ export function HomeClient() {
     const setNumbers = useStore(state => state.setNumbers);
     const typingStyle = useStore(state => state.typingStyle);
     const setTypingStyle = useStore(state => state.setTypingStyle);
+
+    // First-time visitor hero section
+    const [showHero, setShowHero] = useState(false);
+    const [heroChecked, setHeroChecked] = useState(false);
+
+    useEffect(() => {
+        const hasVisited = localStorage.getItem("typecade_visited");
+        if (!hasVisited) {
+            // Avoid synchronous setState in effect layout phase
+            setTimeout(() => setShowHero(true), 0);
+        }
+        setTimeout(() => setHeroChecked(true), 0);
+    }, []);
+
+    const dismissHero = useCallback(() => {
+        setShowHero(false);
+        localStorage.setItem("typecade_visited", "1");
+    }, []);
+
+    // Space key to dismiss hero
+    useEffect(() => {
+        if (!showHero) return;
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.code === "Space" || e.key === " ") {
+                e.preventDefault();
+                dismissHero();
+            }
+        };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [showHero, dismissHero]);
+
+    // Don't render until localStorage check is done (avoids flash)
+    if (!heroChecked) return null;
+
+    if (showHero) {
+        return <HeroSection onDismiss={dismissHero} />;
+    }
 
     return (
         <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center pb-8 lg:pb-16 relative">

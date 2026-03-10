@@ -51,7 +51,12 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         typeof document !== "undefined" && document.activeElement === document.querySelector("input[autofocus]")
     );
     const containerRef = useRef<HTMLDivElement>(null);
+    const textContainerRef = useRef<HTMLDivElement>(null);
     const [resultKey, setResultKey] = useState(0);
+
+    // Smooth caret refs (direct DOM manipulation to avoid setState-in-effect)
+    const caretRef = useRef<HTMLDivElement>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
         if (!supabaseReady || !user) return false;
@@ -191,6 +196,56 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         return () => clearTimeout(timer);
     }, [typedChars, status]);
 
+    // Smooth caret position tracking — direct DOM manipulation
+    useEffect(() => {
+        const caret = caretRef.current;
+        if (!caret) return;
+
+        if (status === "finished" || !activeCharRef.current || !textContainerRef.current) {
+            caret.style.opacity = "0";
+            return;
+        }
+
+        const char = activeCharRef.current;
+        const container = textContainerRef.current;
+        const containerRect = container.getBoundingClientRect();
+        const charRect = char.getBoundingClientRect();
+
+        caret.style.opacity = isFocused ? "1" : "0";
+        caret.style.height = `${charRect.height * 0.8}px`;
+        caret.style.top = `${charRect.top - containerRect.top + charRect.height * 0.1}px`;
+        caret.style.left = `${charRect.left - containerRect.left - 1}px`;
+    }, [typedChars, status, translateY, text, isFocused]);
+
+    // Typing activity tracking — toggle blink class directly on DOM
+    useEffect(() => {
+        const caret = caretRef.current;
+        if (!caret) return;
+
+        if (status !== "playing") {
+            caret.classList.add("animate-caret-blink");
+            return;
+        }
+
+        // Actively typing — solid caret, no blink
+        caret.classList.remove("animate-caret-blink");
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Resume blink after 500ms of inactivity
+        typingTimeoutRef.current = setTimeout(() => {
+            caretRef.current?.classList.add("animate-caret-blink");
+        }, 500);
+
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
+    }, [typedChars, status]);
+
     useEffect(() => {
         const timer = setTimeout(focusInput, 150);
         return () => clearTimeout(timer);
@@ -238,9 +293,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         ref={isCurrent ? activeCharRef : null}
                         className={`relative transition-colors duration-75 ${charStatusClass}`}
                     >
-                        {isCurrent && status !== "finished" && (
-                            <span className="absolute -left-px top-[10%] w-0.75 h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
-                        )}
                         {char}
                     </span>
                 );
@@ -269,9 +321,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                             ref={isSpaceCurrent ? activeCharRef : null}
                             className={`relative transition-colors duration-75 ${spaceStatusClass}`}
                         >
-                            {isSpaceCurrent && status !== "finished" && (
-                                <span className="absolute -left-px top-[10%] w-0.75 h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
-                            )}
                             {"\u00A0"}
                         </span>
                     )}
@@ -340,6 +389,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none"
                             >
                                 <div
+                                    ref={textContainerRef}
                                     className="h-[5.4em] overflow-hidden relative w-full"
                                     style={{
                                         maskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
@@ -352,6 +402,18 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     >
                                         {renderText()}
                                     </div>
+
+                                    {/* Smooth animated caret — positioned via ref */}
+                                    <div
+                                        ref={caretRef}
+                                        className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
+                                        style={{
+                                            width: 3,
+                                            opacity: 0,
+                                            transition: "left 80ms ease-out, top 80ms ease-out",
+                                            boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
+                                        }}
+                                    />
                                 </div>
                             </div>
 

@@ -33,6 +33,78 @@
   --bronze: #cd7f32;
 }
 
+[data-theme="light"] {
+  --background: #f8f9fa;
+  --background-raised: #ffffff;
+  --foreground: #1a1b26;
+  --accent: #3b82f6;
+  --accent-rgb: 59, 130, 246;
+  --accent-secondary: #0ea5e9;
+  --accent-secondary-rgb: 14, 165, 233;
+  --error-bg: #fee2e2;
+  --error-text: #ef4444;
+  --text-dim: #64748b;
+  --text-dim-rgb: 100, 116, 139;
+  --panel-bg: #ffffff;
+  --panel-bg-elevated: #f1f5f9;
+  --border-dim: #e2e8f0;
+  --border-accent: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="forest"] {
+  --background: #0d1a15;
+  --background-raised: #12221b;
+  --foreground: #e6f0eb;
+  --accent: #4ade80;
+  --accent-rgb: 74, 222, 128;
+  --accent-secondary: #2dd4bf;
+  --accent-secondary-rgb: 45, 212, 191;
+  --error-bg: #3f1521;
+  --error-text: #fb7185;
+  --text-dim: #7da08f;
+  --text-dim-rgb: 125, 160, 143;
+  --panel-bg: #12221b;
+  --panel-bg-elevated: #1a2f26;
+  --border-dim: #1f362e;
+  --border-accent: rgba(74, 222, 128, 0.12);
+}
+
+[data-theme="sunset"] {
+  --background: #1c1514;
+  --background-raised: #241c1a;
+  --foreground: #f4e8e1;
+  --accent: #f97316;
+  --accent-rgb: 249, 115, 22;
+  --accent-secondary: #fbbf24;
+  --accent-secondary-rgb: 251, 191, 36;
+  --error-bg: #3f1521;
+  --error-text: #ef4444;
+  --text-dim: #a38c85;
+  --text-dim-rgb: 163, 140, 133;
+  --panel-bg: #241c1a;
+  --panel-bg-elevated: #2e2422;
+  --border-dim: #3d2f2c;
+  --border-accent: rgba(249, 115, 22, 0.12);
+}
+
+[data-theme="retro"] {
+  --background: #09090b;
+  --background-raised: #111113;
+  --foreground: #f4f4f5;
+  --accent: #d946ef;
+  --accent-rgb: 217, 70, 239;
+  --accent-secondary: #06b6d4;
+  --accent-secondary-rgb: 6, 182, 212;
+  --error-bg: #3f1521;
+  --error-text: #f43f5e;
+  --text-dim: #71717a;
+  --text-dim-rgb: 113, 113, 122;
+  --panel-bg: #111113;
+  --panel-bg-elevated: #18181b;
+  --border-dim: #27272a;
+  --border-accent: rgba(217, 70, 239, 0.12);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
