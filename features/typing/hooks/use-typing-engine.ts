@@ -18,6 +18,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
     const [errors, setErrors] = useState(0);
     const [wpm, setWpm] = useState(0);
     const [accuracy, setAccuracy] = useState(100);
+    const [streak, setStreak] = useState(0);
     const [startTime, setStartTime] = useState<number | null>(null);
     const [accumulatedPause, setAccumulatedPause] = useState(0);
 
@@ -91,12 +92,19 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
 
         setTypedChars(value);
 
-        // Calculate errors on the fly
+        // Calculate errors and streak on the fly
         let errCount = 0;
+        let currentStreak = 0;
         for (let i = 0; i < value.length; i++) {
-            if (value[i] !== text[i]) errCount++;
+            if (value[i] !== text[i]) {
+                errCount++;
+                currentStreak = 0;
+            } else {
+                currentStreak++;
+            }
         }
         setErrors(errCount);
+        setStreak(currentStreak);
 
         // Update stats aggressively during typing for instant feedback
         const _startTime = startTime || Date.now();
@@ -153,6 +161,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         setStartTime(null);
         setWpm(0);
         setAccuracy(100);
+        setStreak(0);
         setAccumulatedPause(0);
         pauseStartRef.current = null;
         if (inputRef.current) inputRef.current.focus();
@@ -176,6 +185,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         errors,
         wpm,
         accuracy,
+        streak,
         inputRef,
         handleInput,
         restartText,

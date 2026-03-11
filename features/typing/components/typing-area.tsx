@@ -2,18 +2,63 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTypingEngine } from "../hooks/use-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { RotateCcw, Share2, ArrowRight, Target, Clock, Type, TrendingUp } from "lucide-react";
+import { RotateCcw, Share2, ArrowRight, Target, Clock, Type, TrendingUp, Flame } from "lucide-react";
 import { generateQuote, generateWords } from "@/lib/words";
 import { Button } from "@/components/ui/button";
 import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
+let audioCtx: AudioContext | null = null;
+const playTypeSound = (type: "soft" | "mechanical", isError: boolean) => {
+    if (typeof window === "undefined") return;
+    try {
+        const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        if (isError) {
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        } else {
+            if (type === "mechanical") {
+                osc.type = "square";
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            } else {
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            }
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+    } catch { }
+};
+
+interface KeystrokeParticle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; }
+
 export function TypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
     const { user, supabaseReady } = useAuth();
     const language = useStore(state => state.language);
     const usePunctuation = useStore(state => state.punctuation);
     const useNumbers = useStore(state => state.numbers);
+    const sound = useStore(state => state.sound);
 
     const mode = activeTab.toLowerCase() as "time" | "words" | "quote" | "custom";
     const limit = parseInt(subOption.replace("s", ""));
@@ -84,6 +129,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         typedChars,
         wpm,
         accuracy,
+        streak,
         inputRef,
         handleInput,
         restartText,
@@ -101,6 +147,102 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
             });
         }
     });
+
+    // --- Visual & Audio Feedback Logic ---
+    const particlesCanvasRef = useRef<HTMLCanvasElement>(null);
+    const particlesRef = useRef<KeystrokeParticle[]>([]);
+
+    useEffect(() => {
+        const canvas = particlesCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        let reqId: number;
+
+        const render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+                const p = particlesRef.current[i];
+                p.life--;
+                if (p.life <= 0) {
+                    particlesRef.current.splice(i, 1);
+                    continue;
+                }
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; // gravity 
+
+                const alpha = Math.max(0, p.life / p.maxLife);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.5 + alpha * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            reqId = requestAnimationFrame(render);
+        };
+        reqId = requestAnimationFrame(render);
+        return () => cancelAnimationFrame(reqId);
+    }, []);
+
+    useEffect(() => {
+        const resizeCanvas = () => {
+            if (particlesCanvasRef.current && textContainerRef.current) {
+                particlesCanvasRef.current.width = textContainerRef.current.offsetWidth;
+                particlesCanvasRef.current.height = textContainerRef.current.offsetHeight;
+            }
+        };
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        return () => window.removeEventListener('resize', resizeCanvas);
+    }, []);
+
+    const prevTypedCharsLength = useRef(0);
+    useEffect(() => {
+        if (typedChars.length > prevTypedCharsLength.current && status === "playing") {
+            const lastCharIndex = typedChars.length - 1;
+            const isCorrect = typedChars[lastCharIndex] === text[lastCharIndex];
+
+            if (sound !== "off") {
+                playTypeSound(sound, !isCorrect);
+            }
+
+            if (isCorrect && caretRef.current && textContainerRef.current) {
+                const caret = caretRef.current;
+                const top = parseFloat(caret.style.top || "0");
+                const left = parseFloat(caret.style.left || "0");
+                const height = parseFloat(caret.style.height || "0");
+                const x = left + 2;
+                const y = top + height / 2;
+
+                const count = streak > 50 ? 5 : 2;
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 2 + 1;
+                    let color = "rgba(94, 234, 212, 1)"; // teal
+                    if (streak >= 50) color = "rgba(251, 191, 36, 1)"; // amber
+
+                    particlesRef.current.push({
+                        x, y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - 1,
+                        life: 1,
+                        maxLife: 15 + Math.random() * 15,
+                        color
+                    });
+                }
+            }
+        }
+        prevTypedCharsLength.current = typedChars.length;
+    }, [typedChars, text, sound, streak, status]);
+
+    const getWpmColor = (val: number) => {
+        if (val < 40) return "text-emerald-400";
+        if (val < 70) return "text-cyan-400";
+        if (val < 100) return "text-indigo-400";
+        return "text-amber-400";
+    };
+    // ------------------------------------
 
     // Auto-append words for infinite typing (Time mode)
     useEffect(() => {
@@ -364,7 +506,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         >
                             <div className="flex items-center gap-3 sm:gap-5">
                                 <div className="flex items-baseline gap-1 sm:gap-1.5">
-                                    <span className="text-lg sm:text-2xl font-bold text-accent tabular-nums text-glow-accent">{wpm}</span>
+                                    <span className={`text-lg sm:text-2xl font-bold tabular-nums drop-shadow-md transition-colors duration-300 ${getWpmColor(wpm)}`} style={{ textShadow: "0 0 15px currentColor" }}>{wpm}</span>
                                     <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
                                 </div>
                                 <div className="w-px h-3 sm:h-4 bg-white/6" />
@@ -372,6 +514,15 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
                                     <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">%</span>
                                 </div>
+                                {streak > 4 && (
+                                    <>
+                                        <div className="w-px h-3 sm:h-4 bg-white/6" />
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <Flame size={14} className={streak >= 50 ? "text-amber-500 animate-pulse" : "text-amber-500/80"} />
+                                            <span className={`text-lg sm:text-2xl font-bold tabular-nums ${streak >= 50 ? "text-amber-500" : "text-amber-500/80"}`} style={streak >= 50 ? { textShadow: "0 0 15px currentColor" } : {}}>{streak}</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             <div className="flex items-baseline gap-1 sm:gap-1.5">
                                 <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">
@@ -402,6 +553,9 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     >
                                         {renderText()}
                                     </div>
+
+                                    {/* Particle Overlay */}
+                                    <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
 
                                     {/* Smooth animated caret — positioned via ref */}
                                     <div
