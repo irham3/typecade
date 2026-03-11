@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ interface SegmentedControlProps<T extends string> {
     className?: string;
     size?: "sm" | "md";
     variant?: "default" | "gradient";
+    formatOption?: (val: T) => React.ReactNode;
 }
 
 export function SegmentedControl<T extends string>({
@@ -20,6 +21,7 @@ export function SegmentedControl<T extends string>({
     className = "",
     size = "md",
     variant = "default",
+    formatOption,
 }: SegmentedControlProps<T>) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
@@ -84,7 +86,7 @@ export function SegmentedControl<T extends string>({
                                 : "text-text-dim hover:text-white/70"
                         )}
                     >
-                        {option}
+                        {formatOption ? formatOption(option) : option}
                     </button>
                 );
             })}

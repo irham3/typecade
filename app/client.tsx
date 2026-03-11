@@ -24,13 +24,13 @@ const ClassicTypingView = dynamic(
     { ssr: false }
 );
 
-const modeOptions = ["Words", "Quote", "Time", "Custom"] as const;
+const modeOptions = ["Quote", "Words", "Time", "Custom"] as const;
 type ModeOption = (typeof modeOptions)[number];
 
 const subOptions: Record<string, string[]> = {
-    Words: ["10", "25", "50", "100"],
-    Time: ["15s", "30s", "60s", "120s"],
     Quote: ["Easy", "Medium", "Hard"],
+    Words: ["10", "25", "50", "100", "Custom"],
+    Time: ["15s", "30s", "60s", "120s", "Custom"],
     Custom: [],
 };
 
@@ -40,6 +40,12 @@ export function HomeClient() {
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
     const [styleDesktopOpen, setStyleDesktopOpen] = useState(false);
     const [styleMobileOpen, setStyleMobileOpen] = useState(false);
+
+    // Custom limit states
+    const [customWordLimit, setCustomWordLimit] = useState("30");
+    const [customTimeLimit, setCustomTimeLimit] = useState("45");
+    const [isCustomLimitModalOpen, setIsCustomLimitModalOpen] = useState(false);
+    const [customLimitDraft, setCustomLimitDraft] = useState("");
 
     // Custom Text state
     // Modal states
@@ -76,7 +82,11 @@ export function HomeClient() {
                         {activeTab !== "Custom" && (
                             <>
                                 <span className="text-text-dim/40">•</span>
-                                <span className="text-foreground/80">{subOption}</span>
+                                <span className="text-foreground/80">{
+                                    subOption === "Custom"
+                                        ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s")
+                                        : subOption
+                                }</span>
                             </>
                         )}
                         {(punctuation || numbers) && activeTab !== "Custom" && (
@@ -134,7 +144,20 @@ export function HomeClient() {
                             <SegmentedControl
                                 options={subOptions[activeTab]}
                                 value={subOption}
-                                onChange={setSubOption}
+                                onChange={(val) => {
+                                    setSubOption(val);
+                                    if (val === "Custom" && (activeTab === "Words" || activeTab === "Time")) {
+                                        setCustomLimitDraft(activeTab === "Words" ? customWordLimit : customTimeLimit);
+                                        setIsCustomLimitModalOpen(true);
+                                    }
+                                }}
+                                formatOption={(val) => {
+                                    if (val === "Custom") {
+                                        if (activeTab === "Words") return `🔧 ${customWordLimit}`;
+                                        if (activeTab === "Time") return `🔧 ${customTimeLimit}s`;
+                                    }
+                                    return val;
+                                }}
                                 variant="gradient"
                                 className="bg-transparent border-transparent p-0"
                             />
@@ -281,7 +304,7 @@ export function HomeClient() {
                         <ClassicTypingView
                             key="classic-view"
                             activeTab={activeTab}
-                            subOption={subOption}
+                            subOption={subOption === "Custom" ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s") : subOption}
                             customText={customText}
                             customShuffle={isCustomShuffled}
                         />
@@ -289,7 +312,7 @@ export function HomeClient() {
                         <TypingView
                             key="modern-view"
                             activeTab={activeTab}
-                            subOption={subOption}
+                            subOption={subOption === "Custom" ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s") : subOption}
                             customText={customText}
                             customShuffle={isCustomShuffled}
                         />
@@ -356,7 +379,21 @@ export function HomeClient() {
                                         <SegmentedControl
                                             options={subOptions[activeTab]}
                                             value={subOption}
-                                            onChange={setSubOption}
+                                            onChange={(val) => {
+                                                setSubOption(val);
+                                                if (val === "Custom" && (activeTab === "Words" || activeTab === "Time")) {
+                                                    setIsSettingsModalOpen(false);
+                                                    setCustomLimitDraft(activeTab === "Words" ? customWordLimit : customTimeLimit);
+                                                    setTimeout(() => setIsCustomLimitModalOpen(true), 100);
+                                                }
+                                            }}
+                                            formatOption={(val) => {
+                                                if (val === "Custom") {
+                                                    if (activeTab === "Words") return `🔧 ${customWordLimit}`;
+                                                    if (activeTab === "Time") return `🔧 ${customTimeLimit}s`;
+                                                }
+                                                return val;
+                                            }}
                                             variant="gradient"
                                             className="w-full h-12 text-base"
                                         />
@@ -549,6 +586,68 @@ export function HomeClient() {
                                     }}
                                 >
                                     Apply Text
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Custom Time/Word Limit Modal */}
+            <AnimatePresence>
+                {isCustomLimitModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+                        onClick={() => setIsCustomLimitModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-panel-elevated border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-4 relative overflow-hidden glass"
+                        >
+                            <h2 className="text-xl font-bold text-foreground">Custom {activeTab} Limit</h2>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={customLimitDraft}
+                                    onChange={(e) => {
+                                        const v = e.target.value.replace(/[^0-9]/g, '');
+                                        setCustomLimitDraft(v);
+                                    }}
+                                    className="w-full h-14 bg-black/20 border border-white/10 rounded-xl px-4 text-foreground focus:outline-none focus:ring-1 focus:ring-accent text-2xl font-bold tabular-nums"
+                                    placeholder={activeTab === "Words" ? "1-1000" : "1-3600"}
+                                />
+                                <span className="text-text-dim font-medium uppercase tracking-widest text-sm shrink-0">
+                                    {activeTab === "Words" ? "Words" : "Secs"}
+                                </span>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-4">
+                                <Button variant="ghost" onClick={() => setIsCustomLimitModalOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="activeGradient"
+                                    onClick={() => {
+                                        if (activeTab === "Words") {
+                                            const w = parseInt(customLimitDraft);
+                                            if (!w || w < 1 || w > 1000) setCustomWordLimit("50");
+                                            else setCustomWordLimit(w.toString());
+                                        } else {
+                                            const t = parseInt(customLimitDraft);
+                                            if (!t || t < 1 || t > 3600) setCustomTimeLimit("60");
+                                            else setCustomTimeLimit(t.toString());
+                                        }
+                                        setIsCustomLimitModalOpen(false);
+                                    }}
+                                >
+                                    Confirm
                                 </Button>
                             </div>
                         </motion.div>
