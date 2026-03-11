@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 export const dynamic = "force-static";
 
@@ -12,7 +14,14 @@ export const size = {
 export const contentType = "image/png";
 
 // Generate Image
-export default function Image() {
+export default async function Image() {
+    const logoData = await readFile(join(process.cwd(), "public", "typecade-logo.png"));
+    const logoSrc = `data:image/png;base64,${logoData.toString("base64")}`;
+
+    // Load custom fonts
+    const fontBold = await readFile(join(process.cwd(), "public", "fonts", "SpaceGrotesk-Bold.ttf"));
+    const fontMedium = await readFile(join(process.cwd(), "public", "fonts", "SpaceGrotesk-Medium.ttf"));
+
     return new ImageResponse(
         (
             <div
@@ -25,7 +34,7 @@ export default function Image() {
                     alignItems: "center",
                     justifyContent: "center",
                     color: "white",
-                    fontFamily: "sans-serif",
+                    fontFamily: '"Space Grotesk"',
                     boxShadow: "inset 0 0 100px rgba(0,0,0,0.5)",
                 }}
             >
@@ -37,60 +46,24 @@ export default function Image() {
                         marginBottom: "40px",
                     }}
                 >
-                    {/* Logo mark - geometric T with keyboard-key feel */}
-                    <div
+                    {/* Actual Typecade Logo */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={logoSrc}
+                        alt="Typecade Logo"
+                        width="120"
+                        height="120"
                         style={{
-                            width: "120px",
-                            height: "120px",
-                            backgroundColor: "#6366f1",
-                            borderRadius: "30px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            boxShadow:
-                                "0 20px 40px rgba(99, 102, 241, 0.3), 0 0 60px rgba(99, 102, 241, 0.15)",
                             marginRight: "40px",
-                            position: "relative",
+                            borderRadius: "30px",
+                            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.5), 0 0 60px rgba(99, 102, 241, 0.15)",
                         }}
-                    >
-                        {/* Top bar of T */}
-                        <div
-                            style={{
-                                width: "64px",
-                                height: "14px",
-                                background: "white",
-                                borderRadius: "3px",
-                            }}
-                        />
-                        {/* Vertical stroke of T */}
-                        <div
-                            style={{
-                                width: "18px",
-                                height: "48px",
-                                background: "white",
-                                borderRadius: "3px",
-                                marginTop: "-2px",
-                            }}
-                        />
-                        {/* Cursor accent */}
-                        <div
-                            style={{
-                                position: "absolute",
-                                right: "18px",
-                                bottom: "16px",
-                                width: "4px",
-                                height: "24px",
-                                background: "rgba(255,255,255,0.5)",
-                                borderRadius: "2px",
-                            }}
-                        />
-                    </div>
+                    />
 
                     <h1
                         style={{
                             fontSize: "96px",
-                            fontWeight: "900",
+                            fontWeight: 700,
                             letterSpacing: "-2px",
                             color: "white",
                             margin: 0,
@@ -105,7 +78,7 @@ export default function Image() {
                         fontSize: "42px",
                         color: "#a1a1aa",
                         marginTop: 0,
-                        fontWeight: "500",
+                        fontWeight: 500,
                         letterSpacing: "-0.5px",
                     }}
                 >
@@ -115,6 +88,20 @@ export default function Image() {
         ),
         {
             ...size,
+            fonts: [
+                {
+                    name: "Space Grotesk",
+                    data: fontBold,
+                    weight: 700,
+                    style: "normal",
+                },
+                {
+                    name: "Space Grotesk",
+                    data: fontMedium,
+                    weight: 500,
+                    style: "normal",
+                },
+            ],
         }
     );
 }
