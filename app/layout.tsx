@@ -37,6 +37,9 @@ export const metadata: Metadata = {
     title: "Typecade | Type faster. Think clearer.",
     description: "A platform to improve your typing speed and accuracy.",
   },
+  other: {
+    "fb:app_id": process.env.NEXT_PUBLIC_FB_APP_ID || "1234567890",
+  },
 };
 
 export default function RootLayout({
