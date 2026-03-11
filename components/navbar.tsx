@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, User, Settings, GraduationCap, ChevronDown, Menu, X, Flame } from "lucide-react";
+import { Keyboard, Trophy, Users, User, Settings, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -19,8 +19,6 @@ import {
 import { useAuth } from "@/lib/auth/auth-context";
 import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
-import { SettingsModal } from "@/components/settings-modal";
-import { useStore } from "@/lib/store";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
@@ -36,9 +34,7 @@ export function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [authModalOpen, setAuthModalOpen] = useState(false);
     const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
-    const [settingsOpen, setSettingsOpen] = useState(false);
     const { user, isLoading, supabaseReady, signOut } = useAuth();
-    const streak = useStore((state) => state.stats.streak);
     const navRef = useRef<HTMLDivElement>(null);
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
@@ -126,12 +122,6 @@ export function Navbar() {
 
             {/* Right side actions */}
             <div className="flex flex-1 items-center justify-end gap-2">
-                {/* Streak Counter */}
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 text-sm font-medium">
-                    <Flame size={16} className={streak > 0 ? "text-orange-500" : "text-text-dim"} />
-                    <span className={streak > 0 ? "text-foreground" : "text-text-dim"}>{streak}</span>
-                </div>
-
                 {user ? (
                     <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                         <DropdownMenuTrigger asChild>
@@ -190,7 +180,6 @@ export function Navbar() {
                     size="icon"
                     className="p-2.5 hidden md:flex"
                     aria-label="Settings"
-                    onClick={() => setSettingsOpen(true)}
                 >
                     <Settings size={18} />
                 </Button>
@@ -232,18 +221,6 @@ export function Navbar() {
                             </Link>
                         );
                     })}
-
-                    {/* Mobile Settings Button */}
-                    <button
-                        onClick={() => {
-                            setMobileOpen(false);
-                            setSettingsOpen(true);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-xl text-sm font-medium transition-colors text-text-dim hover:text-white hover:bg-white/4 border-t border-white/5"
-                    >
-                        <Settings size={16} />
-                        Settings
-                    </button>
                 </motion.div>
             )}
 
@@ -261,8 +238,6 @@ export function Navbar() {
                 }}
                 onCancel={() => setLogoutConfirmOpen(false)}
             />
-
-            <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </header>
     );
 }

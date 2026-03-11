@@ -59,29 +59,11 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const store = localStorage.getItem('typecade-storage');
-                if (store) {
-                  const state = JSON.parse(store).state;
-                  if (state && state.theme) {
-                    document.documentElement.setAttribute('data-theme', state.theme);
-                    if (state.theme === 'light') {
-                      document.documentElement.classList.remove('dark');
-                    }
-                  }
-                }
-              } catch (e) {}
-            `,
-          }}
-        />
-        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground transition-colors duration-300`}>
+      <body suppressHydrationWarning className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground`}>
         <AuthProvider>
           <LayoutShell>{children}</LayoutShell>
         </AuthProvider>
