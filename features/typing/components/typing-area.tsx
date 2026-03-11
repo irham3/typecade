@@ -338,26 +338,23 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         return () => clearTimeout(timer);
     }, [typedChars, status]);
 
-    // Smooth caret position tracking — direct DOM manipulation
+    // Smooth caret position tracking
     useEffect(() => {
         const caret = caretRef.current;
         if (!caret) return;
 
-        if (status === "finished" || !activeCharRef.current || !textContainerRef.current) {
+        if (status === "finished" || !activeCharRef.current) {
             caret.style.opacity = "0";
             return;
         }
 
         const char = activeCharRef.current;
-        const container = textContainerRef.current;
-        const containerRect = container.getBoundingClientRect();
-        const charRect = char.getBoundingClientRect();
-
+        
         caret.style.opacity = isFocused ? "1" : "0";
-        caret.style.height = `${charRect.height * 0.8}px`;
-        caret.style.top = `${charRect.top - containerRect.top + charRect.height * 0.1}px`;
-        caret.style.left = `${charRect.left - containerRect.left - 1}px`;
-    }, [typedChars, status, translateY, text, isFocused]);
+        caret.style.height = `${char.offsetHeight * 0.8}px`;
+        caret.style.top = `${char.offsetTop + char.offsetHeight * 0.1}px`;
+        caret.style.left = `${char.offsetLeft - 1.5}px`;
+    }, [typedChars, status, text, isFocused]);
 
     // Typing activity tracking — toggle blink class directly on DOM
     useEffect(() => {
@@ -537,37 +534,37 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         {/* Typing Area */}
                         <div className="w-full relative">
                             <div
-                                className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none"
+                                className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none text-text-dim/80"
                             >
                                 <div
                                     ref={textContainerRef}
                                     className="h-[5.4em] overflow-hidden relative w-full"
                                     style={{
-                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
-                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 3%, black 95%, transparent 100%)",
+                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
+                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
                                     }}
                                 >
                                     <div
-                                        className="transition-transform duration-300 ease-out relative text-left"
+                                        className="transition-transform duration-300 ease-out relative text-left w-full h-full"
                                         style={{ transform: `translateY(-${translateY}px)` }}
                                     >
+                                        {/* Smooth animated caret — directly inside the moving container */}
+                                        <div
+                                            ref={caretRef}
+                                            className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
+                                            style={{
+                                                width: 3,
+                                                opacity: 0,
+                                                transition: "left 80ms ease-out, top 80ms ease-out",
+                                                boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
+                                            }}
+                                        />
+                                        
                                         {renderText()}
                                     </div>
 
                                     {/* Particle Overlay */}
                                     <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
-
-                                    {/* Smooth animated caret — positioned via ref */}
-                                    <div
-                                        ref={caretRef}
-                                        className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
-                                        style={{
-                                            width: 3,
-                                            opacity: 0,
-                                            transition: "left 80ms ease-out, top 80ms ease-out",
-                                            boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
-                                        }}
-                                    />
                                 </div>
                             </div>
 

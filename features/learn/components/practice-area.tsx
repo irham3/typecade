@@ -14,7 +14,12 @@ type PracticeProps = {
 
 export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
     const activeCharRef = useRef<HTMLSpanElement>(null);
+    const caretRef = useRef<HTMLDivElement>(null);
+    const textContainerRef = useRef<HTMLDivElement>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const [translateY, setTranslateY] = useState(0);
+    const [isFocused, setIsFocused] = useState(true);
 
     const {
         status,
@@ -38,7 +43,6 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
 
     useEffect(() => focusInput(), [focusInput]);
 
-    // Escape key to go back
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") onBack();
@@ -47,7 +51,41 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onBack]);
 
-    // Handle smooth scrolling like the main typing area
+    useEffect(() => {
+        const input = inputRef.current;
+        if (!input) return;
+
+        const onFocus = () => setIsFocused(true);
+        const onBlur = () => setIsFocused(false);
+
+        input.addEventListener("focus", onFocus);
+        input.addEventListener("blur", onBlur);
+
+        return () => {
+            input.removeEventListener("focus", onFocus);
+            input.removeEventListener("blur", onBlur);
+        };
+    }, [inputRef]);
+
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const activeTag = document.activeElement?.tagName.toLowerCase();
+            if (activeTag === "textarea" || activeTag === "input") {
+                if (document.activeElement === inputRef.current) return;
+                return;
+            }
+            if (e.key === "Escape" || e.key === "Tab" || e.key === "Enter") return;
+
+            if (e.key.length === 1 || e.key === "Backspace") {
+                focusInput();
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+        return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+    }, [focusInput, inputRef]);
+
     useEffect(() => {
         if (status === "idle") {
             const timer = setTimeout(() => setTranslateY(0), 0);
@@ -68,6 +106,54 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
         const newTranslate = lineIndex > 1 ? (lineIndex - 1) * lineHeight : 0;
         const timer = setTimeout(() => setTranslateY(newTranslate), 0);
         return () => clearTimeout(timer);
+    }, [typedChars, status]);
+
+    // Smooth caret position tracking — direct DOM manipulation
+    useEffect(() => {
+        const caret = caretRef.current;
+        if (!caret) return;
+
+        if (status === "finished" || !activeCharRef.current || !textContainerRef.current) {
+            caret.style.opacity = "0";
+            return;
+        }
+
+        const char = activeCharRef.current;
+        const container = textContainerRef.current;
+        const containerRect = container.getBoundingClientRect();
+        const charRect = char.getBoundingClientRect();
+
+        caret.style.opacity = isFocused ? "1" : "0";
+        caret.style.height = `${charRect.height * 0.8}px`;
+        caret.style.top = `${charRect.top - containerRect.top + charRect.height * 0.1}px`;
+        caret.style.left = `${charRect.left - containerRect.left - 1}px`;
+    }, [typedChars, status, translateY, lesson.text, isFocused]);
+
+    // Typing activity tracking — toggle blink class directly on DOM
+    useEffect(() => {
+        const caret = caretRef.current;
+        if (!caret) return;
+
+        if (status !== "playing") {
+            caret.classList.add("animate-caret-blink");
+            return;
+        }
+
+        caret.classList.remove("animate-caret-blink");
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        typingTimeoutRef.current = setTimeout(() => {
+            caretRef.current?.classList.add("animate-caret-blink");
+        }, 500);
+
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
     }, [typedChars, status]);
 
     const activeIndex = typedChars.length;
@@ -117,9 +203,6 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                         ref={isCurrent ? activeCharRef : null}
                         className={`relative transition-colors duration-100 ${charStatusClass}`}
                     >
-                        {isCurrent && status !== "finished" && (
-                            <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
-                        )}
                         {char}
                     </span>
                 );
@@ -148,9 +231,6 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             ref={isSpaceCurrent ? activeCharRef : null}
                             className={`relative transition-colors duration-100 ${spaceStatusClass}`}
                         >
-                            {isSpaceCurrent && status !== "finished" && (
-                                <span className="absolute -left-px top-[10%] w-[3px] h-[80%] bg-accent rounded-full animate-caret-blink z-10" />
-                            )}
                             {"\u00A0"}
                         </span>
                     )}
@@ -227,38 +307,50 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                             className="relative z-10 flex flex-col"
                         >
                             {/* Hidden Input field for capture */}
-                            <div
-                                className="absolute inset-0 z-50 cursor-text"
-                                onClick={focusInput}
-                            >
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={typedChars}
-                                    onChange={handleInput}
-                                    className="absolute opacity-0 -top-[100px]"
-                                    autoCorrect="off"
-                                    autoCapitalize="off"
-                                    spellCheck="false"
-                                    autoComplete="off"
-                                />
-                            </div>
+                            {/* We no longer overlay it to prevent selection, just render logic below */}
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={typedChars}
+                                onChange={handleInput}
+                                className="absolute opacity-0 -top-[100px]"
+                                autoCorrect="off"
+                                autoCapitalize="off"
+                                spellCheck="false"
+                                autoComplete="off"
+                            />
 
                             {/* Text Area */}
-                            <div className="bg-[#0A0A0A] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 mb-4 sm:mb-6 font-mono text-lg sm:text-2xl md:text-3xl leading-relaxed tracking-tight relative">
+                            <div 
+                                className="bg-[#0A0A0A] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 mb-4 sm:mb-6 font-mono text-lg sm:text-2xl md:text-3xl leading-relaxed tracking-tight relative cursor-text group"
+                                onClick={focusInput}
+                            >
                                 <div
-                                    className="h-[4.5em] overflow-hidden"
+                                    ref={textContainerRef}
+                                    className="h-[4.5em] overflow-hidden relative w-full"
                                     style={{
                                         maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
                                         WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
                                     }}
                                 >
                                     <div
-                                        className="transition-transform duration-300 ease-out"
+                                        className="transition-transform duration-300 ease-out relative text-left"
                                         style={{ transform: `translateY(-${translateY}px)` }}
                                     >
                                         {renderText()}
                                     </div>
+                                    
+                                    {/* Smooth animated caret — positioned via ref */}
+                                    <div
+                                        ref={caretRef}
+                                        className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
+                                        style={{
+                                            width: 3,
+                                            opacity: 0,
+                                            transition: "left 80ms ease-out, top 80ms ease-out",
+                                            boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
+                                        }}
+                                    />
                                 </div>
                             </div>
 
