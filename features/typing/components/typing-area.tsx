@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTypingEngine } from "../hooks/use-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { RotateCcw, Share2, ArrowRight, Target, Clock, Type, TrendingUp, Flame } from "lucide-react";
+import { RotateCcw, TrendingUp, Flame } from "lucide-react";
 import { generateQuote, generateWords } from "@/lib/words";
 import { Button } from "@/components/ui/button";
-import { CountUp } from "@/components/ui/count-up";
+import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
@@ -638,94 +638,22 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         </div>
                     </motion.div>
                 ) : (
-                    /* ── Results Screen — redesigned with CountUp ── */
-                    <motion.div
-                        key={`typing-finished-${resultKey}`}
-                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full flex flex-col mt-8"
-                    >
-                        {/* Primary stat with CountUp */}
-                        <div className="flex flex-col items-center text-center mb-6 sm:mb-10">
-                            <div className="text-[5rem] sm:text-[7rem] md:text-[9rem] font-mono font-bold text-foreground leading-none tracking-tighter text-glow-accent">
-                                <CountUp
-                                    end={wpm}
-                                    duration={1500}
-                                    className="tabular-nums"
-                                />
-                            </div>
-                            <span className="text-sm font-mono text-accent uppercase tracking-[0.25em] font-semibold mt-1">
-                                words per minute
-                            </span>
-                        </div>
-
-                        {/* Secondary stats grid — premium cards */}
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mx-auto w-full max-w-lg">
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.15 }}
-                                className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-3 sm:py-5 px-2 sm:px-4 group hover:glow-accent transition-shadow duration-300"
-                            >
-                                <Target size={14} className="text-accent-secondary mb-1 sm:mb-2 opacity-60" />
-                                <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Accuracy</span>
-                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">
-                                    <CountUp end={accuracy} duration={1200} delay={200} suffix="%" />
-                                </span>
-                            </motion.div>
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.25 }}
-                                className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-3 sm:py-5 px-2 sm:px-4"
-                            >
-                                <Clock size={14} className="text-accent mb-1 sm:mb-2 opacity-60" />
-                                <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Time</span>
-                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">{mode === "time" ? `${limit}s` : `${Math.ceil(typedChars.length / 5)}s`}</span>
-                            </motion.div>
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.35 }}
-                                className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-3 sm:py-5 px-2 sm:px-4"
-                            >
-                                <Type size={14} className="text-accent mb-1 sm:mb-2 opacity-60" />
-                                <span className="text-[8px] sm:text-[10px] text-text-dim uppercase tracking-widest font-mono mb-0.5 sm:mb-1">Characters</span>
-                                <span className="text-lg sm:text-2xl font-mono font-bold text-foreground">
-                                    <CountUp end={typedChars.length} duration={1000} delay={300} />
-                                </span>
-                            </motion.div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex gap-2 sm:gap-3 justify-center mt-6 sm:mt-10 flex-wrap">
-                            <Button
-                                variant="outline"
-                                onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="gap-2 px-6"
-                            >
-                                <RotateCcw size={16} /> Retry
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className="gap-2 px-6"
-                            >
-                                <Share2 size={16} /> Share
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setText(getNewText());
-                                    restartText();
-                                }}
-                                className="gap-2 px-6"
-                            >
-                                Next Test <ArrowRight size={16} />
-                            </Button>
-                        </div>
-                    </motion.div>
+                    /* ── Results Screen — redesigned with Confetti, PB, and Share Card ── */
+                    <TypingResults
+                        wpm={wpm}
+                        accuracy={accuracy}
+                        mode={mode}
+                        limit={limit}
+                        typedCharsLength={typedChars.length}
+                        resultKey={resultKey}
+                        onRetry={() => {
+                            restartText();
+                        }}
+                        onNext={() => {
+                            setText(getNewText());
+                            restartText();
+                        }}
+                    />
                 )}
             </AnimatePresence>
         </div>
