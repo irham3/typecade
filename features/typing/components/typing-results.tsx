@@ -24,6 +24,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
     
     // We assume store.stats.wpm holds the all-time personal best WPM
     const personalBestWpm = useStore(state => state.stats.wpm);
+    const theme = useStore(state => state.theme);
     const isPersonalBest = wpm > personalBestWpm;
 
 
@@ -33,19 +34,27 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
             const end = Date.now() + duration;
 
             const frame = () => {
+                const colors = theme === 'forest' ? ['#22c55e', '#84cc16', '#ffffff'] :
+                        theme === 'sunset' ? ['#f97316', '#e11d48', '#ffffff'] :
+                        theme === 'retro' ? ['#ff007f', '#00ffcc', '#ffffff'] :
+                        theme === 'nord' ? ['#88c0d0', '#81a1c1', '#ffffff'] :
+                        theme === 'serika' ? ['#e2b714', '#ffffff', '#323437'] :
+                        theme === 'dracula' ? ['#bd93f9', '#ff79c6', '#ffffff'] :
+                        ['#6366f1', '#5eead4', '#ffffff'];
+
                 confetti({
                     particleCount: 5,
                     angle: 60,
                     spread: 55,
                     origin: { x: 0 },
-                    colors: ['#5eead4', '#ffffff', '#cbd5e1']
+                    colors
                 });
                 confetti({
                     particleCount: 5,
                     angle: 120,
                     spread: 55,
                     origin: { x: 1 },
-                    colors: ['#5eead4', '#ffffff', '#cbd5e1']
+                    colors
                 });
 
                 if (Date.now() < end) {
@@ -54,7 +63,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
             };
             frame();
         }
-    }, [isPersonalBest, resultKey]);
+    }, [isPersonalBest, resultKey, theme]);
 
     const captureScreenshot = async () => {
         if (!cardRef.current) return null;
@@ -62,10 +71,11 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
         try {
             // A bit of delay to let React re-render without buttons if they're hidden during capture
             await new Promise(r => setTimeout(r, 100));
+            const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || '#0c0d14';
             const dataUrl = await htmlToImage.toPng(cardRef.current, { 
                 quality: 1.0, 
                 pixelRatio: 2,
-                backgroundColor: '#050505',
+                backgroundColor: bgColor,
                 style: { transform: 'scale(1)', padding: '24px' } // adds padding inside image
             });
             return dataUrl;
@@ -105,8 +115,8 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="w-full flex flex-col mt-8 items-center"
         >
-            {/* The wrapper that will be captured as an OG Image */}
-            <div ref={cardRef} className="w-full max-w-2xl bg-background flex flex-col items-center border border-white/5 rounded-3xl p-6 sm:p-10 relative overflow-hidden glass-strong">
+            {/* The wrapper that will be captured as an OG Image — Uses css variables for colors */}
+            <div ref={cardRef} className="w-full max-w-2xl bg-background flex flex-col items-center border border-foreground/5 rounded-3xl p-6 sm:p-10 relative overflow-hidden glass-strong">
                 
                 {/* Visual Flair Background */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/10 rounded-full blur-[80px] pointer-events-none" />
@@ -133,7 +143,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                              <img src="/typecade-logo.png" alt="Typecade" className="w-6 h-6 object-contain" />
                              <span className="font-bold text-lg tracking-tight">Typecade</span>
                          </div>
-                         <div className="text-xs font-mono text-text-dim/80 bg-white/5 px-2 py-1 rounded">
+                         <div className="text-xs font-mono text-text-dim/80 bg-foreground/5 px-2 py-1 rounded">
                              {mode.toUpperCase()} MODE
                          </div>
                     </div>
@@ -212,7 +222,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                 </div>
 
                 {/* Share Actions - Smaller and compact */}
-                <div className="flex flex-wrap gap-2 justify-center w-full border-t border-white/5 pt-4 sm:pt-6">
+                <div className="flex flex-wrap gap-2 justify-center w-full border-t border-foreground/5 pt-4 sm:pt-6">
                     <Button variant="ghost" onClick={handleDownloadShare} className="gap-2 text-text-dim hover:text-foreground text-xs py-1 h-8" title="Download Screenshot">
                         <Download size={14} /> Save Image
                     </Button>

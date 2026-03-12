@@ -179,8 +179,8 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 for (let i = 0; i < count; i++) {
                     const angle = Math.random() * Math.PI * 2;
                     const speed = Math.random() * 2 + 1;
-                    let color = "rgba(94, 234, 212, 1)"; // teal
-                    if (streak >= 50) color = "rgba(251, 191, 36, 1)"; // amber
+                    let color = "rgba(var(--accent-rgb), 1)"; 
+                    if (streak >= 50) color = "rgba(var(--gold-rgb, 245, 197, 66), 1)"; 
 
                     particlesRef.current.push({
                         x, y,
@@ -466,14 +466,14 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     <span className={`text-lg sm:text-2xl font-bold tabular-nums drop-shadow-md transition-colors duration-300 ${getWpmColor(wpm)}`} style={{ textShadow: "0 0 15px currentColor" }}>{wpm}</span>
                                     <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
                                 </div>
-                                <div className="w-px h-3 sm:h-4 bg-white/6" />
+                                <div className="w-px h-3 sm:h-4 bg-foreground/10" />
                                 <div className="flex items-baseline gap-1 sm:gap-1.5">
                                     <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
                                     <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">%</span>
                                 </div>
                                 {streak > 4 && (
                                     <>
-                                        <div className="w-px h-3 sm:h-4 bg-white/6" />
+                                        <div className="w-px h-3 sm:h-4 bg-foreground/10" />
                                         <div className="flex items-center gap-1.5 sm:gap-2">
                                             <Flame size={14} className={streak >= 50 ? "text-amber-500 animate-pulse" : "text-amber-500/80"} />
                                             <span className={`text-lg sm:text-2xl font-bold tabular-nums ${streak >= 50 ? "text-amber-500" : "text-amber-500/80"}`} style={streak >= 50 ? { textShadow: "0 0 15px currentColor" } : {}}>{streak}</span>
@@ -524,7 +524,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     </div>
 
                                     {/* Particle Overlay */}
-                                    <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'screen' }} />
+                                    <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'plus-lighter' }} />
                                 </div>
                             </div>
 
@@ -549,11 +549,11 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
 
                         {/* Progress line */}
                         {status === "playing" && (
-                            <div className="w-full h-0.5 bg-white/4 rounded-full mt-2 overflow-hidden">
+                            <div className="w-full h-0.5 bg-foreground/5 rounded-full mt-2 overflow-hidden">
                                 <motion.div
                                     className="h-full rounded-full"
                                     style={{
-                                        background: "linear-gradient(90deg, rgba(99,102,241,0.8), rgba(94,234,212,0.6))",
+                                        background: "linear-gradient(90deg, rgba(var(--accent-rgb), 0.8), rgba(var(--accent-secondary-rgb), 0.6))",
                                     }}
                                     animate={{
                                         width: mode === "time"

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore, ModeOption } from "@/lib/store";
-import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "lucide-react";
+import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -56,8 +56,8 @@ export function HomeClient() {
     const [customLimitDraft, setCustomLimitDraft] = useState("");
 
     // Custom Text state
-    // Modal states
-    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const isSettingsModalOpen = useStore(state => state.isSettingsOpen);
+    const setIsSettingsModalOpen = useStore(state => state.setSettingsOpen);
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
     const [customTextDraft, setCustomTextDraft] = useState("");
 
@@ -69,6 +69,23 @@ export function HomeClient() {
     const setNumbers = useStore(state => state.setNumbers);
     const typingStyle = useStore(state => state.typingStyle);
     const setTypingStyle = useStore(state => state.setTypingStyle);
+    const theme = useStore(state => state.theme);
+    const setTheme = useStore(state => state.setTheme);
+    const isThemeModalOpen = useStore(state => state.isThemeModalOpen);
+    const setThemeModalOpen = useStore(state => state.setThemeModalOpen);
+    const showAnimations = useStore(state => state.showAnimations);
+    const setShowAnimations = useStore(state => state.setShowAnimations);
+
+    const themes = [
+        { id: "dark", label: "Default", bg: "#0c0d14", accent: "#6366f1" },
+        { id: "light", label: "Light", bg: "#ffffff", accent: "#4f46e5" },
+        { id: "forest", label: "Forest", bg: "#111a15", accent: "#22c55e" },
+        { id: "sunset", label: "Sunset", bg: "#1c1817", accent: "#f97316" },
+        { id: "retro", label: "Retro", bg: "#150024", accent: "#ff007f" },
+        { id: "nord", label: "Nord", bg: "#2e3440", accent: "#88c0d0" },
+        { id: "serika", label: "Serika", bg: "#2c2e31", accent: "#e2b714" },
+        { id: "dracula", label: "Dracula", bg: "#282a36", accent: "#bd93f9" },
+    ];
 
     return (
         <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center pb-8 lg:pb-16 relative">
@@ -77,7 +94,7 @@ export function HomeClient() {
             <div className="flex lg:hidden items-center justify-center mb-6 w-full z-10 relative">
                 <Button
                     variant="ghost"
-                    className="flex items-center gap-3 rounded-2xl px-5 py-6 shadow-lg shadow-black/20 hover:shadow-accent/10 transition-all border border-white/5 glass group text-base"
+                    className="flex items-center gap-3 rounded-2xl px-5 py-6 shadow-lg shadow-black/20 hover:shadow-accent/10 transition-all border border-foreground/5 glass group text-base"
                     onClick={() => setIsSettingsModalOpen(true)}
                 >
                     <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -146,7 +163,7 @@ export function HomeClient() {
                             transition={{ duration: 0.25, ease: "easeOut" }}
                             className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
                         >
-                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
                             <SegmentedControl
                                 options={subOptions[activeTab]}
                                 value={subOption}
@@ -181,7 +198,7 @@ export function HomeClient() {
                             transition={{ duration: 0.25, ease: "easeOut" }}
                             className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
                         >
-                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
                             <Button
                                 variant={customShuffle ? "activeGradient" : "ghost"}
                                 className="px-3 py-1.5 text-sm"
@@ -204,7 +221,7 @@ export function HomeClient() {
                             transition={{ duration: 0.25, ease: "easeOut" }}
                             className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
                         >
-                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
 
                             <div className="flex items-center gap-1 shrink-0">
                                 <Button
@@ -234,7 +251,7 @@ export function HomeClient() {
                             transition={{ duration: 0.25, ease: "easeOut" }}
                             className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
                         >
-                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
                             <Button
                                 variant="outline"
                                 className="px-3 py-1.5 text-sm gap-2"
@@ -253,7 +270,7 @@ export function HomeClient() {
                 <AnimatePresence mode="popLayout">
                     {activeTab !== "Custom" && (
                         <>
-                            <motion.div layout className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <motion.div layout className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
                             <motion.div layout>
                                 <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
                                     <DropdownMenuTrigger asChild>
@@ -295,7 +312,7 @@ export function HomeClient() {
                         transition={{ duration: 0.25, ease: "easeOut" }}
                         className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
                     >
-                        <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                        <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
                         <DropdownMenu open={styleDesktopOpen} onOpenChange={setStyleDesktopOpen}>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -324,6 +341,28 @@ export function HomeClient() {
                         </DropdownMenu>
                     </motion.div>
                 </AnimatePresence>
+
+                <motion.div layout className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-2 w-10 h-10 rounded-xl hover:bg-foreground/10 text-text-dim hover:text-foreground transition-all shrink-0"
+                        onClick={() => setThemeModalOpen(true)}
+                        title="Theme Picker"
+                    >
+                        <Palette size={18} />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-2 w-10 h-10 rounded-xl hover:bg-foreground/10 text-text-dim hover:text-foreground transition-all shrink-0"
+                        onClick={() => setIsSettingsModalOpen(true)}
+                        title="Settings"
+                    >
+                        <Settings size={18} />
+                    </Button>
+                </div>
             </motion.div>
 
             {/* ── Typing Area — contained with accent indicator ── */}
@@ -356,7 +395,7 @@ export function HomeClient() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
                         onClick={() => setIsSettingsModalOpen(false)}
                     >
                         <motion.div
@@ -365,7 +404,7 @@ export function HomeClient() {
                             exit={{ scale: 0.95, opacity: 0, y: 15 }}
                             transition={{ type: "spring", stiffness: 300, damping: 25 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-elevated/90 border border-white/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 sm:gap-8 glass relative overflow-hidden"
+                            className="bg-panel-elevated/90 border border-foreground/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 sm:gap-8 glass relative overflow-hidden"
                         >
                             {/* Decorative blur */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[100px] pointer-events-none translate-x-1/2 -translate-y-1/2" />
@@ -430,7 +469,7 @@ export function HomeClient() {
                                 )}
 
                                 {/* Typing Style Selection */}
-                                <div className="space-y-3 pt-6 sm:pt-4 border-t border-white/5">
+                                <div className="space-y-3 pt-6 sm:pt-4 border-t border-foreground/5">
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col gap-1">
                                             <label className="text-base font-medium text-foreground">Typing Style</label>
@@ -438,13 +477,13 @@ export function HomeClient() {
                                         </div>
                                         <DropdownMenu open={styleMobileOpen} onOpenChange={setStyleMobileOpen}>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-white/10 hover:border-white/20">
+                                                <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-foreground/10 hover:border-foreground/20">
                                                     <Keyboard size={16} className="text-accent" />
                                                     <span className="font-semibold">{typingStyle === "modern" ? "Modern" : "Classic"}</span>
                                                     <ChevronDown size={14} className={`opacity-50 ml-2 transition-transform duration-300 ${styleMobileOpen ? "rotate-180" : ""}`} />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-44 border-white/10 rounded-xl p-2" onCloseAutoFocus={(e) => e.preventDefault()}>
+                                            <DropdownMenuContent align="end" className="w-44 border-foreground/10 rounded-xl p-2" onCloseAutoFocus={(e) => e.preventDefault()}>
                                                 {[
                                                     { code: "modern", label: "Modern" },
                                                     { code: "classic", label: "Classic" }
@@ -452,7 +491,7 @@ export function HomeClient() {
                                                     <DropdownMenuItem
                                                         key={style.code}
                                                         onClick={() => setTypingStyle(style.code as "modern" | "classic")}
-                                                        className={`justify-between rounded-lg py-2.5 px-3 cursor-pointer ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : "text-foreground hover:bg-white/5"}`}
+                                                        className={`justify-between rounded-lg py-2.5 px-3 cursor-pointer ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : "text-foreground hover:bg-foreground/5"}`}
                                                     >
                                                         {style.label}
                                                     </DropdownMenuItem>
@@ -494,7 +533,7 @@ export function HomeClient() {
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="space-y-3 border border-white/5 p-4 sm:p-5 rounded-2xl bg-black/20"
+                                        className="space-y-3 border border-foreground/5 p-4 sm:p-5 rounded-2xl bg-foreground/5"
                                     >
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] sm:text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Custom Text</label>
@@ -534,12 +573,29 @@ export function HomeClient() {
                                     </motion.div>
                                 )}
 
+                                {/* Appearance Settings */}
+                                <div className="space-y-3 pt-6 sm:pt-4 border-t border-foreground/5">
+                                    <label className="text-[10px] sm:text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Appearance</label>
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-foreground/5 border border-foreground/5">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-sm font-medium text-foreground">Background Animations</span>
+                                            <span className="text-[10px] text-text-dim">Show aurora and veil effects</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowAnimations(!showAnimations)}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${showAnimations ? 'bg-accent' : 'bg-foreground/10'}`}
+                                        >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAnimations ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {/* Language */}
                                 {activeTab !== "Custom" && (
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="space-y-3 pt-6 sm:pt-4 border-t border-white/5"
+                                        className="space-y-3 pt-6 sm:pt-4 border-t border-foreground/5"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex flex-col gap-1">
@@ -548,13 +604,13 @@ export function HomeClient() {
                                             </div>
                                             <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-white/10 hover:border-white/20">
+                                                    <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-foreground/10 hover:border-foreground/20">
                                                         <Globe size={16} className="text-accent" />
                                                         <span className="font-semibold">{language === "EN" ? "English" : "Indonesia"}</span>
                                                         <ChevronDown size={14} className="opacity-50 ml-2" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-44 border-white/10 rounded-xl p-2" onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                <DropdownMenuContent align="end" className="w-44 border-foreground/10 rounded-xl p-2" onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     {[
                                                         { code: "EN", label: "English" },
                                                         { code: "ID", label: "Indonesia" }
@@ -562,7 +618,7 @@ export function HomeClient() {
                                                         <DropdownMenuItem
                                                             key={lang.code}
                                                             onClick={() => setLanguage(lang.code as "EN" | "ID")}
-                                                            className={`justify-between rounded-lg py-2.5 px-3 cursor-pointer ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : "text-foreground hover:bg-white/5"}`}
+                                                            className={`justify-between rounded-lg py-2.5 px-3 cursor-pointer ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : "text-foreground hover:bg-foreground/5"}`}
                                                         >
                                                             {lang.label}
                                                         </DropdownMenuItem>
@@ -586,6 +642,107 @@ export function HomeClient() {
                 )}
             </AnimatePresence>
 
+            {/* Theme Picker Modal */}
+            <AnimatePresence>
+                {isThemeModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
+                        onClick={() => setThemeModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                            className="w-full max-w-lg glass p-6 sm:p-8 rounded-4xl sm:rounded-5xl shadow-2xl relative overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-8 sm:mb-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-accent/15 flex items-center justify-center ring-1 ring-accent/20">
+                                        <Palette size={20} className="text-accent" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">Appearance</h2>
+                                        <p className="text-xs text-text-dim font-medium">Customize your visual atmosphere</p>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="rounded-xl w-10 h-10 hover:bg-foreground/10"
+                                    onClick={() => setThemeModalOpen(false)}
+                                >
+                                    <X size={20} className="text-text-dim" />
+                                </Button>
+                            </div>
+
+                            {/* Theme Grid */}
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest pl-1">Themes</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {themes.map(t => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => setTheme(t.id as "dark" | "light" | "forest" | "sunset" | "retro" | "nord" | "serika" | "dracula")}
+                                                className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-300 group relative overflow-hidden ${theme === t.id
+                                                    ? 'border-accent bg-accent/10 ring-2 ring-accent/20 translate-y-[-2px]'
+                                                    : 'border-foreground/10 bg-foreground/5 hover:border-foreground/20 hover:bg-foreground/8'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between relative z-10 w-full">
+                                                    <div
+                                                        className="w-6 h-6 rounded-full shadow-lg"
+                                                        style={{
+                                                            background: `linear-gradient(135deg, ${t.bg} 50%, ${t.accent} 50%)`,
+                                                            border: `2px solid ${theme === t.id ? t.accent : 'rgba(var(--foreground-rgb),0.1)'}`
+                                                        }}
+                                                    />
+                                                    {theme === t.id && (
+                                                        <motion.div layoutId="active-theme" className="w-1.5 h-1.5 rounded-full bg-accent" />
+                                                    )}
+                                                </div>
+                                                <span className={`text-xs font-bold relative z-10 ${theme === t.id ? 'text-foreground' : 'text-text-dim group-hover:text-foreground/80'}`}>
+                                                    {t.label}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Animation Toggle in Theme Modal too */}
+                                <div className="pt-6 border-t border-foreground/10">
+                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-foreground/5 border border-foreground/5">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-sm font-semibold text-foreground">Immersive Effects</span>
+                                            <span className="text-[10px] text-text-dim">Aurora and Veil atmospheric animations</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowAnimations(!showAnimations)}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${showAnimations ? 'bg-accent' : 'bg-white/10'}`}
+                                        >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAnimations ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Button
+                                variant="primary"
+                                className="w-full mt-8 py-6 text-lg font-bold rounded-2xl"
+                                onClick={() => setThemeModalOpen(false)}
+                            >
+                                Done
+                            </Button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Custom Text Modal */}
             <AnimatePresence>
                 {isCustomModalOpen && (
@@ -593,7 +750,7 @@ export function HomeClient() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
                         onClick={() => setIsCustomModalOpen(false)}
                     >
                         <motion.div
@@ -601,14 +758,14 @@ export function HomeClient() {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-elevated border border-white/10 rounded-2xl w-full max-w-2xl p-6 shadow-2xl flex flex-col gap-4"
+                            className="bg-panel-elevated border border-foreground/10 rounded-2xl w-full max-w-2xl p-6 shadow-2xl flex flex-col gap-4"
                         >
                             <h2 className="text-xl font-bold text-foreground">Edit Custom Text</h2>
                             <textarea
                                 autoFocus
                                 value={customTextDraft}
                                 onChange={(e) => setCustomTextDraft(e.target.value)}
-                                className="w-full h-40 bg-black/20 border border-white/10 rounded-xl p-4 text-foreground focus:outline-none focus:ring-1 focus:ring-accent resize-none placeholder:text-text-dim text-lg leading-relaxed font-mono"
+                                className="w-full h-40 bg-foreground/5 border border-foreground/10 rounded-xl p-4 text-foreground focus:outline-none focus:ring-1 focus:ring-accent resize-none placeholder:text-text-dim text-lg leading-relaxed font-mono"
                                 placeholder="Paste or type your custom text here..."
                             />
                             <div className="flex justify-end gap-3 mt-2">
@@ -640,7 +797,7 @@ export function HomeClient() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
                         onClick={() => setIsCustomLimitModalOpen(false)}
                     >
                         <motion.div
@@ -648,7 +805,7 @@ export function HomeClient() {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-elevated border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-4 relative overflow-hidden glass"
+                            className="bg-panel-elevated border border-foreground/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-4 relative overflow-hidden glass"
                         >
                             <h2 className="text-xl font-bold text-foreground">Custom {activeTab} Limit</h2>
                             <div className="flex items-center gap-3">
@@ -661,7 +818,7 @@ export function HomeClient() {
                                         const v = e.target.value.replace(/[^0-9]/g, '');
                                         setCustomLimitDraft(v);
                                     }}
-                                    className="w-full h-14 bg-black/20 border border-white/10 rounded-xl px-4 text-foreground focus:outline-none focus:ring-1 focus:ring-accent text-2xl font-bold tabular-nums"
+                                    className="w-full h-14 bg-foreground/5 border border-foreground/10 rounded-xl px-4 text-foreground focus:outline-none focus:ring-1 focus:ring-accent text-2xl font-bold tabular-nums"
                                     placeholder={activeTab === "Words" ? "1-1000" : "1-3600"}
                                 />
                                 <span className="text-text-dim font-medium uppercase tracking-widest text-sm shrink-0">

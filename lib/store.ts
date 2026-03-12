@@ -30,7 +30,7 @@ interface TypecadeState {
     
     // Appearance & Sound
     typingStyle: "modern" | "classic";
-    theme: "dark" | "light";
+    theme: "dark" | "light" | "forest" | "sunset" | "retro" | "nord" | "serika" | "dracula";
     sound: "off" | "soft" | "mechanical";
     caretStyle: "line" | "block" | "underscore";
     fontSize: "small" | "medium" | "large";
@@ -41,6 +41,11 @@ interface TypecadeState {
     // Statistics
     stats: UserStats;
     
+    // UI State
+    isSettingsOpen: boolean;
+    isThemeModalOpen: boolean;
+    showAnimations: boolean;
+    
     // Actions
     setActiveTab: (tab: ModeOption) => void;
     setSubOption: (option: string) => void;
@@ -49,13 +54,16 @@ interface TypecadeState {
     setCustomText: (text: string) => void;
     setCustomShuffle: (val: boolean) => void;
     setTypingStyle: (style: "modern" | "classic") => void;
-    setTheme: (theme: "dark" | "light") => void;
+    setTheme: (theme: "dark" | "light" | "forest" | "sunset" | "retro" | "nord" | "serika" | "dracula") => void;
     setSound: (sound: "off" | "soft" | "mechanical") => void;
     setCaretStyle: (style: "line" | "block" | "underscore") => void;
     setFontSize: (size: "small" | "medium" | "large") => void;
     setLanguage: (lang: "EN" | "ID") => void;
     setPunctuation: (val: boolean) => void;
     setNumbers: (val: boolean) => void;
+    setSettingsOpen: (val: boolean) => void;
+    setThemeModalOpen: (val: boolean) => void;
+    setShowAnimations: (val: boolean) => void;
     addTestResult: (result: { wpm: number; accuracy: number; duration: number; mode: string }) => void;
 }
 
@@ -86,6 +94,9 @@ export const useStore = create<TypecadeState>()(
             language: "EN",
             punctuation: false,
             numbers: false,
+            isSettingsOpen: false,
+            isThemeModalOpen: false,
+            showAnimations: true,
             stats: {
                 wpm: 94,
                 accuracy: 98.2,
@@ -110,6 +121,9 @@ export const useStore = create<TypecadeState>()(
             setLanguage: (language) => set({ language }),
             setPunctuation: (punctuation) => set({ punctuation }),
             setNumbers: (numbers) => set({ numbers }),
+            setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
+            setThemeModalOpen: (isThemeModalOpen) => set({ isThemeModalOpen }),
+            setShowAnimations: (showAnimations) => set({ showAnimations }),
             addTestResult: (result) => set((state) => {
                 const newHistory = [
                     {

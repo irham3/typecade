@@ -117,7 +117,7 @@ export function LeaderboardView() {
             {/* Table */}
             <div className="glass rounded-2xl sm:rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
                 {/* Header table (NOT SCROLLABLE) */}
-                <div className="pr-1 sm:pr-2 bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-sm z-20">
+                <div className="pr-1 sm:pr-2 bg-panel-bg/95 backdrop-blur-xl border-b border-foreground/10 shadow-sm z-20">
                     <table className="w-full text-left font-sans text-xs sm:text-sm">
                         <colgroup>
                             <col className="w-[15%] sm:w-[15%]" />
@@ -140,9 +140,9 @@ export function LeaderboardView() {
                 <div className="max-h-[500px] sm:max-h-[750px] overflow-y-auto pr-1 sm:pr-2 
                     [&::-webkit-scrollbar]:w-2 
                     [&::-webkit-scrollbar-track]:bg-transparent 
-                    [&::-webkit-scrollbar-thumb]:bg-white/10 
+                    [&::-webkit-scrollbar-thumb]:bg-foreground/10 
                     [&::-webkit-scrollbar-thumb]:rounded-full 
-                    hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+                    hover:[&::-webkit-scrollbar-thumb]:bg-foreground/20">
                     <table className="w-full text-left font-sans text-xs sm:text-sm">
                         <colgroup>
                             <col className="w-[15%] sm:w-[15%]" />
@@ -161,7 +161,7 @@ export function LeaderboardView() {
                                     initial="hidden"
                                     animate="visible"
                                     variants={listItemVariants}
-                                    className={`border-b border-white/4 hover:bg-white/3 transition-colors ${item.isCurrentUser ? "bg-accent/6 border-accent/20 hover:bg-accent/8 relative" : ""
+                                    className={`border-b border-foreground/5 hover:bg-foreground/5 transition-colors ${item.isCurrentUser ? "bg-accent/10 border-accent/20 hover:bg-accent/15 relative" : ""
                                         }`}
                                 >
                                     <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono relative">

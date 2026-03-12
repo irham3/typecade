@@ -60,7 +60,7 @@ export default function NotFound() {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[100px] bg-accent/20 blur-[80px] rounded-full pointer-events-none" />
 
                     <div className="flex items-center justify-center gap-3 mb-4 relative z-10 min-w-[180px] md:min-w-[220px]">
-                        <span className="text-7xl md:text-8xl font-display font-semibold text-white tracking-tight drop-shadow-md w-[3ch] text-right">
+                        <span className="text-7xl md:text-8xl font-display font-semibold text-foreground tracking-tight drop-shadow-md w-[3ch] text-right">
                             404
                         </span>
                         <div className="w-[4px] h-[60px] md:h-[75px] bg-accent rounded-full animate-caret-blink drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
@@ -78,7 +78,7 @@ export default function NotFound() {
 
                     <p className="text-text-dim/40 text-[11px] font-mono mt-12 flex items-center gap-2">
                         <span>Press</span>
-                        <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-white/40">
+                        <kbd className="px-1.5 py-0.5 rounded bg-foreground/5 border border-foreground/10 text-foreground/40">
                             Esc
                         </kbd>
                         <span>to go back</span>

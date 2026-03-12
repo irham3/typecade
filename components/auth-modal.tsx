@@ -49,7 +49,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (status.tone === "error") {
             return "border-red-500/30 bg-red-500/10 text-red-200";
         }
-        return "border-white/10 bg-white/5 text-text-dim";
+        return "border-foreground/10 bg-foreground/5 text-text-dim";
     }, [status.tone]);
 
     const handleGoogle = async () => {
@@ -162,11 +162,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
-                        className="w-full max-w-md bg-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl relative z-10 glass glow-accent"
+                        className="w-full max-w-md bg-panel-bg border border-foreground/10 rounded-3xl p-8 shadow-2xl relative z-10 glass glow-accent"
                     >
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors text-text-dim hover:text-white"
+                            className="absolute top-6 right-6 p-2 rounded-full hover:bg-foreground/10 transition-colors text-text-dim hover:text-foreground"
                         >
                             <X size={20} />
                         </button>
@@ -190,7 +190,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                             </div>
                         ) : (
                             <div className="space-y-6 relative">
-                                <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-black/40 p-1">
+                                <div className="grid grid-cols-2 gap-2 rounded-xl border border-foreground/10 bg-black/40 p-1">
                                     <Button
                                         type="button"
                                         variant={mode === "sign-in" ? "active" : "ghost"}
@@ -217,15 +217,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                 </Button>
 
                                 <div className="flex items-center gap-3 text-xs text-text-dim">
-                                    <span className="h-px flex-1 bg-white/10" />
+                                    <span className="h-px flex-1 bg-foreground/10" />
                                     <span className="uppercase tracking-widest text-[10px] font-bold">Or Email</span>
-                                    <span className="h-px flex-1 bg-white/10" />
+                                    <span className="h-px flex-1 bg-foreground/10" />
                                 </div>
 
                                 <form onSubmit={handleEmailAuth} className="space-y-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Email</label>
-                                        <div className="flex items-center gap-3 bg-panel-bg border border-white/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
+                                        <div className="flex items-center gap-3 bg-panel-bg border border-foreground/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
                                             <Mail size={16} className="text-text-dim" />
                                             <input
                                                 type="email"
@@ -239,7 +239,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Password</label>
-                                        <div className="flex items-center gap-3 bg-panel-bg border border-white/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
+                                        <div className="flex items-center gap-3 bg-panel-bg border border-foreground/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
                                             <Lock size={16} className="text-text-dim" />
                                             <input
                                                 type="password"
@@ -254,7 +254,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                     {mode === "sign-up" && (
                                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="space-y-2 overflow-hidden">
                                             <label className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Confirm password</label>
-                                            <div className="flex items-center gap-3 bg-panel-bg border border-white/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
+                                            <div className="flex items-center gap-3 bg-panel-bg border border-foreground/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
                                                 <Lock size={16} className="text-text-dim" />
                                                 <input
                                                     type="password"

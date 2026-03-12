@@ -46,7 +46,7 @@ export function SegmentedControl<T extends string>({
         <div
             ref={containerRef}
             className={cn(
-                "relative inline-flex items-center rounded-2xl p-1 bg-white/3 border border-white/6",
+                "relative inline-flex items-center rounded-2xl p-1 bg-foreground/3 border border-foreground/6",
                 className
             )}
         >
@@ -56,7 +56,7 @@ export function SegmentedControl<T extends string>({
                     "absolute top-1 bottom-1 rounded-xl z-0",
                     variant === "gradient"
                         ? "bg-linear-to-r from-accent/15 to-accent/8 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
-                        : "bg-white/8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                        : "bg-foreground/10"
                 )}
                 animate={{
                     left: indicatorStyle.left,
@@ -82,8 +82,8 @@ export function SegmentedControl<T extends string>({
                             isActive
                                 ? variant === "gradient"
                                     ? "text-accent"
-                                    : "text-white"
-                                : "text-text-dim hover:text-white/70"
+                                    : "text-foreground"
+                                : "text-text-dim hover:text-foreground/70"
                         )}
                     >
                         {formatOption ? formatOption(option) : option}

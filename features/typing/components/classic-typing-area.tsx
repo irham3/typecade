@@ -255,7 +255,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 if (isTypo) {
                     className += "bg-error-bg/30 text-error-text ring-1 ring-error-text/50";
                 } else {
-                    className += "bg-white/10 text-foreground ring-1 ring-white/20";
+                    className += "bg-foreground/10 text-foreground ring-1 ring-foreground/20";
                 }
             } else {
                 // Future words
@@ -300,7 +300,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                     <span className="text-lg sm:text-2xl font-bold text-accent tabular-nums text-glow-accent">{wpm}</span>
                                     <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
                                 </div>
-                                <div className="w-px h-3 sm:h-4 bg-white/6" />
+                                <div className="w-px h-3 sm:h-4 bg-foreground/10" />
                                 <div className="flex items-baseline gap-1 sm:gap-1.5">
                                     <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
                                     <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">%</span>
@@ -317,7 +317,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                         </div>
 
                         {/* Classic Typing Area containing Words */}
-                        <div className="w-full relative glass border border-white/5 rounded-2xl p-4 sm:p-6 shadow-lg mb-6">
+                        <div className="w-full relative glass border border-foreground/5 rounded-2xl p-4 sm:p-6 shadow-lg mb-6">
                             <div
                                 className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none"
                                 style={{ lineHeight: 1.8 }}
@@ -345,8 +345,8 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                 type="text"
                                 className={`w-full bg-black/20 border-2 transition-colors rounded-xl font-mono text-2xl text-center py-4 px-6 outline-none shadow-inner ${currentInput && currentInput !== words[currentWordIndex]?.substring(0, currentInput.length)
                                     ? "border-error-text/50 text-error-text bg-error-bg/10"
-                                    : "border-white/10 hover:border-white/20 focus:border-accent/50 text-foreground"
-                                    }`}
+                                    : "border-foreground/10 hover:border-foreground/20 focus:border-accent/50 text-foreground"
+                                    } shadow-inner bg-panel-bg/30 tracking-widest outline-none`}
                                 value={currentInput}
                                 onChange={handleInput}
                                 autoFocus
@@ -367,7 +367,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                         className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
                                         onClick={focusInput}
                                     >
-                                        <div className="bg-panel-bg/80 border border-white/10 px-6 py-3 rounded-full flex gap-3 items-center shadow-xl">
+                                        <div className="bg-panel-bg/80 border border-foreground/10 px-6 py-3 rounded-full flex gap-3 items-center shadow-xl">
                                             <span className="text-foreground text-sm font-sans font-medium tracking-wide">
                                                 Click here or press any key to focus
                                             </span>
@@ -380,11 +380,11 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
                         {/* Progress line */}
                         {status === "playing" && (
-                            <div className="w-full h-0.5 bg-white/4 rounded-full mt-4 overflow-hidden max-w-2xl mx-auto">
+                            <div className="w-full h-0.5 bg-foreground/5 rounded-full mt-4 overflow-hidden max-w-2xl mx-auto">
                                 <motion.div
                                     className="h-full rounded-full"
                                     style={{
-                                        background: "linear-gradient(90deg, rgba(99,102,241,0.8), rgba(94,234,212,0.6))",
+                                        background: "linear-gradient(90deg, rgba(var(--accent-rgb), 0.8), rgba(var(--accent-secondary-rgb), 0.6))",
                                     }}
                                     animate={{
                                         width: mode === "time"

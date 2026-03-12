@@ -146,7 +146,7 @@ export function ProfileView() {
                 {/* Avatar */}
                 <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full p-[2px] shrink-0 relative group">
                     <div className="absolute inset-0 rounded-full bg-linear-to-tr from-accent/40 to-accent-secondary/30 blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative w-full h-full rounded-full bg-panel-bg border border-white/8 flex items-center justify-center overflow-hidden cursor-pointer">
+                    <div className="relative w-full h-full rounded-full bg-panel-bg border border-foreground/10 flex items-center justify-center overflow-hidden cursor-pointer">
                         <User size={28} className="text-text-dim group-hover:text-foreground transition-colors sm:hidden" />
                         <User size={40} className="text-text-dim group-hover:text-foreground transition-colors hidden sm:block" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -160,7 +160,7 @@ export function ProfileView() {
                     <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4">
                         <div className="flex flex-col items-center md:items-start gap-2">
                             <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground tracking-tight">{displayName}</h1>
-                            <span className="text-xs font-medium text-text-dim bg-white/4 px-3 py-1 rounded-full border border-white/6">
+                            <span className="text-xs font-medium text-text-dim bg-foreground/5 px-3 py-1 rounded-full border border-foreground/10">
                                 {memberSince}
                             </span>
                         </div>
@@ -170,7 +170,7 @@ export function ProfileView() {
                     </div>
 
                     {/* Quick stats grid with CountUp */}
-                    <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-center md:text-left">
+                    <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-foreground/10 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-center md:text-left">
                         {statCards.map((stat, i) => (
                             <motion.div
                                 key={stat.label}
@@ -214,7 +214,7 @@ export function ProfileView() {
                             </h3>
                             <DropdownMenu open={timeframeOpen} onOpenChange={setTimeframeOpen}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-auto bg-white/3 border border-white/6 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none gap-2">
+                                    <Button variant="ghost" className="h-auto bg-foreground/5 border border-foreground/10 text-xs text-text-dim px-3 py-1.5 rounded-lg outline-none gap-2">
                                         {timeframe} <ChevronDown size={12} className="opacity-40" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -259,7 +259,7 @@ export function ProfileView() {
                         transition={{ delay: 0.5 }}
                         className="glass rounded-2xl sm:rounded-3xl overflow-hidden"
                     >
-                        <div className="p-4 sm:p-6 border-b border-white/5">
+                        <div className="p-4 sm:p-6 border-b border-foreground/5">
                             <h3 className="text-base font-display font-medium text-foreground flex items-center gap-2">
                                 <FileText size={16} className="text-text-dim" /> Test History
                             </h3>
@@ -267,7 +267,7 @@ export function ProfileView() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left font-sans text-sm">
                                 <thead>
-                                    <tr className="border-b border-white/4">
+                                    <tr className="border-b border-foreground/5">
                                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs uppercase font-bold tracking-wider text-text-dim">Date</th>
                                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs uppercase font-bold tracking-wider text-text-dim">Mode</th>
                                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs uppercase font-bold tracking-wider text-text-dim">WPM</th>
@@ -281,7 +281,7 @@ export function ProfileView() {
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             transition={{ delay: 0.6 + i * 0.05 }}
-                                            className="border-b border-white/4 hover:bg-white/3 transition-colors"
+                                            className="border-b border-foreground/5 hover:bg-foreground/5 transition-colors"
                                         >
                                             <td className="px-3 sm:px-6 py-3 sm:py-4 text-text-dim font-mono text-[10px] sm:text-xs">{test.date}</td>
                                             <td className="px-3 sm:px-6 py-3 sm:py-4 text-foreground text-xs sm:text-sm">{test.mode}</td>
@@ -292,7 +292,7 @@ export function ProfileView() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="p-4 text-center flex justify-center border-t border-white/4">
+                        <div className="p-4 text-center flex justify-center border-t border-foreground/5">
                             <Button variant="ghost" className="text-xs font-bold text-text-dim hover:text-white uppercase tracking-widest px-4">See complete history</Button>
                         </div>
                     </motion.div>
@@ -311,13 +311,13 @@ export function ProfileView() {
                     </h3>
 
                     <div className="space-y-5">
-                        <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
+                        <div className="flex flex-col gap-1 pb-4 border-b border-foreground/5">
                             <span className="text-text-dim text-xs">Average WPM (All time)</span>
                             <span className="text-xl font-mono text-foreground font-medium">
                                 <CountUp end={stats.avgWpm} duration={1000} delay={500} />
                             </span>
                         </div>
-                        <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
+                        <div className="flex flex-col gap-1 pb-4 border-b border-foreground/5">
                             <span className="text-text-dim text-xs">Average Accuracy</span>
                             <span className="text-xl font-mono text-foreground font-medium">
                                 <CountUp end={stats.avgAccuracy} duration={1000} delay={600} decimals={1} suffix="%" />
@@ -326,7 +326,7 @@ export function ProfileView() {
                         <div className="flex flex-col gap-1 pb-4 border-b border-white/5">
                             <span className="text-text-dim text-xs">Favorite Mode</span>
                             <span className="text-base text-foreground font-medium flex items-center gap-2 mt-1">
-                                <span className="px-2.5 py-1 bg-white/4 rounded-lg text-xs border border-white/6 font-mono">Time 60s</span>
+                                <span className="px-2.5 py-1 bg-foreground/5 rounded-lg text-xs border border-foreground/10 font-mono">Time 60s</span>
                             </span>
                         </div>
                         <div className="flex flex-col gap-1">

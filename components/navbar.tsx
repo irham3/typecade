@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, User, Settings, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
+import { Keyboard, Trophy, Users, User, Settings, GraduationCap, ChevronDown, Menu, X, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/lib/auth/auth-context";
 import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
+import { useStore } from "@/lib/store";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
@@ -35,6 +36,8 @@ export function Navbar() {
     const [authModalOpen, setAuthModalOpen] = useState(false);
     const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const { user, isLoading, supabaseReady, signOut } = useAuth();
+    const setSettingsOpen = useStore(state => state.setSettingsOpen);
+    const setThemeModalOpen = useStore(state => state.setThemeModalOpen);
     const navRef = useRef<HTMLDivElement>(null);
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
@@ -88,7 +91,7 @@ export function Navbar() {
             >
                 {/* Animated pill */}
                 <motion.div
-                    className="absolute top-1.5 bottom-1.5 rounded-xl bg-white/8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
+                    className="absolute top-1.5 bottom-1.5 rounded-xl bg-foreground/15 shadow-[inset_0_1px_1px_rgba(var(--foreground-rgb),0.06)]"
                     animate={{
                         left: pillStyle.left,
                         width: pillStyle.width,
@@ -109,8 +112,8 @@ export function Navbar() {
                             href={item.path}
                             data-nav-link
                             className={`relative z-10 flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-xl ${isActive
-                                ? "text-white"
-                                : "text-text-dim hover:text-white/80"
+                                ? "text-foreground"
+                                : "text-text-dim hover:text-foreground/80"
                                 }`}
                         >
                             <item.icon size={15} className={isActive ? "text-accent" : ""} />
@@ -178,10 +181,37 @@ export function Navbar() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="p-2.5 hidden md:flex"
+                    className="p-2.5 flex"
                     aria-label="Settings"
+                    onClick={() => {
+                        if (pathname !== "/") {
+                            router.push("/");
+                            // Small delay to ensure the page has loaded if needed, 
+                            // though Zustand state is global and persistent.
+                            setTimeout(() => setSettingsOpen(true), 100);
+                        } else {
+                            setSettingsOpen(true);
+                        }
+                    }}
                 >
                     <Settings size={18} />
+                </Button>
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-2.5 flex"
+                    aria-label="Themes"
+                    onClick={() => {
+                        if (pathname !== "/") {
+                            router.push("/");
+                            setTimeout(() => setThemeModalOpen(true), 150);
+                        } else {
+                            setThemeModalOpen(true);
+                        }
+                    }}
+                >
+                    <Palette size={18} />
                 </Button>
 
                 {/* Mobile hamburger */}
@@ -202,7 +232,7 @@ export function Navbar() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-2 right-2 sm:left-4 sm:right-4 bg-panel-elevated/95 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/50 rounded-2xl p-3 md:hidden z-50 mt-2"
+                    className="absolute top-full left-2 right-2 sm:left-4 sm:right-4 bg-panel-elevated/95 backdrop-blur-2xl border border-foreground/10 shadow-2xl shadow-black/50 rounded-2xl p-3 md:hidden z-50 mt-2"
                 >
                     {navItems.map((item) => {
                         const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
@@ -212,8 +242,8 @@ export function Navbar() {
                                 href={item.path}
                                 onClick={() => setMobileOpen(false)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive
-                                    ? "text-white bg-white/6"
-                                    : "text-text-dim hover:text-white hover:bg-white/4"
+                                    ? "text-foreground bg-foreground/10"
+                                    : "text-text-dim hover:text-foreground hover:bg-foreground/5"
                                     }`}
                             >
                                 <item.icon size={16} className={isActive ? "text-accent" : ""} />
@@ -221,6 +251,37 @@ export function Navbar() {
                             </Link>
                         );
                     })}
+                    <div className="h-px bg-foreground/10 my-2" />
+                    <button
+                        onClick={() => {
+                            setMobileOpen(false);
+                            if (pathname !== "/") {
+                                router.push("/");
+                                setTimeout(() => setSettingsOpen(true), 150);
+                            } else {
+                                setSettingsOpen(true);
+                            }
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-text-dim hover:text-foreground hover:bg-foreground/5 w-full text-left"
+                    >
+                        <Settings size={16} className="text-accent" />
+                        Settings
+                    </button>
+                    <button
+                        onClick={() => {
+                            setMobileOpen(false);
+                            if (pathname !== "/") {
+                                router.push("/");
+                                setTimeout(() => setThemeModalOpen(true), 150);
+                            } else {
+                                setThemeModalOpen(true);
+                            }
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-text-dim hover:text-foreground hover:bg-foreground/5 w-full text-left"
+                    >
+                        <Palette size={16} className="text-accent" />
+                        Themes
+                    </button>
                 </motion.div>
             )}
 

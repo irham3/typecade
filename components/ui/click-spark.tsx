@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useStore } from "@/lib/store";
 
 interface Spark {
     x: number;
@@ -12,17 +13,17 @@ interface Spark {
 }
 
 export function ClickSpark({
-    sparkColor = "rgba(99, 102, 241, 1)", // --accent
     sparkSize = 18,
     sparkCount = 12,
 }: {
-    sparkColor?: string;
     sparkSize?: number;
     sparkCount?: number;
 }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sparks = useRef<Spark[]>([]);
     const reqId = useRef<number>(0);
+    const theme = useStore(state => state.theme);
+    const isLightTheme = theme === 'light';
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -60,6 +61,10 @@ export function ClickSpark({
 
         const render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Fetch colors once per frame or per spark if needed, but per frame is fine
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#6366f1";
+            const secondary = getComputedStyle(document.documentElement).getPropertyValue('--accent-secondary').trim() || "#5eead4";
 
             for (let i = sparks.current.length - 1; i >= 0; i--) {
                 const s = sparks.current[i];
@@ -84,20 +89,20 @@ export function ClickSpark({
                     s.x + Math.cos(s.angle) * size,
                     s.y + Math.sin(s.angle) * size
                 );
-                ctx.strokeStyle = sparkColor;
+                ctx.strokeStyle = accent;
                 ctx.lineWidth = 3.5;
                 ctx.lineCap = "round";
                 ctx.globalAlpha = Math.max(0, alpha);
                 ctx.stroke();
 
-                // additive glow
+                // secondary glow
                 ctx.beginPath();
                 ctx.moveTo(s.x, s.y);
                 ctx.lineTo(
                     s.x + Math.cos(s.angle) * size * 1.5,
                     s.y + Math.sin(s.angle) * size * 1.5
                 );
-                ctx.strokeStyle = "rgba(94, 234, 212, 1)"; // --accent-secondary
+                ctx.strokeStyle = secondary;
                 ctx.lineWidth = 2;
                 ctx.globalAlpha = Math.max(0, alpha * 0.7);
                 ctx.stroke();
@@ -113,13 +118,13 @@ export function ClickSpark({
             window.removeEventListener("pointerdown", handleClick);
             cancelAnimationFrame(reqId.current);
         };
-    }, [sparkCount, sparkSize, sparkColor]);
+    }, [sparkCount, sparkSize]);
 
     return (
         <canvas
             ref={canvasRef}
             className="fixed inset-0 pointer-events-none z-50"
-            style={{ mixBlendMode: 'screen' }}
+            style={{ mixBlendMode: isLightTheme ? 'multiply' : 'screen' }}
         />
     );
 }

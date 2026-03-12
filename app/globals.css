@@ -14,8 +14,10 @@
 
 :root {
   --background: #0c0d14;
+  --background-rgb: 12, 13, 20;
   --background-raised: #111219;
   --foreground: #e6e4df;
+  --foreground-rgb: 230, 228, 223;
   --accent: #6366f1;
   --accent-rgb: 99, 102, 241;
   --accent-secondary: #5eead4;
@@ -25,12 +27,142 @@
   --text-dim: #858794;
   --text-dim-rgb: 133, 135, 148;
   --panel-bg: #111219;
+  --panel-bg-rgb: 17, 18, 25;
   --panel-bg-elevated: #16171f;
   --border-dim: #1f2029;
   --border-accent: rgba(99, 102, 241, 0.12);
   --gold: #f5c542;
+  --gold-rgb: 245, 197, 66;
   --silver: #94a3b8;
+  --silver-rgb: 148, 163, 184;
   --bronze: #cd7f32;
+  --bronze-rgb: 205, 127, 50;
+}
+
+[data-theme='light'] {
+  --background: #f8fafc;
+  --background-rgb: 248, 250, 252;
+  --background-raised: #f1f5f9;
+  --foreground: #020617;
+  --foreground-rgb: 2, 6, 23;
+  --accent: #4f46e5;
+  --accent-rgb: 79, 70, 229;
+  --accent-secondary: #0ea5e9;
+  --accent-secondary-rgb: 14, 165, 233;
+  --text-dim: #475569;
+  --panel-bg: #ffffff;
+  --panel-bg-rgb: 255, 255, 255;
+  --panel-bg-elevated: #f1f5f9;
+  --border-dim: #e2e8f0;
+  --border-accent: rgba(79, 70, 229, 0.15);
+}
+
+[data-theme='forest'] {
+  --background: #0b120f;
+  --background-rgb: 11, 18, 15;
+  --background-raised: #121d18;
+  --foreground: #ecf3ec;
+  --foreground-rgb: 236, 243, 236;
+  --accent: #22c55e;
+  --accent-rgb: 34, 197, 94;
+  --accent-secondary: #84cc16;
+  --accent-secondary-rgb: 132, 204, 22;
+  --text-dim: #7da58b;
+  --panel-bg: #111a15;
+  --panel-bg-rgb: 17, 26, 21;
+  --panel-bg-elevated: #16241c;
+  --border-dim: #1f3025;
+  --border-accent: rgba(34, 197, 94, 0.15);
+}
+
+[data-theme='sunset'] {
+  --background: #141110;
+  --background-rgb: 20, 17, 16;
+  --background-raised: #1c1817;
+  --foreground: #fdf6e3;
+  --foreground-rgb: 253, 246, 227;
+  --accent: #f97316;
+  --accent-rgb: 249, 115, 22;
+  --accent-secondary: #e11d48;
+  --accent-secondary-rgb: 225, 29, 72;
+  --text-dim: #bda798;
+  --panel-bg: #1c1817;
+  --panel-bg-rgb: 28, 24, 23;
+  --panel-bg-elevated: #282220;
+  --border-dim: #332b29;
+  --border-accent: rgba(249, 115, 22, 0.15);
+}
+
+[data-theme='retro'] {
+  --background: #0d0016;
+  --background-rgb: 13, 0, 22;
+  --background-raised: #150024;
+  --foreground: #00ffcc;
+  --foreground-rgb: 0, 255, 204;
+  --accent: #ff007f;
+  --accent-rgb: 255, 0, 127;
+  --accent-secondary: #00ffcc;
+  --accent-secondary-rgb: 0, 255, 204;
+  --text-dim: #9d3bff;
+  --panel-bg: #150024;
+  --panel-bg-rgb: 21, 0, 36;
+  --panel-bg-elevated: #1a0030;
+  --border-dim: #2e0055;
+  --border-accent: rgba(255, 0, 127, 0.2);
+}
+
+[data-theme='nord'] {
+  --background: #242933;
+  --background-rgb: 36, 41, 51;
+  --background-raised: #2e3440;
+  --foreground: #eceff4;
+  --foreground-rgb: 236, 239, 244;
+  --accent: #88c0d0;
+  --accent-rgb: 136, 192, 208;
+  --accent-secondary: #81a1c1;
+  --accent-secondary-rgb: 129, 161, 193;
+  --text-dim: #6e7a8a;
+  --panel-bg: #2e3440;
+  --panel-bg-rgb: 46, 52, 64;
+  --panel-bg-elevated: #3b4252;
+  --border-dim: #3b4252;
+  --border-accent: rgba(136, 192, 208, 0.15);
+}
+
+[data-theme='serika'] {
+  --background: #323437;
+  --background-rgb: 50, 52, 55;
+  --background-raised: #3c3f41;
+  --foreground: #d1d0c5;
+  --foreground-rgb: 209, 208, 197;
+  --accent: #e2b714;
+  --accent-rgb: 226, 183, 20;
+  --accent-secondary: #e2b714;
+  --accent-secondary-rgb: 226, 183, 20;
+  --text-dim: #646669;
+  --panel-bg: #2c2e31;
+  --panel-bg-rgb: 44, 46, 49;
+  --panel-bg-elevated: #3c3f41;
+  --border-dim: #464b4d;
+  --border-accent: rgba(226, 183, 20, 0.15);
+}
+
+[data-theme='dracula'] {
+  --background: #1e1f29;
+  --background-rgb: 30, 31, 41;
+  --background-raised: #282a36;
+  --foreground: #f8f8f2;
+  --foreground-rgb: 248, 248, 242;
+  --accent: #bd93f9;
+  --accent-rgb: 189, 147, 249;
+  --accent-secondary: #ff79c6;
+  --accent-secondary-rgb: 255, 121, 198;
+  --text-dim: #6272a4;
+  --panel-bg: #282a36;
+  --panel-bg-rgb: 40, 42, 54;
+  --panel-bg-elevated: #44475a;
+  --border-dim: #6272a4;
+  --border-accent: rgba(189, 147, 249, 0.15);
 }
 
 @theme inline {
@@ -403,7 +535,11 @@ body {
   pointer-events: none;
   background: radial-gradient(ellipse 80% 80% at 50% 50%,
       transparent 40%,
-      rgba(0, 0, 0, 0.45) 100%);
+      rgba(0, 0, 0, var(--vignette-alpha, 0.45)) 100%);
+}
+
+[data-theme='light'] .bg-vignette-edge {
+  --vignette-alpha: 0.05;
 }
 
 /* Noise texture */
@@ -447,17 +583,17 @@ body::before {
 
 /* ── Glassmorphism ── */
 .glass {
-  background: rgba(17, 18, 25, 0.65);
+  background: rgba(var(--panel-bg-rgb), 0.65);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--foreground-rgb), 0.06);
 }
 
 .glass-subtle {
-  background: rgba(17, 18, 25, 0.4);
+  background: rgba(var(--panel-bg-rgb), 0.4);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(var(--foreground-rgb), 0.04);
 }
 
 /* ── Glow effects ── */
@@ -487,12 +623,12 @@ body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--foreground-rgb), 0.1);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--foreground-rgb), 0.2);
 }
 
 /* ── Shimmer text ── */
