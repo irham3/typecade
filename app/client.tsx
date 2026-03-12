@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
-import { useStore } from "@/lib/store";
+import { useStore, ModeOption } from "@/lib/store";
 import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -25,7 +25,6 @@ const ClassicTypingView = dynamic(
 );
 
 const modeOptions = ["Quote", "Words", "Time", "Custom"] as const;
-type ModeOption = (typeof modeOptions)[number];
 
 const subOptions: Record<string, string[]> = {
     Quote: ["Easy", "Medium", "Hard"],
@@ -35,15 +34,24 @@ const subOptions: Record<string, string[]> = {
 };
 
 export function HomeClient() {
-    const [activeTab, setActiveTab] = useState<ModeOption>("Time");
-    const [subOption, setSubOption] = useState("60s");
+    const activeTab = useStore(state => state.activeTab);
+    const setActiveTab = useStore(state => state.setActiveTab);
+    const subOption = useStore(state => state.subOption);
+    const setSubOption = useStore(state => state.setSubOption);
+    const customWordLimit = useStore(state => state.customWordLimit);
+    const setCustomWordLimit = useStore(state => state.setCustomWordLimit);
+    const customTimeLimit = useStore(state => state.customTimeLimit);
+    const setCustomTimeLimit = useStore(state => state.setCustomTimeLimit);
+    const customText = useStore(state => state.customText);
+    const setCustomText = useStore(state => state.setCustomText);
+    const customShuffle = useStore(state => state.customShuffle);
+    const setCustomShuffle = useStore(state => state.setCustomShuffle);
+
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
     const [styleDesktopOpen, setStyleDesktopOpen] = useState(false);
     const [styleMobileOpen, setStyleMobileOpen] = useState(false);
 
     // Custom limit states
-    const [customWordLimit, setCustomWordLimit] = useState("30");
-    const [customTimeLimit, setCustomTimeLimit] = useState("45");
     const [isCustomLimitModalOpen, setIsCustomLimitModalOpen] = useState(false);
     const [customLimitDraft, setCustomLimitDraft] = useState("");
 
@@ -52,8 +60,6 @@ export function HomeClient() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
     const [customTextDraft, setCustomTextDraft] = useState("");
-    const [customText, setCustomText] = useState("Typecade gives you the freedom to type anything you want. Simply edit this text and start practicing!");
-    const isCustomShuffled = false; // State removed, parameter passed safely
 
     const language = useStore(state => state.language);
     const setLanguage = useStore(state => state.setLanguage);
@@ -161,6 +167,29 @@ export function HomeClient() {
                                 variant="gradient"
                                 className="bg-transparent border-transparent p-0"
                             />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence mode="popLayout">
+                    {activeTab === "Custom" && (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
+                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                        >
+                            <div className="w-px h-4 bg-white/6 hidden sm:block shrink-0" />
+                            <Button
+                                variant={customShuffle ? "activeGradient" : "ghost"}
+                                className="px-3 py-1.5 text-sm"
+                                onClick={() => setCustomShuffle(!customShuffle)}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
+                                Shuffle
+                            </Button>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -306,7 +335,7 @@ export function HomeClient() {
                             activeTab={activeTab}
                             subOption={subOption === "Custom" ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s") : subOption}
                             customText={customText}
-                            customShuffle={isCustomShuffled}
+                            customShuffle={customShuffle}
                         />
                     ) : (
                         <TypingView
@@ -314,7 +343,7 @@ export function HomeClient() {
                             activeTab={activeTab}
                             subOption={subOption === "Custom" ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s") : subOption}
                             customText={customText}
-                            customShuffle={isCustomShuffled}
+                            customShuffle={customShuffle}
                         />
                     )}
                 </AnimatePresence>
@@ -469,18 +498,29 @@ export function HomeClient() {
                                     >
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] sm:text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Custom Text</label>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 text-xs gap-1.5 text-accent hover:text-accent group"
-                                                onClick={() => {
-                                                    setCustomTextDraft(customText);
-                                                    setIsSettingsModalOpen(false);
-                                                    setTimeout(() => setIsCustomModalOpen(true), 100);
-                                                }}
-                                            >
-                                                <PenLine size={12} /> Full Editor <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-                                            </Button>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant={customShuffle ? "activeGradient" : "outline"}
+                                                    size="sm"
+                                                    className="h-8 text-xs gap-1.5"
+                                                    onClick={() => setCustomShuffle(!customShuffle)}
+                                                >
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
+                                                    Shuffle
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 text-xs gap-1.5 text-accent hover:text-accent group"
+                                                    onClick={() => {
+                                                        setCustomTextDraft(customText);
+                                                        setIsSettingsModalOpen(false);
+                                                        setTimeout(() => setIsCustomModalOpen(true), 100);
+                                                    }}
+                                                >
+                                                    <PenLine size={12} /> Full Editor <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                                                </Button>
+                                            </div>
                                         </div>
                                         <div className="relative">
                                             <textarea

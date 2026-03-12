@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { playTypeSound } from "@/lib/utils/sound";
 
 export function ClassicTypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
     const { user, supabaseReady } = useAuth();
     const language = useStore(state => state.language);
     const usePunctuation = useStore(state => state.punctuation);
     const useNumbers = useStore(state => state.numbers);
+    const sound = useStore(state => state.sound);
 
     const mode = activeTab.toLowerCase() as "time" | "words" | "quote" | "custom";
     const limit = parseInt(subOption.replace("s", ""));
@@ -96,6 +98,26 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
             });
         }
     });
+
+    const prevInputRef = useRef("");
+    const prevWordIndexRef = useRef(0);
+
+    useEffect(() => {
+        if (status === "playing" && sound !== "off") {
+            const hasNewChar = currentInput.length > prevInputRef.current.length;
+            const hasNewWord = currentWordIndex > prevWordIndexRef.current;
+            
+            if (hasNewChar || hasNewWord) {
+                const targetWord = words[currentWordIndex] || "";
+                const targetChar = hasNewWord ? " " : targetWord[currentInput.length - 1];
+                const isError = hasNewChar && currentInput[currentInput.length - 1] !== targetChar;
+                
+                playTypeSound(sound, isError);
+            }
+        }
+        prevInputRef.current = currentInput;
+        prevWordIndexRef.current = currentWordIndex;
+    }, [currentInput, currentWordIndex, status, sound, words]);
 
     // Auto-append words for infinite typing (Time mode)
     useEffect(() => {

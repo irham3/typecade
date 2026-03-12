@@ -5,6 +5,8 @@ import { Lesson, KEY_FINGER_MAP, Finger } from "../data/lessons";
 import { HandVisualizer } from "./hand-visualizer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RotateCcw, CheckCircle, ArrowRight } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { playTypeSound } from "@/lib/utils/sound";
 
 type PracticeProps = {
     lesson: Lesson;
@@ -20,6 +22,7 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
 
     const [translateY, setTranslateY] = useState(0);
     const [isFocused, setIsFocused] = useState(true);
+    const sound = useStore(state => state.sound);
 
     const {
         status,
@@ -155,6 +158,19 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
             }
         };
     }, [typedChars, status]);
+
+    const prevTypedCharsLength = useRef(0);
+    useEffect(() => {
+        if (typedChars.length > prevTypedCharsLength.current && status === "playing") {
+            const lastCharIndex = typedChars.length - 1;
+            const isCorrect = typedChars[lastCharIndex] === lesson.text[lastCharIndex];
+
+            if (sound !== "off") {
+                playTypeSound(sound, !isCorrect);
+            }
+        }
+        prevTypedCharsLength.current = typedChars.length;
+    }, [typedChars, lesson.text, sound, status]);
 
     const activeIndex = typedChars.length;
     const nextChar = status === "finished" ? null : lesson.text[activeIndex];
