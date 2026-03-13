@@ -342,17 +342,8 @@ export function HomeClient() {
                     </motion.div>
                 </AnimatePresence>
 
-                <motion.div layout className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
-                <div className="flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="p-2 w-10 h-10 rounded-xl hover:bg-foreground/10 text-text-dim hover:text-foreground transition-all shrink-0"
-                        onClick={() => setThemeModalOpen(true)}
-                        title="Theme Picker"
-                    >
-                        <Palette size={18} />
-                    </Button>
+                {/* <motion.div layout className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" /> */}
+                {/* <div className="flex items-center gap-1">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -362,7 +353,7 @@ export function HomeClient() {
                     >
                         <Settings size={18} />
                     </Button>
-                </div>
+                </div> */}
             </motion.div>
 
             {/* ── Typing Area — contained with accent indicator ── */}

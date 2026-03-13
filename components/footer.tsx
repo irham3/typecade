@@ -18,8 +18,8 @@ export function Footer() {
                         GitHub
                     </a>
                 </Button>
-                <div className="h-4 w-px bg-foreground/10 hidden sm:block mx-1" />
-                <span className="opacity-30 py-2 select-none">Typecade v1.0</span>
+                {/* <div className="h-4 w-px bg-foreground/10 hidden sm:block mx-1" /> */}
+                {/* <span className="opacity-30 py-2 select-none">Typecade v1.0</span> */}
             </div>
 
             <Button

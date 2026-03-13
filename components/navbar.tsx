@@ -178,42 +178,6 @@ export function Navbar() {
                     </Button>
                 )}
 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="p-2.5 flex"
-                    aria-label="Settings"
-                    onClick={() => {
-                        if (pathname !== "/") {
-                            router.push("/");
-                            // Small delay to ensure the page has loaded if needed, 
-                            // though Zustand state is global and persistent.
-                            setTimeout(() => setSettingsOpen(true), 100);
-                        } else {
-                            setSettingsOpen(true);
-                        }
-                    }}
-                >
-                    <Settings size={18} />
-                </Button>
-
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="p-2.5 flex"
-                    aria-label="Themes"
-                    onClick={() => {
-                        if (pathname !== "/") {
-                            router.push("/");
-                            setTimeout(() => setThemeModalOpen(true), 150);
-                        } else {
-                            setThemeModalOpen(true);
-                        }
-                    }}
-                >
-                    <Palette size={18} />
-                </Button>
-
                 {/* Mobile hamburger */}
                 <Button
                     variant="ghost"
@@ -251,37 +215,6 @@ export function Navbar() {
                             </Link>
                         );
                     })}
-                    <div className="h-px bg-foreground/10 my-2" />
-                    <button
-                        onClick={() => {
-                            setMobileOpen(false);
-                            if (pathname !== "/") {
-                                router.push("/");
-                                setTimeout(() => setSettingsOpen(true), 150);
-                            } else {
-                                setSettingsOpen(true);
-                            }
-                        }}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-text-dim hover:text-foreground hover:bg-foreground/5 w-full text-left"
-                    >
-                        <Settings size={16} className="text-accent" />
-                        Settings
-                    </button>
-                    <button
-                        onClick={() => {
-                            setMobileOpen(false);
-                            if (pathname !== "/") {
-                                router.push("/");
-                                setTimeout(() => setThemeModalOpen(true), 150);
-                            } else {
-                                setThemeModalOpen(true);
-                            }
-                        }}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-text-dim hover:text-foreground hover:bg-foreground/5 w-full text-left"
-                    >
-                        <Palette size={16} className="text-accent" />
-                        Themes
-                    </button>
                 </motion.div>
             )}
 
