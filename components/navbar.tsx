@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, User, Settings, GraduationCap, ChevronDown, Menu, X, Palette } from "lucide-react";
+import { Keyboard, Trophy, Users, User, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -19,7 +19,6 @@ import {
 import { useAuth } from "@/lib/auth/auth-context";
 import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
-import { useStore } from "@/lib/store";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
@@ -36,8 +35,8 @@ export function Navbar() {
     const [authModalOpen, setAuthModalOpen] = useState(false);
     const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const { user, isLoading, supabaseReady, signOut } = useAuth();
-    const setSettingsOpen = useStore(state => state.setSettingsOpen);
-    const setThemeModalOpen = useStore(state => state.setThemeModalOpen);
+    // const setSettingsOpen = useStore(state => state.setSettingsOpen);
+    // const setThemeModalOpen = useStore(state => state.setThemeModalOpen);
     const navRef = useRef<HTMLDivElement>(null);
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
