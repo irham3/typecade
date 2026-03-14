@@ -27,13 +27,20 @@ export function RaceResultsModal({ isOpen, players, currentUserId, showRestart, 
     return (
         <AnimatePresence>
             {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="fixed inset-0 z-100 flex items-center justify-center bg-background/90 backdrop-blur-md border border-white/10"
-                >
-                    <div className="bg-[#141414] p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 relative">
+                <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-background/80 backdrop-blur-md"
+                        onClick={onClose}
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="bg-[#141414] p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 relative z-10"
+                    >
                         <Button
                             variant="ghost"
                             size="icon"
@@ -73,8 +80,8 @@ export function RaceResultsModal({ isOpen, players, currentUserId, showRestart, 
                                 </Button>
                             )}
                         </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                </div>
             )}
         </AnimatePresence>
     );
