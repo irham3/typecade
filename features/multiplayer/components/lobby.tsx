@@ -17,9 +17,9 @@ type RoomOverview = {
     host_name: string | null;
     language: string;
     mode: string;
-    mode_value: number;
+    time: number;
     max_players: number;
-    status: string;
+    is_active: boolean;
     player_count: number;
 };
 
@@ -39,40 +39,92 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     const createRoomPayload = useMemo(() => {
         const language = createLang === "Bahasa Indonesia" ? "ID" : "EN";
         const mode = createMode.startsWith("Words") ? "words" : "time";
-        const modeValue = mode === "words" ? 50 : 60;
-        return { language, mode, modeValue };
+        const time = mode === "words" ? 50 : 60;
+        return { language, mode, time };
     }, [createLang, createMode]);
 
     const loadRooms = async () => {
         const client = getSupabaseClient();
         if (!client) return;
-        const { data, error } = await client
-            .from("room_overview")
-            .select("*")
-            .eq("status", "waiting")
+
+        // Use a direct join since we removed the room_overview view in favor of raw tables
+        const { data: roomsData, error } = await client
+            .from("arena_rooms")
+            .select(`
+                id,
+                code,
+                name,
+                language_code,
+                mode,
+                time,
+                max_players,
+                is_active,
+                participant_count,
+                host_user_id
+            `)
+            .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(50);
-        if (error) return;
-        setRooms(data ?? []);
+
+        if (error || !roomsData) {
+            console.error("Room fetch error:", error);
+            setRooms([]);
+            return;
+        }
+
+        // Fetch display names for all hosts since host_user_id references auth.users, not profiles directly
+        const hostIds = (roomsData as any[]).map(r => r.host_user_id).filter(Boolean);
+        let profilesMap: Record<string, string> = {};
+
+        if (hostIds.length > 0) {
+            const { data: profiles } = await client
+                .from("profiles")
+                .select("user_id, display_name")
+                .in("user_id", hostIds);
+
+            if (profiles) {
+                profilesMap = (profiles as any[]).reduce((acc, p) => {
+                    acc[p.user_id] = p.display_name;
+                    return acc;
+                }, {} as Record<string, string>);
+            }
+        }
+
+        const mappedRooms = (roomsData as any[]).map(r => ({
+            id: r.id,
+            code: r.code,
+            name: r.name,
+            host_name: profilesMap[r.host_user_id] || "Unknown",
+            language: r.language_code === "ID" ? "Bahasa Indonesia" : "English",
+            mode: r.mode,
+            time: r.time,
+            max_players: r.max_players,
+            is_active: r.is_active,
+            player_count: r.participant_count
+        }));
+
+        console.log("Mapped Rooms:", mappedRooms);
+        setRooms(mappedRooms);
     };
 
     useEffect(() => {
-        if (!supabaseReady) return;
+        if (!supabaseReady || !user) return;
+        const client = getSupabaseClient();
+        if (!client) return;
+
         const timer = setTimeout(() => {
             void loadRooms();
         }, 0);
-        const client = getSupabaseClient();
-        if (!client) return;
         const channel = client
             .channel("room-updates")
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "multiplayer_rooms" },
+                { event: "*", schema: "public", table: "arena_rooms" },
                 () => void loadRooms()
             )
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "multiplayer_room_players" },
+                { event: "*", schema: "public", table: "arena_results" },
                 () => void loadRooms()
             )
             .subscribe();
@@ -106,20 +158,22 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         setIsLoading(true);
         setStatus("");
         const displayName = await resolveDisplayName();
-        const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+        // Generate exactly 8 character code
+        const code = Math.random().toString(36).substring(2, 10).toUpperCase().padEnd(8, '0');
+
         const { data: room, error } = await client
-            .from("multiplayer_rooms")
+            .from("arena_rooms")
             .insert({
                 code,
                 name: roomName.trim() || "New Room",
                 host_user_id: user.id,
-                language: createRoomPayload.language,
+                language_code: createRoomPayload.language,
                 mode: createRoomPayload.mode,
-                mode_value: createRoomPayload.modeValue,
+                time: createRoomPayload.time,
                 max_players: 6,
-                is_private: isPrivate,
-                status: "waiting",
-            } as unknown as never)
+                is_active: true, // Room is active immediately
+                is_racing: false,
+            } as any)
             .select("id, code")
             .single();
 
@@ -131,16 +185,15 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         }
 
         const { error: joinError } = await client
-            .from("multiplayer_room_players")
+            .from("arena_results")
             .upsert({
-                room_id: roomRow.id,
+                arena_room_id: roomRow.id,
                 user_id: user.id,
-                display_name: displayName,
                 status: "waiting",
-                progress: 0,
                 wpm: 0,
-                correct_chars: 0,
-            } as unknown as never, { onConflict: "room_id,user_id" });
+                accuracy: 0,
+                rank: 0,
+            } as any, { onConflict: "arena_room_id,user_id" });
 
         setIsLoading(false);
         if (joinError) {
@@ -160,7 +213,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         setIsLoading(true);
         setStatus("");
         const { data: room, error } = await client
-            .from("multiplayer_rooms")
+            .from("arena_rooms")
             .select("id, code")
             .eq("code", code)
             .maybeSingle();
@@ -172,16 +225,15 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         }
         const displayName = await resolveDisplayName();
         const { error: joinError } = await client
-            .from("multiplayer_room_players")
+            .from("arena_results")
             .upsert({
-                room_id: roomRow.id,
+                arena_room_id: roomRow.id,
                 user_id: user.id,
-                display_name: displayName,
                 status: "waiting",
-                progress: 0,
                 wpm: 0,
-                correct_chars: 0,
-            } as unknown as never, { onConflict: "room_id,user_id" });
+                accuracy: 0,
+                rank: 0,
+            } as any, { onConflict: "arena_room_id,user_id" });
         setIsLoading(false);
         if (joinError) {
             setStatus(joinError.message);
@@ -298,13 +350,13 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                             placeholder="Join by code..."
                             value={roomCode}
                             onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                            maxLength={6}
+                            maxLength={8}
                             className="bg-[#1A1A1A] border border-white/10 rounded-full pl-10 pr-24 py-2 text-sm text-foreground focus:outline-none focus:border-accent/40 w-full font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans placeholder:text-text-dim"
                         />
                         <Button
                             variant="secondary"
-                            onClick={() => roomCode.length > 3 && handleJoinRoom(roomCode)}
-                            disabled={isLoading || !supabaseReady}
+                            onClick={() => roomCode.length === 8 && handleJoinRoom(roomCode)}
+                            disabled={isLoading || !supabaseReady || roomCode.length !== 8}
                             className="absolute right-1 top-1 bottom-1 px-3 rounded-full text-xs font-semibold"
                         >
                             Join
@@ -327,7 +379,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                 <div className="flex items-center gap-4 text-sm text-text-dim mt-1">
                                     <span>Host: <span className="text-white/80">{room.host_name ?? "Host"}</span></span>
                                     <span className="w-1 h-1 rounded-full bg-white/20" />
-                                    <span>{room.language} • {room.mode === "words" ? "Words" : "Time"} {room.mode_value}</span>
+                                    <span>{room.language} • {room.mode === "words" ? "Words" : "Time"} {room.time}</span>
                                 </div>
                             </div>
 

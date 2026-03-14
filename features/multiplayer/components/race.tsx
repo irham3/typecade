@@ -104,63 +104,45 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         return user.email?.split("@")[0] ?? "Player";
     }, [user]);
 
-    const loadPlayers = useCallback(async () => {
-        if (!roomId) return;
-        const client = getSupabaseClient();
-        if (!client) return;
-        const { data } = await client
-            .from("multiplayer_room_players")
-            .select("id, user_id, display_name, wpm, progress, status, correct_chars, joined_at")
-            .eq("room_id", roomId)
-            .order("joined_at", { ascending: true });
-
-        if (!data) return;
-
+    const syncPlayersFromPresence = useCallback((presences: Record<string, any[]>) => {
         const now = Date.now();
-        const mapped = (data as PlayerRow[]).map((row, index) => {
-            const live = livePlayersRef.current[row.user_id] ?? null;
-            const hasLive = Boolean(live && now - live.sentAt < 10000);
-            return {
-                id: row.user_id,
-                name: row.display_name,
-                wpm: hasLive && live ? live.wpm : (row.wpm ?? 0),
-                progress: hasLive && live ? live.progress : (row.progress ?? 0),
-                color: palette[index % palette.length],
-                status: hasLive && live ? live.status : row.status,
-                correctChars: hasLive && live ? live.correctChars : (row.correct_chars ?? 0),
-            };
-        });
+        const mapped: Player[] = Object.values(presences)
+            .map(p => p[0]) // Get first presence per user
+            .filter(Boolean)
+            .map((presence, index) => {
+                const live = livePlayersRef.current[presence.userId] ?? null;
+                const isFinished = live?.status === "finished" || raceState === "finished";
+                const hasLive = Boolean(live && (now - live.sentAt < 10000 || isFinished));
+                return {
+                    id: presence.userId,
+                    name: presence.displayName || "Unknown",
+                    wpm: hasLive && live ? live.wpm : 0,
+                    progress: hasLive && live ? live.progress : 0,
+                    color: palette[index % palette.length],
+                    status: hasLive && live ? live.status : "waiting",
+                    correctChars: hasLive && live ? live.correctChars : 0,
+                };
+            });
 
         setPlayers(prev => {
-            // Merge strategy: Update all players, but preserve local player's stats 
-            // if we are currently racing to prevent UI jitter/rollback from server latency.
-            // Only overwrite local player if the server says they are finished (or if we are not racing).
-
-            // Note: If mapped is empty, it means something is wrong or room is empty.
             if (mapped.length === 0) return prev;
-
-            // We want to keep existing players if they are not in the new list? 
-            // No, the server list is authoritative for who is in the room.
-
             return mapped.map(serverPlayer => {
-                // If it's me
                 if (serverPlayer.id === currentUserId) {
                     const localPlayer = prev.find(p => p.id === currentUserId);
-                    // If I am racing locally (or finished), trust my local stats over the server
                     if (localPlayer && (raceState === "racing" || raceState === "finished")) {
                         return {
                             ...serverPlayer,
                             wpm: localPlayer.wpm,
                             progress: localPlayer.progress,
                             correctChars: localPlayer.correctChars,
-                            status: localPlayer.status // Trust local status too
+                            status: localPlayer.status
                         };
                     }
                 }
                 return serverPlayer;
             });
         });
-    }, [roomId, currentUserId, raceState]);
+    }, [currentUserId, raceState, palette]);
 
     const applyLiveUpdate = useCallback((payload: LivePlayerSyncPayload) => {
         if (payload.userId === currentUserId) return;
@@ -232,27 +214,27 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
             // Fetch room by code
             const { data } = await client
-                .from("multiplayer_rooms")
-                .select("id, code, mode, mode_value, language, status, host_user_id, updated_at")
+                .from("arena_rooms")
+                .select("id, code, mode, time, language_code, is_active, is_racing, host_user_id, updated_at, started_at")
                 .eq("code", roomCode)
                 .single();
 
             if (data) {
-                const roomData = data as { id: string; code: string; mode: string; mode_value: number; language: string; status: string; host_user_id: string; updated_at?: string | null };
+                const roomData = data as any;
                 setRoomId(roomData.id); // Set resolved ID
 
                 const mode = roomData.mode as "time" | "words";
-                const value = roomData.mode_value;
-                const lang = roomData.language as "EN" | "ID";
+                const value = roomData.time;
+                const lang = roomData.language_code as "EN" | "ID";
                 setRaceConfig({ mode, value, language: lang });
                 setTimeLeft(mode === "time" ? value : 300);
                 setHostId(roomData.host_user_id);
 
-                if (roomData.status === "racing") {
-                    applyRaceStart(roomData.updated_at ?? null);
-                } else if (roomData.status === "finished") {
-                    setRaceState("finished");
-                    setShowResults(true);
+                if (roomData.is_racing) {
+                    applyRaceStart(roomData.started_at ?? null);
+                } else if (!roomData.is_active && roomData.is_racing) { // Finished? Or checking if we ended? The DB schema doesn't have a finished status, usually we assume finished if time ran out, or maybe a trigger. We'll start with waiting if not racing
+                    setRaceState("waiting");
+                    setShowResults(false);
                 } else {
                     setRaceState("waiting");
                     setShowResults(false);
@@ -274,50 +256,22 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         void setup();
     }, [supabaseReady, user, roomCode, applyRaceStart]);
 
+    // Results subscription is set up AFTER fetchAndShowResults is defined (below)
     useEffect(() => {
         if (!isRealtime || !roomId) return;
         const client = getSupabaseClient();
         if (!client) return;
-        const setup = async () => {
-            const displayName = await resolveDisplayName();
-            await client
-                .from("multiplayer_room_players")
-                .upsert({
-                    room_id: roomId,
-                    user_id: user!.id,
-                    display_name: displayName,
-                    status: "waiting",
-                    progress: 0,
-                    wpm: 0,
-                    correct_chars: 0,
-                } as unknown as never, { onConflict: "room_id,user_id" });
-            await loadPlayers();
-        };
-        void setup();
         const channel = client
             .channel(`room-${roomId}`)
             .on(
                 "postgres_changes",
-                { event: "INSERT", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
-                () => void loadPlayers()
-            )
-            .on(
-                "postgres_changes",
-                { event: "DELETE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
-                () => void loadPlayers()
-            )
-            .on(
-                "postgres_changes",
-                { event: "UPDATE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
-                () => void loadPlayers()
-            )
-            .on(
-                "postgres_changes",
-                { event: "UPDATE", schema: "public", table: "multiplayer_rooms", filter: `id=eq.${roomId}` },
-                (payload) => {
-                    const newStatus = payload.new.status;
-                    if (newStatus === "racing") {
-                        const seedSuffix = payload.new.updated_at || Date.now().toString();
+                { event: "UPDATE", schema: "public", table: "arena_rooms", filter: `id=eq.${roomId}` },
+                (payload: any) => {
+                    const isRacing = payload.new.is_racing;
+                    const isActive = payload.new.is_active;
+
+                    if (isRacing) {
+                        const seedSuffix = payload.new.started_at || payload.new.updated_at || Date.now().toString();
                         const code = payload.new.code || roomCode;
                         const count = raceConfig.mode === "words" ? raceConfig.value : 300;
                         const newText = generateWords(raceConfig.language, count, false, false, code + seedSuffix);
@@ -325,18 +279,17 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
                         setTypedChars("");
                         setTranslateY(0);
-                        applyRaceStart(payload.new.updated_at ?? null);
+                        applyRaceStart(payload.new.started_at ?? null);
                         finishSyncedRef.current = false;
 
-                        // Reset local player stats visually
                         setPlayers(prev => prev.map(p => ({
                             ...p,
-                            status: "playing",
+                            status: "playing" as const,
                             progress: 0,
                             wpm: 0,
                             correctChars: 0
                         })));
-                    } else if (newStatus === "waiting") {
+                    } else if (isActive && !isRacing) {
                         setRaceState("waiting");
                         setShowResults(false);
                         setRaceStartedAt(null);
@@ -345,61 +298,80 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         setTranslateY(0);
                         setPlayers(prev => prev.map(p => ({
                             ...p,
-                            status: "waiting",
+                            status: "waiting" as const,
                             progress: 0,
                             wpm: 0,
                             correctChars: 0
                         })));
-                    } else if (newStatus === "finished") {
-                        setRaceState("finished");
-                        setShowResults(true);
-                        setRaceStartedAt(null);
-                        finishSyncedRef.current = true;
                     }
                 }
             )
             .on(
                 "broadcast",
                 { event: "player_update" },
-                (message) => {
+                (message: any) => {
                     const payload = message.payload as LivePlayerSyncPayload | null;
                     if (!payload || !payload.userId) return;
                     applyLiveUpdate(payload);
                 }
             )
-            .on("presence", { event: "leave" }, ({ leftPresences }) => {
-                // When a client disconnects, remove them from the room in the DB.
-                // The existing postgres_changes DELETE listener will then refresh
-                // the player list for everyone still connected.
-                const leftUserIds = (leftPresences as unknown as { userId: string }[])
+            .on("presence", { event: "sync" }, () => {
+                const state = channel.presenceState();
+                syncPlayersFromPresence(state);
+
+                // Host maintains participant count
+                const c = getSupabaseClient();
+                if (c && user?.id === hostId) {
+                    const count = Object.keys(state).length;
+                    void c.from("arena_rooms").update({ participant_count: count } as unknown as never).eq("id", roomId);
+                }
+            })
+            .on("presence", { event: "leave" }, ({ leftPresences }: any) => {
+                const leftUserIds = (leftPresences as { userId: string }[])
                     .map((p) => p.userId)
                     .filter(Boolean);
                 if (leftUserIds.length === 0) return;
-                const c = getSupabaseClient();
-                if (!c) return;
-                void c
-                    .from("multiplayer_room_players")
-                    .delete()
-                    .eq("room_id", roomId)
-                    .in("user_id", leftUserIds);
             })
-            .subscribe((status) => {
+            .subscribe(async (status: any) => {
                 if (status === "SUBSCRIBED") {
-                    // Track our own presence so the server knows we're online.
-                    void channel.track({ userId: user!.id });
+                    const displayName = await resolveDisplayName();
+                    void channel.track({ userId: user!.id, displayName });
+
+                    // Each player inserts their OWN row when they join (RLS only allows self-inserts)
+                    const c = getSupabaseClient();
+                    if (c && user) {
+                        void c
+                            .from("arena_results")
+                            .upsert({
+                                arena_room_id: roomId,
+                                user_id: user.id,
+                                wpm: 0,
+                                accuracy: 0,
+                                rank: 0,
+                                status: "waiting",
+                            } as unknown as never, { onConflict: "arena_room_id,user_id" });
+                    }
                 }
             });
         channelRef.current = channel;
+
+        const handleUnload = () => {
+            // Call server-side RPC: atomically decrements participant_count
+            // and sets is_active = false when it hits 0. Reliable even with stale presence.
+            const c = getSupabaseClient();
+            if (c && roomId) {
+                void (c as any).rpc("player_leave_room", { p_room_id: roomId });
+            }
+        };
+        window.addEventListener("pagehide", handleUnload);
+
         return () => {
-            void client
-                .from("multiplayer_room_players")
-                .delete()
-                .eq("room_id", roomId)
-                .eq("user_id", user!.id);
+            window.removeEventListener("pagehide", handleUnload);
+            handleUnload();
             channelRef.current = null;
             void client.removeChannel(channel);
         };
-    }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode, applyRaceStart, applyLiveUpdate]);
+    }, [isRealtime, roomId, user, resolveDisplayName, syncPlayersFromPresence, raceConfig, roomCode, applyRaceStart, applyLiveUpdate]);
 
     useEffect(() => {
         if (raceState === "countdown" && countdown !== null) {
@@ -417,30 +389,77 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         }
     }, [countdown, raceState, raceStartedAt]);
 
+    // ── Step 3: Debounced DB upsert of live progress ──────────────────────────
+    const upsertDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const upsertProgress = useCallback((wpm: number, accuracy: number, _correctChars: number, status: string) => {
+        if (!isRealtime || !user || !roomId) return;
+        if (upsertDebounceRef.current) clearTimeout(upsertDebounceRef.current);
+        upsertDebounceRef.current = setTimeout(async () => {
+            const client = getSupabaseClient();
+            if (!client) return;
+            // Use upsert (not update) so row is created if it somehow doesn't exist
+            await (client as any)
+                .from("arena_results")
+                .upsert(
+                    { arena_room_id: roomId, user_id: user.id, wpm, accuracy, status },
+                    { onConflict: "arena_room_id,user_id" }
+                );
+        }, 1500);
+    }, [isRealtime, user, roomId]);
+
+    // Safety-net: ensure THIS player's row exists when race starts (handles timing edge-cases)
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
+        if (raceState !== "racing") return;
         const client = getSupabaseClient();
         if (!client) return;
-        const status = raceState === "racing" ? "playing" : raceState === "finished" ? "finished" : "waiting";
+        void (client as any)
+            .from("arena_results")
+            .upsert(
+                { arena_room_id: roomId, user_id: user.id, wpm: 0, accuracy: 0, rank: 0, status: "playing" },
+                { onConflict: "arena_room_id,user_id" }
+            );
+    }, [isRealtime, user, roomId, raceState]);
 
-        const updateData: Record<string, unknown> = { status };
 
-        // If finished, ensure we send final stats
-        if (status === "finished") {
-            const me = playersRef.current.find(p => p.id === user.id);
-            if (me) {
-                updateData.wpm = me.wpm;
-                updateData.progress = me.progress;
-                updateData.correct_chars = Math.floor(me.correctChars);
-            }
+    // ── Step 4: Fetch final results from DB ───────────────────────────────────
+    const [dbResults, setDbResults] = useState<{ user_id: string; wpm: number; accuracy: number; rank: number; status: string }[]>([]);
+    const fetchAndShowResults = useCallback(async () => {
+        if (!roomId) return;
+        const client = getSupabaseClient();
+        if (!client) return;
+        const { data } = await client
+            .from("arena_results")
+            .select("user_id, wpm, accuracy, rank, status")
+            .eq("arena_room_id", roomId)
+            .order("wpm", { ascending: false });
+        if (data) {
+            // Deduplicate by user_id in case of stale duplicate rows
+            const seen = new Set<string>();
+            const unique = (data as any[]).filter(r => {
+                if (seen.has(r.user_id)) return false;
+                seen.add(r.user_id);
+                return true;
+            });
+            setDbResults(unique);
         }
+    }, [roomId]);
 
-        void client
-            .from("multiplayer_room_players")
-            .update(updateData as unknown as never)
-            .eq("room_id", roomId)
-            .eq("user_id", user.id);
-    }, [raceState, isRealtime, user, roomId]);
+    // Subscribe to arena_results realtime so results auto-update when other players finish
+    useEffect(() => {
+        if (!isRealtime || !roomId || !user) return;
+        const client = getSupabaseClient();
+        if (!client) return;
+        const resultsChannel = client
+            .channel(`results-${roomId}`)
+            .on(
+                "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "arena_results", filter: `arena_room_id=eq.${roomId}` },
+                () => void fetchAndShowResults()
+            )
+            .subscribe();
+        return () => { void client.removeChannel(resultsChannel); };
+    }, [isRealtime, roomId, user, fetchAndShowResults]);
 
     useEffect(() => {
         if (raceState === "racing") {
@@ -527,18 +546,31 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         }
     }, [raceState, isRealtime, raceConfig]);
 
+    // ── Fetch DB results when race finishes ────────────────────────────────────
+    useEffect(() => {
+        if (raceState !== "finished") return;
+        void fetchAndShowResults();
+        setShowResults(true);
+    }, [raceState, fetchAndShowResults]);
+
+    // ── Final DB upsert when timer ends ────────────────────────────────────────
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
         if (raceState !== "finished") return;
         const me = playersRef.current.find(p => p.id === user.id);
         if (!me) return;
-        syncLive({
-            progress: me.progress,
-            wpm: me.wpm,
-            correctChars: Math.floor(me.correctChars),
-            status: "finished",
-        });
-    }, [isRealtime, raceState, roomId, user, syncLive]);
+        const client = getSupabaseClient();
+        if (!client) return;
+        // Flush debounce and immediately persist final values
+        if (upsertDebounceRef.current) clearTimeout(upsertDebounceRef.current);
+        void client
+            .from("arena_results")
+            .update({ wpm: me.wpm, accuracy: typedChars.length > 0 ? Math.floor((me.correctChars / typedChars.length) * 100) : 100, status: "finished" } as unknown as never)
+            .eq("arena_room_id", roomId)
+            .eq("user_id", user.id)
+            .then(() => fetchAndShowResults());
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [raceState, isRealtime, user, roomId]);
 
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
@@ -549,8 +581,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         const client = getSupabaseClient();
         if (!client) return;
         void client
-            .from("multiplayer_rooms")
-            .update({ status: "finished" } as unknown as never)
+            .from("arena_rooms")
+            .update({ is_racing: false } as unknown as never)
             .eq("id", roomId);
     }, [isRealtime, raceState, roomId, user, hostId]);
 
@@ -562,15 +594,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         await client.from("typing_tests").insert({
             user_id: user.id,
             mode: raceConfig.mode,
-            mode_value: raceConfig.value,
-            language: raceConfig.language,
+            time: raceConfig.value,
+            language_code: raceConfig.language,
             wpm: finalWpm,
             accuracy: finalAcc,
-            duration_seconds: timeTaken,
-        } as unknown as never);
+        } as any);
 
-        const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
-        await rpc("update_user_stats", { p_user_id: user.id });
+        // Update stats
+        await (client as any).rpc("update_user_stats", { p_user_id: user.id });
     }, [supabaseReady, user, raceConfig]);
 
     useEffect(() => {
@@ -649,12 +680,15 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         }));
 
         if (isRealtime && user && roomId) {
+            const acc = val.length > 0 ? Math.floor((correctChars / val.length) * 100) : 100;
             syncLive({
                 progress,
                 wpm,
                 correctChars: Math.floor(correctChars),
                 status: isFinished ? "finished" : "playing",
             });
+            // Step 3: Debounced DB persist
+            upsertProgress(wpm, acc, Math.floor(correctChars), isFinished ? "finished" : "playing");
         }
     };
 
@@ -747,10 +781,16 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         if (!user || !roomId) return;
         const client = getSupabaseClient();
         if (!client) return;
-        await client
-            .from("multiplayer_rooms")
-            .update({ status: "racing", updated_at: new Date().toISOString() } as unknown as never)
+
+        // Each player already has their own arena_results row (inserted on presence join).
+        // Host only needs to flip is_racing = true. Clients' WPM rows will be updated by
+        // each player individually via the debounced upsertProgress call during typing.
+        const nowIso = new Date().toISOString();
+        const { error } = await client
+            .from("arena_rooms")
+            .update({ is_racing: true, started_at: nowIso, updated_at: nowIso } as unknown as never)
             .eq("id", roomId);
+        if (error) console.error("Failed to start race:", error);
     };
 
     if (!mounted) return null;
@@ -968,7 +1008,23 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             {/* Overlays */}
             <RaceResultsModal
                 isOpen={raceState === "finished" && showResults}
-                players={players}
+                players={
+                    isRealtime && dbResults.length > 0
+                        // Merge DB WPM values with presence-based names
+                        ? dbResults.map((r, i) => {
+                            const presence = players.find(p => p.id === r.user_id);
+                            return {
+                                id: r.user_id,
+                                name: presence?.name ?? `Player ${i + 1}`,
+                                wpm: r.wpm,
+                                progress: r.status === "finished" ? 100 : (presence?.progress ?? 0),
+                                color: presence?.color ?? palette[i % palette.length],
+                                status: (r.status as "playing" | "finished" | "waiting"),
+                                correctChars: presence?.correctChars ?? 0,
+                            };
+                        })
+                        : players
+                }
                 currentUserId={currentUserId}
                 showRestart={!isRealtime}
                 onClose={() => setShowResults(false)}

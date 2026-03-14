@@ -38,16 +38,15 @@ export function TypingView({ activeTab, subOption }: { activeTab: string; subOpt
         if (!supabaseReady || !user) return;
         const client = getSupabaseClient();
         if (!client) return;
-        const modeValue = mode === "words" ? limit : duration;
+        const timeValue = mode === "words" ? limit : duration;
         await client.from("typing_tests").insert({
             user_id: user.id,
             mode,
-            mode_value: modeValue,
-            language,
+            time: timeValue,
+            language_code: language,
             wpm: finalWpm,
             accuracy: finalAcc,
-            duration_seconds: timeTaken,
-        } as unknown as never);
+        } as any);
         const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
         await rpc("update_user_stats", { p_user_id: user.id });
     }, [supabaseReady, user, mode, limit, duration, language]);

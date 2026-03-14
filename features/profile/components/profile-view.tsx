@@ -46,7 +46,7 @@ export function ProfileView() {
                 client.from("user_stats").select("*").eq("user_id", user.id).maybeSingle(),
                 client
                     .from("typing_tests")
-                    .select("created_at, mode, mode_value, wpm, accuracy, duration_seconds")
+                    .select("created_at, mode, time, wpm, accuracy")
                     .eq("user_id", user.id)
                     .order("created_at", { ascending: false })
                     .limit(30),
@@ -69,16 +69,15 @@ export function ProfileView() {
             const historyRows = ((history ?? []) as Array<{
                 created_at: string;
                 mode: string;
-                mode_value: number;
+                time: number;
                 wpm: number;
                 accuracy: number;
-                duration_seconds: number;
             }>).map((row) => ({
                 date: new Date(row.created_at).toISOString().split("T")[0],
-                mode: row.mode === "time" ? `Time ${row.mode_value}s` : row.mode === "words" ? `Words ${row.mode_value}` : row.mode,
+                mode: row.mode === "time" ? `Time ${row.time}s` : row.mode === "words" ? `Words ${row.time}` : row.mode,
                 wpm: row.wpm,
                 accuracy: row.accuracy,
-                duration: row.duration_seconds,
+                duration: row.mode === "time" ? row.time : 60, // Fallback for words duration estimate
             }));
 
             const stats = (statsRow ?? null) as {

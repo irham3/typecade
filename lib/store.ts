@@ -35,15 +35,6 @@ interface TypecadeState {
     addTestResult: (result: { wpm: number; accuracy: number; duration: number; mode: string }) => void;
 }
 
-// Generate some dummy history
-const dummyHistory = Array.from({ length: 15 }).map(() => ({
-    date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    mode: Math.random() > 0.5 ? "Time 60s" : "Words 50",
-    wpm: Math.floor(Math.random() * 40) + 60,
-    accuracy: Math.floor(Math.random() * 10) + 90,
-    duration: 60,
-}));
-
 export const useStore = create<TypecadeState>((set) => ({
     theme: "dark",
     sound: "off",
@@ -53,13 +44,13 @@ export const useStore = create<TypecadeState>((set) => ({
     punctuation: false,
     numbers: false,
     stats: {
-        wpm: 94,
-        accuracy: 98.2,
-        tests: 847,
-        timeTyped: 14 * 60 + 23,
-        avgWpm: 72,
-        avgAccuracy: 96.4,
-        history: dummyHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        wpm: 0,
+        accuracy: 0,
+        tests: 0,
+        timeTyped: 0,
+        avgWpm: 0,
+        avgAccuracy: 0,
+        history: [],
     },
     setTheme: (theme) => set({ theme }),
     setSound: (sound) => set({ sound }),
