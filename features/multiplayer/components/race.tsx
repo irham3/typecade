@@ -421,6 +421,21 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     void channel.track({ userId: user!.id });
                 }
             });
+
+        const registryChannel = client.channel("room-registry");
+        registryChannel.subscribe(async (status) => {
+            if (status === "SUBSCRIBED") {
+                console.log("DEBUG: Registered to room-registry, tracking roomId:", roomId);
+                await registryChannel.track({
+                    roomId: roomId,
+                    roomCode: roomCode, // Tambahkan ini
+                    userId: user!.id,
+                });
+            } else {
+                console.warn("DEBUG: Failed to subscribe to room-registry:", status);
+            }
+        });
+
         channelRef.current = channel;
         return () => {
             void client
@@ -430,6 +445,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 .eq("user_id", user!.id);
             channelRef.current = null;
             void client.removeChannel(channel);
+            void client.removeChannel(registryChannel);
         };
     }, [isRealtime, roomId, user, resolveDisplayName, loadPlayers, raceConfig, roomCode, applyRaceStart, applyLiveUpdate]);
 

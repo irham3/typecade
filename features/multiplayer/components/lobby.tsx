@@ -4,6 +4,7 @@ import { Plus, Shield, Search, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useRoomRegistry } from "../hooks/use-room-registry";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -38,6 +39,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     const [modeOpen, setModeOpen] = useState(false);
     const [isHostModalOpen, setIsHostModalOpen] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+    const { activeRoomIds } = useRoomRegistry();
 
     const createRoomPayload = useMemo(() => {
         const language = createLang === "Bahasa Indonesia" ? "ID" : "EN";
@@ -200,6 +202,12 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         onJoin(roomRow.code);
     };
 
+    const filteredRooms = useMemo(() => {
+        return rooms.filter(room => 
+            activeRoomIds.has(room.id) || activeRoomIds.has(room.code)
+        );
+    }, [rooms, activeRoomIds]);
+
     return (
         <div className="w-full max-w-5xl flex flex-col pt-6 sm:pt-10 pb-12 relative z-10 font-sans mx-auto">
 
@@ -255,7 +263,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                     [&::-webkit-scrollbar-thumb]:rounded-full 
                     hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
                     <AnimatePresence mode="popLayout">
-                        {rooms.map((room, i) => (
+                        {filteredRooms.map((room, i) => (
                             <motion.div
                                 layout
                                 initial={{ opacity: 0, y: 8 }}
