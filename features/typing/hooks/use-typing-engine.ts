@@ -85,6 +85,14 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         const value = e.target.value;
         if (status === "finished") return;
 
+        // Prevent backspacing to previous words
+        if (value.length < typedChars.length) {
+            const lastSpaceIndex = typedChars.lastIndexOf(" ");
+            if (lastSpaceIndex !== -1 && value.length <= lastSpaceIndex) {
+                return;
+            }
+        }
+
         if (status === "idle" && value.length === 1) {
             setStatus("playing");
             setStartTime(Date.now());
@@ -123,7 +131,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
                 completeTest();
             }
         }
-    }, [status, text, mode, completeTest, startTime]);
+    }, [status, text, mode, completeTest, startTime, typedChars]);
 
     // Timer logic for Time mode
     useEffect(() => {
