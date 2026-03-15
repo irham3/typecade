@@ -8,6 +8,7 @@ import { LightRays } from "@/components/ui/light-rays";
 import { ClickSpark } from "@/components/ui/click-spark";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
+import { ThemeModal } from "@/components/theme-modal";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -30,9 +31,10 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
                         <LightRays />
                     </>
                 )}
-                <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
+                <div className="relative w-full flex-1 flex flex-col items-center justify-center">
                     {children}
                 </div>
+                <ThemeModal />
             </div>
         );
     }
@@ -48,10 +50,11 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             <ClickSpark />
 
             <Navbar />
-            <div className="relative z-10 w-full flex-1 flex flex-col items-center">
+            <div className="w-full flex-1 flex flex-col items-center relative">
                 {children}
             </div>
             <Footer />
+            <ThemeModal />
         </div>
     );
 }

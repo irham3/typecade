@@ -24,6 +24,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
 
     const inputRef = useRef<HTMLInputElement>(null);
     const pauseStartRef = useRef<number | null>(null);
+    const lastLockedIndexRef = useRef<number>(-1);
 
     // Refs for stable callbacks
     const typedCharsRef = useRef(typedChars);
@@ -82,8 +83,44 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
 
     // Handle typing input
     const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
+        let value = e.target.value;
         if (status === "finished") return;
+
+        // Handle "per kata" lock & jumping behavior:
+        if (value.length > typedChars.length) {
+            const lastChar = value[value.length - 1];
+            if (lastChar === " ") {
+                // "Anggap ganti kata": Jump to the next word boundary immediately (Classic behavior)
+                const nextSpaceInText = text.indexOf(" ", typedChars.length);
+                if (nextSpaceInText !== -1) {
+                    // If we pressed space early, fill the gap with spaces so they count as errors
+                    if (nextSpaceInText > value.length - 1) {
+                        const missedCount = nextSpaceInText - (value.length - 1);
+                        value = value.substring(0, value.length - 1) + " ".repeat(missedCount) + " ";
+                    }
+                } else {
+                    // Last word: Jump to the end of the text
+                    if (text.length > value.length - 1) {
+                        const missedCount = text.length - (value.length - 1);
+                        value = value.substring(0, value.length - 1) + " ".repeat(missedCount);
+                    }
+                }
+
+                // Lock logic: Only advance the lock if the word completed was 100% correct
+                const currentWordStart = lastLockedIndexRef.current + 1;
+                const currentWordEnd = value.length - 1;
+                const typedWordPart = value.substring(currentWordStart, currentWordEnd);
+                const targetWordPart = text.substring(currentWordStart, currentWordEnd);
+
+                if (typedWordPart === targetWordPart && (currentWordEnd >= text.length || text[currentWordEnd] === " ")) {
+                    lastLockedIndexRef.current = currentWordEnd;
+                }
+            }
+        } else if (value.length < typedChars.length) {
+            if (value.length <= lastLockedIndexRef.current) {
+                return;
+            }
+        }
 
         if (status === "idle" && value.length === 1) {
             setStatus("playing");
@@ -123,7 +160,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
                 completeTest();
             }
         }
-    }, [status, text, mode, completeTest, startTime]);
+    }, [status, text, mode, completeTest, startTime, typedChars]);
 
     // Timer logic for Time mode
     useEffect(() => {
@@ -164,6 +201,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         setStreak(0);
         setAccumulatedPause(0);
         pauseStartRef.current = null;
+        lastLockedIndexRef.current = -1;
         if (inputRef.current) inputRef.current.focus();
     }, [duration]);
 

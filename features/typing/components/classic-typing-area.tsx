@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useClassicTypingEngine } from "../hooks/use-classic-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { RotateCcw, TrendingUp } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { generateQuote, generateWords } from "@/lib/words";
-import { Button } from "@/components/ui/button";
 import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -106,12 +105,12 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         if (status === "playing" && sound !== "off") {
             const hasNewChar = currentInput.length > prevInputRef.current.length;
             const hasNewWord = currentWordIndex > prevWordIndexRef.current;
-            
+
             if (hasNewChar || hasNewWord) {
                 const targetWord = words[currentWordIndex] || "";
                 const targetChar = hasNewWord ? " " : targetWord[currentInput.length - 1];
                 const isError = hasNewChar && currentInput[currentInput.length - 1] !== targetChar;
-                
+
                 playTypeSound(sound, isError);
             }
         }
@@ -189,6 +188,27 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         window.addEventListener("keydown", handleGlobalKeyDown);
         return () => window.removeEventListener("keydown", handleGlobalKeyDown);
     }, [focusInput, inputRef]);
+
+    useEffect(() => {
+        const handleShortcutKeyDown = (e: KeyboardEvent) => {
+            // Tab for Restart
+            if (e.key === "Tab" && !e.shiftKey) {
+                if (status !== "finished") {
+                    e.preventDefault();
+                    restartText();
+                }
+            }
+            // Shift + Enter for Shuffle
+            if (e.shiftKey && e.key === "Enter") {
+                e.preventDefault();
+                setText(getNewText());
+                restartText();
+            }
+        };
+
+        window.addEventListener("keydown", handleShortcutKeyDown);
+        return () => window.removeEventListener("keydown", handleShortcutKeyDown);
+    }, [restartText, getNewText, status]);
 
     useEffect(() => {
         const timer = setTimeout(focusInput, 150);
@@ -399,33 +419,37 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                             </div>
                         )}
 
-                        {/* Action buttons */}
-                        <div className="w-full flex justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 items-center flex-wrap">
-                            <Button
-                                variant="ghost"
+                        {/* Action Bar (Integrated Shortcuts & Buttons) */}
+                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
+                            <button
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="group flex items-center gap-2 text-text-dim"
-                                aria-label="Restart Test (Esc)"
-                                title="Restart identical test"
+                                className="group flex items-center gap-4 transition-all hover:text-foreground hover:bg-foreground/5 px-4 py-2 rounded-xl"
+                                title="Restart (Tab)"
                             >
-                                <RotateCcw size={16} className="group-hover:-rotate-180 transition-transform duration-500 ease-in-out" />
-                                <span className="text-sm">Restart</span>
-                            </Button>
-                            <Button
-                                variant="ghost"
+                                <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
+                                 <span className="flex items-center gap-3">
+                                     restart
+                                 </span>
+                             </button>
+
+                            <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="group flex items-center gap-2 text-text-dim"
-                                aria-label="Shuffle Words"
-                                title="Generate new words"
+                                className="group flex items-center gap-4 transition-all hover:text-foreground hover:bg-foreground/5 px-4 py-2 rounded-xl"
+                                title="Shuffle Text (Shift + Enter)"
                             >
-                                <TrendingUp size={16} className="group-hover:rotate-12 transition-transform duration-300 ease-in-out opacity-0 w-0" />
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 group-hover:opacity-100 transition-opacity"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
-                                <span className="text-sm">Shuffle Text</span>
-                            </Button>
+                                <div className="flex items-center gap-1.5">
+                                    <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">shift</kbd>
+                                    <span className="text-xs opacity-40">+</span>
+                                    <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">enter</kbd>
+                                </div>
+                                <span className="flex items-center gap-3">
+                                    shuffle
+                                </span>
+                            </button>
                         </div>
                     </motion.div>
                 ) : (

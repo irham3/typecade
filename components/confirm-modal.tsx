@@ -23,25 +23,24 @@ export function ConfirmModal({
     onConfirm,
     onCancel,
 }: ConfirmModalProps) {
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-500 flex flex-col items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-background/80 backdrop-blur-md"
-                    onClick={onCancel}
-                />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ type: "spring", duration: 0.5, bounce: 0 }}
-                    className="w-full max-w-sm bg-panel-bg border border-foreground/10 rounded-3xl p-6 shadow-2xl relative z-10 glass glow-accent"
-                >
+            {isOpen && (
+                <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-background/80 backdrop-blur-md"
+                        onClick={onCancel}
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        transition={{ type: "spring", duration: 0.5, bounce: 0 }}
+                        className="w-full max-w-sm bg-panel-bg border border-foreground/10 rounded-3xl p-6 shadow-2xl relative z-10 glass glow-accent"
+                    >
                     <button
                         onClick={onCancel}
                         className="absolute top-4 right-4 p-2 rounded-full hover:bg-foreground/10 transition-colors text-text-dim hover:text-foreground"
@@ -73,6 +72,7 @@ export function ConfirmModal({
                     </div>
                 </motion.div>
             </div>
+            )}
         </AnimatePresence>
     );
 }
