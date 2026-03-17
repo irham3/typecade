@@ -250,7 +250,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         if (lineHeight === 0) return;
 
         const lineIndex = Math.floor((charTop + 2) / lineHeight);
-        const newTranslate = Math.floor(lineIndex / 2) * 2 * lineHeight;
+        const newTranslate = lineIndex * lineHeight;
         const timer = setTimeout(() => setTranslateY(newTranslate), 0);
         return () => clearTimeout(timer);
     }, [currentWordIndex, status]);
