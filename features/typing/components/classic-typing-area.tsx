@@ -383,7 +383,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
+                                        className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
                                         onClick={focusInput}
                                     >
                                         <div className="bg-panel-bg/80 border border-foreground/10 px-6 py-3 rounded-full flex gap-3 items-center shadow-xl">
