@@ -55,6 +55,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             .from("room_overview")
             .select("*")
             .eq("status", "waiting")
+            .eq("is_private", false)
             .order("created_at", { ascending: false })
             .limit(50);
         if (error) {
