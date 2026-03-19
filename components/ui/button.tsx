@@ -5,21 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+    "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
     {
         variants: {
             variant: {
                 default:
-                    "bg-white/10 text-foreground hover:bg-white/20 border border-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]",
+                    "bg-foreground/6 text-foreground hover:bg-foreground/10 border border-foreground/6",
                 primary:
-                    "bg-accent text-white hover:bg-accent/90 shadow-[0_0_15px_rgba(99,102,241,0.4)]",
+                    "bg-accent text-white hover:bg-accent/90 shadow-[0_0_20px_rgba(var(--accent-rgb),0.25)]",
                 secondary:
-                    "bg-white/5 text-text-dim hover:text-white hover:bg-white/10 border border-transparent",
+                    "bg-foreground/4 text-text-dim hover:text-foreground hover:bg-foreground/8 border border-transparent",
                 outline:
-                    "border border-white/10 bg-transparent hover:bg-white/5 hover:border-white/20 text-text-dim hover:text-white",
-                ghost: "hover:bg-white/5 hover:text-white text-text-dim",
-                active: "bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]",
-                activeGradient: "text-accent bg-accent/10 shadow-[0_0_10px_rgba(99,102,241,0.2)]",
+                    "border border-foreground/8 bg-transparent hover:bg-foreground/4 hover:border-foreground/15 text-text-dim hover:text-foreground",
+                ghost: "hover:bg-foreground/5 hover:text-foreground text-text-dim",
+                active: "bg-foreground/8 text-foreground",
+                activeGradient: "text-accent bg-accent/10 shadow-[0_0_10px_rgba(var(--accent-rgb),0.1)] border border-accent/20",
                 danger: "bg-error-bg/60 text-error-text hover:bg-error-bg/80",
             },
             size: {

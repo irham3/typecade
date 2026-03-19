@@ -31,7 +31,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const client = getSupabaseClient();
-        if (!client) return;
+        if (!client) {
+            console.warn("Supabase configuration missing: restart your dev server if you just added `.env`.");
+            return;
+        }
 
         let active = true;
 
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const client = getSupabaseClient();
             if (!client) return;
             await client.auth.signOut();
+            window.location.href = "/";
         }
     }), [user, session, isLoading, supabaseReady]);
 

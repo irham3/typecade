@@ -30,7 +30,7 @@ export function AuthClient() {
         if (status.tone === "error") {
             return "border-red-500/30 bg-red-500/10 text-red-200";
         }
-        return "border-white/10 bg-white/5 text-text-dim";
+        return "border-foreground/10 bg-foreground/5 text-text-dim";
     }, [status.tone]);
 
     const handleGoogle = async () => {
@@ -42,8 +42,8 @@ export function AuthClient() {
 
         // Force redirect to production if not on localhost to avoid Supabase default behavior
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        const redirectUrl = isLocal 
-            ? "http://localhost:3000/profile" 
+        const redirectUrl = isLocal
+            ? "http://localhost:3000/profile"
             : "https://typecade.pages.dev/profile";
 
         await client.auth.signInWithOAuth({
@@ -140,8 +140,8 @@ export function AuthClient() {
     }, [cooldownSeconds]);
 
     return (
-        <main className="flex-1 w-full max-w-5xl px-6 flex flex-col items-center justify-start pb-20 relative pt-12">
-            <div className="w-full max-w-xl bg-[#111111] border border-white/10 rounded-2xl p-8 shadow-2xl font-sans">
+        <main className="flex-1 w-full max-w-5xl px-4 sm:px-6 flex flex-col items-center justify-start pb-12 sm:pb-20 relative pt-6 sm:pt-12">
+            <div className="w-full max-w-xl bg-panel-bg border border-foreground/10 rounded-2xl p-5 sm:p-8 shadow-2xl font-sans glass">
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
                         <ShieldCheck size={20} />
@@ -169,7 +169,7 @@ export function AuthClient() {
 
                 {!user && (
                     <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#0B0B0B] p-1">
+                        <div className="grid grid-cols-2 gap-2 rounded-xl border border-foreground/10 bg-background/40 p-1">
                             <Button
                                 type="button"
                                 variant={mode === "sign-in" ? "active" : "ghost"}
@@ -195,15 +195,15 @@ export function AuthClient() {
                         </Button>
 
                         <div className="flex items-center gap-3 text-xs text-text-dim">
-                            <span className="h-px flex-1 bg-white/10" />
+                            <span className="h-px flex-1 bg-foreground/10" />
                             or
-                            <span className="h-px flex-1 bg-white/10" />
+                            <span className="h-px flex-1 bg-foreground/10" />
                         </div>
 
                         <form onSubmit={handleEmailAuth} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Email</label>
-                                <div className="flex items-center gap-2 bg-[#0F0F0F] border border-white/10 rounded-xl px-4 py-3">
+                                <div className="flex items-center gap-2 bg-foreground/5 border border-foreground/5 rounded-xl px-4 py-3">
                                     <Mail size={16} className="text-text-dim" />
                                     <input
                                         type="email"
@@ -217,7 +217,7 @@ export function AuthClient() {
 
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Password</label>
-                                <div className="flex items-center gap-2 bg-[#0F0F0F] border border-white/10 rounded-xl px-4 py-3">
+                                <div className="flex items-center gap-2 bg-foreground/5 border border-foreground/5 rounded-xl px-4 py-3">
                                     <Lock size={16} className="text-text-dim" />
                                     <input
                                         type="password"
@@ -232,7 +232,7 @@ export function AuthClient() {
                             {mode === "sign-up" && (
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Confirm password</label>
-                                    <div className="flex items-center gap-2 bg-[#0F0F0F] border border-white/10 rounded-xl px-4 py-3">
+                                    <div className="flex items-center gap-2 bg-foreground/5 border border-foreground/5 rounded-xl px-4 py-3">
                                         <Lock size={16} className="text-text-dim" />
                                         <input
                                             type="password"

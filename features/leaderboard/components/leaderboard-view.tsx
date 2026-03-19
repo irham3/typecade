@@ -1,12 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
-import { Trophy, Medal, Crown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Trophy, Medal, Crown, Flame } from "lucide-react";
+import { motion } from "framer-motion";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
+const filterOptions = ["All Time", "This Week", "Today", "Words 50", "Time 60s"] as const;
+type FilterOption = (typeof filterOptions)[number];
+
+const listItemVariants = {
+    hidden: { opacity: 0, x: -8 },
+    visible: (i: number) => ({
+        opacity: 1,
+        x: 0,
+        transition: {
+            delay: i * 0.035,
+            duration: 0.3,
+            ease: "easeOut" as const,
+        },
+    }),
+};
+
 export function LeaderboardView() {
     const { user, supabaseReady } = useAuth();
-    const [filterMode, setFilterMode] = useState("All Time");
+    const [filterMode, setFilterMode] = useState<FilterOption>("All Time");
     const [rows, setRows] = useState<Array<{
         user_id: string;
         display_name: string;
@@ -41,8 +59,8 @@ export function LeaderboardView() {
             const client = getSupabaseClient();
             if (!client) return;
             setIsLoading(true);
-            const rpc = (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc;
-            const { data, error } = await rpc("get_leaderboard", {
+            const rawClient = client as unknown as Record<string, (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>>;
+            const { data, error } = await rawClient.rpc("get_leaderboard", {
                 p_mode: queryParams.mode,
                 p_mode_value: queryParams.modeValue,
                 p_since: queryParams.since,
@@ -61,7 +79,7 @@ export function LeaderboardView() {
     }, [supabaseReady, queryParams]);
 
     const board = useMemo(() => {
-        return rows
+        return [...rows]
             .sort((a, b) => b.best_wpm - a.best_wpm)
             .slice(0, 50)
             .map((item, index) => ({
@@ -74,79 +92,120 @@ export function LeaderboardView() {
             }));
     }, [rows, user]);
 
+    const getRankIcon = (rank: number) => {
+        if (rank === 1) return <Crown size={18} className="text-gold drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />;
+        if (rank === 2) return <Medal size={18} className="text-silver" />;
+        if (rank === 3) return <Medal size={18} className="text-bronze" />;
+        return null;
+    };
+
     return (
-        <div className="w-full max-w-4xl flex flex-col pt-8">
-
-            <div className="flex flex-col text-center mb-10 items-center">
-                <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(245,166,35,0.15)]">
-                    <Trophy size={32} className="text-accent" />
+        <div className="w-full max-w-4xl flex flex-col pt-6 sm:pt-10">
+            {/* Header: actions only, no redundant title */}
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-5 sm:mb-6 gap-3 px-1">
+                <p className="text-text-dim text-sm hidden sm:block">Top speed typists from across the globe.</p>
+                <div className="flex justify-start sm:justify-end overflow-x-auto hide-scrollbar">
+                    <SegmentedControl
+                        options={[...filterOptions]}
+                        value={filterMode}
+                        onChange={(val) => setFilterMode(val as FilterOption)}
+                        size="sm"
+                    />
                 </div>
-                <h1 className="text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">Hall of Fame</h1>
-                <p className="text-text-dim text-lg">Top speed typists from across the globe.</p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-10 border border-white/5 p-2 rounded-2xl bg-[#1A1A1A] w-fit mx-auto">
-                {["All Time", "This Week", "Today", "Words 50", "Time 60s"].map(opt => (
-                    <Button
-                        key={opt}
-                        onClick={() => setFilterMode(opt)}
-                        variant={filterMode === opt ? "active" : "ghost"}
-                    >
-                        {opt}
-                    </Button>
-                ))}
-            </div>
-
-            <div className="bg-[#1A1A1A] rounded-3xl border border-white/5 shadow-2xl overflow-hidden relative">
-                <table className="w-full text-left font-sans text-sm">
-                    <thead>
-                        <tr className="border-b border-white/5 bg-[#0F0F0F]">
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim">Rank</th>
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim">User</th>
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim">WPM</th>
-                            <th className="px-6 py-5 text-xs uppercase font-bold tracking-widest text-text-dim text-right">Accuracy</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {board.map((item, i) => (
-                            <tr
-                                key={i}
-                                className={`border-b border-white/5 hover:bg-white/5 transition-colors ${item.isCurrentUser ? "bg-accent/10 border-accent/20 hover:bg-accent/10 relative" : ""
-                                    }`}
-                            >
-                                {/* Visual indicator for current user row */}
-                                {item.isCurrentUser && <td className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
-
-                                <td className="px-6 py-4 font-mono">
-                                    {item.rank === 1 && <Crown size={18} className="text-[#FFD700]" />}
-                                    {item.rank === 2 && <Medal size={18} className="text-[#C0C0C0]" />}
-                                    {item.rank === 3 && <Medal size={18} className="text-[#CD7F32]" />}
-                                    {item.rank > 3 && <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>}
-                                </td>
-
-                                <td className="px-6 py-4 font-semibold text-foreground flex items-center gap-2">
-                                    {item.user}
-                                    {item.isCurrentUser && <span className="text-[10px] uppercase font-bold bg-accent/20 text-accent px-2 py-0.5 rounded-full">You</span>}
-                                </td>
-
-                                <td className="px-6 py-4 font-mono text-lg font-bold text-accent">
-                                    {item.wpm}
-                                </td>
-
-                                <td className="px-6 py-4 font-mono text-right text-text-dim">
-                                    {item.acc}%
-                                </td>
-                            </tr>
-                        ))}
-                        {!isLoading && board.length === 0 && (
+            {/* Table */}
+            <div className="glass rounded-2xl sm:rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
+                {/* Header table (NOT SCROLLABLE) */}
+                <div className="pr-1 sm:pr-2 bg-panel-bg/95 backdrop-blur-xl border-b border-foreground/10 shadow-sm z-20">
+                    <table className="w-full text-left font-sans text-xs sm:text-sm">
+                        <colgroup>
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[50%] sm:w-[55%]" />
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[20%] sm:w-[15%]" />
+                        </colgroup>
+                        <thead>
                             <tr>
-                                <td colSpan={4} className="px-6 py-8 text-center text-text-dim">
-                                    No results yet.
-                                </td>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">Rank</th>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">User</th>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim">WPM</th>
+                                <th className="px-3 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-text-dim text-right">Accuracy</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                    </table>
+                </div>
+
+                {/* Body table (SCROLLABLE) */}
+                <div className="max-h-[500px] sm:max-h-[750px] overflow-y-auto pr-1 sm:pr-2 
+                    [&::-webkit-scrollbar]:w-2 
+                    [&::-webkit-scrollbar-track]:bg-transparent 
+                    [&::-webkit-scrollbar-thumb]:bg-foreground/10 
+                    [&::-webkit-scrollbar-thumb]:rounded-full 
+                    hover:[&::-webkit-scrollbar-thumb]:bg-foreground/20">
+                    <table className="w-full text-left font-sans text-xs sm:text-sm">
+                        <colgroup>
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[50%] sm:w-[55%]" />
+                            <col className="w-[15%] sm:w-[15%]" />
+                            <col className="w-[20%] sm:w-[15%]" />
+                        </colgroup>
+                        <motion.tbody
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            {board.map((item, i) => (
+                                <motion.tr
+                                    key={item.user + i}
+                                    custom={i}
+                                    initial="hidden"
+                                    animate="visible"
+                                    variants={listItemVariants}
+                                    className={`border-b border-foreground/5 hover:bg-foreground/5 transition-colors ${item.isCurrentUser ? "bg-accent/10 border-accent/20 hover:bg-accent/15 relative" : ""
+                                        }`}
+                                >
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono relative">
+                                        {item.isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent rounded-r-full" />}
+                                        {getRankIcon(item.rank) || (
+                                            <span className={`${item.isCurrentUser ? "text-accent font-bold" : "text-text-dim"} w-4.5 inline-block text-center`}>{item.rank}</span>
+                                        )}
+                                    </td>
+
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
+                                        <span className="truncate max-w-[100px] sm:max-w-none">{item.user}</span>
+                                        {item.isCurrentUser && (
+                                            <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
+                                        )}
+                                        {item.rank <= 3 && (
+                                            <Flame size={12} className="text-accent-secondary opacity-50" />
+                                        )}
+                                    </td>
+
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-base sm:text-lg font-bold text-accent">
+                                        <CountUp end={item.wpm} duration={800} delay={i * 30} />
+                                    </td>
+
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-right text-text-dim">
+                                        {item.acc}%
+                                    </td>
+                                </motion.tr>
+                            ))}
+                            {!isLoading && board.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-12 text-center text-text-dim">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Trophy size={24} className="opacity-20" />
+                                            <span>{!supabaseReady ? "Database connecting... (If this persists, please restart your 'npm run dev' to load .env variables)" : "No results yet."}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </motion.tbody>
+                    </table>
+                </div>
+
+                {/* Soft bottom fade/blur effect */}
+                <div className="absolute bottom-0 left-0 right-3 h-16 bg-linear-to-t from-background/90 to-transparent pointer-events-none z-10" />
             </div>
 
         </div>

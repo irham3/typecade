@@ -55,13 +55,17 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         { id: "p6", name: "Keyboard_Slayer", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
         { id: "p7", name: "TypeGod_T800", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
     ]);
+    const [typedChars, setTypedChars] = useState("");
+    const typedCharsRef = useRef(typedChars);
     const playersRef = useRef(players);
     useEffect(() => {
         playersRef.current = players;
     }, [players]);
+    useEffect(() => {
+        typedCharsRef.current = typedChars;
+    }, [typedChars]);
 
     // Dummy typing engine
-    const [typedChars, setTypedChars] = useState("");
     const [targetText, setTargetText] = useState<string>("");
     const activeCharRef = useRef<HTMLSpanElement>(null);
     const startTimeRef = useRef<number | null>(null);
@@ -71,6 +75,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     const livePlayersRef = useRef<Record<string, LivePlayerSyncPayload>>({});
     const savedRef = useRef(false);
     const finishSyncedRef = useRef(false);
+    const pendingResultRef = useRef<{ wpm: number; acc: number; timeTaken: number } | null>(null);
 
     const isRealtime = useMemo(() => Boolean(roomId && user && supabaseReady), [roomId, user, supabaseReady]);
     const currentUserId = useMemo(() => (isRealtime && user ? user.id : "p1"), [isRealtime, user]);
@@ -82,6 +87,24 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         dbIntervalMs: 3000,
         broadcastIntervalMs: 16,
     });
+
+    const calculateLiveStats = useCallback((value: string) => {
+        const elapsedMs = startTimeRef.current ? Math.max(1, Date.now() - startTimeRef.current) : 1;
+        const correctChars = value.split("").filter((char, i) => char === targetText[i]).length;
+        const wpmRaw = (correctChars / 5) / (elapsedMs / 60000);
+        const wpm = Math.max(0, Math.round(wpmRaw * 10) / 10);
+        const accuracy = value.length > 0 ? Math.max(0, Math.round((correctChars / value.length) * 100)) : 100;
+
+        let totalChars = 600;
+        if (raceConfig.mode === "words") {
+            totalChars = raceConfig.value * 5;
+        } else {
+            totalChars = (100 * 5) * (raceConfig.value / 60);
+        }
+
+        const progress = Math.min(100, (correctChars / totalChars) * 100);
+        return { wpm, accuracy, progress, correctChars, elapsedMs };
+    }, [raceConfig.mode, raceConfig.value, targetText]);
 
     const copyLink = () => {
         const url = `${window.location.origin}/race?code=${roomCode}`;
@@ -135,9 +158,20 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                             wpm: localPlayer.wpm,
                             progress: localPlayer.progress,
                             correctChars: localPlayer.correctChars,
-                            status: localPlayer.status
+                            status: localPlayer.status // Trust local status too
                         };
                     }
+                }
+                // Preserve finished players' final stats even if server rows fall back to 0
+                const localPlayer = prev.find(p => p.id === serverPlayer.id);
+                if (localPlayer && localPlayer.status === "finished") {
+                    return {
+                        ...serverPlayer,
+                        wpm: localPlayer.wpm,
+                        progress: localPlayer.progress,
+                        correctChars: localPlayer.correctChars,
+                        status: localPlayer.status,
+                    };
                 }
                 return serverPlayer;
             });
@@ -265,13 +299,26 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .channel(`room-${roomId}`)
             .on(
                 "postgres_changes",
-                { event: "UPDATE", schema: "public", table: "arena_rooms", filter: `id=eq.${roomId}` },
-                (payload: any) => {
-                    const isRacing = payload.new.is_racing;
-                    const isActive = payload.new.is_active;
-
-                    if (isRacing) {
-                        const seedSuffix = payload.new.started_at || payload.new.updated_at || Date.now().toString();
+                { event: "INSERT", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
+                () => void loadPlayers()
+            )
+            .on(
+                "postgres_changes",
+                { event: "DELETE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
+                () => void loadPlayers()
+            )
+            .on(
+                "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
+                () => void loadPlayers()
+            )
+            .on(
+                "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "multiplayer_rooms", filter: `id=eq.${roomId}` },
+                (payload: { new: Record<string, string> }) => {
+                    const newStatus = payload.new.status;
+                    if (newStatus === "racing") {
+                        const seedSuffix = payload.new.updated_at || Date.now().toString();
                         const code = payload.new.code || roomCode;
                         const count = raceConfig.mode === "words" ? raceConfig.value : 300;
                         const newText = generateWords(raceConfig.language, count, false, false, code + seedSuffix);
@@ -296,12 +343,10 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                         finishSyncedRef.current = false;
                         setTypedChars("");
                         setTranslateY(0);
+                        // Preserve final WPM/progress; only mark status as waiting
                         setPlayers(prev => prev.map(p => ({
                             ...p,
-                            status: "waiting" as const,
-                            progress: 0,
-                            wpm: 0,
-                            correctChars: 0
+                            status: "waiting",
                         })));
                     }
                 }
@@ -309,30 +354,22 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             .on(
                 "broadcast",
                 { event: "player_update" },
-                (message: any) => {
+                (message: { payload: unknown }) => {
                     const payload = message.payload as LivePlayerSyncPayload | null;
                     if (!payload || !payload.userId) return;
                     applyLiveUpdate(payload);
                 }
             )
-            .on("presence", { event: "sync" }, () => {
-                const state = channel.presenceState();
-                syncPlayersFromPresence(state);
-
-                // Host maintains participant count
-                const c = getSupabaseClient();
-                if (c && user?.id === hostId) {
-                    const count = Object.keys(state).length;
-                    void c.from("arena_rooms").update({ participant_count: count } as unknown as never).eq("id", roomId);
-                }
-            })
-            .on("presence", { event: "leave" }, ({ leftPresences }: any) => {
-                const leftUserIds = (leftPresences as { userId: string }[])
+            .on("presence", { event: "leave" }, ({ leftPresences }: { leftPresences: unknown[] }) => {
+                // When a client disconnects, remove them from the room in the DB.
+                // The existing postgres_changes DELETE listener will then refresh
+                // the player list for everyone still connected.
+                const leftUserIds = (leftPresences as unknown as { userId: string }[])
                     .map((p) => p.userId)
                     .filter(Boolean);
                 if (leftUserIds.length === 0) return;
             })
-            .subscribe(async (status: any) => {
+            .subscribe((status: string) => {
                 if (status === "SUBSCRIBED") {
                     const displayName = await resolveDisplayName();
                     void channel.track({ userId: user!.id, displayName });
@@ -413,53 +450,28 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         if (raceState !== "racing") return;
         const client = getSupabaseClient();
         if (!client) return;
-        void (client as any)
-            .from("arena_results")
-            .upsert(
-                { arena_room_id: roomId, user_id: user.id, wpm: 0, accuracy: 0, rank: 0, status: "playing" },
-                { onConflict: "arena_room_id,user_id" }
-            );
-    }, [isRealtime, user, roomId, raceState]);
+        const status = raceState === "racing" ? "playing" : raceState === "finished" ? "finished" : "waiting";
 
+        const updateData: Record<string, unknown> = { status };
 
-    // ── Step 4: Fetch final results from DB ───────────────────────────────────
-    const [dbResults, setDbResults] = useState<{ user_id: string; wpm: number; accuracy: number; rank: number; status: string }[]>([]);
-    const fetchAndShowResults = useCallback(async () => {
-        if (!roomId) return;
-        const client = getSupabaseClient();
-        if (!client) return;
-        const { data } = await client
-            .from("arena_results")
-            .select("user_id, wpm, accuracy, rank, status")
-            .eq("arena_room_id", roomId)
-            .order("wpm", { ascending: false });
-        if (data) {
-            // Deduplicate by user_id in case of stale duplicate rows
-            const seen = new Set<string>();
-            const unique = (data as any[]).filter(r => {
-                if (seen.has(r.user_id)) return false;
-                seen.add(r.user_id);
-                return true;
-            });
-            setDbResults(unique);
+        if (status === "finished") {
+            const stats = calculateLiveStats(typedCharsRef.current);
+            updateData.wpm = Math.floor(stats.wpm);
+            updateData.progress = Math.floor(stats.progress);
+            updateData.correct_chars = Math.floor(stats.correctChars);
         }
-    }, [roomId]);
 
-    // Subscribe to arena_results realtime so results auto-update when other players finish
-    useEffect(() => {
-        if (!isRealtime || !roomId || !user) return;
-        const client = getSupabaseClient();
-        if (!client) return;
-        const resultsChannel = client
-            .channel(`results-${roomId}`)
-            .on(
-                "postgres_changes",
-                { event: "UPDATE", schema: "public", table: "arena_results", filter: `arena_room_id=eq.${roomId}` },
-                () => void fetchAndShowResults()
-            )
-            .subscribe();
-        return () => { void client.removeChannel(resultsChannel); };
-    }, [isRealtime, roomId, user, fetchAndShowResults]);
+        void client
+            .from("multiplayer_room_players")
+            .update(updateData as unknown as never)
+            .eq("room_id", roomId)
+            .eq("user_id", user.id)
+            .then(({ error }: { error: { message: string } | null }) => {
+                if (error) {
+                    console.error("DB finish update error:", error.message);
+                }
+            });
+    }, [raceState, isRealtime, user, roomId, calculateLiveStats]);
 
     useEffect(() => {
         if (raceState === "racing") {
@@ -544,33 +556,19 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             }, 500);
             return () => clearInterval(timer);
         }
-    }, [raceState, isRealtime, raceConfig]);
+    }, [raceState, isRealtime, raceConfig, currentUserId, roomId, syncLive, user]);
 
-    // ── Fetch DB results when race finishes ────────────────────────────────────
-    useEffect(() => {
-        if (raceState !== "finished") return;
-        void fetchAndShowResults();
-        setShowResults(true);
-    }, [raceState, fetchAndShowResults]);
-
-    // ── Final DB upsert when timer ends ────────────────────────────────────────
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
         if (raceState !== "finished") return;
-        const me = playersRef.current.find(p => p.id === user.id);
-        if (!me) return;
-        const client = getSupabaseClient();
-        if (!client) return;
-        // Flush debounce and immediately persist final values
-        if (upsertDebounceRef.current) clearTimeout(upsertDebounceRef.current);
-        void client
-            .from("arena_results")
-            .update({ wpm: me.wpm, accuracy: typedChars.length > 0 ? Math.floor((me.correctChars / typedChars.length) * 100) : 100, status: "finished" } as unknown as never)
-            .eq("arena_room_id", roomId)
-            .eq("user_id", user.id)
-            .then(() => fetchAndShowResults());
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [raceState, isRealtime, user, roomId]);
+        const stats = calculateLiveStats(typedCharsRef.current);
+        syncLive({
+            progress: stats.progress,
+            wpm: stats.wpm,
+            correctChars: Math.floor(stats.correctChars),
+            status: "finished",
+        });
+    }, [isRealtime, raceState, roomId, user, syncLive, calculateLiveStats]);
 
     useEffect(() => {
         if (!isRealtime || !user || !roomId) return;
@@ -587,21 +585,24 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     }, [isRealtime, raceState, roomId, user, hostId]);
 
     const saveResult = useCallback(async (finalWpm: number, finalAcc: number, timeTaken: number) => {
-        if (!supabaseReady || !user) return;
+        if (!supabaseReady || !user) return false;
         const client = getSupabaseClient();
-        if (!client) return;
+        if (!client) return false;
 
-        await client.from("typing_tests").insert({
+        const { error } = await client.from("typing_tests").insert({
             user_id: user.id,
             mode: raceConfig.mode,
             time: raceConfig.value,
             language_code: raceConfig.language,
             wpm: finalWpm,
             accuracy: finalAcc,
-        } as any);
+            duration_seconds: timeTaken,
+        } as unknown as never);
+        if (error) return false;
 
-        // Update stats
-        await (client as any).rpc("update_user_stats", { p_user_id: user.id });
+        const { error: rpcError } = await (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc("update_user_stats", { p_user_id: user.id });
+        if (rpcError) return false;
+        return true;
     }, [supabaseReady, user, raceConfig]);
 
     useEffect(() => {
@@ -609,15 +610,34 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             savedRef.current = false;
         } else if (raceState === "finished" && !savedRef.current) {
             savedRef.current = true;
-            const me = players.find(p => p.id === currentUserId);
-            if (me) {
-                const timeTaken = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
-                // Calculate accuracy from typedChars
-                const acc = typedChars.length > 0 ? Math.floor((me.correctChars / typedChars.length) * 100) : 100;
-                void saveResult(me.wpm, acc, timeTaken);
+            const stats = calculateLiveStats(typedCharsRef.current);
+            const timeTaken = Math.max(0, Math.floor(stats.elapsedMs / 1000));
+            setPlayers(p => p.map(player => {
+                if (player.id !== currentUserId) return player;
+                return { ...player, wpm: stats.wpm, progress: stats.progress, correctChars: stats.correctChars, status: "finished" };
+            }));
+            if (isRealtime && user && roomId) {
+                syncLive({
+                    progress: stats.progress,
+                    wpm: stats.wpm,
+                    correctChars: Math.floor(stats.correctChars),
+                    status: "finished",
+                });
             }
+            pendingResultRef.current = { wpm: stats.wpm, acc: stats.accuracy, timeTaken };
+            void saveResult(stats.wpm, stats.accuracy, timeTaken).then((ok) => {
+                if (ok) pendingResultRef.current = null;
+            });
         }
-    }, [raceState, players, currentUserId, typedChars, saveResult]);
+    }, [raceState, saveResult, calculateLiveStats, currentUserId, isRealtime, roomId, syncLive, user]);
+
+    useEffect(() => {
+        const pending = pendingResultRef.current;
+        if (!pending) return;
+        void saveResult(pending.wpm, pending.acc, pending.timeTaken).then((ok) => {
+            if (ok) pendingResultRef.current = null;
+        });
+    }, [saveResult, supabaseReady, user]);
 
     useEffect(() => {
         if (raceState === "countdown") {
@@ -674,7 +694,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
         setPlayers(p => p.map(player => {
             if (player.id === currentUserId) {
-                return { ...player, progress, wpm, correctChars, status: isFinished ? "finished" : "playing" };
+                return { ...player, progress: progress, wpm: wpm, correctChars: correctChars, status: isFinished ? "finished" : "playing" };
             }
             return player;
         }));
@@ -682,8 +702,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         if (isRealtime && user && roomId) {
             const acc = val.length > 0 ? Math.floor((correctChars / val.length) * 100) : 100;
             syncLive({
-                progress,
-                wpm,
+                progress: progress,
+                wpm: wpm,
                 correctChars: Math.floor(correctChars),
                 status: isFinished ? "finished" : "playing",
             });
@@ -691,6 +711,27 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             upsertProgress(wpm, acc, Math.floor(correctChars), isFinished ? "finished" : "playing");
         }
     };
+
+    useEffect(() => {
+        if (raceState !== "racing") return;
+        const timer = window.setInterval(() => {
+            const stats = calculateLiveStats(typedCharsRef.current);
+            setPlayers(p => p.map(player => {
+                if (player.id !== currentUserId) return player;
+                if (player.status === "finished") return player;
+                return { ...player, wpm: stats.wpm, progress: stats.progress, correctChars: stats.correctChars };
+            }));
+            if (isRealtime && user && roomId) {
+                syncLive({
+                    progress: stats.progress,
+                    wpm: stats.wpm,
+                    correctChars: Math.floor(stats.correctChars),
+                    status: "playing",
+                });
+            }
+        }, 50);
+        return () => window.clearInterval(timer);
+    }, [raceState, calculateLiveStats, currentUserId, isRealtime, roomId, syncLive, user]);
 
     const renderText = () => {
         const words = targetText.split(" ");
@@ -795,65 +836,111 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
     if (!mounted) return null;
 
+    if (!mounted) return null;
+
     if (roomNotFound) {
         return (
             <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background gap-6 p-4">
-                <div className="text-6xl">🚫</div>
-                <h2 className="text-3xl font-display font-bold">Room Not Found</h2>
-                <p className="text-text-dim text-center max-w-sm">
-                    The room code <span className="font-mono text-accent font-bold">{roomCode}</span> does not exist or has already ended.
-                </p>
-                <Button onClick={onLeave} className="mt-2">
-                    Back to Multiplayer
-                </Button>
+                <div className="absolute inset-0 bg-red-900/10 pointer-events-none" />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                    className="glass flex flex-col items-center p-12 rounded-3xl max-w-md w-full text-center border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.1)] relative z-10"
+                >
+                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                        <div className="text-3xl">🚫</div>
+                    </div>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">Arena Closed</h2>
+                    <p className="text-text-dim text-sm mb-8 leading-relaxed">
+                        The room code <span className="font-mono text-accent font-bold bg-accent/10 px-1.5 py-0.5 rounded">{roomCode}</span> does not exist or the match has already concluded.
+                    </p>
+                    <Button onClick={onLeave} className="w-full py-6 font-bold text-base hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-shadow">
+                        Return to Lobby
+                    </Button>
+                </motion.div>
             </div>
         );
     }
 
     if (raceState === "waiting") {
         return (
-            <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background p-4">
-                <h2 className="text-3xl font-display font-bold mb-8">Waiting for players...</h2>
+            <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background overflow-hidden">
+                {/* Background effects */}
+                <div className="absolute inset-0 bg-grid opacity-30" />
+                <div className="absolute top-[20%] right-[10%] w-[30vw] h-[30vw] min-w-[300px] bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute bottom-[20%] left-[10%] w-[40vw] h-[40vw] min-w-[400px] bg-accent-secondary/5 rounded-full blur-[120px] pointer-events-none" />
 
-                {roomCode && (
-                    <div className="mb-8 flex flex-col items-center gap-2">
-                        <div className="text-sm text-text-dim uppercase tracking-wider font-semibold">Room Code</div>
-                        <div className="flex items-center gap-2 bg-[#1A1A1A] p-2 pr-4 rounded-xl border border-white/10">
-                            <span className="text-2xl font-mono font-bold px-4 py-2 bg-black/30 rounded-lg tracking-widest text-accent">
-                                {roomCode}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={copyLink}
-                                className="hover:bg-white/10"
-                                title="Copy Invite Link"
-                            >
-                                {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                            </Button>
-                        </div>
-                        <div className="text-xs text-text-dim/50">Share this code or link to invite friends</div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+                    className="relative z-10 w-full max-w-2xl px-6 flex flex-col items-center"
+                >
+                    <div className="inline-block px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-accent text-xs font-bold tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                        Pre-Match Lobby
                     </div>
-                )}
+                    <h2 className="text-4xl sm:text-5xl font-display font-bold mb-10 text-center shimmer-text tracking-tight">Gathering Racers...</h2>
 
-                <div className="w-full max-w-md space-y-4 mb-8">
-                    {players.map(p => (
-                        <div key={p.id} className="flex items-center gap-4 p-4 bg-[#141414] rounded-xl border border-white/5">
-                            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold">
-                                {p.name.charAt(0).toUpperCase()}
+                    {roomCode && (
+                        <div className="mb-12 flex flex-col items-center gap-3 w-full max-w-md">
+                            <div className="text-xs text-text-dim/80 uppercase tracking-widest font-bold">Invite Code</div>
+                            <div className="flex items-stretch w-full glass rounded-2xl border border-white/10 p-1.5 shadow-xl hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-shadow">
+                                <span className="flex-1 flex justify-center items-center text-3xl font-mono font-black tracking-[0.3em] text-foreground py-3 pl-4 bg-black/40 rounded-xl mr-1.5 border border-white/5">
+                                    {roomCode}
+                                </span>
+                                <Button
+                                    variant="ghost"
+                                    onClick={copyLink}
+                                    className={`h-auto aspect-square rounded-xl transition-all ${copied ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-white/5 hover:bg-white/10 text-text-dim hover:text-white'}`}
+                                    title="Copy Invite Link"
+                                >
+                                    {copied ? <Check size={24} /> : <Copy size={22} />}
+                                </Button>
                             </div>
-                            <span className="font-medium flex-1">{p.name}</span>
-                            <span className="text-xs text-text-dim px-2 py-1 bg-white/5 rounded uppercase tracking-wider">Ready</span>
                         </div>
-                    ))}
-                </div>
-                {user && hostId === user.id ? (
-                    <Button onClick={handleStartRace} className="w-full max-w-md py-6 text-lg font-bold">
-                        Start Race
-                    </Button>
-                ) : (
-                    <div className="text-text-dim animate-pulse">Waiting for host to start...</div>
-                )}
+                    )}
+
+                    <div className="w-full max-w-lg mb-10">
+                        <div className="flex justify-between items-center mb-4 px-2">
+                            <span className="text-sm font-bold text-text-dim uppercase tracking-wider">Players ({players.length}/6)</span>
+                            {players.length < 2 && <span className="text-xs text-accent animate-pulse">Waiting for opponent...</span>}
+                        </div>
+                        <div className="space-y-3">
+                            <AnimatePresence>
+                                {players.map((p, i) => (
+                                    <motion.div
+                                        key={p.id}
+                                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        className="flex items-center gap-4 p-4 glass-subtle rounded-2xl border border-white/5 relative overflow-hidden group"
+                                    >
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-accent to-accent-secondary opacity-50 group-hover:opacity-100 transition-opacity" />
+                                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-accent/20 to-black flex items-center justify-center text-accent font-bold text-lg shadow-inner border border-accent/20">
+                                            {p.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex flex-col flex-1">
+                                            <span className="font-bold text-base text-foreground/90">{p.name}</span>
+                                            {p.id === currentUserId && <span className="text-[10px] text-accent font-mono uppercase tracking-widest -mt-0.5">You</span>}
+                                        </div>
+                                        <span className="text-[10px] text-accent-secondary/80 font-bold px-2.5 py-1 bg-accent-secondary/10 rounded-md uppercase tracking-widest border border-accent-secondary/20">Ready</span>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {user && hostId === user.id ? (
+                        <Button
+                            variant="primary"
+                            onClick={handleStartRace}
+                            disabled={players.length < 2}
+                            className={`w-full max-w-lg py-7 text-lg font-display font-bold rounded-2xl transition-all ${players.length >= 2 ? 'hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] hover:scale-[1.02]' : 'opacity-60 grayscale'}`}
+                        >
+                            {players.length < 2 ? "Waiting for players..." : "Start Race"}
+                        </Button>
+                    ) : (
+                        <div className="w-full max-w-lg py-5 text-center text-text-dim/70 font-bold tracking-widest uppercase bg-panel-bg/50 rounded-2xl border border-white/5 animate-pulse">
+                            Host is preparing...
+                        </div>
+                    )}
+                </motion.div>
             </div>
         );
     }
@@ -861,19 +948,23 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     if (raceState === "countdown") {
         return (
             <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background overflow-hidden">
-                <div className="absolute top-[30%] text-2xl font-mono text-text-dim tracking-[0.2em] uppercase">
-                    Match Starting In
-                </div>
+                <div className="absolute inset-0 bg-vignette" />
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                    className="absolute top-[25%] text-2xl md:text-3xl font-display font-medium text-text-dim tracking-[0.2em] uppercase"
+                >
+                    Get Ready
+                </motion.div>
                 <div className="relative flex items-center justify-center w-full h-full">
                     <AnimatePresence>
                         {countdown !== null && (
                             <motion.div
                                 key={countdown}
-                                initial={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
-                                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                                exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
-                                transition={{ duration: 0.4 }}
-                                className="absolute text-[200px] leading-none font-mono font-black text-accent drop-shadow-[0_0_50px_rgba(99,102,241,0.4)]"
+                                initial={{ opacity: 0, scale: 0.2, filter: "blur(20px)", y: 20 }}
+                                animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
+                                exit={{ opacity: 0, scale: 2, filter: "blur(10px)" }}
+                                transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                                className="absolute text-[180px] md:text-[250px] leading-none font-display font-black text-transparent bg-clip-text bg-linear-to-b from-white to-accent drop-shadow-[0_0_80px_rgba(99,102,241,0.6)]"
                             >
                                 {countdown === 0 ? "GO!" : countdown}
                             </motion.div>
@@ -886,36 +977,45 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="w-full max-w-4xl flex flex-col font-sans relative"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full max-w-5xl flex flex-col font-sans relative mx-auto"
         >
+            {/* Ambient race background glow */}
+            <div className="fixed inset-0 bg-vignette opacity-50 pointer-events-none z-[-1]" />
+            <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-accent/5 rounded-full blur-[120px] pointer-events-none z-[-1]" />
 
             {/* Top Bar */}
-            <div className="flex items-center justify-between mb-8 px-6 py-4 bg-[#1A1A1A] rounded-2xl border border-white/5">
-                <div className="flex items-center gap-4">
-                    <div className="px-3 py-1 bg-white/10 rounded-md font-mono text-xs text-text-dim">R-4821</div>
-                    <h2 className="text-xl font-display font-bold text-foreground">SpeedRace x</h2>
+            <div className="flex items-center justify-between mb-8 px-8 py-5 glass rounded-3xl border border-white/10 glow-accent relative overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-r from-accent/5 to-transparent pointer-events-none" />
+                <div className="flex items-center gap-5 relative z-10">
+                    <div className="px-3 py-1.5 bg-black/40 rounded-lg font-mono text-xs font-bold text-accent border border-accent/20 shadow-inner">ROOM CODE: {roomCode}</div>
+                    <h2 className="text-2xl font-display font-bold text-white tracking-tight">Arena Match</h2>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-6 relative z-10">
                     {raceState === "finished" && !showResults && (
                         <Button
                             variant="primary"
                             onClick={() => setShowResults(true)}
-                            className="font-bold rounded-lg text-sm"
+                            className="font-bold rounded-xl text-sm px-6 shadow-lg shadow-accent/20 animate-pulse-glow"
                         >
                             View Results
                         </Button>
                     )}
-                    <div className="font-mono text-xl text-accent font-bold">
-                        00:{timeLeft.toString().padStart(2, '0')}
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-text-dim/80 uppercase tracking-widest mb-1">Time Left</span>
+                        <div className={`font-mono text-3xl font-black ${timeLeft <= 10 && raceState === "racing" ? "text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.5)] animate-pulse" : "text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"}`}>
+                            00:{timeLeft.toString().padStart(2, '0')}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Input Area (Moved above lanes) */}
-            <div className={`relative bg-[#0F0F0F] rounded-3xl p-6 sm:p-8 border border-white/5 shadow-xl overflow-hidden mb-6 mt-2 shrink-0 ${raceState === "racing" ? "opacity-100" : "opacity-50 pointer-events-none"}`}>
+            {/* Input Area (Typing Zone) */}
+            <div className={`relative glass rounded-4xl p-8 sm:p-10 border border-white/10 shadow-2xl overflow-hidden mb-10 shrink-0 transition-opacity duration-300 ${raceState === "racing" ? "opacity-100" : "opacity-50 pointer-events-none grayscale"}`}>
+                <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-accent to-transparent opacity-50" />
+
                 <input
                     autoFocus
                     className="absolute inset-0 opacity-0 z-50 cursor-text"
@@ -927,14 +1027,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 />
 
                 <div
-                    className="h-[3.2em] overflow-hidden relative z-10 w-full rounded-lg font-mono text-2xl sm:text-[2rem] leading-[1.6] tracking-tight"
+                    className="h-[3.8em] overflow-hidden relative z-10 w-full rounded-xl font-mono text-3xl sm:text-[2.2rem] leading-[1.65] tracking-tight"
                     style={{
-                        maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
-                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+                        maskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
+                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
                     }}
                 >
                     <div
-                        className="transition-transform duration-300 ease-out relative text-left"
+                        className="transition-transform duration-200 ease-out relative text-left"
                         style={{ transform: `translateY(-${translateY}px)` }}
                     >
                         {renderText()}
@@ -942,70 +1042,70 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 </div>
             </div>
 
-            {/* Lanes */}
-            <div className="space-y-2 mb-8 w-full flex-1">
+            {/* Racing Lanes */}
+            <div className="space-y-4 mb-12 w-full flex-1 relative">
+                {/* Track background lines */}
+                <div className="absolute inset-0 flex flex-col justify-evenly pointer-events-none opacity-5">
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="w-full h-px bg-white" />)}
+                </div>
+
                 {(() => {
-                    const sortedPlayers = [...players].sort((a, b) => b.wpm - a.wpm);
-                    const p1Index = sortedPlayers.findIndex(p => p.id === currentUserId);
-                    const lastIndex = sortedPlayers.length - 1;
-                    const visibleIndicesArray = Array.from(new Set([0, 1, 2, 3, p1Index, lastIndex].filter(i => i <= lastIndex && i >= 0))).sort((a, b) => a - b);
+                    const sortedPlayers = [...players].sort((a, b) => b.progress - a.progress);
+                    // Standard display logic for positioning
+                    return sortedPlayers.map((player, idx) => {
+                        let rankIcon = <span className="font-mono text-text-dim/60 font-bold text-lg w-8 text-center">{idx + 1}</span>;
+                        if (idx === 0) rankIcon = <Medal className="text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)] w-7 h-7" strokeWidth={2.5} />;
+                        else if (idx === 1) rankIcon = <Medal className="text-slate-300 drop-shadow-[0_0_15px_rgba(203,213,225,0.4)] w-7 h-7" strokeWidth={2.5} />;
+                        else if (idx === 2) rankIcon = <Medal className="text-amber-600 drop-shadow-[0_0_15px_rgba(217,119,6,0.4)] w-7 h-7" strokeWidth={2.5} />;
 
-                    return visibleIndicesArray.map((idx, i) => {
-                        const player = sortedPlayers[idx];
-                        const prevIdx = i > 0 ? visibleIndicesArray[i - 1] : -1;
-                        const showGap = idx - prevIdx > 1;
-
-                        let rankIcon = <span className="font-mono text-text-dim/50 font-bold text-lg w-6 text-center">{idx + 1}</span>;
-                        if (idx === 0) rankIcon = <Medal className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)] w-6 h-6" strokeWidth={2.5} />;
-                        else if (idx === 1) rankIcon = <Medal className="text-slate-300 drop-shadow-[0_0_10px_rgba(203,213,225,0.4)] w-6 h-6" strokeWidth={2.5} />;
-                        else if (idx === 2) rankIcon = <Medal className="text-amber-600 drop-shadow-[0_0_10px_rgba(217,119,6,0.4)] w-6 h-6" strokeWidth={2.5} />;
+                        const isMe = player.id === currentUserId;
 
                         return (
-                            <div key={player.id} className="w-full flex flex-col gap-2">
-                                {showGap && (
-                                    <div className="w-full flex justify-center py-1 opacity-50">
-                                        <div className="flex gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
-                                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
-                                            <div className="w-1.5 h-1.5 rounded-full bg-border" />
-                                        </div>
-                                    </div>
-                                )}
-                                <motion.div layout="position" className={`w-full flex items-center gap-4 group p-3 sm:p-4 rounded-xl transition-colors ${player.id === currentUserId ? "bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(99,102,241,0.1)]" : "bg-[#141414] border border-white/5"}`}>
-                                    <div className="flex items-center justify-center w-6 shrink-0">
-                                        {rankIcon}
+                            <motion.div
+                                layout="position"
+                                key={player.id}
+                                className={`w-full flex items-center gap-4 group p-4 sm:p-5 rounded-2xl transition-all relative z-10 ${isMe ? "glass glow-accent border border-accent/30 shadow-lg scale-[1.01]" : "glass-subtle border border-white/5 opacity-80 hover:opacity-100"}`}
+                            >
+                                <div className="flex items-center justify-center w-8 shrink-0">
+                                    {rankIcon}
+                                </div>
+
+                                <div className="flex-1 flex flex-col gap-2.5 relative">
+                                    <div className="flex justify-between items-end text-sm">
+                                        <span className={`font-bold text-base flex items-center gap-3 ${isMe ? "text-white" : "text-text-dim"}`}>
+                                            {player.name}
+                                            {isMe && <span className="px-2 py-0.5 bg-accent/20 text-accent text-[10px] rounded-md border border-accent/20 uppercase font-bold tracking-widest shadow-inner">You</span>}
+                                            {player.status === "finished" && <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] rounded-md uppercase font-bold tracking-widest flex items-center gap-1"><Check size={10} /> Finished</span>}
+                                        </span>
+                                        <span className={`font-mono text-sm font-bold ${isMe ? "text-accent" : "text-text-dim"}`}>
+                                            {player.wpm} <span className="text-xs opacity-60">WPM</span>
+                                        </span>
                                     </div>
 
-                                    <div className="flex-1 flex flex-col gap-1.5 relative">
-                                        <div className="flex justify-between items-end text-sm">
-                                            <span className={`font-medium flex items-center gap-2 ${player.id === currentUserId ? "text-white" : "text-text-dim"}`}>
-                                                {player.name}
-                                                {player.id === currentUserId && <span className="ml-2 px-1.5 py-0.5 bg-accent/20 text-accent text-[8px] rounded-full uppercase font-bold tracking-widest">You</span>}
-                                            </span>
-                                            <span className="font-mono text-xs text-text-dim/70">
-                                                {player.status === "finished" ? (
-                                                    <span className="text-white flex items-center gap-1 font-bold">
-                                                        ✓ FINISHED
-                                                    </span>
-                                                ) : `${player.wpm} WPM`}
-                                            </span>
-                                        </div>
-                                        <div className="w-full h-3.5 bg-[#0F0F0F] rounded-full overflow-hidden relative border border-white/5">
-                                            <motion.div
-                                                className={`h-full absolute left-0 top-0 bottom-0 ${player.id === currentUserId ? "bg-accent shadow-[0_0_10px_rgba(99,102,241,0.8)]" : "bg-text-dim/30"}`}
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${player.progress}%` }}
-                                                transition={{ ease: "linear", duration: 0.5 }}
-                                            />
+                                    {/* Progress Bar Track */}
+                                    <div className={`w-full h-4 rounded-full overflow-hidden relative shadow-inner ${isMe ? "bg-black/60 border border-accent/20" : "bg-black/40 border border-white/5"}`}>
+                                        <motion.div
+                                            className={`h-full absolute left-0 top-0 bottom-0 rounded-full ${isMe ? "bg-linear-to-r from-accent to-accent-secondary shadow-[0_0_15px_rgba(99,102,241,0.8)]" : "bg-white/20"}`}
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${player.progress}%` }}
+                                            transition={{ ease: "linear", duration: 0.2 }}
+                                        />
+                                        {/* Car / Avatar indicator at the end of progress bar */}
+                                        <div
+                                            className="absolute top-1/2 -translate-y-1/2 -ml-2 transition-all duration-200"
+                                            style={{ left: `${player.progress}%` }}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full border-2 ${isMe ? "bg-white border-accent shadow-[0_0_10px_white]" : "bg-text-dim border-black"}`} />
                                         </div>
                                     </div>
-                                </motion.div>
-                            </div>
+                                </div>
+                            </motion.div>
                         );
                     });
                 })()}
             </div>
-            {/* Overlays */}
+
+            {/* Results Overlay */}
             <RaceResultsModal
                 isOpen={raceState === "finished" && showResults}
                 players={
@@ -1031,7 +1131,6 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 onLeave={onLeave}
                 onRestart={handleRestart}
             />
-
         </motion.div>
     );
 }

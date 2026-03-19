@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Users, Plus, Shield, Search, ArrowRight, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Shield, Search, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -35,6 +36,8 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     const [status, setStatus] = useState("");
     const [langOpen, setLangOpen] = useState(false);
     const [modeOpen, setModeOpen] = useState(false);
+    const [isHostModalOpen, setIsHostModalOpen] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
 
     const createRoomPayload = useMemo(() => {
         const language = createLang === "Bahasa Indonesia" ? "ID" : "EN";
@@ -43,7 +46,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         return { language, mode, time };
     }, [createLang, createMode]);
 
-    const loadRooms = async () => {
+    const loadRooms = async (isInitial = false) => {
         const client = getSupabaseClient();
         if (!client) return;
 
@@ -65,56 +68,24 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(50);
-
-        if (error || !roomsData) {
-            console.error("Room fetch error:", error);
-            setRooms([]);
+        if (error) {
+            if (isInitial) setInitialLoading(false);
             return;
         }
 
-        // Fetch display names for all hosts since host_user_id references auth.users, not profiles directly
-        const hostIds = (roomsData as any[]).map(r => r.host_user_id).filter(Boolean);
-        let profilesMap: Record<string, string> = {};
+        const fetchedData = data ?? [];
+        setRooms(fetchedData);
 
-        if (hostIds.length > 0) {
-            const { data: profiles } = await client
-                .from("profiles")
-                .select("user_id, display_name")
-                .in("user_id", hostIds);
-
-            if (profiles) {
-                profilesMap = (profiles as any[]).reduce((acc, p) => {
-                    acc[p.user_id] = p.display_name;
-                    return acc;
-                }, {} as Record<string, string>);
-            }
-        }
-
-        const mappedRooms = (roomsData as any[]).map(r => ({
-            id: r.id,
-            code: r.code,
-            name: r.name,
-            host_name: profilesMap[r.host_user_id] || "Unknown",
-            language: r.language_code === "ID" ? "Bahasa Indonesia" : "English",
-            mode: r.mode,
-            time: r.time,
-            max_players: r.max_players,
-            is_active: r.is_active,
-            player_count: r.participant_count
-        }));
-
-        console.log("Mapped Rooms:", mappedRooms);
-        setRooms(mappedRooms);
+        if (isInitial) setInitialLoading(false);
     };
 
     useEffect(() => {
-        if (!supabaseReady || !user) return;
+        if (!supabaseReady) return;
+        const timer = setTimeout(() => {
+            void loadRooms(true);
+        }, 0);
         const client = getSupabaseClient();
         if (!client) return;
-
-        const timer = setTimeout(() => {
-            void loadRooms();
-        }, 0);
         const channel = client
             .channel("room-updates")
             .on(
@@ -243,171 +214,259 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     };
 
     return (
-        <div className="w-full max-w-5xl flex flex-col md:flex-row gap-8 lg:gap-16 pt-8 items-start">
+        <div className="w-full max-w-5xl flex flex-col pt-6 sm:pt-10 pb-12 relative z-10 font-sans mx-auto">
 
-            {/* Left: Create Room Form */}
-            <div className="w-full md:w-5/12 bg-[#1A1A1A] rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
+            {/* Header: actions only, no redundant title */}
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-5 sm:mb-6 gap-3 px-1">
+                <p className="text-text-dim text-sm hidden sm:block">Join an active arena or host your own.</p>
 
-                <h2 className="text-2xl font-display font-medium text-foreground flex items-center gap-3 mb-8">
-                    <div className="p-2 bg-accent/10 rounded-lg text-accent">
-                        <Plus size={20} />
-                    </div>
-                    Create Room
-                </h2>
-
-                <div className="space-y-6 flex-1 flex flex-col font-sans">
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Room Name</label>
+                <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
+                    <div className="relative w-full sm:w-[240px] flex items-stretch">
+                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-dim" />
                         <input
                             type="text"
-                            placeholder="e.g. Neon Speedsters"
-                            value={roomName}
-                            onChange={(event) => setRoomName(event.target.value)}
-                            className="w-full bg-[#0F0F0F] border border-white/10 rounded-xl px-4 py-3 text-foreground placeholder:text-text-dim focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all font-medium"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Language</label>
-                            <DropdownMenu open={langOpen} onOpenChange={setLangOpen}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between h-auto px-4 py-3 bg-[#0F0F0F] border-white/10 text-foreground font-medium rounded-xl">
-                                        {createLang}
-                                        <ChevronDown size={14} className="opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-full min-w-(--radix-dropdown-menu-trigger-width)">
-                                    <DropdownMenuItem onClick={() => setCreateLang("English")}>English</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setCreateLang("Bahasa Indonesia")}>Bahasa Indonesia</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Mode</label>
-                            <DropdownMenu open={modeOpen} onOpenChange={setModeOpen}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between h-auto px-4 py-3 bg-[#0F0F0F] border-white/10 text-foreground font-medium rounded-xl">
-                                        {createMode}
-                                        <ChevronDown size={14} className="opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-full min-w-(--radix-dropdown-menu-trigger-width)">
-                                    <DropdownMenuItem onClick={() => setCreateMode("Time (60s)")}>Time (60s)</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setCreateMode("Words (50)")}>Words (50)</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-[#0F0F0F] rounded-xl border border-white/5 mt-4">
-                        <div className="flex items-center gap-3">
-                            <Shield size={18} className="text-text-dim" />
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium text-foreground">Private Room</span>
-                                <span className="text-xs text-text-dim">Require code to join</span>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsPrivate((prev) => !prev)}
-                            className="w-10 h-5 bg-white/10 rounded-full relative cursor-pointer"
-                            disabled={isLoading}
-                        >
-                            <div className={`absolute top-1 w-3 h-3 rounded-full transition-all ${isPrivate ? "left-6 bg-accent" : "left-1 bg-text-dim"}`} />
-                        </button>
-                    </div>
-
-                    {status && (
-                        <div className="rounded-xl border border-white/10 bg-white/5 text-text-dim text-xs px-3 py-2">
-                            {status}
-                        </div>
-                    )}
-
-                    <Button
-                        variant="primary"
-                        onClick={handleCreateRoom}
-                        disabled={isLoading || !supabaseReady}
-                        className="w-full mt-auto py-6 font-bold flex items-center justify-center gap-2"
-                    >
-                        Create & Join <ArrowRight size={18} />
-                    </Button>
-                </div>
-            </div>
-
-            {/* Right: Room List */}
-            <div className="w-full md:w-7/12 flex flex-col">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                    <h2 className="text-2xl font-display font-medium text-foreground flex items-center gap-3">
-                        <Users size={24} className="text-accent" /> Available Lobbies
-                    </h2>
-
-                    <div className="relative w-full sm:w-auto flex items-center">
-                        <Search size={16} className="absolute left-3 text-text-dim" />
-                        <input
-                            type="text"
-                            placeholder="Join by code..."
+                            placeholder="Invite Code"
                             value={roomCode}
                             onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                            maxLength={8}
-                            className="bg-[#1A1A1A] border border-white/10 rounded-full pl-10 pr-24 py-2 text-sm text-foreground focus:outline-none focus:border-accent/40 w-full font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans placeholder:text-text-dim"
+                            maxLength={6}
+                            className="bg-panel-bg border border-white/10 rounded-xl pl-10 pr-16 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent/50 focus:bg-panel-elevated w-full tracking-widest font-mono font-bold placeholder:tracking-normal placeholder:font-sans placeholder:font-normal placeholder:text-text-dim/60 transition-colors"
                         />
                         <Button
                             variant="secondary"
-                            onClick={() => roomCode.length === 8 && handleJoinRoom(roomCode)}
-                            disabled={isLoading || !supabaseReady || roomCode.length !== 8}
-                            className="absolute right-1 top-1 bottom-1 px-3 rounded-full text-xs font-semibold"
+                            onClick={() => roomCode.length > 3 && handleJoinRoom(roomCode)}
+                            disabled={isLoading || !supabaseReady || roomCode.length < 4}
+                            className="absolute right-1 top-1 bottom-1 px-3 h-auto rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-white border border-white/5 disabled:opacity-30"
                         >
                             Join
                         </Button>
                     </div>
-                </div>
-
-                <div className="flex flex-col gap-4 font-sans">
-                    {rooms.map(room => (
-                        <div
-                            key={room.id}
-                            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 rounded-[20px] bg-[#1A1A1A] hover:bg-[#222] border border-transparent hover:border-white/5 transition-all cursor-pointer"
-                            onClick={() => onJoin(room.code)}
-                        >
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-lg font-bold text-foreground">🏎 {room.name}</span>
-                                    <span className="text-xs px-2 py-0.5 rounded bg-white/5 text-text-dim border border-white/5 font-mono">{room.code}</span>
-                                </div>
-                                <div className="flex items-center gap-4 text-sm text-text-dim mt-1">
-                                    <span>Host: <span className="text-white/80">{room.host_name ?? "Host"}</span></span>
-                                    <span className="w-1 h-1 rounded-full bg-white/20" />
-                                    <span>{room.language} • {room.mode === "words" ? "Words" : "Time"} {room.time}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6 mt-4 sm:mt-0 w-full sm:w-auto justify-between sm:justify-start">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex gap-1">
-                                        {Array.from({ length: room.max_players }).map((_, i) => (
-                                            <div key={i} className={`w-2 h-2 rounded-full ${i < room.player_count ? 'bg-accent' : 'bg-white/10'}`} />
-                                        ))}
-                                    </div>
-                                    <span className="text-xs font-mono text-text-dim w-8 text-right">{room.player_count}/{room.max_players}</span>
-                                </div>
-                                <div className="hidden sm:flex items-center gap-2 text-sm font-semibold text-accent opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
-                                    Join <ArrowRight size={16} />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* Empty state padding */}
-                    {rooms.length < 5 && (
-                        <div className="flex flex-col items-center justify-center p-8 border border-dashed border-white/10 rounded-[20px] text-text-dim bg-[#1A1A1A]/30 mt-2">
-                            <span className="text-sm font-medium">Looking for more active lobbies...</span>
-                        </div>
-                    )}
+                    <Button
+                        variant="primary"
+                        className="w-full sm:w-auto py-2.5 px-5 rounded-xl flex items-center justify-center gap-2 font-bold shadow-none text-sm transition-all hover:-translate-y-0.5"
+                        onClick={() => setIsHostModalOpen(true)}
+                    >
+                        <Plus size={16} />
+                        New Arena
+                    </Button>
                 </div>
             </div>
 
+            {/* Arena List */}
+            <div className="w-full relative flex flex-col">
+                {/* Desktop List Headers */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-2 text-[11px] font-bold text-text-dim uppercase tracking-widest border-b border-white/5 mb-1">
+                    <div className="col-span-5">Arena</div>
+                    <div className="col-span-3 text-center">Settings</div>
+                    <div className="col-span-2 text-center">Players</div>
+                    <div className="col-span-2 text-right">Action</div>
+                </div>
+
+                <div className="flex flex-col gap-3 max-h-[500px] sm:max-h-[750px] overflow-y-auto pr-2 
+                    [&::-webkit-scrollbar]:w-2 
+                    [&::-webkit-scrollbar-track]:bg-transparent 
+                    [&::-webkit-scrollbar-thumb]:bg-white/10 
+                    [&::-webkit-scrollbar-thumb]:rounded-full 
+                    hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+                    <AnimatePresence mode="popLayout">
+                        {rooms.map((room, i) => (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.97 }}
+                                transition={{ duration: 0.15, delay: i * 0.03 }}
+                                key={room.id}
+                                className="group relative overflow-hidden flex flex-col md:grid md:grid-cols-12 items-start md:items-center gap-4 px-6 py-5 rounded-2xl bg-panel-bg/40 hover:bg-panel-elevated/80 border border-white/5 hover:border-white/10 transition-all cursor-pointer shrink-0"
+                                onClick={() => onJoin(room.code)}
+                            >
+                                <div className="col-span-12 md:col-span-5 flex flex-col gap-1.5 w-full">
+                                    <div className="flex items-center w-full gap-2">
+                                        <span className="text-lg font-bold text-foreground truncate">{room.name}</span>
+                                        <span className="text-xs px-2 py-0.5 rounded bg-white/5 text-text-dim border border-white/5 font-mono shrink-0">{room.code}</span>
+                                    </div>
+                                    <span className="text-sm text-text-dim truncate">by <span className="text-white/70 font-medium">{room.host_name ?? "Player"}</span></span>
+                                </div>
+
+                                <div className="col-span-12 md:col-span-3 flex md:justify-center items-center gap-2 w-full text-sm font-medium text-text-dim">
+                                    <span className="px-2.5 py-1 bg-black/20 rounded-md border border-white/5">{room.language}</span>
+                                    <span className="px-2.5 py-1 bg-black/20 rounded-md border border-white/5">{room.mode === "words" ? "Words" : "Time"}</span>
+                                    <span className="px-2.5 py-1 bg-black/20 rounded-md border border-white/5 font-mono">{room.mode === "words" ? `${room.mode_value}` : `${room.mode_value}s`}</span>
+                                </div>
+
+                                <div className="col-span-12 md:col-span-2 flex items-center md:justify-center w-full">
+                                    <span className="text-sm font-mono font-bold text-foreground/90 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
+                                        {room.player_count} <span className="text-text-dim/50 font-normal mx-1">/</span> {room.max_players}
+                                    </span>
+                                </div>
+
+                                <div className="col-span-12 md:col-span-2 flex items-center justify-end w-full">
+                                    <span className="hidden md:block text-sm font-bold text-text-dim group-hover:text-accent transition-colors">Join →</span>
+                                    <span className="md:hidden w-full text-center py-2.5 bg-white/5 rounded-lg text-sm font-bold text-white/80">Join</span>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+
+                    {/* Shimmer loading skeleton */}
+                    {initialLoading && rooms.length === 0 && (
+                        <>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                                <div key={n} className="flex flex-col md:grid md:grid-cols-12 items-start md:items-center gap-4 px-6 py-5 rounded-2xl bg-panel-bg/40 border border-white/5 animate-pulse shrink-0">
+                                    <div className="col-span-12 md:col-span-5 flex flex-col gap-3 w-full">
+                                        <div className="h-5 w-2/3 bg-white/5 rounded" />
+                                        <div className="h-4 w-1/3 bg-white/5 rounded" />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-3 flex md:justify-center gap-2 w-full">
+                                        <div className="h-6 w-10 bg-white/5 rounded-md" />
+                                        <div className="h-6 w-14 bg-white/5 rounded-md" />
+                                        <div className="h-6 w-8 bg-white/5 rounded-md" />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-2 flex md:justify-center w-full">
+                                        <div className="h-7 w-14 bg-white/5 rounded-lg" />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-2 flex justify-end w-full">
+                                        <div className="h-5 w-14 bg-white/5 rounded px-2" />
+                                    </div>
+                                </div>
+                            ))}
+                        </>
+                    )}
+
+                    {/* Empty state */}
+                    {!initialLoading && !isLoading && rooms.length === 0 && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.15 }}
+                            className="flex flex-col items-center justify-center py-16 border border-dashed border-white/10 rounded-2xl text-text-dim bg-panel-bg/20 mt-2"
+                        >
+                            <span className="text-base font-display font-medium text-foreground mb-1">No active arenas</span>
+                            <span className="text-sm text-text-dim">Create one to start a typing battle.</span>
+                        </motion.div>
+                    )}
+                </div>
+
+                {/* Soft bottom fade/blur effect */}
+                <div className="absolute bottom-0 left-0 right-3 h-16 bg-linear-to-t from-background to-transparent pointer-events-none z-10" />
+            </div>
+
+            {/* Host Arena Modal */}
+            <AnimatePresence>
+                {isHostModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+                        onClick={() => setIsHostModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                            transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                            className="w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-[24px] shadow-2xl p-6 relative overflow-hidden flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h2 className="text-2xl font-display font-bold text-foreground flex items-center gap-3 mb-2">
+                                <Plus size={24} className="text-accent" />
+                                New Arena
+                            </h2>
+                            <p className="text-text-dim text-sm mb-6">Set the rules for your arena.</p>
+
+                            <div className="space-y-5">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Arena Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Neon Speedsters"
+                                        value={roomName}
+                                        onChange={(event) => setRoomName(event.target.value)}
+                                        className="w-full bg-panel-bg/80 border border-white/10 rounded-xl px-4 py-3 text-foreground placeholder:text-text-dim/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/60 focus:bg-panel-elevated transition-all font-medium"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Language</label>
+                                        <DropdownMenu open={langOpen} onOpenChange={setLangOpen}>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between px-4 py-5 bg-panel-bg/80 hover:bg-panel-elevated border-white/10 text-foreground font-medium rounded-xl">
+                                                    {createLang}
+                                                    <ChevronDown size={14} className="opacity-50 text-text-dim" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[180px] rounded-xl border-white/10 p-1">
+                                                <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateLang("English")}>English</DropdownMenuItem>
+                                                <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateLang("Bahasa Indonesia")}>Bahasa Indonesia</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Mode</label>
+                                        <DropdownMenu open={modeOpen} onOpenChange={setModeOpen}>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between px-4 py-5 bg-panel-bg/80 hover:bg-panel-elevated border-white/10 text-foreground font-medium rounded-xl">
+                                                    {createMode}
+                                                    <ChevronDown size={14} className="opacity-50 text-text-dim" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[180px] rounded-xl border-white/10 p-1">
+                                                <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateMode("Time (60s)")}>Time (60s)</DropdownMenuItem>
+                                                <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateMode("Words (50)")}>Words (50)</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-panel-bg/50 rounded-xl border border-white/5 hover:bg-panel-bg transition-colors"
+                                    onClick={() => setIsPrivate(prev => !prev)}
+                                    style={{ cursor: "pointer" }}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white/5 rounded-lg border border-white/5">
+                                            <Shield size={18} className={isPrivate ? "text-accent" : "text-text-dim"} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className={`text-sm font-bold ${isPrivate ? "text-white" : "text-foreground"}`}>Private Arena</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="w-10 h-5 bg-white/10 rounded-full relative cursor-pointer border border-white/5"
+                                    >
+                                        <div className={`absolute top-[2px] w-4 h-4 rounded-full transition-all shadow-md ${isPrivate ? "left-[20px] bg-accent" : "left-[2px] bg-text-dim"}`} />
+                                    </button>
+                                </div>
+
+                                {status && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="rounded-xl border border-error-bg bg-error-bg/20 text-error-text text-sm px-4 py-3 font-medium">
+                                        {status}
+                                    </motion.div>
+                                )}
+
+                                <div className="mt-2 pt-2 gap-3 flex flex-col sm:flex-row-reverse">
+                                    <Button
+                                        variant="primary"
+                                        onClick={handleCreateRoom}
+                                        disabled={isLoading || !supabaseReady}
+                                        className={`w-full py-5 sm:py-6 font-bold text-base rounded-xl transition-all duration-300 ${!isLoading ? "hover:-translate-y-0.5" : "opacity-70"}`}
+                                    >
+                                        {isLoading ? "Creating..." : "Create Arena"}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setIsHostModalOpen(false)}
+                                        className="w-full py-5 sm:py-6 text-text-dim hover:text-white rounded-xl"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
