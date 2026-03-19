@@ -1,4 +1,5 @@
-import { useCallback, useRef, type MutableRefObject } from "react";
+import { useCallback, useRef } from "react";
+import type { MutableRefObject } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
@@ -18,7 +19,9 @@ type UseLivePlayerSyncProps = {
     roomId: string | null;
     userId: string | null;
     channelRef: MutableRefObject<RealtimeChannel | null>;
+    /** Minimum ms between DB writes. Default 2000ms to avoid hammering the DB. */
     dbIntervalMs?: number;
+    /** Minimum ms between broadcast sends. Default 16ms (~60fps). */
     broadcastIntervalMs?: number;
 };
 
@@ -29,7 +32,7 @@ export function useLivePlayerSync({
     roomId,
     userId,
     channelRef,
-    dbIntervalMs = 50,
+    dbIntervalMs = 2000,
     broadcastIntervalMs = 16,
 }: UseLivePlayerSyncProps) {
     const lastDbSyncRef = useRef(0);
@@ -37,6 +40,9 @@ export function useLivePlayerSync({
 
     const syncLive = useCallback((input: LivePlayerSyncInput) => {
         if (!isRealtime || !roomId || !userId) return;
+        // Never sync "waiting" status — it means player hasn't started, no data to push
+        if (input.status === "waiting") return;
+
         const now = Date.now();
         const payload: LivePlayerSyncPayload = {
             userId,
@@ -47,6 +53,7 @@ export function useLivePlayerSync({
             sentAt: now,
         };
 
+        // Throttled broadcast (~60fps cap)
         if (channelRef.current && now - lastBroadcastRef.current >= broadcastIntervalMs) {
             lastBroadcastRef.current = now;
             void channelRef.current.send({
@@ -56,6 +63,7 @@ export function useLivePlayerSync({
             });
         }
 
+        // Throttled DB write — or always on "finished" to ensure final state is persisted
         if (now - lastDbSyncRef.current >= dbIntervalMs || input.status === "finished") {
             lastDbSyncRef.current = now;
             const client = getSupabaseClient();
