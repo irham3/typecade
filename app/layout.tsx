@@ -66,12 +66,21 @@ export const metadata: Metadata = {
     siteName: "Typecade",
     title: "Typecade | Type faster. Think clearer.",
     description: "A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.",
+    images: [
+      {
+        url: "https://typecade.pages.dev/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Typecade | Type faster. Think clearer.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Typecade | Type faster. Think clearer.",
     description: "A platform to improve your typing speed and accuracy.",
     creator: "@typecade", 
+    images: ["https://typecade.pages.dev/opengraph-image.png"],
   },
   appleWebApp: {
     title: "Typecade",
