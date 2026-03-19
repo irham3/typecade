@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useClassicTypingEngine } from "../hooks/use-classic-typing-engine";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { RotateCcw } from "lucide-react";
 import { generateQuote, generateWords } from "@/lib/words";
 import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -251,7 +250,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         if (lineHeight === 0) return;
 
         const lineIndex = Math.floor((charTop + 2) / lineHeight);
-        const newTranslate = Math.floor(lineIndex / 2) * 2 * lineHeight;
+        const newTranslate = lineIndex * lineHeight;
         const timer = setTimeout(() => setTranslateY(newTranslate), 0);
         return () => clearTimeout(timer);
     }, [currentWordIndex, status]);
@@ -427,10 +426,10 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                 title="Restart (Tab)"
                             >
                                 <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
-                                 <span className="flex items-center gap-3">
-                                     restart
-                                 </span>
-                             </button>
+                                <span className="flex items-center gap-3">
+                                    restart
+                                </span>
+                            </button>
 
                             <button
                                 onClick={(e) => {

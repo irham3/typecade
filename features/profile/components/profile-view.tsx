@@ -1,7 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { User, Activity, FileText, Zap, ChevronDown, TrendingUp, Target, Clock, Hash } from "lucide-react";
-import { motion } from "framer-motion";
+import { User, Activity, FileText, Zap, ChevronDown, TrendingUp, Target, Clock, Hash, Eye, Camera, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CountUp } from "@/components/ui/count-up";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -21,6 +22,7 @@ export function ProfileView() {
     const [memberSince, setMemberSince] = useState("Member since");
     const [timeframe, setTimeframe] = useState("Last 30 days");
     const [timeframeOpen, setTimeframeOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const formatHours = (mins: number) => {
         const h = Math.floor(mins / 60);
@@ -146,13 +148,39 @@ export function ProfileView() {
                 {/* Avatar */}
                 <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full p-[2px] shrink-0 relative group">
                     <div className="absolute inset-0 rounded-full bg-linear-to-tr from-accent/40 to-accent-secondary/30 blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative w-full h-full rounded-full bg-panel-bg border border-foreground/10 flex items-center justify-center overflow-hidden cursor-pointer">
-                        <User size={28} className="text-text-dim group-hover:text-foreground transition-colors sm:hidden" />
-                        <User size={40} className="text-text-dim group-hover:text-foreground transition-colors hidden sm:block" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <span className="text-xs font-bold tracking-widest uppercase">Edit</span>
-                        </div>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <div className="relative w-full h-full rounded-full bg-panel-bg border border-foreground/10 flex items-center justify-center overflow-hidden cursor-pointer outline-none ring-0">
+                                {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
+                                    <img
+                                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                                        alt={user.email || "Profile"}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <>
+                                        <User size={28} className="text-text-dim group-hover:text-foreground transition-colors sm:hidden" />
+                                        <User size={40} className="text-text-dim group-hover:text-foreground transition-colors hidden sm:block" />
+                                    </>
+                                )}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <span className="text-xs font-bold tracking-widest uppercase text-white">Options</span>
+                                </div>
+                            </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center" className="w-48">
+                            <DropdownMenuItem
+                                className="gap-2 cursor-pointer"
+                                onClick={() => setPreviewOpen(true)}
+                                disabled={!(user?.user_metadata?.avatar_url || user?.user_metadata?.picture)}
+                            >
+                                <Eye size={15} className="text-text-dim" /> View Picture
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                                <Camera size={15} className="text-text-dim" /> Change Picture
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 {/* User Info */}
@@ -338,6 +366,46 @@ export function ProfileView() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Fullscreen Preview Modal */}
+            <AnimatePresence>
+                {previewOpen && (
+                    <div className="fixed inset-0 z-9999 flex items-center justify-center">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-background/90 backdrop-blur-md cursor-pointer"
+                            onClick={() => setPreviewOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            transition={{ type: "spring", duration: 0.5, bounce: 0 }}
+                            className="relative z-10 w-full max-w-sm sm:max-w-md bg-panel-bg border border-foreground/10 rounded-3xl shadow-2xl flex flex-col items-center glass glow-accent"
+                        >
+                            <button
+                                onClick={() => setPreviewOpen(false)}
+                                className="cursor-pointer absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/10 transition-all text-white/90 hover:text-white z-20 shadow-2xl hover:scale-110"
+                            >
+                                <X size={20} />
+                            </button>
+                            <div className="w-full aspect-square rounded-2xl overflow-hidden bg-panel-bg border border-foreground/10 flex items-center justify-center">
+                                {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
+                                    <img
+                                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                                        alt={user.email || "Profile"}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <User size={80} className="text-text-dim" />
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
