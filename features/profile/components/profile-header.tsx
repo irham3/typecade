@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
-import { User, Eye, Camera, TrendingUp, Target, Hash, Clock } from "lucide-react";
+import { Eye, Camera, TrendingUp, Target, Hash, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { CountUp } from "@/components/ui/count-up";
 import {
     DropdownMenu,
@@ -51,18 +51,11 @@ export function ProfileHeader({ user, displayName, memberSince, stats, setPrevie
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <div className="relative w-full h-full rounded-full bg-panel-bg border border-foreground/10 flex items-center justify-center overflow-hidden cursor-pointer outline-none ring-0">
-                            {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
-                                <img
-                                    src={user.user_metadata.avatar_url || user.user_metadata.picture}
-                                    alt={user.email || "Profile"}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <>
-                                    <User size={28} className="text-text-dim group-hover:text-foreground transition-colors sm:hidden" />
-                                    <User size={40} className="text-text-dim group-hover:text-foreground transition-colors hidden sm:block" />
-                                </>
-                            )}
+                            <UserAvatar 
+                                src={user?.user_metadata?.avatar_url || user?.user_metadata?.picture} 
+                                alt={user?.email || "Profile"} 
+                                iconSize={40} 
+                            />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                 <span className="text-xs font-bold tracking-widest uppercase text-white">Options</span>
                             </div>

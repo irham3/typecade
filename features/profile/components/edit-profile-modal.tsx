@@ -3,6 +3,7 @@ import { X, Camera, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface EditProfileModalProps {
@@ -54,8 +55,9 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
 
             if (updateAuthError) throw updateAuthError;
 
-            // Optional: update profiles table if you store avatar_url there
-            // await client.from('profiles').update({ avatar_url: publicUrl }).eq('user_id', user.id);
+            // Update profiles table so it becomes public for leaderboard
+            await client.from('profiles')
+                .upsert({ user_id: user.id, avatar_url: publicUrl, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 
             onProfileUpdated();
         } catch (err: unknown) {
@@ -139,10 +141,10 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                         <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                             <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-foreground/10 bg-black/20">
                                 {avatarUrl ? (
-                                    <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                                    </>
+                                    <UserAvatar 
+                                        src={avatarUrl} 
+                                        alt="Avatar" 
+                                    />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-accent/20 text-accent font-bold text-3xl">
                                         {displayName.charAt(0).toUpperCase()}

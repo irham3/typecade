@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
-import { User, X } from "lucide-react";
+import { X } from "lucide-react";
 import { motion } from "framer-motion";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AvatarPreviewModalProps {
@@ -35,15 +35,11 @@ export function AvatarPreviewModal({ user, previewOpen, setPreviewOpen }: Avatar
                     <X size={20} />
                 </button>
                 <div className="w-full aspect-square rounded-2xl overflow-hidden bg-panel-bg border border-foreground/10 flex items-center justify-center">
-                    {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
-                        <img
-                            src={user.user_metadata.avatar_url || user.user_metadata.picture}
-                            alt={user.email || "Profile"}
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <User size={80} className="text-text-dim" />
-                    )}
+                    <UserAvatar 
+                        src={user?.user_metadata?.avatar_url || user?.user_metadata?.picture} 
+                        alt={user?.email || "Profile"} 
+                        iconSize={80} 
+                    />
                 </div>
             </motion.div>
         </div>

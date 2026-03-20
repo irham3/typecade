@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -6,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, User, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
+import { Keyboard, Trophy, Users, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -19,6 +18,7 @@ import {
 import { useAuth } from "@/lib/auth/auth-context";
 import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
@@ -131,15 +131,12 @@ export function Navbar() {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="gap-2 px-2">
                                 <div className="w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 overflow-hidden shrink-0">
-                                    {(user.user_metadata?.avatar_url || user.user_metadata?.picture) ? (
-                                        <img
-                                            src={user.user_metadata.avatar_url || user.user_metadata.picture}
-                                            alt={user.email || "Profile"}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <User size={14} className="text-accent" />
-                                    )}
+                                    <UserAvatar 
+                                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
+                                        alt={user.email || "Profile"} 
+                                        iconSize={14} 
+                                        iconClassName="text-accent"
+                                    />
                                 </div>
                                 <ChevronDown size={12} className={`opacity-50 transition-transform duration-200 ${accountOpen ? "rotate-180" : ""}`} />
                             </Button>
@@ -147,15 +144,12 @@ export function Navbar() {
                         <DropdownMenuContent align="end" className="w-[260px]">
                             <DropdownMenuLabel className="flex items-center gap-3 px-4 py-3 pb-3 inset-0">
                                 <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 overflow-hidden shrink-0">
-                                    {(user.user_metadata?.avatar_url || user.user_metadata?.picture) ? (
-                                        <img
-                                            src={user.user_metadata.avatar_url || user.user_metadata.picture}
-                                            alt={user.email || "Profile"}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <User size={18} className="text-accent" />
-                                    )}
+                                    <UserAvatar 
+                                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
+                                        alt={user.email || "Profile"} 
+                                        iconSize={18} 
+                                        iconClassName="text-accent"
+                                    />
                                 </div>
                                 <div className="flex flex-col space-y-0.5 overflow-hidden">
                                     <span className="font-display font-medium text-sm text-foreground truncate">{user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || "Player"}</span>
