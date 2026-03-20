@@ -44,7 +44,7 @@ export function AuthClient() {
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
         const redirectUrl = isLocal
             ? "http://localhost:3000/profile"
-            : "https://typecade.pages.dev/profile";
+            : "https://typecade.com/profile";
 
         await client.auth.signInWithOAuth({
             provider: "google",
@@ -98,7 +98,7 @@ export function AuthClient() {
                 options: {
                     emailRedirectTo: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
                         ? "http://localhost:3000/profile"
-                        : "https://typecade.pages.dev/profile"
+                        : "https://typecade.com/profile"
                 }
             });
 

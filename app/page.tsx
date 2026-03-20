@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Typecade: Master Your Typing Speed',
     description: 'Enhance your typing speed and accuracy with Typecade.',
-    url: 'https://typecade.pages.dev', // Placeholder URL
+    url: 'https://typecade.com', // Placeholder URL
     siteName: 'Typecade',
     locale: 'en_US',
     type: 'website',
@@ -25,7 +25,7 @@ export default function Page() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Typecade',
-    url: 'https://typecade.pages.dev', // Placeholder URL
+    url: 'https://typecade.com', // Placeholder URL
     description: 'A professional platform designed to enhance your typing speed and accuracy.',
   };
 

@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {
-    const baseUrl = 'https://typecade.pages.dev';
+    const baseUrl = 'https://typecade.com';
 
     return {
         rules: {

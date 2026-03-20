@@ -30,14 +30,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://typecade.pages.dev"),
+  metadataBase: new URL("https://typecade.com"),
   title: {
     default: "Typecade | Type faster. Think clearer.",
     template: "%s | Typecade",
   },
   description: "A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.",
   applicationName: "Typecade",
-  authors: [{ name: "Typecade Team", url: "https://typecade.pages.dev" }],
+  authors: [{ name: "Typecade Team", url: "https://typecade.com" }],
   generator: "Next.js",
   keywords: ["typing", "typecade", "typing speed", "typing test", "wpm", "typing game", "touch typing", "keyboard mastery", "learn typing"],
   referrer: "origin-when-cross-origin",
@@ -62,13 +62,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://typecade.pages.dev",
+    url: "https://typecade.com",
     siteName: "Typecade",
     title: "Typecade | Type faster. Think clearer.",
     description: "A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.",
     images: [
       {
-        url: "https://typecade.pages.dev/opengraph-image.png",
+        url: "https://typecade.com/opengraph-image.png",
         width: 1200,
         height: 630,
         alt: "Typecade | Type faster. Think clearer.",
@@ -79,8 +79,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Typecade | Type faster. Think clearer.",
     description: "A platform to improve your typing speed and accuracy.",
-    creator: "@typecade", 
-    images: ["https://typecade.pages.dev/opengraph-image.png"],
+    creator: "@typecade",
+    images: ["https://typecade.com/opengraph-image.png"],
   },
   appleWebApp: {
     title: "Typecade",
@@ -99,7 +99,7 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'Typecade',
-    url: 'https://typecade.pages.dev',
+    url: 'https://typecade.com',
     description: 'A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.',
     applicationCategory: 'EducationalApplication',
     genre: 'Typing Tutor',
