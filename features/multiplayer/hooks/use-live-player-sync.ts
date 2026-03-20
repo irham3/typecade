@@ -37,6 +37,7 @@ export function useLivePlayerSync({
 }: UseLivePlayerSyncProps) {
     const lastDbSyncRef = useRef(0);
     const lastBroadcastRef = useRef(0);
+    const isDbSyncingRef = useRef(false);
 
     const syncLive = useCallback((input: LivePlayerSyncInput) => {
         if (!isRealtime || !roomId || !userId) return;
@@ -63,11 +64,15 @@ export function useLivePlayerSync({
             });
         }
 
-        // Throttled DB write — or always on "finished" to ensure final state is persisted
-        if (now - lastDbSyncRef.current >= dbIntervalMs || input.status === "finished") {
+        // Throttled DB write — or always on "finished" to ensure final state is persisted. Use inflight lock.
+        if ((now - lastDbSyncRef.current >= dbIntervalMs && !isDbSyncingRef.current) || input.status === "finished") {
             lastDbSyncRef.current = now;
+            isDbSyncingRef.current = true;
             const client = getSupabaseClient();
-            if (!client) return;
+            if (!client) {
+                isDbSyncingRef.current = false;
+                return;
+            }
             void client
                 .from("multiplayer_room_players")
                 .update({
@@ -78,11 +83,17 @@ export function useLivePlayerSync({
                 } as unknown as never)
                 .eq("room_id", roomId)
                 .eq("user_id", userId)
-                .then(({ error }) => {
-                    if (error) {
-                        console.error("DB sync error (multiplayer_room_players):", error.message);
+                .then(
+                    ({ error }) => {
+                        isDbSyncingRef.current = false;
+                        if (error && !error.message?.includes("LockManager")) {
+                            console.error("DB sync error (multiplayer_room_players):", error.message);
+                        }
+                    },
+                    () => {
+                        isDbSyncingRef.current = false;
                     }
-                });
+                );
         }
     }, [broadcastIntervalMs, channelRef, dbIntervalMs, isRealtime, roomId, userId]);
 
