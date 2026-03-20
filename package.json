@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && cp public/_redirects out/_redirects",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
