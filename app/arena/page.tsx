@@ -9,6 +9,21 @@ export const metadata: Metadata = {
         title: 'Arena | Typecade',
         description: 'Compete against other typists in real-time typing battles.',
         type: 'website',
+        images: [
+            {
+                url: "/opengraph-image.png",
+                width: 1200,
+                height: 630,
+                alt: "Arena | Typecade",
+                type: "image/png",
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Arena | Typecade',
+        description: 'Compete against other typists in real-time typing battles.',
+        images: ["/opengraph-image.png"],
     },
 };
 

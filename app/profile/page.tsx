@@ -9,6 +9,21 @@ export const metadata: Metadata = {
         title: 'Your Stats & Profile | Typecade',
         description: 'View your typing history and progression.',
         type: 'profile',
+        images: [
+            {
+                url: "/opengraph-image.png",
+                width: 1200,
+                height: 630,
+                alt: "Your Stats & Profile | Typecade",
+                type: "image/png",
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Your Stats & Profile | Typecade',
+        description: 'View your typing history and progression.',
+        images: ["/opengraph-image.png"],
     },
 };
 

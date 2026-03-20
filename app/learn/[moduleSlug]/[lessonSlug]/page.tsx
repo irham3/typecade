@@ -35,6 +35,21 @@ export async function generateMetadata({ params }: { params: Promise<{ moduleSlu
             title: `${result.lesson.title} | Typecade Learn`,
             description: result.lesson.instruction,
             type: "website",
+            images: [
+                {
+                    url: "/opengraph-image.png",
+                    width: 1200,
+                    height: 630,
+                    alt: `${result.lesson.title} | Typecade Learn`,
+                    type: "image/png",
+                },
+            ],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: `${result.lesson.title} | Typecade Learn`,
+            description: result.lesson.instruction,
+            images: ["/opengraph-image.png"],
         }
     };
 }

@@ -10,6 +10,21 @@ export const metadata: Metadata = {
         title: 'Active Race | Typecade',
         description: 'Compete in a real-time typing race.',
         type: 'website',
+        images: [
+            {
+                url: "/opengraph-image.png",
+                width: 1200,
+                height: 630,
+                alt: "Active Race | Typecade",
+                type: "image/png",
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Active Race | Typecade',
+        description: 'Compete in a real-time typing race.',
+        images: ["/opengraph-image.png"],
     },
 };
 
