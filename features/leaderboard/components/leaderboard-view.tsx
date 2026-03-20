@@ -217,11 +217,7 @@ export function LeaderboardView() {
                         </motion.tbody>
                     </table>
                 </div>
-
-                {/* Soft bottom fade/blur effect */}
-                <div className="absolute bottom-0 left-0 right-3 h-16 bg-linear-to-t from-background/90 to-transparent pointer-events-none z-10" />
             </div>
-
         </div>
     );
 }
