@@ -22,6 +22,8 @@ export function useRaceTimer({
     const duration = raceConfig.mode === "time" ? raceConfig.value : 300;
     const [countdown, setCountdown] = useState<number | null>(3);
     const [timeLeft, setTimeLeft] = useState(duration);
+    const [prevRaceState, setPrevRaceState] = useState(raceState);
+    const [prevDuration, setPrevDuration] = useState(duration);
 
     // Keep onTimeUp stable inside intervals without triggering re-subscription
     const onTimeUpRef = useRef(onTimeUp);
@@ -61,16 +63,24 @@ export function useRaceTimer({
         return () => clearInterval(timer);
     }, [raceState, duration]);
 
-    // Reset when going back to waiting or starting a fresh countdown
-    useEffect(() => {
+    // Sync state with props during render
+    if (raceState !== prevRaceState || duration !== prevDuration) {
+        setPrevRaceState(raceState);
+        setPrevDuration(duration);
         if (raceState === "waiting") {
             setCountdown(3);
             setTimeLeft(duration);
-            startRef.current = null;
         } else if (raceState === "countdown") {
             setTimeLeft(duration);
         }
-    }, [raceState, duration]);
+    }
+
+    // Reset ref when going back to waiting
+    useEffect(() => {
+        if (raceState === "waiting") {
+            startRef.current = null;
+        }
+    }, [raceState]);
 
     return { countdown, setCountdown, timeLeft, startRef: startRef as MutableRefObject<number | null> };
 }

@@ -17,8 +17,12 @@ export function useRoomRegistry() {
                 const activeIds = new Set<string>();
                 const roomUserSets: Record<string, Set<string>> = {};
                 
-                Object.values(state).forEach((presences: any) => {
-                    presences.forEach((p: any) => {
+                Object.values(state).forEach((presences) => {
+                    (presences as Array<{
+                        roomId?: string;
+                        roomCode?: string;
+                        userId?: string;
+                    }>).forEach((p) => {
                         if (p.roomId) {
                             activeIds.add(p.roomId);
                             if (!roomUserSets[p.roomId]) roomUserSets[p.roomId] = new Set();

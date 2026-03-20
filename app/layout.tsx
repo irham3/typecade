@@ -29,20 +29,17 @@ export const viewport: Viewport = {
   maximumScale: 5, // Accessibility friendly
 };
 
+export const siteDescription = "Typecade is a free typing speed test and touch typing trainer. Practice solo, race friends in real-time multiplayer arenas, or follow a structured course from home row basics to 100+ WPM.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://typecade.com"),
-  title: {
-    default: "Typecade | Type faster. Think clearer.",
-    template: "%s | Typecade",
-  },
-  description: "A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.",
+  title: "Typecade | Type faster. Think clearer.",
+  description: siteDescription,
   applicationName: "Typecade",
   authors: [{ name: "Typecade Team", url: "https://typecade.com" }],
   generator: "Next.js",
   keywords: ["typing", "typecade", "typing speed", "typing test", "wpm", "typing game", "touch typing", "keyboard mastery", "learn typing"],
   referrer: "origin-when-cross-origin",
-  creator: "Typecade Team",
-  publisher: "Typecade Team",
   alternates: {
     canonical: "/",
   },
@@ -65,7 +62,7 @@ export const metadata: Metadata = {
     url: "https://typecade.com",
     siteName: "Typecade",
     title: "Typecade | Type faster. Think clearer.",
-    description: "A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.",
+    description: siteDescription,
     images: [
       {
         url: "/opengraph-image.png",
@@ -79,7 +76,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Typecade | Type faster. Think clearer.",
-    description: "A platform to improve your typing speed and accuracy.",
+    description: siteDescription,
     creator: "@typecade",
     images: ["/opengraph-image.png"],
   },
@@ -101,7 +98,7 @@ export default function RootLayout({
     '@type': 'WebApplication',
     name: 'Typecade',
     url: 'https://typecade.com',
-    description: 'A platform to improve your typing speed and accuracy. Play typing games, track your speed in WPM, and compete with friends.',
+    description: siteDescription,
     applicationCategory: 'EducationalApplication',
     genre: 'Typing Tutor',
     operatingSystem: 'All',
