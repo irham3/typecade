@@ -124,7 +124,9 @@ export function Navbar() {
 
             {/* Right side actions */}
             <div className="flex flex-1 items-center justify-end gap-2">
-                {user ? (
+                {isLoading || !supabaseReady ? (
+                    <div />
+                ) : user ? (
                     <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="gap-2 px-2">
@@ -156,7 +158,7 @@ export function Navbar() {
                                     )}
                                 </div>
                                 <div className="flex flex-col space-y-0.5 overflow-hidden">
-                                    <span className="font-display font-medium text-sm text-foreground truncate">{user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || "Player"}</span>
+                                    <span className="font-display font-medium text-sm text-foreground truncate">{user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.username || "Player"}</span>
                                     <span className="text-xs font-medium text-text-dim truncate normal-case tracking-normal">{user.email}</span>
                                 </div>
                             </DropdownMenuLabel>
@@ -170,7 +172,6 @@ export function Navbar() {
                     <Button
                         variant="primary"
                         className="px-5 text-sm"
-                        disabled={!supabaseReady || isLoading}
                         onClick={() => setAuthModalOpen(true)}
                     >
                         Sign in
