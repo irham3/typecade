@@ -18,6 +18,7 @@ interface ProfileHeaderProps {
     memberSince: string;
     stats: UserStats;
     setPreviewOpen: (open: boolean) => void;
+    setEditOpen: (open: boolean) => void;
 }
 
 const formatHours = (mins: number) => {
@@ -26,7 +27,7 @@ const formatHours = (mins: number) => {
     return `${h}h ${m}m`;
 };
 
-export function ProfileHeader({ user, displayName, memberSince, stats, setPreviewOpen }: ProfileHeaderProps) {
+export function ProfileHeader({ user, displayName, memberSince, stats, setPreviewOpen, setEditOpen }: ProfileHeaderProps) {
     const statCards = [
         { label: "Personal Best", value: stats.wpm, suffix: " WPM", icon: TrendingUp, color: "text-accent", delay: 0 },
         { label: "Top Accuracy", value: stats.accuracy, suffix: "%", icon: Target, color: "text-accent-secondary", delay: 100 },
@@ -75,7 +76,10 @@ export function ProfileHeader({ user, displayName, memberSince, stats, setPrevie
                         >
                             <Eye size={15} className="text-text-dim" /> View Picture
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 cursor-pointer">
+                        <DropdownMenuItem 
+                            className="gap-2 cursor-pointer"
+                            onClick={() => setEditOpen(true)}
+                        >
                             <Camera size={15} className="text-text-dim" /> Change Picture
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -91,7 +95,7 @@ export function ProfileHeader({ user, displayName, memberSince, stats, setPrevie
                             {memberSince}
                         </span>
                     </div>
-                    <Button variant="outline" className="px-5 py-2.5 rounded-xl text-sm font-medium">
+                    <Button variant="outline" className="px-5 py-2.5 rounded-xl text-sm font-medium" onClick={() => setEditOpen(true)}>
                         Edit Profile
                     </Button>
                 </div>

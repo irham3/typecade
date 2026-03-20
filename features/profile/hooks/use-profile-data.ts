@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useStore } from "@/lib/store";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -7,13 +7,15 @@ export function useProfileData() {
     const { user, supabaseReady } = useAuth();
     const storeStats = useStore(state => state.stats);
     const [stats, setStats] = useState(storeStats);
-    const [displayName, setDisplayName] = useState("Typecade User");
-    const [memberSince, setMemberSince] = useState("Member since");
+    const [displayName, setDisplayName] = useState("");
+    const [memberSince, setMemberSince] = useState("");
     const [timeframe, setTimeframe] = useState("All time");
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
     const formatMemberSince = useMemo(() => {
         const date = user?.created_at ? new Date(user.created_at) : null;
-        if (!date) return "Member since";
+        if (!date) return "";
         return `Member since ${date.toLocaleString("en-US", { month: "short", year: "numeric" })}`;
     }, [user?.created_at]);
 
@@ -26,7 +28,9 @@ export function useProfileData() {
         const client = getSupabaseClient();
         if (!client) return;
         const load = async () => {
-            const [{ data: profile }, { data: statsRow }, { data: history }] = await Promise.all([
+            setIsLoading(true);
+            try {
+                const [{ data: profile }, { data: statsRow }, { data: history }] = await Promise.all([
                 client.from("profiles").select("display_name, username, created_at").eq("user_id", user.id).maybeSingle(),
                 client.from("user_stats").select("*").eq("user_id", user.id).maybeSingle(),
                 client
@@ -44,6 +48,8 @@ export function useProfileData() {
                 setDisplayName(profileRow.username);
             } else if (user.email) {
                 setDisplayName(user.email.split("@")[0]);
+            } else {
+                setDisplayName("Typecade User");
             }
 
             if (profileRow?.created_at) {
@@ -102,9 +108,16 @@ export function useProfileData() {
                     history: historyRows,
                 });
             }
+            } finally {
+                setIsLoading(false);
+            }
         };
         void load();
-    }, [supabaseReady, user]);
+    }, [supabaseReady, user, refreshKey]);
+
+    const reloadProfile = useCallback(() => {
+        setRefreshKey(k => k + 1);
+    }, []);
 
     const filteredHistory = useMemo(() => {
         if (!stats.history) return [];
@@ -130,5 +143,7 @@ export function useProfileData() {
         timeframe,
         setTimeframe,
         filteredHistory,
+        reloadProfile,
+        isLoading,
     };
 }
