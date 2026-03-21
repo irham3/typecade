@@ -231,21 +231,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         }
     }, [inputRef, status]);
 
-    useEffect(() => {
-        const input = inputRef.current;
-        if (!input) return;
-
-        const onFocus = () => setIsFocused(true);
-        const onBlur = () => setIsFocused(false);
-
-        input.addEventListener("focus", onFocus);
-        input.addEventListener("blur", onBlur);
-
-        return () => {
-            input.removeEventListener("focus", onFocus);
-            input.removeEventListener("blur", onBlur);
-        };
-    }, [inputRef]);
+    // Focus and blur are now handled directly on the <input> element's onFocus and onBlur props
 
     useEffect(() => {
         // Aggressive on-mount focus cascade to fight browser autofill stealing
@@ -462,6 +448,8 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 className="opacity-0 absolute -top-2499.75"
                 value={typedChars}
                 onChange={handleInput}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
                 autoFocus
                 autoComplete="off"
                 spellCheck="false"
