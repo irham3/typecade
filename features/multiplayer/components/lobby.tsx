@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Shield, Search, ChevronDown } from "lucide-react";
+import { Plus, Shield, Search, ChevronDown, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useRoomRegistry } from "../hooks/use-room-registry";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -38,6 +39,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     const [modeOpen, setModeOpen] = useState(false);
     const [isHostModalOpen, setIsHostModalOpen] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+    const { activeRoomIds, roomPlayerCounts } = useRoomRegistry();
 
     const createRoomPayload = useMemo(() => {
         const language = createLang === "Bahasa Indonesia" ? "ID" : "EN";
@@ -53,6 +55,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             .from("room_overview")
             .select("*")
             .eq("status", "waiting")
+            .eq("is_private", false)
             .order("created_at", { ascending: false })
             .limit(50);
         if (error) {
@@ -200,6 +203,12 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         onJoin(roomRow.code);
     };
 
+    const filteredRooms = useMemo(() => {
+        return rooms.filter(room =>
+            activeRoomIds.has(room.id) || activeRoomIds.has(room.code)
+        );
+    }, [rooms, activeRoomIds]);
+
     return (
         <div className="w-full max-w-5xl flex flex-col pt-6 sm:pt-10 pb-12 relative z-10 font-sans mx-auto">
 
@@ -255,7 +264,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                     [&::-webkit-scrollbar-thumb]:rounded-full 
                     hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
                     <AnimatePresence mode="popLayout">
-                        {rooms.map((room, i) => (
+                        {filteredRooms.map((room, i) => (
                             <motion.div
                                 layout
                                 initial={{ opacity: 0, y: 8 }}
@@ -282,7 +291,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
 
                                 <div className="col-span-12 md:col-span-2 flex items-center md:justify-center w-full">
                                     <span className="text-sm font-mono font-bold text-foreground/90 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
-                                        {room.player_count} <span className="text-text-dim/50 font-normal mx-1">/</span> {room.max_players}
+                                        {roomPlayerCounts[room.id] ?? roomPlayerCounts[room.code] ?? 0} <span className="text-text-dim/50 font-normal mx-1">/</span> {room.max_players}
                                     </span>
                                 </div>
 
@@ -320,15 +329,34 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                     )}
 
                     {/* Empty state */}
-                    {!initialLoading && !isLoading && rooms.length === 0 && (
+                    {!initialLoading && !isLoading && filteredRooms.length === 0 && (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.15 }}
-                            className="flex flex-col items-center justify-center py-16 border border-dashed border-white/10 rounded-2xl text-text-dim bg-panel-bg/20 mt-2"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex flex-col items-center justify-center py-20 sm:py-32 border border-dashed border-white/5 rounded-[32px] text-text-dim bg-panel-bg/10 mt-2 group relative overflow-hidden"
                         >
-                            <span className="text-base font-display font-medium text-foreground mb-1">No active arenas</span>
-                            <span className="text-sm text-text-dim">Create one to start a typing battle.</span>
+                            {/* Subtle background glow */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent/5 blur-[100px] pointer-events-none" />
+
+                            <div className="relative flex flex-col items-center gap-5">
+                                <div className="p-5 bg-white/5 rounded-3xl border border-white/5 text-accent/50 group-hover:text-accent/80 group-hover:scale-110 transition-all duration-700">
+                                    <Gamepad2 size={40} strokeWidth={1.5} />
+                                </div>
+                                <div className="text-center space-y-1.5 px-6">
+                                    <h3 className="text-xl font-display font-bold text-foreground">No active arenas</h3>
+                                    <p className="text-sm text-text-dim max-w-[280px] leading-relaxed">
+                                        There is no room available for now. Be the first to host an arena and invite others to a typing battle!
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="primary"
+                                    className="mt-3 py-2.5 px-8 rounded-xl font-bold text-sm shadow-xl shadow-accent/10 transition-all hover:-translate-y-0.5"
+                                    onClick={() => setIsHostModalOpen(true)}
+                                >
+                                    New Arena
+                                </Button>
+                            </div>
                         </motion.div>
                     )}
                 </div>

@@ -174,29 +174,6 @@ export function HomeClient() {
                 </AnimatePresence>
 
                 <AnimatePresence mode="popLayout">
-                    {activeTab === "Custom" && (
-                        <motion.div
-                            layout
-                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
-                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            transition={{ duration: 0.25, ease: "easeOut" }}
-                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
-                        >
-                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
-                            <Button
-                                variant={customShuffle ? "activeGradient" : "ghost"}
-                                className="px-3 py-1.5 text-sm"
-                                onClick={() => setCustomShuffle(!customShuffle)}
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
-                                Shuffle
-                            </Button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence mode="popLayout">
                     {(activeTab === "Words" || activeTab === "Time") && (
                         <motion.div
                             layout

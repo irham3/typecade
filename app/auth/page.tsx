@@ -9,6 +9,21 @@ export const metadata: Metadata = {
         title: "Sign In | Typecade",
         description: "Sign in to Typecade with Google or email.",
         type: "website",
+        images: [
+            {
+                url: "/opengraph-image.png",
+                width: 1200,
+                height: 630,
+                alt: "Sign In | Typecade",
+                type: "image/png",
+            },
+        ],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Sign In | Typecade",
+        description: "Sign in to Typecade with Google or email.",
+        images: ["/opengraph-image.png"],
     },
 };
 

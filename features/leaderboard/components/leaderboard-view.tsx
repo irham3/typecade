@@ -3,6 +3,7 @@ import { Trophy, Medal, Crown, Flame } from "lucide-react";
 import { motion } from "framer-motion";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CountUp } from "@/components/ui/count-up";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
@@ -28,6 +29,7 @@ export function LeaderboardView() {
     const [rows, setRows] = useState<Array<{
         user_id: string;
         display_name: string;
+        avatar_url?: string;
         best_wpm: number;
         best_accuracy: number;
         total_tests: number;
@@ -70,6 +72,7 @@ export function LeaderboardView() {
             setRows((data ?? []) as Array<{
                 user_id: string;
                 display_name: string;
+                avatar_url?: string;
                 best_wpm: number;
                 best_accuracy: number;
                 total_tests: number;
@@ -85,6 +88,7 @@ export function LeaderboardView() {
             .map((item, index) => ({
                 rank: index + 1,
                 user: item.display_name,
+                avatar_url: item.avatar_url,
                 wpm: item.best_wpm,
                 acc: item.best_accuracy,
                 tests: item.total_tests,
@@ -172,13 +176,23 @@ export function LeaderboardView() {
                                     </td>
 
                                     <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-foreground flex items-center gap-1.5 sm:gap-2">
-                                        <span className="truncate max-w-[100px] sm:max-w-none">{item.user}</span>
-                                        {item.isCurrentUser && (
-                                            <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
-                                        )}
-                                        {item.rank <= 3 && (
-                                            <Flame size={12} className="text-accent-secondary opacity-50" />
-                                        )}
+                                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 border border-foreground/10 bg-panel-bg flex items-center justify-center">
+                                            <UserAvatar
+                                                src={item.avatar_url}
+                                                alt={item.user}
+                                                iconSize={14}
+                                                showTooltipPreview={true}
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
+                                            <span className="truncate max-w-[90px] sm:max-w-[200px]">{item.user}</span>
+                                            {item.isCurrentUser && (
+                                                <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
+                                            )}
+                                            {item.rank <= 3 && (
+                                                <Flame size={12} className="text-accent-secondary opacity-50" />
+                                            )}
+                                        </div>
                                     </td>
 
                                     <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-base sm:text-lg font-bold text-accent">
@@ -203,11 +217,7 @@ export function LeaderboardView() {
                         </motion.tbody>
                     </table>
                 </div>
-
-                {/* Soft bottom fade/blur effect */}
-                <div className="absolute bottom-0 left-0 right-3 h-16 bg-linear-to-t from-background/90 to-transparent pointer-events-none z-10" />
             </div>
-
         </div>
     );
 }

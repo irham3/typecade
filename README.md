@@ -1,5 +1,5 @@
 <div align="center">
-    <a href="https://typecade.pages.dev/">
+    <a href="https://typecade.com/">
         <img height="40" src="https://github.com/irham3/typecade/blob/f8fe6006c9c8e46d654799dceb1af5d1ac65f6d8/public/typecade-logo.svg" />
         <br>
         <strong>PLAY TYPECADE</strong>

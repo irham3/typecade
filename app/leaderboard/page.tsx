@@ -9,6 +9,21 @@ export const metadata: Metadata = {
         title: 'Leaderboard | Typecade',
         description: 'See where you stand globally on Typecade.',
         type: 'website',
+        images: [
+            {
+                url: "/opengraph-image.png",
+                width: 1200,
+                height: 630,
+                alt: "Leaderboard | Typecade",
+                type: "image/png",
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Leaderboard | Typecade',
+        description: 'See where you stand globally on Typecade.',
+        images: ["/opengraph-image.png"],
     },
 };
 

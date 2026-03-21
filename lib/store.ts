@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export type ModeOption = "Quote" | "Words" | "Time" | "Custom";
 
-interface UserStats {
+export interface UserStats {
     wpm: number;
     accuracy: number;
     tests: number;

@@ -21,7 +21,7 @@ interface TypingResultsProps {
 export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, resultKey, onRetry, onNext }: TypingResultsProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isCapturing, setIsCapturing] = useState(false);
-    
+
     // We assume store.stats.wpm holds the all-time personal best WPM
     const personalBestWpm = useStore(state => state.stats.wpm);
     const theme = useStore(state => state.theme);
@@ -35,12 +35,12 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
 
             const frame = () => {
                 const colors = theme === 'forest' ? ['#22c55e', '#84cc16', '#ffffff'] :
-                        theme === 'sunset' ? ['#f97316', '#e11d48', '#ffffff'] :
+                    theme === 'sunset' ? ['#f97316', '#e11d48', '#ffffff'] :
                         theme === 'retro' ? ['#ff007f', '#00ffcc', '#ffffff'] :
-                        theme === 'nord' ? ['#88c0d0', '#81a1c1', '#ffffff'] :
-                        theme === 'serika' ? ['#e2b714', '#ffffff', '#323437'] :
-                        theme === 'dracula' ? ['#bd93f9', '#ff79c6', '#ffffff'] :
-                        ['#6366f1', '#5eead4', '#ffffff'];
+                            theme === 'nord' ? ['#88c0d0', '#81a1c1', '#ffffff'] :
+                                theme === 'serika' ? ['#e2b714', '#ffffff', '#323437'] :
+                                    theme === 'dracula' ? ['#bd93f9', '#ff79c6', '#ffffff'] :
+                                        ['#6366f1', '#5eead4', '#ffffff'];
 
                 confetti({
                     particleCount: 5,
@@ -72,8 +72,8 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
             // A bit of delay to let React re-render without buttons if they're hidden during capture
             await new Promise(r => setTimeout(r, 100));
             const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || '#0c0d14';
-            const dataUrl = await htmlToImage.toPng(cardRef.current, { 
-                quality: 1.0, 
+            const dataUrl = await htmlToImage.toPng(cardRef.current, {
+                quality: 1.0,
                 pixelRatio: 2,
                 backgroundColor: bgColor,
                 style: { transform: 'scale(1)', padding: '24px' } // adds padding inside image
@@ -98,12 +98,12 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
     };
 
     const handleTwitterShare = () => {
-        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on @typecade! 🚀\n\nCan you beat my score? Try it now: https://typecade.pages.dev`;
+        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on @typecade! 🚀\n\nCan you beat my score? Try it now: https://typecade.com`;
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
     };
 
     const handleWhatsAppShare = () => {
-        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on Typecade! 🚀\nCan you beat my score? https://typecade.pages.dev`;
+        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on Typecade! 🚀\nCan you beat my score? https://typecade.com`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     };
 
@@ -117,7 +117,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
         >
             {/* The wrapper that will be captured as an OG Image — Uses css variables for colors */}
             <div ref={cardRef} className="w-full max-w-2xl bg-background flex flex-col items-center border border-foreground/5 rounded-3xl p-6 sm:p-10 relative overflow-hidden glass-strong">
-                
+
                 {/* Visual Flair Background */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/10 rounded-full blur-[80px] pointer-events-none" />
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-accent/5 rounded-full blur-[80px] pointer-events-none" />
@@ -138,14 +138,14 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                 {/* Header / Brand (Visible nicely in capture) */}
                 {isCapturing && (
                     <div className="w-full flex justify-between items-center mb-6 opacity-80">
-                         <div className="flex items-center gap-2">
-                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                             <img src="/typecade-logo.png" alt="Typecade" className="w-6 h-6 object-contain" />
-                             <span className="font-bold text-lg tracking-tight">Typecade</span>
-                         </div>
-                         <div className="text-xs font-mono text-text-dim/80 bg-foreground/5 px-2 py-1 rounded">
-                             {mode.toUpperCase()} MODE
-                         </div>
+                        <div className="flex items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/typecade-logo.png" alt="Typecade" className="w-6 h-6 object-contain" />
+                            <span className="font-bold text-lg tracking-tight">Typecade</span>
+                        </div>
+                        <div className="text-xs font-mono text-text-dim/80 bg-foreground/5 px-2 py-1 rounded">
+                            {mode.toUpperCase()} MODE
+                        </div>
                     </div>
                 )}
 
@@ -200,11 +200,11 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                         </span>
                     </motion.div>
                 </div>
-                
+
                 {/* Watermark only visible in capture */}
                 {isCapturing && (
                     <div className="w-full text-center mt-6 text-[10px] text-text-dim/50 font-mono tracking-widest uppercase">
-                        play at typecade.pages.dev
+                        play at typecade.com
                     </div>
                 )}
             </div>
