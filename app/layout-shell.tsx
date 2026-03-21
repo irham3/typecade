@@ -9,6 +9,7 @@ import { ClickSpark } from "@/components/ui/click-spark";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
 import { ThemeModal } from "@/components/theme-modal";
+import { AudioController } from "@/components/audio-controller";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -41,6 +42,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-between w-full relative z-0">
+            <AudioController />
             {showAnimations && (
                 <>
                     <DarkVeil />

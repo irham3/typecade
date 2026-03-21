@@ -8,7 +8,7 @@ import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
-import { playTypeSound } from "@/lib/utils/sound";
+import { playTypeSound, playComboSound } from "@/lib/utils/sound";
 
 interface KeystrokeParticle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; }
 
@@ -164,6 +164,9 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
 
             if (sound !== "off") {
                 playTypeSound(sound, !isCorrect);
+                if (sound === "arcade" && isCorrect && streak > 0 && streak % 10 === 0) {
+                    playComboSound(sound, streak / 10);
+                }
             }
 
             if (isCorrect && caretRef.current && textContainerRef.current) {

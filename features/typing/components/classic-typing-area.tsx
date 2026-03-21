@@ -6,7 +6,7 @@ import { generateQuote, generateWords } from "@/lib/words";
 import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
-import { playTypeSound } from "@/lib/utils/sound";
+import { playTypeSound, playComboSound } from "@/lib/utils/sound";
 
 export function ClassicTypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
     const { user, supabaseReady } = useAuth();
@@ -99,6 +99,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
     const prevInputRef = useRef("");
     const prevWordIndexRef = useRef(0);
+    const comboRef = useRef(0);
 
     useEffect(() => {
         if (status === "playing" && sound !== "off") {
@@ -111,7 +112,18 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 const isError = hasNewChar && currentInput[currentInput.length - 1] !== targetChar;
 
                 playTypeSound(sound, isError);
+                
+                if (isError) {
+                    comboRef.current = 0;
+                } else {
+                    comboRef.current += 1;
+                    if (sound === "arcade" && comboRef.current > 0 && comboRef.current % 10 === 0) {
+                        playComboSound(sound, Math.floor(comboRef.current / 10));
+                    }
+                }
             }
+        } else if (status === "idle") {
+            comboRef.current = 0;
         }
         prevInputRef.current = currentInput;
         prevWordIndexRef.current = currentWordIndex;

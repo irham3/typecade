@@ -31,7 +31,8 @@ interface TypecadeState {
     // Appearance & Sound
     typingStyle: "modern" | "classic";
     theme: "dark" | "light" | "forest" | "sunset" | "retro" | "nord" | "serika" | "dracula";
-    sound: "off" | "soft" | "mechanical";
+    sound: "off" | "soft" | "mechanical" | "arcade";
+    bgm: "off" | "arcade" | "lofi" | "synthwave" | "ambient";
     caretStyle: "line" | "block" | "underscore";
     fontSize: "small" | "medium" | "large";
     language: "EN" | "ID";
@@ -55,7 +56,8 @@ interface TypecadeState {
     setCustomShuffle: (val: boolean) => void;
     setTypingStyle: (style: "modern" | "classic") => void;
     setTheme: (theme: "dark" | "light" | "forest" | "sunset" | "retro" | "nord" | "serika" | "dracula") => void;
-    setSound: (sound: "off" | "soft" | "mechanical") => void;
+    setSound: (sound: "off" | "soft" | "mechanical" | "arcade") => void;
+    setBgm: (bgm: "off" | "arcade" | "lofi" | "synthwave" | "ambient") => void;
     setCaretStyle: (style: "line" | "block" | "underscore") => void;
     setFontSize: (size: "small" | "medium" | "large") => void;
     setLanguage: (lang: "EN" | "ID") => void;
@@ -89,6 +91,7 @@ export const useStore = create<TypecadeState>()(
             typingStyle: "modern",
             theme: "dark",
             sound: "off",
+            bgm: "off",
             caretStyle: "line",
             fontSize: "medium",
             language: "EN",
@@ -116,6 +119,7 @@ export const useStore = create<TypecadeState>()(
             setTypingStyle: (typingStyle) => set({ typingStyle }),
             setTheme: (theme) => set({ theme }),
             setSound: (sound) => set({ sound }),
+            setBgm: (bgm) => set({ bgm }),
             setCaretStyle: (caretStyle) => set({ caretStyle }),
             setFontSize: (fontSize) => set({ fontSize }),
             setLanguage: (language) => set({ language }),
