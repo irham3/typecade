@@ -44,6 +44,7 @@ interface TypecadeState {
     
     // UI State
     isSettingsOpen: boolean;
+    isGlobalSettingsOpen: boolean;
     isThemeModalOpen: boolean;
     showAnimations: boolean;
     
@@ -64,6 +65,7 @@ interface TypecadeState {
     setPunctuation: (val: boolean) => void;
     setNumbers: (val: boolean) => void;
     setSettingsOpen: (val: boolean) => void;
+    setGlobalSettingsOpen: (val: boolean) => void;
     setThemeModalOpen: (val: boolean) => void;
     setShowAnimations: (val: boolean) => void;
     addTestResult: (result: { wpm: number; accuracy: number; duration: number; mode: string }) => void;
@@ -98,6 +100,7 @@ export const useStore = create<TypecadeState>()(
             punctuation: false,
             numbers: false,
             isSettingsOpen: false,
+            isGlobalSettingsOpen: false,
             isThemeModalOpen: false,
             showAnimations: true,
             stats: {
@@ -126,6 +129,7 @@ export const useStore = create<TypecadeState>()(
             setPunctuation: (punctuation) => set({ punctuation }),
             setNumbers: (numbers) => set({ numbers }),
             setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
+            setGlobalSettingsOpen: (isGlobalSettingsOpen) => set({ isGlobalSettingsOpen }),
             setThemeModalOpen: (isThemeModalOpen) => set({ isThemeModalOpen }),
             setShowAnimations: (showAnimations) => set({ showAnimations }),
             addTestResult: (result) => set((state) => {
