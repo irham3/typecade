@@ -120,6 +120,20 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
             if (value.length <= lastLockedIndexRef.current) {
                 return;
             }
+
+            // Smart Backspace: If the user deleted a space and the previous characters are ALSO spaces 
+            // but the target text is NOT a space, it means these are padded spaces from word skipping. 
+            // We should strip them all in one go so 1 Backspace undoes 1 Space skip natively.
+            if (typedChars[typedChars.length - 1] === " ") {
+                while (
+                    value.length > 0 &&
+                    value.length > lastLockedIndexRef.current + 1 &&
+                    value[value.length - 1] === " " &&
+                    text[value.length - 1] !== " "
+                ) {
+                    value = value.slice(0, -1);
+                }
+            }
         }
 
         if (status === "idle" && value.length === 1) {
