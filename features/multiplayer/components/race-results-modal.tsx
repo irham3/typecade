@@ -39,7 +39,7 @@ export function RaceResultsModal({ isOpen, players, currentUserId, showRestart, 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-[#141414] p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 relative z-10"
+                        className="bg-[#141414] p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 relative z-10 max-h-[85vh] overflow-y-auto hide-scrollbar"
                     >
                         <Button
                             variant="ghost"

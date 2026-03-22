@@ -344,7 +344,7 @@ export function HomeClient() {
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
                             transition={{ type: "spring", duration: 0.5, bounce: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 sm:gap-8 glass relative overflow-y-auto max-h-[90vh] z-10 glow-accent hide-scrollbar"
+                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 sm:gap-8 glass relative overflow-y-auto max-h-[85vh] z-10 glow-accent hide-scrollbar"
                         >
                             {/* Decorative blur */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[100px] pointer-events-none translate-x-1/2 -translate-y-1/2" />
@@ -584,7 +584,7 @@ export function HomeClient() {
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                             transition={{ type: "spring", duration: 0.5, bounce: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 relative z-10 glass glow-accent"
+                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 relative z-10 glass glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
                         >
                             <h2 className="text-xl font-bold text-foreground">Edit Custom Text</h2>
                             <textarea
@@ -633,7 +633,7 @@ export function HomeClient() {
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                             transition={{ type: "spring", duration: 0.5, bounce: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-sm p-6 sm:p-8 shadow-2xl flex flex-col gap-6 relative overflow-hidden glass z-10 glow-accent"
+                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-sm p-6 sm:p-8 shadow-2xl flex flex-col gap-6 relative overflow-hidden glass z-10 glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
                         >
                             <h2 className="text-xl font-bold text-foreground">Custom {activeTab} Limit</h2>
                             <div className="flex items-center gap-3">

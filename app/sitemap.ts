@@ -21,6 +21,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: route === '' ? 1 : 0.8,
     }));
 
+    const moduleRoutes: MetadataRoute.Sitemap = LEARN_MODULES.map((module) => ({
+        url: `${baseUrl}/learn/${module.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+    }));
+
     const dynamicRoutes: MetadataRoute.Sitemap = LEARN_MODULES.flatMap((module) =>
         module.lessons.map((lesson) => ({
             url: `${baseUrl}/learn/${module.slug}/${lesson.slug}`,
@@ -30,5 +37,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
     );
 
-    return [...staticRoutes, ...dynamicRoutes];
+    return [...staticRoutes, ...moduleRoutes, ...dynamicRoutes];
 }

@@ -564,6 +564,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
 
     // ── Racing / Finished UI ──────────────────────────────────────────────────
     return (
+        <>
         <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -668,17 +669,18 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     });
                 })()}
             </div>
-
-            {/* Results Modal */}
-            <RaceResultsModal
-                isOpen={raceState === "finished" && showResults}
-                players={players}
-                currentUserId={currentUserId}
-                showRestart={!isRealtime}
-                onClose={() => setShowResults(false)}
-                onLeave={handleLeave}
-                onRestart={handleRestart}
-            />
         </motion.div>
+
+        {/* Results Modal - Rendered outside motion.div to avoid transform issues */}
+        <RaceResultsModal
+            isOpen={raceState === "finished" && showResults}
+            players={players}
+            currentUserId={currentUserId}
+            showRestart={!isRealtime}
+            onClose={() => setShowResults(false)}
+            onLeave={handleLeave}
+            onRestart={handleRestart}
+        />
+        </>
     );
 }

@@ -40,7 +40,7 @@ export function ThemeModal() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
-                        className="w-full max-w-lg glass p-6 sm:p-8 rounded-4xl sm:rounded-5xl shadow-2xl relative overflow-hidden z-10 glow-accent"
+                        className="w-full max-w-lg glass p-6 sm:p-8 rounded-4xl sm:rounded-5xl shadow-2xl relative overflow-hidden z-10 glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}

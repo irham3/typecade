@@ -13,7 +13,7 @@ export function AvatarPreviewModal({ user, previewOpen, setPreviewOpen }: Avatar
     if (!previewOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

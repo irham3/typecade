@@ -16,7 +16,6 @@ import {
     DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth/auth-context";
-import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useStore } from "@/lib/store";
@@ -33,7 +32,7 @@ export function Navbar() {
     const router = useRouter();
     const [accountOpen, setAccountOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [authModalOpen, setAuthModalOpen] = useState(false);
+    const setAuthModalOpen = useStore(state => state.setAuthModalOpen);
     const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const { user, isLoading, supabaseReady, signOut } = useAuth();
     // const setSettingsOpen = useStore(state => state.setSettingsOpen);
@@ -66,6 +65,7 @@ export function Navbar() {
     }, [pathname]);
 
     return (
+        <>
         <header className={`w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between z-20 relative transition-all duration-500 ease-out ${isTyping ? 'opacity-0 pointer-events-none -translate-y-10' : 'opacity-100 translate-y-0'}`}>
             {/* Logo */}
             <div className="flex flex-1 items-center justify-start">
@@ -214,8 +214,7 @@ export function Navbar() {
                     })}
                 </motion.div>
             )}
-
-            <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+        </header>
 
             <ConfirmModal
                 isOpen={logoutConfirmOpen}
@@ -229,6 +228,6 @@ export function Navbar() {
                 }}
                 onCancel={() => setLogoutConfirmOpen(false)}
             />
-        </header>
+        </>
     );
 }

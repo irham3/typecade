@@ -9,12 +9,16 @@ import { ClickSpark } from "@/components/ui/click-spark";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
 import { ThemeModal } from "@/components/theme-modal";
+import { GlobalSettingsModal } from "@/components/global-settings-modal";
+import { AuthModal } from "@/components/auth-modal";
 import { AudioController } from "@/components/audio-controller";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const theme = useStore(state => state.theme);
     const showAnimations = useStore(state => state.showAnimations);
+    const authModalOpen = useStore(state => state.authModalOpen);
+    const setAuthModalOpen = useStore(state => state.setAuthModalOpen);
 
     useEffect(() => {
         document.documentElement.setAttribute("data-theme", theme);
@@ -36,6 +40,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
                     {children}
                 </div>
                 <ThemeModal />
+                <GlobalSettingsModal />
+                <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
             </div>
         );
     }
@@ -75,6 +81,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             </div>
             <Footer />
             <ThemeModal />
+            <GlobalSettingsModal />
+            <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
         </div>
     );
 }

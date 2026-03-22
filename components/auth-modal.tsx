@@ -149,7 +149,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center p-4">
+                <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -162,7 +162,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
-                        className="w-full max-w-md bg-panel-bg border border-foreground/10 rounded-3xl p-8 shadow-2xl relative z-10 glass glow-accent"
+                        className="w-full max-w-md bg-panel-bg border border-foreground/10 rounded-3xl p-8 shadow-2xl relative z-10 glass glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
                     >
                         <button
                             onClick={onClose}

@@ -124,7 +124,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ type: "spring", duration: 0.5, bounce: 0 }}
-                className="relative z-10 w-full max-w-md bg-panel-bg border border-foreground/10 rounded-3xl shadow-2xl glass glow-accent overflow-hidden"
+                className="relative z-10 w-full max-w-md bg-panel-bg border border-foreground/10 rounded-3xl shadow-2xl glass glow-accent overflow-hidden max-h-[85vh] overflow-y-auto hide-scrollbar"
             >
                 <div className="p-6 border-b border-foreground/10 flex justify-between items-center">
                     <h2 className="text-xl font-bold font-display">Edit Profile</h2>

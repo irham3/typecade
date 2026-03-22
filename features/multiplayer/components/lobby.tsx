@@ -372,7 +372,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+                        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
                         onClick={() => setIsHostModalOpen(false)}
                     >
                         <motion.div
@@ -380,7 +380,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 15 }}
                             transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                            className="w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-[24px] shadow-2xl p-6 relative overflow-hidden flex flex-col"
+                            className="w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-[24px] shadow-2xl p-6 relative overflow-hidden flex flex-col max-h-[85vh] overflow-y-auto hide-scrollbar"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2 className="text-2xl font-display font-bold text-foreground flex items-center gap-3 mb-2">
