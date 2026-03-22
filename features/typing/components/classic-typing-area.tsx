@@ -44,6 +44,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
     const duration = mode === "time" ? limit : 60;
     const addTestResult = useStore(state => state.addTestResult);
+    const setIsTyping = useStore(state => state.setIsTyping);
 
     const pendingResultRef = useRef<{ wpm: number; acc: number; timeTaken: number } | null>(null);
     const [isFocused, setIsFocused] = useState(() =>
@@ -101,6 +102,11 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
     const prevInputRef = useRef("");
     const prevWordIndexRef = useRef(0);
     const comboRef = useRef(0);
+
+    useEffect(() => {
+        setIsTyping(status === "playing");
+        return () => setIsTyping(false);
+    }, [status, setIsTyping]);
 
     useEffect(() => {
         if (status === "playing" && sound !== "off") {
@@ -355,8 +361,10 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                         </div>
 
                         {/* Classic Typing Area containing Words */}
-                        <div className="w-full relative glass border border-foreground/5 rounded-2xl p-4 sm:p-6 shadow-lg mb-6">
-                            <div
+                        <div className="w-full relative mt-4">
+
+                            <div className={`w-full relative transition-all duration-700 glass border border-foreground/5 rounded-3xl p-4 sm:p-6 shadow-lg mb-6 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border-accent/20 bg-background/30" : ""}`}>
+                                <div
                                 className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none"
                                 style={{ lineHeight: 1.8 }}
                             >
@@ -373,6 +381,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                         </div>
                                     </div>
                                 </div>
+                            </div>
                             </div>
                         </div>
 

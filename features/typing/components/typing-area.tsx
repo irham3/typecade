@@ -48,6 +48,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
 
     const duration = mode === "time" ? limit : 60;
     const addTestResult = useStore(state => state.addTestResult);
+    const setIsTyping = useStore(state => state.setIsTyping);
 
     const activeCharRef = useRef<HTMLSpanElement>(null);
     const [translateY, setTranslateY] = useState(0);
@@ -107,6 +108,11 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
             });
         }
     });
+
+    useEffect(() => {
+        setIsTyping(status === "playing");
+        return () => setIsTyping(false);
+    }, [status, setIsTyping]);
 
     // --- Visual & Audio Feedback Logic ---
     const particlesCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -528,10 +534,12 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         </div>
 
                         {/* Typing Area */}
-                        <div className="w-full relative">
-                            <div
-                                className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none text-text-dim/80"
-                            >
+                        <div className="w-full relative mt-4">
+
+                            <div className={`w-full relative transition-all duration-700 rounded-3xl ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border border-accent/20 bg-background/30 p-2 sm:p-4" : ""}`}>
+                                <div
+                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none text-text-dim/80"
+                                >
                                 <div
                                     ref={textContainerRef}
                                     className="h-[5.4em] overflow-hidden relative w-full"
@@ -563,8 +571,9 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'plus-lighter' }} />
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Blur / focus overlay */}
+                        {/* Blur / focus overlay */}
                             <AnimatePresence>
                                 {showBlurOverlay && (
                                     <motion.div

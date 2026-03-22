@@ -49,6 +49,24 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
                     <LightRays />
                 </>
             )}
+            
+            {/* Subtle Edge Scanlines & Vignette */}
+            <div 
+                className="pointer-events-none fixed inset-0 z-40 opacity-30 select-none"
+                style={{
+                    background: "linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.2) 50%)",
+                    backgroundSize: "100% 4px",
+                    maskImage: "radial-gradient(circle at center, transparent 30%, black 100%)",
+                    WebkitMaskImage: "radial-gradient(circle at center, transparent 30%, black 100%)",
+                }}
+            />
+            <div 
+                className="pointer-events-none fixed inset-0 z-40 select-none"
+                style={{
+                    boxShadow: "inset 0 0 120px rgba(0,0,0,0.6)",
+                }}
+            />
+
             <ClickSpark />
 
             <Navbar />

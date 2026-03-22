@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { AuthModal } from "@/components/auth-modal";
 import { ConfirmModal } from "@/components/confirm-modal";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { useStore } from "@/lib/store";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
@@ -39,6 +40,8 @@ export function Navbar() {
     // const setThemeModalOpen = useStore(state => state.setThemeModalOpen);
     const navRef = useRef<HTMLDivElement>(null);
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+    const isTyping = useStore(state => state.isTyping);
 
     useEffect(() => {
         const nav = navRef.current;
@@ -63,7 +66,7 @@ export function Navbar() {
     }, [pathname]);
 
     return (
-        <header className="w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between z-20 relative">
+        <header className={`w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between z-20 relative transition-all duration-500 ease-out ${isTyping ? 'opacity-0 pointer-events-none -translate-y-10' : 'opacity-100 translate-y-0'}`}>
             {/* Logo */}
             <div className="flex flex-1 items-center justify-start">
                 <Link href="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0">

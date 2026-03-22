@@ -47,6 +47,7 @@ interface TypecadeState {
     isGlobalSettingsOpen: boolean;
     isThemeModalOpen: boolean;
     showAnimations: boolean;
+    isTyping: boolean;
     
     // Actions
     setActiveTab: (tab: ModeOption) => void;
@@ -68,6 +69,7 @@ interface TypecadeState {
     setGlobalSettingsOpen: (val: boolean) => void;
     setThemeModalOpen: (val: boolean) => void;
     setShowAnimations: (val: boolean) => void;
+    setIsTyping: (val: boolean) => void;
     addTestResult: (result: { wpm: number; accuracy: number; duration: number; mode: string }) => void;
 }
 
@@ -103,6 +105,7 @@ export const useStore = create<TypecadeState>()(
             isGlobalSettingsOpen: false,
             isThemeModalOpen: false,
             showAnimations: true,
+            isTyping: false,
             stats: {
                 wpm: 94,
                 accuracy: 98.2,
@@ -132,6 +135,7 @@ export const useStore = create<TypecadeState>()(
             setGlobalSettingsOpen: (isGlobalSettingsOpen) => set({ isGlobalSettingsOpen }),
             setThemeModalOpen: (isThemeModalOpen) => set({ isThemeModalOpen }),
             setShowAnimations: (showAnimations) => set({ showAnimations }),
+            setIsTyping: (isTyping) => set({ isTyping }),
             addTestResult: (result) => set((state) => {
                 const newHistory = [
                     {
