@@ -34,15 +34,16 @@ export function GlobalSettingsModal() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+                        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6"
                         onClick={() => setGlobalSettingsOpen(false)}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-50 p-4"
                     >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="w-full max-w-lg z-50"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                         <div className="bg-background/90 glass border border-foreground/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col max-h-[90vh]">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
@@ -68,14 +69,14 @@ export function GlobalSettingsModal() {
                                     
                                     <div className="flex flex-col gap-3">
                                         {/* Typing Sound */}
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-base font-medium text-foreground">Typing Sound</label>
                                                 <span className="text-xs text-text-dim">Effect played on each keystroke</span>
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-foreground/10 hover:border-foreground/20 w-44 justify-center">
+                                                    <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-foreground/10 hover:border-foreground/20 w-full sm:w-44 justify-center">
                                                         <span className="font-semibold">{
                                                             [
                                                                 { code: "off", label: "Off" },
@@ -107,14 +108,14 @@ export function GlobalSettingsModal() {
                                         </div>
 
                                         {/* Background Music */}
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-base font-medium text-foreground">Background Music</label>
                                                 <span className="text-xs text-text-dim">Looping ambient tracks</span>
                                             </div>
                                             <DropdownMenu open={soundDropdownOpen} onOpenChange={setSoundDropdownOpen}>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-foreground/10 hover:border-foreground/20 w-48 justify-center">
+                                                    <Button variant="outline" className="flex items-center gap-2 rounded-xl py-5 border-foreground/10 hover:border-foreground/20 w-full sm:w-48 justify-center">
                                                         <span className="font-semibold">{
                                                             [
                                                                 { code: "off", label: "Off 🔇" },
@@ -152,7 +153,7 @@ export function GlobalSettingsModal() {
                                 {/* Appearance Settings */}
                                 <div className="space-y-3 pt-6 sm:pt-4 border-t border-foreground/5">
                                     <label className="text-[10px] sm:text-xs font-bold text-text-dim uppercase tracking-widest pl-1">Appearance</label>
-                                    <div className="flex items-center justify-between p-3 rounded-xl bg-foreground/5 border border-foreground/5">
+                                    <div className="flex items-center justify-between p-4 sm:p-3 rounded-xl bg-foreground/5 border border-foreground/5 overflow-hidden">
                                         <div className="flex flex-col gap-0.5">
                                             <span className="text-sm font-medium text-foreground">Background Animations</span>
                                             <span className="text-[10px] text-text-dim">Show aurora and veil effects</span>
@@ -168,7 +169,8 @@ export function GlobalSettingsModal() {
                             </div>
                         </div>
                     </motion.div>
-                </>
+                </motion.div>
+            </>
             )}
         </AnimatePresence>
     );

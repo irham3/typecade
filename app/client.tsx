@@ -72,7 +72,7 @@ export function HomeClient() {
 
 
     return (
-        <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center pb-8 lg:pb-16 relative">
+        <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start sm:justify-center pt-2 sm:pt-0 pb-4 lg:pb-16 relative">
 
             {/* ── Settings Trigger Button (Mobile & Tablet) ── */}
             <div className="flex lg:hidden items-center justify-center mb-6 w-full z-10 relative">

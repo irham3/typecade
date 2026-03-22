@@ -7,6 +7,7 @@ import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { playTypeSound, playComboSound } from "@/lib/utils/sound";
+import { VirtualKeyboard } from "@/components/virtual-keyboard";
 
 export function ClassicTypingView({ activeTab, subOption, customText, customShuffle }: { activeTab: string; subOption: string; customText?: string; customShuffle?: boolean }) {
     const { user, supabaseReady } = useAuth();
@@ -156,6 +157,26 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
             inputRef.current.focus();
         }
     }, [inputRef, status]);
+
+    // Trigger native input changes programmatically from the Virtual Keyboard
+    const handleVirtualKeyPress = useCallback((char: string) => {
+        if (!inputRef.current) return;
+        
+        const input = inputRef.current;
+        let currentValue = input.value;
+        
+        if (char === "Backspace") {
+            currentValue = currentValue.slice(0, -1);
+        } else {
+            currentValue += char;
+        }
+
+        // Trick React into firing its native synthetic onChange event by manually triggering the setter
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        nativeSetter?.call(input, currentValue);
+        const event = new Event("input", { bubbles: true });
+        input.dispatchEvent(event);
+    }, [inputRef]);
 
     // Focus and blur are now handled directly on the <input> element's onFocus and onBlur props
 
@@ -360,6 +381,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                             <input
                                 ref={inputRef}
                                 type="text"
+                                inputMode="none"
                                 className={`w-full bg-black/20 border-2 transition-colors rounded-xl font-mono text-2xl text-center py-4 px-6 outline-none shadow-inner ${currentInput && currentInput !== words[currentWordIndex]?.substring(0, currentInput.length)
                                     ? "border-error-text/50 text-error-text bg-error-bg/10"
                                     : "border-foreground/10 hover:border-foreground/20 focus:border-accent/50 text-foreground"
@@ -383,7 +405,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
+                                        className="absolute inset-0 z-10 hidden sm:flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
                                         onClick={focusInput}
                                     >
                                         <div className="bg-panel-bg/80 border border-foreground/10 px-6 py-3 rounded-full flex gap-3 items-center shadow-xl">
@@ -419,13 +441,13 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                         )}
 
                         {/* Action Bar (Integrated Shortcuts & Buttons) */}
-                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
+                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
                             <button
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="group flex items-center gap-4 transition-all hover:text-foreground hover:bg-foreground/5 px-4 py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
                                 title="Restart (Tab)"
                             >
-                                <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
+                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
                                 <span className="flex items-center gap-3">
                                     restart
                                 </span>
@@ -437,10 +459,10 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="group flex items-center gap-4 transition-all hover:text-foreground hover:bg-foreground/5 px-4 py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
                                 title="Shuffle Text (Shift + Enter)"
                             >
-                                <div className="flex items-center gap-1.5">
+                                <div className="hidden sm:flex items-center gap-1.5">
                                     <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">shift</kbd>
                                     <span className="text-xs opacity-40">+</span>
                                     <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">enter</kbd>
@@ -449,6 +471,11 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                     shuffle
                                 </span>
                             </button>
+                        </div>
+
+                        {/* Interactive Virtual Keyboard For Mobile */}
+                        <div className="mt-4 sm:mt-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+                            <VirtualKeyboard onKeyPress={handleVirtualKeyPress} />
                         </div>
                     </motion.div>
                 ) : (

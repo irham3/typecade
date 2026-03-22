@@ -9,6 +9,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 
 import { playTypeSound, playComboSound } from "@/lib/utils/sound";
+import { VirtualKeyboard } from "@/components/virtual-keyboard";
 
 interface KeystrokeParticle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; }
 
@@ -205,6 +206,26 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
         return "text-amber-400";
     };
     // ------------------------------------
+
+    // Trigger native input changes programmatically from the Virtual Keyboard
+    const handleVirtualKeyPress = useCallback((char: string) => {
+        if (!inputRef.current) return;
+        
+        const input = inputRef.current;
+        let currentValue = input.value;
+        
+        if (char === "Backspace") {
+            currentValue = currentValue.slice(0, -1);
+        } else {
+            currentValue += char;
+        }
+
+        // Trick React into firing its native synthetic onChange event by manually triggering the setter
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        nativeSetter?.call(input, currentValue);
+        const event = new Event("input", { bubbles: true });
+        input.dispatchEvent(event);
+    }, [inputRef]);
 
     // Auto-append words for infinite typing (Time mode)
     useEffect(() => {
@@ -448,6 +469,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
             <input
                 ref={inputRef}
                 type="text"
+                inputMode="none"
                 className="opacity-0 absolute -top-2499.75"
                 value={typedChars}
                 onChange={handleInput}
@@ -550,7 +572,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="absolute -inset-4 z-10 flex items-center justify-center cursor-pointer backdrop-blur-[6px] rounded-lg"
+                                        className="absolute -inset-4 z-10 hidden sm:flex items-center justify-center cursor-pointer backdrop-blur-[6px] rounded-lg"
                                         onClick={focusInput}
                                     >
                                         <span className="text-text-dim text-sm font-sans font-medium tracking-wide">
@@ -583,13 +605,13 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         )}
 
                         {/* Action Bar (Integrated Shortcuts & Buttons) */}
-                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
+                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
                             <button
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="group flex items-center gap-4 transition-all hover:text-foreground hover:bg-foreground/5 px-4 py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
                                 title="Restart (Tab)"
                             >
-                                <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
+                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
                                 <span className="flex items-center gap-3">
                                     restart
                                 </span>
@@ -601,10 +623,10 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="group flex items-center gap-4 transition-all hover:text-foreground hover:bg-foreground/5 px-4 py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
                                 title="Shuffle Text (Shift + Enter)"
                             >
-                                <div className="flex items-center gap-1.5">
+                                <div className="hidden sm:flex items-center gap-1.5">
                                     <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">shift</kbd>
                                     <span className="text-xs opacity-40">+</span>
                                     <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">enter</kbd>
@@ -613,6 +635,11 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     shuffle
                                 </span>
                             </button>
+                        </div>
+                        
+                        {/* Interactive Virtual Keyboard For Mobile */}
+                        <div className="mt-4 sm:mt-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+                            <VirtualKeyboard onKeyPress={handleVirtualKeyPress} />
                         </div>
                     </motion.div>
                 ) : (
