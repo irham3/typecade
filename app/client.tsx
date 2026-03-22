@@ -258,7 +258,7 @@ export function HomeClient() {
                                             <DropdownMenuItem
                                                 key={lang.code}
                                                 onClick={() => setLanguage(lang.code as "EN" | "ID")}
-                                                className={`justify-between min-w-[120px] ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
+                                                className={`justify-between min-w-30 ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
                                             >
                                                 {lang.label}
                                             </DropdownMenuItem>
@@ -299,7 +299,7 @@ export function HomeClient() {
                                     <DropdownMenuItem
                                         key={style.code}
                                         onClick={() => setTypingStyle(style.code as "modern" | "classic")}
-                                        className={`justify-between min-w-[144px] ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
+                                        className={`justify-between min-w-36 ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
                                     >
                                         {style.label}
                                     </DropdownMenuItem>

@@ -268,9 +268,9 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
             </div>
 
             {/* Main card */}
-            <div className="w-full glass rounded-[20px] sm:rounded-[24px] border border-white/5 p-4 sm:p-6 md:p-8 shadow-2xl relative overflow-hidden">
+            <div className="w-full glass rounded-[20px] sm:rounded-3xl border border-white/5 p-4 sm:p-6 md:p-8 shadow-2xl relative overflow-hidden">
                 {/* Ambient glow */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[150px] bg-accent/8 blur-[100px] rounded-full pointer-events-none" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-100 h-37.5 bg-accent/8 blur-[100px] rounded-full pointer-events-none" />
 
                 {/* Lesson Header — compact */}
                 <div className="relative z-10 mb-4 sm:mb-6 text-center">
@@ -337,7 +337,7 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
                                     if (e.ctrlKey || e.metaKey) e.preventDefault();
                                 }}
-                                className="absolute opacity-0 -top-[100px]"
+                                className="absolute opacity-0 -top-25"
                                 autoCorrect="off"
                                 autoCapitalize="off"
                                 spellCheck="false"
@@ -466,7 +466,7 @@ function KeyboardVisualizer({ targetKeys, nextKey }: { targetKeys: string[], nex
                 </div>
             ))}
 
-            <div className={`w-[60%] max-w-[350px] h-10 sm:h-12 rounded-lg border-b-4 border-x border-t mt-2 transition-all ${nextKey === " " ? "bg-accent border-accent shadow-[0_0_15px_rgba(99,102,241,0.6)]" : "bg-white/5 border-white/10"}`} />
+            <div className={`w-[60%] max-w-87.5 h-10 sm:h-12 rounded-lg border-b-4 border-x border-t mt-2 transition-all ${nextKey === " " ? "bg-accent border-accent shadow-[0_0_15px_rgba(99,102,241,0.6)]" : "bg-white/5 border-white/10"}`} />
         </div>
     );
 }

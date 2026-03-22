@@ -146,7 +146,7 @@ export function Navbar() {
                                 <ChevronDown size={12} className={`opacity-50 transition-transform duration-200 ${accountOpen ? "rotate-180" : ""}`} />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[260px]">
+                        <DropdownMenuContent align="end" className="w-65">
                             <DropdownMenuLabel className="flex items-center gap-3 px-4 py-3 pb-3 inset-0">
                                 <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 overflow-hidden shrink-0">
                                     <UserAvatar
