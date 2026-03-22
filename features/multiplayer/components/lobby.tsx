@@ -217,7 +217,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                 <p className="text-text-dim text-sm hidden sm:block">Join an active arena or host your own.</p>
 
                 <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
-                    <div className="relative w-full sm:w-[240px] flex items-stretch">
+                    <div className="relative w-full sm:w-60 flex items-stretch">
                         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-dim" />
                         <input
                             type="text"
@@ -257,7 +257,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                     <div className="col-span-2 text-right">Action</div>
                 </div>
 
-                <div className="flex flex-col gap-3 max-h-[500px] sm:max-h-[750px] overflow-y-auto pr-2 
+                <div className="flex flex-col gap-3 max-h-125 sm:max-h-187.5 overflow-y-auto pr-2 
                     [&::-webkit-scrollbar]:w-2 
                     [&::-webkit-scrollbar-track]:bg-transparent 
                     [&::-webkit-scrollbar-thumb]:bg-white/10 
@@ -343,7 +343,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                 </div>
                                 <div className="text-center space-y-1.5 px-6">
                                     <h3 className="text-xl font-display font-bold text-foreground">No active arenas</h3>
-                                    <p className="text-sm text-text-dim max-w-[280px] leading-relaxed">
+                                    <p className="text-sm text-text-dim max-w-70 leading-relaxed">
                                         There is no room available for now. Be the first to host an arena and invite others to a typing battle!
                                     </p>
                                 </div>
@@ -378,7 +378,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 15 }}
                             transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                            className="w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-[24px] shadow-2xl p-6 relative overflow-hidden flex flex-col max-h-[85vh] overflow-y-auto hide-scrollbar"
+                            className="w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-3xl shadow-2xl p-6 relative overflow-hidden flex flex-col max-h-[85vh] overflow-y-auto hide-scrollbar"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2 className="text-2xl font-display font-bold text-foreground flex items-center gap-3 mb-2">
@@ -409,7 +409,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                                     <ChevronDown size={14} className="opacity-50 text-text-dim" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[180px] rounded-xl border-white/10 p-1">
+                                            <DropdownMenuContent className="w-45 rounded-xl border-white/10 p-1">
                                                 <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateLang("English")}>English</DropdownMenuItem>
                                                 <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateLang("Bahasa Indonesia")}>Bahasa Indonesia</DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -424,7 +424,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                                     <ChevronDown size={14} className="opacity-50 text-text-dim" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[180px] rounded-xl border-white/10 p-1">
+                                            <DropdownMenuContent className="w-45 rounded-xl border-white/10 p-1">
                                                 <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateMode("Time (60s)")}>Time (60s)</DropdownMenuItem>
                                                 <DropdownMenuItem className="cursor-pointer rounded-lg px-4 py-2 hover:bg-accent/20 focus:bg-accent/20 transition-colors" onClick={() => setCreateMode("Words (50)")}>Words (50)</DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -448,7 +448,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                         type="button"
                                         className="w-10 h-5 bg-white/10 rounded-full relative cursor-pointer border border-white/5"
                                     >
-                                        <div className={`absolute top-[2px] w-4 h-4 rounded-full transition-all shadow-md ${isPrivate ? "left-[20px] bg-accent" : "left-[2px] bg-text-dim"}`} />
+                                        <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-md ${isPrivate ? "left-5 bg-accent" : "left-0.5 bg-text-dim"}`} />
                                     </button>
                                 </div>
 

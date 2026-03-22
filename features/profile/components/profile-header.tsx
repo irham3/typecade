@@ -44,7 +44,7 @@ export function ProfileHeader({ user, displayName, memberSince, stats, setPrevie
         >
 
             {/* Avatar */}
-            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full p-[2px] shrink-0 relative group">
+            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full p-0.5 shrink-0 relative group">
                 <div className="absolute inset-0 rounded-full bg-linear-to-tr from-accent/40 to-accent-secondary/30 blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

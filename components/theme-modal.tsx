@@ -74,7 +74,7 @@ export function ThemeModal() {
                                             key={t.id}
                                             onClick={() => setTheme(t.id)}
                                             className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-300 group relative overflow-hidden ${theme === t.id
-                                                ? 'border-accent bg-accent/10 ring-2 ring-accent/20 translate-y-[-2px]'
+                                                ? 'border-accent bg-accent/10 ring-2 ring-accent/20 -translate-y-0.5'
                                                 : 'border-foreground/10 bg-foreground/5 hover:border-foreground/20 hover:bg-foreground/8'
                                                 }`}
                                         >

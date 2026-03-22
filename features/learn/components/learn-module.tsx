@@ -82,7 +82,7 @@ export function LearnModule() {
             <div className="w-full grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 sm:gap-8 items-start">
 
                 {/* Left: Path/Curriculum Tree */}
-                <div className="w-full lg:h-[calc(100vh-260px)] lg:min-h-[500px] lg:py-4 flex flex-col order-2 lg:order-1 relative">
+                <div className="w-full lg:h-[calc(100vh-260px)] lg:min-h-125 lg:py-4 flex flex-col order-2 lg:order-1 relative">
                     <div
                         ref={scrollRef}
                         onScroll={checkScroll}
@@ -124,7 +124,7 @@ export function LearnModule() {
                                                 >
                                                     <div className="flex flex-col gap-1 relative pl-6">
                                                         {/* Path line connected dots */}
-                                                        <div className="absolute left-[13px] top-0 bottom-12 w-[2px] bg-white/10" />
+                                                        <div className="absolute left-3.25 top-0 bottom-12 w-0.5 bg-white/10" />
 
                                                         {module.lessons.map((lesson) => {
                                                             const lessonStat = isMounted ? getLessonStat(lesson.id) : null;
@@ -141,7 +141,7 @@ export function LearnModule() {
                                                                     className={`relative group flex flex-col p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-colors border border-transparent ${isSelected ? 'bg-white/5 border-white/10' : ''}`}
                                                                 >
                                                                     {/* Dot */}
-                                                                    <div className={`absolute -left-[19px] top-[1.6rem] w-3 h-3 rounded-full border-2 z-10 transition-colors ${stat.progress === 100 ? 'bg-accent border-accent' :
+                                                                    <div className={`absolute -left-4.75 top-[1.6rem] w-3 h-3 rounded-full border-2 z-10 transition-colors ${stat.progress === 100 ? 'bg-accent border-accent' :
                                                                         stat.progress > 0 ? 'bg-background border-accent' :
                                                                             'bg-[#0F0F0F] border-white/20 group-hover:border-white/40'
                                                                         }`} />
@@ -187,7 +187,7 @@ export function LearnModule() {
                 </div>
 
                 {/* Right: Mock Lesson Viewer */}
-                <div className="w-full bg-panel-bg rounded-3xl border border-border-dim p-5 sm:p-8 flex flex-col justify-between shadow-sm order-1 lg:order-2 overflow-hidden lg:h-[calc(100vh-280px)] lg:max-h-[600px] lg:min-h-[500px] relative">
+                <div className="w-full bg-panel-bg rounded-3xl border border-border-dim p-5 sm:p-8 flex flex-col justify-between shadow-sm order-1 lg:order-2 overflow-hidden lg:h-[calc(100vh-280px)] lg:max-h-150 lg:min-h-125 relative">
 
                     <div className="absolute top-0 right-0 p-4 sm:p-6">
                         <span className="text-[10px] sm:text-xs font-mono px-3 sm:px-4 py-1 sm:py-1.5 bg-white/5 border border-white/10 rounded-full text-text-dim tracking-wider">LESSON {currentLesson.id}</span>
