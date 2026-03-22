@@ -23,7 +23,7 @@ const listItemVariants = {
     }),
 };
 
-export function LeaderboardView() {
+export function BoardView() {
     const { user, supabaseReady } = useAuth();
     const [filterMode, setFilterMode] = useState<FilterOption>("All Time");
     const [rows, setRows] = useState<Array<{
@@ -62,7 +62,7 @@ export function LeaderboardView() {
             if (!client) return;
             setIsLoading(true);
             const rawClient = client as unknown as Record<string, (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>>;
-            const { data, error } = await rawClient.rpc("get_leaderboard", {
+            const { data, error } = await rawClient.rpc("get_board", {
                 p_mode: queryParams.mode,
                 p_mode_value: queryParams.modeValue,
                 p_since: queryParams.since,

@@ -55,7 +55,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
 
             if (updateAuthError) throw updateAuthError;
 
-            // Update profiles table so it becomes public for leaderboard
+            // Update profiles table so it becomes public for board
             await client.from('profiles')
                 .upsert({ user_id: user.id, avatar_url: publicUrl, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 
@@ -71,7 +71,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
-        
+
         const client = getSupabaseClient();
         if (!client) return;
 
@@ -87,9 +87,9 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
 
             // Update profiles table
             const { error: profileErr } = await client.from('profiles')
-                .upsert({ 
-                    user_id: user.id, 
-                    display_name: displayName, 
+                .upsert({
+                    user_id: user.id,
+                    display_name: displayName,
                     username: username,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'user_id' });
@@ -118,7 +118,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                 className="absolute inset-0 bg-background/80 backdrop-blur-sm cursor-pointer"
                 onClick={() => setIsOpen(false)}
             />
-            
+
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -141,9 +141,9 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                         <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                             <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-foreground/10 bg-black/20">
                                 {avatarUrl ? (
-                                    <UserAvatar 
-                                        src={avatarUrl} 
-                                        alt="Avatar" 
+                                    <UserAvatar
+                                        src={avatarUrl}
+                                        alt="Avatar"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-accent/20 text-accent font-bold text-3xl">
@@ -151,16 +151,16 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                                     </div>
                                 )}
                             </div>
-                            
+
                             <div className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity">
                                 {isLoading ? <Loader2 className="animate-spin text-white mb-1" size={20} /> : <Camera className="text-white mb-1" size={20} />}
                                 <span className="text-[10px] uppercase font-bold text-white tracking-wider">Change</span>
                             </div>
                         </div>
-                        <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            className="hidden" 
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
                             accept="image/*"
                             onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
@@ -176,7 +176,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                                 {error}
                             </div>
                         )}
-                        
+
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold uppercase tracking-wider text-text-dim">Display Name</label>
                             <input
@@ -201,8 +201,8 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                         </div>
 
                         <div className="pt-4">
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 className="w-full py-6 text-base font-bold rounded-xl"
                                 disabled={isLoading}
                             >

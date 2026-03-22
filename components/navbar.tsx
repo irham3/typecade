@@ -24,7 +24,7 @@ const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
     { path: "/arena", icon: Users, label: "Arena" },
     { path: "/learn", icon: GraduationCap, label: "Learn" },
-    { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
+    { path: "/board", icon: Trophy, label: "Board" },
 ];
 
 export function Navbar() {
@@ -131,10 +131,10 @@ export function Navbar() {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="gap-2 px-2">
                                 <div className="w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 overflow-hidden shrink-0">
-                                    <UserAvatar 
-                                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
-                                        alt={user.email || "Profile"} 
-                                        iconSize={14} 
+                                    <UserAvatar
+                                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                                        alt={user.email || "Profile"}
+                                        iconSize={14}
                                         iconClassName="text-accent"
                                     />
                                 </div>
@@ -144,10 +144,10 @@ export function Navbar() {
                         <DropdownMenuContent align="end" className="w-[260px]">
                             <DropdownMenuLabel className="flex items-center gap-3 px-4 py-3 pb-3 inset-0">
                                 <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 overflow-hidden shrink-0">
-                                    <UserAvatar 
-                                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
-                                        alt={user.email || "Profile"} 
-                                        iconSize={18} 
+                                    <UserAvatar
+                                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                                        alt={user.email || "Profile"}
+                                        iconSize={18}
                                         iconClassName="text-accent"
                                     />
                                 </div>
