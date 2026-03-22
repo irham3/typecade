@@ -167,8 +167,25 @@ export const useStore = create<TypecadeState>()(
         }),
         {
             name: 'typecade-settings',
-            // Only persist settings, not stats (optional, but usually better to separate)
-            // For now let's persist everything since stats are also local
+            partialize: (state) => ({
+                // Only persist user preferences — NOT stats or sensitive data
+                activeTab: state.activeTab,
+                subOption: state.subOption,
+                customWordLimit: state.customWordLimit,
+                customTimeLimit: state.customTimeLimit,
+                customText: state.customText,
+                customShuffle: state.customShuffle,
+                typingStyle: state.typingStyle,
+                theme: state.theme,
+                sound: state.sound,
+                bgm: state.bgm,
+                caretStyle: state.caretStyle,
+                fontSize: state.fontSize,
+                language: state.language,
+                punctuation: state.punctuation,
+                numbers: state.numbers,
+                showAnimations: state.showAnimations,
+            }),
         }
     )
 );

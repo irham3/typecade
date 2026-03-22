@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store";
 import { generateQuote, generateWords } from "@/lib/words";
 import { TypingResults } from "./typing-results";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { sanitizeTestResult } from "@/lib/utils/validation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { playTypeSound, playComboSound } from "@/lib/utils/sound";
 import { VirtualKeyboard } from "@/components/virtual-keyboard";
@@ -57,14 +58,15 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         const client = getSupabaseClient();
         if (!client) return false;
         const modeValue = mode === "words" ? limit : duration;
+        const safe = sanitizeTestResult(finalWpm, finalAcc, timeTaken);
         const { error } = await client.from("typing_tests").insert({
             user_id: user.id,
             mode,
             mode_value: modeValue,
             language,
-            wpm: finalWpm,
-            accuracy: finalAcc,
-            duration_seconds: timeTaken,
+            wpm: safe.wpm,
+            accuracy: safe.accuracy,
+            duration_seconds: safe.durationSeconds,
         } as unknown as never);
         if (error) return false;
         const { error: rpcError } = await (client as unknown as { rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }> }).rpc("update_user_stats", { p_user_id: user.id });

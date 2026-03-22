@@ -6,6 +6,7 @@ import { Lock, Mail, ShieldCheck, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { validatePassword, friendlyAuthError } from "@/lib/utils/validation";
 import { useAuth } from "@/lib/auth/auth-context";
 
 interface AuthModalProps {
@@ -88,6 +89,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             setStatus({ tone: "error", message: "Password must be at least 8 characters." });
             return;
         }
+        if (mode === "sign-up") {
+            const pwError = validatePassword(password.trim());
+            if (pwError) {
+                setStatus({ tone: "error", message: pwError });
+                return;
+            }
+        }
         if (mode === "sign-up" && password.trim() !== confirmPassword.trim()) {
             setStatus({ tone: "error", message: "Passwords do not match." });
             return;
@@ -124,7 +132,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 setStatus({ tone: "error", message: "Rate limit exceeded. Try again in a minute." });
                 return;
             }
-            setStatus({ tone: "error", message: error.message });
+            setStatus({ tone: "error", message: friendlyAuthError(error) });
             return;
         }
 

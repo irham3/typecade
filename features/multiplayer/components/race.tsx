@@ -6,6 +6,7 @@ import { generateWords } from "@/lib/words";
 import { RaceResultsModal } from "./race-results-modal";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { sanitizeTestResult } from "@/lib/utils/validation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useLivePlayerSync, type LivePlayerSyncPayload } from "../hooks/use-live-player-sync";
 import { useRoomData } from "../hooks/use-room-data";
@@ -294,14 +295,15 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         if (!supabaseReady || !user) return false;
         const client = getSupabaseClient();
         if (!client) return false;
+        const safe = sanitizeTestResult(finalWpm, finalAcc, timeTaken);
         const { error } = await client.from("typing_tests").insert({
             user_id: user.id,
             mode: raceConfig.mode,
             mode_value: raceConfig.value,
             language: raceConfig.language,
-            wpm: finalWpm,
-            accuracy: finalAcc,
-            duration_seconds: timeTaken,
+            wpm: safe.wpm,
+            accuracy: safe.accuracy,
+            duration_seconds: safe.durationSeconds,
         } as unknown as never);
         if (error) return false;
         const { error: rpcError } = await (client as unknown as {
@@ -351,7 +353,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     };
 
     const handleStartRace = async () => {
-        if (!user || !roomId) return;
+        if (!user || !roomId || hostId !== user.id) return; // Only host can start
         const client = getSupabaseClient();
         if (!client) return;
         await client.from("multiplayer_rooms")

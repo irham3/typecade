@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Shield, Search, ChevronDown, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { sanitizeRoomName, createCooldownGuard } from "@/lib/utils/validation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRoomRegistry } from "../hooks/use-room-registry";
 import {
@@ -24,6 +25,17 @@ type RoomOverview = {
     status: string;
     player_count: number;
 };
+
+// 5-second cooldown between room creations to prevent spam
+const roomCreationGuard = createCooldownGuard(5000);
+
+// Crypto-safe room code generator
+function generateRoomCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 to avoid confusion
+    const arr = new Uint8Array(6);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, (b) => chars[b % chars.length]).join('');
+}
 
 export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void }) {
     const { user, supabaseReady } = useAuth();
@@ -114,17 +126,22 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             setStatus("Sign in to create a room.");
             return;
         }
+        if (!roomCreationGuard.canProceed()) {
+            setStatus(`Please wait ${roomCreationGuard.remainingSeconds()}s before creating another room.`);
+            return;
+        }
         const client = getSupabaseClient();
         if (!client) return;
         setIsLoading(true);
         setStatus("");
         const displayName = await resolveDisplayName();
-        const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const code = generateRoomCode();
+        const safeName = sanitizeRoomName(roomName) || "New Room";
         const { data: room, error } = await client
             .from("multiplayer_rooms")
             .insert({
                 code,
-                name: roomName.trim() || "New Room",
+                name: safeName,
                 host_user_id: user.id,
                 language: createRoomPayload.language,
                 mode: createRoomPayload.mode,
@@ -139,7 +156,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         const roomRow = (room ?? null) as { id: string, code: string } | null;
         if (error || !roomRow) {
             setIsLoading(false);
-            setStatus(error?.message ?? "Failed to create room.");
+            setStatus("Failed to create room. Please try again.");
             return;
         }
 
@@ -157,7 +174,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
 
         setIsLoading(false);
         if (joinError) {
-            setStatus(joinError.message);
+            setStatus("Failed to join room. Please try again.");
             return;
         }
         onJoin(roomRow.code);

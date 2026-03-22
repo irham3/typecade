@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { validatePassword, friendlyAuthError } from "@/lib/utils/validation";
 import { useAuth } from "@/lib/auth/auth-context";
 
 type StatusState = {
@@ -73,6 +74,13 @@ export function AuthClient() {
             setStatus({ tone: "error", message: "Password must be at least 8 characters." });
             return;
         }
+        if (mode === "sign-up") {
+            const pwError = validatePassword(password.trim());
+            if (pwError) {
+                setStatus({ tone: "error", message: pwError });
+                return;
+            }
+        }
         if (mode === "sign-up" && password.trim() !== confirmPassword.trim()) {
             setStatus({ tone: "error", message: "Passwords do not match." });
             return;
@@ -112,7 +120,7 @@ export function AuthClient() {
                 setStatus({ tone: "error", message: "Email rate limit exceeded. Please wait 60s before retrying." });
                 return;
             }
-            setStatus({ tone: "error", message: error.message });
+            setStatus({ tone: "error", message: friendlyAuthError(error) });
             return;
         }
 

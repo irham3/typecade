@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { X, Camera, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { validateDisplayName, validateAvatarFile } from "@/lib/utils/validation";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -28,12 +29,21 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
         const client = getSupabaseClient();
         if (!client) return;
 
+        // Validate file type and size before upload
+        const fileError = validateAvatarFile(file);
+        if (fileError) {
+            setError(fileError);
+            return;
+        }
+
         try {
             setIsLoading(true);
             setError(null);
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            // Force safe file extension from MIME type, not user-supplied name
+            const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+            const safeExt = extMap[file.type] || 'jpg';
+            const fileName = `${user.id}-${Date.now()}.${safeExt}`;
             const filePath = `avatars/${fileName}`;
 
             // Upload image to Supabase Storage
@@ -79,9 +89,15 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
             setIsLoading(true);
             setError(null);
 
+            // Validate display name and username
+            const nameError = validateDisplayName(displayName);
+            if (nameError) { setError(nameError); setIsLoading(false); return; }
+            const usernameError = validateDisplayName(username);
+            if (usernameError) { setError(`Username: ${usernameError}`); setIsLoading(false); return; }
+
             // Update profile metadata in auth
             const { error: authErr } = await client.auth.updateUser({
-                data: { username: username, display_name: displayName }
+                data: { username: username.trim(), display_name: displayName.trim() }
             });
             if (authErr) throw authErr;
 
