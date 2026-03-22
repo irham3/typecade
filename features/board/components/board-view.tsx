@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Trophy, Medal, Crown, Flame } from "@/components/icons";
+import { Trophy, Crown, Flame } from "@/components/icons";
 import { motion } from "framer-motion";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CountUp } from "@/components/ui/count-up";
@@ -98,8 +98,8 @@ export function BoardView() {
 
     const getRankIcon = (rank: number) => {
         if (rank === 1) return <Crown size={18} className="text-gold drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />;
-        if (rank === 2) return <Medal size={18} className="text-silver" />;
-        if (rank === 3) return <Medal size={18} className="text-bronze" />;
+        if (rank === 2) return <Trophy size={16} className="text-silver drop-shadow-[0_0_8px_rgba(148,163,184,0.3)]" />;
+        if (rank === 3) return <Trophy size={16} className="text-bronze drop-shadow-[0_0_8px_rgba(205,127,50,0.3)]" />;
         return null;
     };
 
