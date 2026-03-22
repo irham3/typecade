@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Palette, Settings } from "lucide-react";
+import { Palette, Settings, Info } from "lucide-react";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { GlobalSettingsModal } from "./global-settings-modal";
 
@@ -22,6 +23,20 @@ export function Footer() {
             </div> */}
 
             <div className="flex items-center gap-2">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="gap-1.5 text-[10px] tracking-widest uppercase font-bold hover:text-accent transition-colors"
+                >
+                    <Link href="/about">
+                        <Info size={12} className="opacity-70" />
+                        About
+                    </Link>
+                </Button>
+
+                <div className="h-4 w-px bg-foreground/10 hidden sm:block mx-1" />
+
                 <Button
                     variant="ghost"
                     size="sm"

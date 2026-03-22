@@ -3,12 +3,12 @@ import { Suspense } from 'react';
 import { RaceClient } from './client';
 
 export const metadata: Metadata = {
-    title: 'Active Race | Typecade',
-    description: 'Join the race and compete in real-time. Hit every key with precision and outpace opponents in the Typecade multiplayer arena.',
-    keywords: ['live typing game', 'typecade race', 'competitive typing', 'real-time typing', 'wpm match'],
+    title: 'Live Typing Race & WPM Speed Test - Typecade',
+    description: 'Jump straight into a live typing speed test. Compete in real-time keyboard match-ups with instant WPM, accuracy stats, and uncorrected errors tracking.',
+    keywords: ['live typing game', 'typing race test', 'competitive typing', 'real-time typing', 'wpm match', 'fastest typing test'],
     openGraph: {
-        title: 'Active Race | Typecade',
-        description: 'Compete in a real-time typing race.',
+        title: 'Live Typing Race & WPM Speed Test - Typecade',
+        description: 'Compete in a real-time typing race and track your WPM speed instantly.',
         type: 'website',
         images: [
             {
@@ -44,6 +44,7 @@ export default function RacePage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
+            <h1 className="sr-only">Typecade Race: Competitive Live Match</h1>
             <Suspense fallback={<div className="w-full min-h-screen flex items-center justify-center text-text-dim">Loading race...</div>}>
                 <RaceClient />
             </Suspense>

@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import { MultiplayerClient } from './client';
 
 export const metadata: Metadata = {
-    title: 'Arena | Typecade',
-    description: 'Compete against other typists in real-time typing battles. Create or join an arena and prove your speed.',
-    keywords: ['typing arena', 'typing race', 'competitive typing', 'typecade arena', 'type against others'],
+    title: 'Multiplayer Typing Test Arena - Typecade',
+    description: 'Create a custom typing race or join an open multiplayer arena. Test your WPM speed live against friends and typists from around the world.',
+    keywords: ['typing arena', 'typing race', 'competitive typing', 'multiplayer typing test', 'type against friends'],
     openGraph: {
-        title: 'Arena | Typecade',
-        description: 'Compete against other typists in real-time typing battles.',
+        title: 'Multiplayer Typing Test Arena - Typecade',
+        description: 'Test your WPM speed live against friends and typists from around the world in a real-time multiplayer typing test.',
         type: 'website',
         images: [
             {
@@ -43,6 +43,7 @@ export default function MultiplayerPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
+            <h1 className="sr-only">Typecade Arena: Real-Time Multiplayer Typing Races</h1>
             <MultiplayerClient />
         </>
     );

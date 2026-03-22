@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/board',
         '/arena',
         '/auth',
+        '/about',
     ].map((route) => ({
         url: `${baseUrl}${route}`,
         lastModified: new Date(),
@@ -22,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const dynamicRoutes: MetadataRoute.Sitemap = LEARN_MODULES.flatMap((module) =>
         module.lessons.map((lesson) => ({
-            url: `${baseUrl}/learn/${module.id}/${lesson.id}`,
+            url: `${baseUrl}/learn/${module.slug}/${lesson.slug}`,
             lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: 0.6,

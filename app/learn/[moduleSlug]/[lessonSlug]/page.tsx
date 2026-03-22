@@ -80,6 +80,16 @@ export default async function LessonPage({ params }: { params: Promise<{ moduleS
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
+            
+            {/* Pure Server-Side Rendered SEO Block for Cloudflare Pages Statically Exported HTML */}
+            <div className="sr-only">
+                <h1>{result.lesson.title} - {result.module.title} | Touch Typing Practice</h1>
+                <h2>Typing Lesson Instructions:</h2>
+                <p>{result.lesson.instruction}</p>
+                <h3>Practice Text Sample:</h3>
+                <p>{result.lesson.text}</p>
+            </div>
+
             <PracticeClient
                 lesson={result.lesson}
                 moduleSlug={moduleSlug}

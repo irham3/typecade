@@ -29,16 +29,16 @@ export const viewport: Viewport = {
   maximumScale: 5, // Accessibility friendly
 };
 
-export const siteDescription = "Typecade is a free typing speed test and touch typing trainer. Practice solo, race friends in real-time multiplayer arenas, or follow a structured course from home row basics to 100+ WPM.";
+export const siteDescription = "Free multiplayer typing test with real-time races, leaderboards, and detailed WPM stats. Challenge friends or race strangers.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://typecade.com"),
-  title: "Typecade | Type faster. Think clearer.",
+  title: "Typecade | Free Typing Speed Test & WPM Tracker",
   description: siteDescription,
   applicationName: "Typecade",
   authors: [{ name: "Typecade Team", url: "https://typecade.com" }],
   generator: "Next.js",
-  keywords: ["typing", "typecade", "typing speed", "typing test", "wpm", "typing game", "touch typing", "keyboard mastery", "learn typing"],
+  keywords: ["typing test", "typecade", "typing speed test", "wpm test", "typing game", "touch typing", "keyboard mastery", "multiplayer typing"],
   referrer: "origin-when-cross-origin",
   alternates: {
     canonical: "/",
