@@ -62,7 +62,7 @@ export function BoardView() {
             if (!client) return;
             setIsLoading(true);
             const rawClient = client as unknown as Record<string, (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>>;
-            const { data, error } = await rawClient.rpc("get_board", {
+            const { data, error } = await rawClient.rpc("get_leaderboard", {
                 p_mode: queryParams.mode,
                 p_mode_value: queryParams.modeValue,
                 p_since: queryParams.since,
