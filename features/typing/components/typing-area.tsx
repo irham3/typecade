@@ -546,7 +546,8 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
 
                             <div className={`w-full relative transition-all duration-700 rounded-3xl ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border border-accent/20 bg-background/30 p-2 sm:p-4" : ""}`}>
                                 <div
-                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-text select-none text-text-dim/80"
+                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/80"
+                                    onContextMenu={(e) => e.preventDefault()}
                                 >
                                 <div
                                     ref={textContainerRef}

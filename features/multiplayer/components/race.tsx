@@ -603,7 +603,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                 <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-accent to-transparent opacity-50" />
                 <input
                     autoFocus
-                    className="absolute inset-0 opacity-0 z-50 cursor-text"
+                    className="absolute inset-0 opacity-0 z-50 cursor-default"
                     value={typedChars}
                     onChange={handleInput}
                     onPaste={(e) => e.preventDefault()}
@@ -619,7 +619,8 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     autoComplete="off"
                 />
                 <div
-                    className="h-[3.8em] overflow-hidden relative z-10 w-full rounded-xl font-mono text-3xl sm:text-[2.2rem] leading-[1.65] tracking-tight"
+                    className="h-[3.8em] overflow-hidden relative z-10 w-full rounded-xl font-mono text-3xl sm:text-[2.2rem] leading-[1.65] tracking-tight select-none"
+                    onContextMenu={(e) => e.preventDefault()}
                     style={{
                         maskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
                         WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",

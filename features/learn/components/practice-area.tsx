@@ -346,8 +346,9 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
 
                             {/* Text Area */}
                             <div 
-                                className="bg-[#0A0A0A] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 mb-4 sm:mb-6 font-mono text-lg sm:text-2xl md:text-3xl leading-relaxed tracking-tight relative cursor-text group"
+                                className="bg-[#0A0A0A] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 mb-4 sm:mb-6 font-mono text-lg sm:text-2xl md:text-3xl leading-relaxed tracking-tight relative cursor-default group select-none"
                                 onClick={focusInput}
+                                onContextMenu={(e) => e.preventDefault()}
                             >
                                 <div
                                     ref={textContainerRef}
