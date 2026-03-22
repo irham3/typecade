@@ -365,9 +365,10 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
                             <div className={`w-full relative transition-all duration-700 glass border border-foreground/5 rounded-3xl p-4 sm:p-6 shadow-lg mb-6 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border-accent/20 bg-background/30" : ""}`}>
                                 <div
-                                className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none"
-                                style={{ lineHeight: 1.8 }}
-                            >
+                                    className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none cursor-default"
+                                    onContextMenu={(e) => e.preventDefault()}
+                                    style={{ lineHeight: 1.8 }}
+                                >
                                 <div
                                     className="overflow-hidden relative w-full"
                                     style={{ height: "3.6em" }} // Exactly 2 lines (2 * 1.8em)
