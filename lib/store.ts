@@ -72,6 +72,8 @@ interface TypecadeState {
     setShowAnimations: (val: boolean) => void;
     setIsTyping: (val: boolean) => void;
     setAuthModalOpen: (val: boolean) => void;
+    showUI: boolean;
+    setShowUI: (val: boolean) => void;
     addTestResult: (result: { wpm: number; accuracy: number; duration: number; mode: string }) => void;
 }
 
@@ -140,6 +142,8 @@ export const useStore = create<TypecadeState>()(
             setShowAnimations: (showAnimations) => set({ showAnimations }),
             setIsTyping: (isTyping) => set({ isTyping }),
             setAuthModalOpen: (authModalOpen) => set({ authModalOpen }),
+            showUI: true,
+            setShowUI: (showUI) => set({ showUI }),
             addTestResult: (result) => set((state) => {
                 const newHistory = [
                     {

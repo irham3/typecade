@@ -69,13 +69,16 @@ export function HomeClient() {
     const setNumbers = useStore(state => state.setNumbers);
     const typingStyle = useStore(state => state.typingStyle);
     const setTypingStyle = useStore(state => state.setTypingStyle);
+    const isTyping = useStore(state => state.isTyping);
+    const showUI = useStore(state => state.showUI);
+    const hideUI = isTyping && !showUI;
 
 
     return (
         <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start sm:justify-center pt-2 sm:pt-0 pb-4 lg:pb-16 relative">
 
             {/* ── Settings Trigger Button (Mobile & Tablet) ── */}
-            <div className="flex lg:hidden items-center justify-center mb-6 w-full z-10 relative">
+            <div className={`flex lg:hidden items-center justify-center mb-6 w-full z-10 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-5' : 'opacity-100 translate-y-0'}`}>
                 <Button
                     variant="ghost"
                     className="flex items-center gap-3 rounded-2xl px-5 py-6 shadow-lg shadow-black/20 hover:shadow-accent/10 transition-all border border-foreground/5 glass group text-base"
@@ -119,7 +122,10 @@ export function HomeClient() {
             </div>
 
             {/* ── Settings Bar (Desktop only) ── */}
-            <motion.div layout className="hidden lg:flex items-center justify-center gap-2 mb-10 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full z-10 relative">
+            <motion.div 
+                layout 
+                className={`hidden lg:flex items-center justify-center gap-2 mb-10 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full z-10 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-5' : 'opacity-100 translate-y-0'}`}
+            >
                 <motion.div layout>
                     <SegmentedControl
                         options={[...modeOptions]}

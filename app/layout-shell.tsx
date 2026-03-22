@@ -20,9 +20,48 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     const authModalOpen = useStore(state => state.authModalOpen);
     const setAuthModalOpen = useStore(state => state.setAuthModalOpen);
 
+    const showUI = useStore(state => state.showUI);
+    const setShowUI = useStore(state => state.setShowUI);
+    const isTyping = useStore(state => state.isTyping);
+
     useEffect(() => {
         document.documentElement.setAttribute("data-theme", theme);
     }, [theme]);
+
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+
+        const handleMouseMove = () => {
+            if (!showUI) setShowUI(true);
+            
+            clearTimeout(timeout);
+            if (isTyping) {
+                timeout = setTimeout(() => {
+                    setShowUI(false);
+                }, 2000); // 2 seconds of inactivity to hide UI again
+            }
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        // Also show on mouse down
+        window.addEventListener("mousedown", handleMouseMove);
+        
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mousedown", handleMouseMove);
+            clearTimeout(timeout);
+        };
+    }, [isTyping, showUI, setShowUI]);
+
+    // Reset showUI when typing starts/stops
+    useEffect(() => {
+        if (!isTyping) {
+            setShowUI(true);
+        } else {
+            // When typing starts, hide UI immediately
+            setShowUI(false);
+        }
+    }, [isTyping, setShowUI]);
 
     // Full-screen immersive mode for lesson practice pages (e.g. /learn/home-row/intro-f-and-j)
     const isLessonPage = /^\/learn\/[^/]+\/[^/]+$/.test(pathname);

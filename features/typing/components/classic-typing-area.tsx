@@ -399,6 +399,14 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                 onChange={handleInput}
                                 onFocus={() => setIsFocused(true)}
                                 onBlur={() => setIsFocused(false)}
+                                onPaste={(e) => e.preventDefault()}
+                                onCopy={(e) => e.preventDefault()}
+                                onCut={(e) => e.preventDefault()}
+                                onKeyDown={(e) => {
+                                    // Allow Ctrl/Cmd + R (Reload)
+                                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
+                                    if (e.ctrlKey || e.metaKey) e.preventDefault();
+                                }}
                                 autoFocus
                                 autoComplete="off"
                                 spellCheck="false"

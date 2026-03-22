@@ -606,6 +606,14 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     className="absolute inset-0 opacity-0 z-50 cursor-text"
                     value={typedChars}
                     onChange={handleInput}
+                    onPaste={(e) => e.preventDefault()}
+                    onCopy={(e) => e.preventDefault()}
+                    onCut={(e) => e.preventDefault()}
+                    onKeyDown={(e) => {
+                        // Allow Ctrl/Cmd + R (Reload)
+                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
+                        if (e.ctrlKey || e.metaKey) e.preventDefault();
+                    }}
                     disabled={raceState !== "racing"}
                     spellCheck="false"
                     autoComplete="off"

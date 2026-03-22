@@ -41,6 +41,8 @@ export function Navbar() {
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
     const isTyping = useStore(state => state.isTyping);
+    const showUI = useStore(state => state.showUI);
+    const hideUI = isTyping && !showUI;
 
     useEffect(() => {
         const nav = navRef.current;
@@ -66,7 +68,7 @@ export function Navbar() {
 
     return (
         <>
-        <header className={`w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between z-20 relative transition-all duration-500 ease-out ${isTyping ? 'opacity-0 pointer-events-none -translate-y-10' : 'opacity-100 translate-y-0'}`}>
+        <header className={`w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between z-20 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-10' : 'opacity-100 translate-y-0'}`}>
             {/* Logo */}
             <div className="flex flex-1 items-center justify-start">
                 <Link href="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0">

@@ -329,6 +329,14 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                                 type="text"
                                 value={typedChars}
                                 onChange={handleInput}
+                                onPaste={(e) => e.preventDefault()}
+                                onCopy={(e) => e.preventDefault()}
+                                onCut={(e) => e.preventDefault()}
+                                onKeyDown={(e) => {
+                                    // Allow Ctrl/Cmd + R (Reload)
+                                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
+                                    if (e.ctrlKey || e.metaKey) e.preventDefault();
+                                }}
                                 className="absolute opacity-0 -top-[100px]"
                                 autoCorrect="off"
                                 autoCapitalize="off"
