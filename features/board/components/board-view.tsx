@@ -141,7 +141,7 @@ export function BoardView() {
                 </div>
 
                 {/* Body table (SCROLLABLE) */}
-                <div className="max-h-[500px] sm:max-h-[750px] overflow-y-auto pr-1 sm:pr-2 
+                <div className="max-h-125 sm:max-h-187.5 overflow-y-auto pr-1 sm:pr-2 
                     [&::-webkit-scrollbar]:w-2 
                     [&::-webkit-scrollbar-track]:bg-transparent 
                     [&::-webkit-scrollbar-thumb]:bg-foreground/10 
@@ -185,7 +185,7 @@ export function BoardView() {
                                             />
                                         </div>
                                         <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                                            <span className="truncate max-w-[90px] sm:max-w-[200px]">{item.user}</span>
+                                            <span className="truncate max-w-22.5 sm:max-w-50">{item.user}</span>
                                             {item.isCurrentUser && (
                                                 <span className="text-[10px] uppercase font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">You</span>
                                             )}
