@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Shield, Search, ChevronDown, Gamepad2 } from "lucide-react";
+import { Plus, Shield, Search, ChevronDown, Gamepad2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -334,10 +334,8 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="flex flex-col items-center justify-center py-20 sm:py-32 border border-dashed border-white/5 rounded-[32px] text-text-dim bg-panel-bg/10 mt-2 group relative overflow-hidden"
+                            className="flex flex-col items-center justify-center py-20 sm:py-32 border border-dashed border-border-dim rounded-3xl text-text-dim bg-panel-bg mt-2 group relative overflow-hidden"
                         >
-                            {/* Subtle background glow */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent/5 blur-[100px] pointer-events-none" />
 
                             <div className="relative flex flex-col items-center gap-5">
                                 <div className="p-5 bg-white/5 rounded-3xl border border-white/5 text-accent/50 group-hover:text-accent/80 group-hover:scale-110 transition-all duration-700">

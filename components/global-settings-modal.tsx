@@ -2,7 +2,7 @@
 
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { X, ChevronDown } from "lucide-react";
+import { X, ChevronDown } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ShieldCheck, X } from "lucide-react";
+import { Lock, Mail, ShieldCheck, X } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -162,7 +162,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
-                        className="w-full max-w-md bg-panel-bg border border-foreground/10 rounded-3xl p-8 shadow-2xl relative z-10 glass glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
+                        className="w-full max-w-md bg-panel-bg border border-border-dim rounded-3xl p-8 shadow-sm relative z-10 max-h-[85vh] overflow-y-auto hide-scrollbar"
                     >
                         <button
                             onClick={onClose}

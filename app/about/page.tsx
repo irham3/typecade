@@ -120,8 +120,7 @@ export default function AboutPage() {
                         </div>
                     </div>
                     <div className="relative group">
-                        <div className="absolute -inset-4 bg-accent/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                        <div className="relative p-8 rounded-3xl bg-background border border-foreground/10 shadow-2xl overflow-hidden glass">
+                        <div className="relative p-8 rounded-3xl bg-panel-bg border border-border-dim shadow-sm overflow-hidden">
                             <h3 className="text-xl font-bold text-foreground mb-4 font-mono tracking-tight">Accuracy vs Speed</h3>
                             <p className="text-sm text-text-dim mb-6 leading-relaxed">
                                 Our engine prioritizes accuracy above all. In our scoring algorithm, uncorrected errors are penalized. We recommend typists aim for near-perfect accuracy before attempting to break the 100 WPM barrier.
@@ -186,8 +185,7 @@ export default function AboutPage() {
                 </section>
 
                 {/* Typing Philosophy */}
-                <section className="p-8 md:p-16 rounded-[40px] bg-accent/5 border border-accent/10 relative overflow-hidden mb-32">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 blur-[100px] pointer-events-none" />
+                <section className="p-8 md:p-16 rounded-3xl bg-panel-elevated border border-border-dim relative overflow-hidden mb-32">
                     <div className="max-w-3xl relative z-10 space-y-8">
                         <h2 className="text-3xl font-black text-foreground font-display tracking-tight leading-tight">
                             &quot;The keyboard is the primary interface between <br /> the human mind and the digital world.&quot;
@@ -204,11 +202,8 @@ export default function AboutPage() {
                 </section>
 
                 {/* Final CTA Card */}
-                <section className="relative p-1 px-1 group">
-                    <div className="absolute inset-0 bg-accent/20 blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-500 rounded-[32px] pointer-events-none" />
-                    <div className="bg-background relative border border-foreground/10 rounded-[32px] p-8 md:p-16 text-center space-y-10 glass shadow-2xl glow-accent overflow-hidden">
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-px bg-linear-to-r from-transparent via-accent/50 to-transparent" />
-
+                <section className="w-full">
+                    <div className="bg-panel-bg border border-border-dim rounded-3xl p-8 md:p-16 text-center space-y-10 shadow-sm overflow-hidden">
                         <div className="space-y-4 relative z-10">
                             <h2 className="text-3xl md:text-5xl font-black text-foreground font-display tracking-tighter uppercase italic">
                                 Ready to scale your speed?
@@ -223,7 +218,7 @@ export default function AboutPage() {
                                 variant="primary"
                                 size="lg"
                                 asChild
-                                className="w-full sm:w-auto px-8 h-16 text-lg font-bold rounded-2xl shadow-[0_0_32px_rgba(var(--accent-rgb),0.4)] hover:shadow-[0_0_50px_rgba(var(--accent-rgb),0.6)] hover:scale-105 transition-all active:scale-95"
+                                className="w-full sm:w-auto px-8 h-16 text-lg font-bold rounded-2xl shadow-sm transition-all active:scale-95"
                             >
                                 <Link href="/" className="flex items-center gap-3">
                                     <Keyboard size={20} fill="currentColor" />

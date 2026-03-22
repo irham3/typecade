@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Pixelify_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { LayoutShell } from "./layout-shell";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const displayFont = Pixelify_Sans({
+  weight: "400",
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
-const inter = Inter({
+const sansFont = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
@@ -113,7 +114,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground`}>
+      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground`}>
         <AuthProvider>
           <LayoutShell>{children}</LayoutShell>
         </AuthProvider>

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { User } from "lucide-react";
+import { User } from "@/components/icons";
 import { createPortal } from "react-dom";
 
 interface UserAvatarProps {

@@ -30,16 +30,26 @@ export function SegmentedControl<T extends string>({
         const container = containerRef.current;
         if (!container) return;
 
-        const activeIndex = options.indexOf(value);
-        const buttons = container.querySelectorAll<HTMLButtonElement>("[data-segment-btn]");
-        const activeBtn = buttons[activeIndex];
+        const updateIndicator = () => {
+            const activeIndex = options.indexOf(value);
+            const buttons = container.querySelectorAll<HTMLButtonElement>("[data-segment-btn]");
+            const activeBtn = buttons[activeIndex];
 
-        if (activeBtn) {
-            setIndicatorStyle({
-                left: activeBtn.offsetLeft,
-                width: activeBtn.offsetWidth,
-            });
-        }
+            if (activeBtn) {
+                setIndicatorStyle({
+                    left: activeBtn.offsetLeft,
+                    width: activeBtn.offsetWidth,
+                });
+            }
+        };
+
+        updateIndicator();
+
+        const observer = new ResizeObserver(() => updateIndicator());
+        const buttons = container.querySelectorAll<HTMLButtonElement>("[data-segment-btn]");
+        buttons.forEach((btn) => observer.observe(btn));
+
+        return () => observer.disconnect();
     }, [value, options]);
 
     return (
@@ -77,7 +87,7 @@ export function SegmentedControl<T extends string>({
                         data-segment-btn
                         onClick={() => onChange(option)}
                         className={cn(
-                            "relative z-10 font-medium transition-colors duration-200 cursor-pointer select-none whitespace-nowrap",
+                            "relative z-10 font-medium transition-colors duration-200 cursor-pointer select-none whitespace-nowrap inline-flex items-center justify-center",
                             size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
                             isActive
                                 ? variant === "gradient"

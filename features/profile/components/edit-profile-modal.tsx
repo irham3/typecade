@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { X, Camera, Loader2 } from "lucide-react";
+import { X, Camera, Loader2 } from "@/components/icons";
 import { motion } from "framer-motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";

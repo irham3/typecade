@@ -1,4 +1,4 @@
-import { Trophy, Home, RotateCcw, X } from "lucide-react";
+import { Trophy, Home, RotateCcw, X } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 

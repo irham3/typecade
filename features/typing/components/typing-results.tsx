@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
-import { Target, Clock, Type, RotateCcw, ArrowRight, Download, Twitter, Send } from 'lucide-react';
+import { RotateCcw, ArrowRight, Download, Twitter, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import confetti from 'canvas-confetti';
 import * as htmlToImage from 'html-to-image';
@@ -98,12 +98,12 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
     };
 
     const handleTwitterShare = () => {
-        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on @typecade! 🚀\n\nCan you beat my score? Try it now: https://typecade.com`;
+        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on @typecade! \n\nCan you beat my score? Try it now: https://typecade.com`;
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
     };
 
     const handleWhatsAppShare = () => {
-        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on Typecade! 🚀\nCan you beat my score? https://typecade.com`;
+        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on Typecade! \nCan you beat my score? https://typecade.com`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     };
 
@@ -118,9 +118,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
             {/* The wrapper that will be captured as an OG Image — Uses css variables for colors */}
             <div ref={cardRef} className="w-full max-w-2xl bg-background flex flex-col items-center border border-foreground/5 rounded-3xl p-6 sm:p-10 relative overflow-hidden glass-strong">
 
-                {/* Visual Flair Background */}
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/10 rounded-full blur-[80px] pointer-events-none" />
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-accent/5 rounded-full blur-[80px] pointer-events-none" />
+                {/* Visual Flair Background Removed For Professional Look */}
 
                 {/* Badge for Personal Best */}
                 <AnimatePresence>
@@ -130,7 +128,7 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             className="absolute top-6 right-6 bg-accent text-background text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_15px_rgba(94,234,212,0.5)]"
                         >
-                            New Personal Best! ✨
+                            New Personal Best!
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -169,7 +167,6 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                     <motion.div
                         className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-4 px-2"
                     >
-                        <Target size={14} className="text-accent mb-2 opacity-60" />
                         <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Accuracy</span>
                         <span className="text-xl sm:text-2xl font-mono font-bold text-foreground">
                             <span style={{ display: isCapturing ? 'none' : 'inline' }}>
@@ -181,7 +178,6 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                     <motion.div
                         className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-4 px-2"
                     >
-                        <Clock size={14} className="text-accent mb-2 opacity-60" />
                         <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Time</span>
                         <span className="text-xl sm:text-2xl font-mono font-bold text-foreground">
                             {mode === "time" ? `${limit}s` : `${Math.ceil(typedCharsLength / 5)}s`}
@@ -190,7 +186,6 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                     <motion.div
                         className="glass rounded-xl sm:rounded-2xl flex flex-col items-center py-4 px-2"
                     >
-                        <Type size={14} className="text-accent mb-2 opacity-60" />
                         <span className="text-[10px] text-text-dim uppercase tracking-widest font-mono mb-1">Characters</span>
                         <span className="text-xl sm:text-2xl font-mono font-bold text-foreground">
                             <span style={{ display: isCapturing ? 'none' : 'inline' }}>

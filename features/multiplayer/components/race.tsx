@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { Medal, Copy, Check } from "lucide-react";
+import { Medal, Copy, Check } from "@/components/icons";
 import { generateWords } from "@/lib/words";
 import { RaceResultsModal } from "./race-results-modal";
 import { Button } from "@/components/ui/button";
@@ -457,8 +457,6 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         return (
             <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background overflow-hidden">
                 <div className="absolute inset-0 bg-grid opacity-30" />
-                <div className="absolute top-[20%] right-[10%] w-[30vw] h-[30vw] min-w-[300px] bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-[20%] left-[10%] w-[40vw] h-[40vw] min-w-[400px] bg-accent-secondary/5 rounded-full blur-[120px] pointer-events-none" />
                 <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
                     className="relative z-10 w-full max-w-2xl px-6 flex flex-col items-center"
@@ -535,7 +533,6 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     if (raceState === "countdown") {
         return (
             <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-background overflow-hidden">
-                <div className="absolute inset-0 bg-vignette" />
                 <motion.div
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                     className="absolute top-[25%] text-2xl md:text-3xl font-display font-medium text-text-dim tracking-[0.2em] uppercase"

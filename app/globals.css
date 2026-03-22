@@ -12,6 +12,7 @@
    - All accent colors pass WCAG AA 3:1 on bg for UI elements
    ────────────────────────────────────── */
 
+/* Warm Precision - Default (Slightly warm off-white and cool dark bg) */
 :root {
   --background: #0c0d14;
   --background-rgb: 12, 13, 20;
@@ -28,8 +29,10 @@
   --text-dim-rgb: 133, 135, 148;
   --panel-bg: #111219;
   --panel-bg-rgb: 17, 18, 25;
-  --panel-bg-elevated: #16171f;
-  --border-dim: #1f2029;
+  --panel-elevated: #1a1b26;
+  --panel-elevated-rgb: 26, 27, 38;
+  --border-dim: #222330;
+  --border-dim-rgb: 34, 35, 48;
   --border-accent: rgba(99, 102, 241, 0.12);
   --gold: #f5c542;
   --gold-rgb: 245, 197, 66;
@@ -182,7 +185,7 @@
 
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
-  --font-display: var(--font-space-grotesk);
+  --font-display: var(--font-outfit);
 
   --animate-caret-blink: caret-blink 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   --animate-aurora-1: aurora-drift-1 24s ease-in-out infinite;
@@ -424,96 +427,14 @@ body {
   z-index: 0;
   pointer-events: none;
   background-image: radial-gradient(circle,
-      rgba(var(--accent-rgb), 0.06) 1px,
+      rgba(var(--foreground-rgb), 0.03) 1px,
       transparent 1px);
   background-size: 32px 32px;
-  mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, black 15%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, black 15%, transparent 75%);
 }
 
-/* Aurora ambient blobs */
-.aurora-container {
-  position: relative;
-  overflow: hidden;
-}
-
-.aurora-bg {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.aurora-blob {
-  position: absolute;
-  border-radius: 50%;
-  will-change: transform, opacity;
-}
-
-.aurora-blob-1 {
-  width: 900px;
-  height: 900px;
-  top: -35%;
-  left: -15%;
-  background: radial-gradient(circle,
-      rgba(var(--accent-rgb), 0.3) 0%,
-      rgba(var(--accent-rgb), 0.06) 40%,
-      transparent 70%);
-  filter: blur(100px);
-  animation: aurora-drift-1 24s ease-in-out infinite;
-}
-
-.aurora-blob-2 {
-  width: 700px;
-  height: 700px;
-  bottom: -25%;
-  right: -10%;
-  background: radial-gradient(circle,
-      rgba(var(--accent-secondary-rgb), 0.2) 0%,
-      rgba(var(--accent-secondary-rgb), 0.04) 40%,
-      transparent 70%);
-  filter: blur(120px);
-  animation: aurora-drift-2 30s ease-in-out infinite;
-}
-
-.aurora-blob-3 {
-  width: 550px;
-  height: 550px;
-  top: 45%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: radial-gradient(circle,
-      rgba(var(--accent-rgb), 0.12) 0%,
-      rgba(var(--accent-secondary-rgb), 0.06) 35%,
-      transparent 65%);
-  filter: blur(140px);
-  animation: aurora-drift-3 36s ease-in-out infinite;
-}
-
-/* Mobile-optimized aurora — smaller, less GPU intensive */
-@media (max-width: 768px) {
-  .aurora-blob-1 {
-    width: 400px;
-    height: 400px;
-    filter: blur(80px);
-  }
-
-  .aurora-blob-2 {
-    width: 300px;
-    height: 300px;
-    filter: blur(80px);
-  }
-
-  .aurora-blob-3 {
-    width: 250px;
-    height: 250px;
-    filter: blur(90px);
-  }
-
-  .bg-grid {
-    background-size: 24px 24px;
-  }
+/* Aurora disabled for cleaner profressional aesthetic */
+.aurora-container, .aurora-bg, .aurora-blob {
+  display: none !important;
 }
 
 /* Center spotlight */
@@ -583,37 +504,40 @@ body::before {
 
 /* ── Glassmorphism ── */
 .glass {
-  background: rgba(var(--panel-bg-rgb), 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(var(--foreground-rgb), 0.06);
+  background: var(--panel-bg);
+  border: 1px solid var(--border-dim);
 }
 
 .glass-subtle {
-  background: rgba(var(--panel-bg-rgb), 0.4);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid rgba(var(--foreground-rgb), 0.04);
+  background: rgba(var(--panel-bg-rgb), 0.5);
+  border: 1px solid var(--border-dim);
 }
 
-/* ── Glow effects ── */
+/* ── Glow effects disabled ── */
 .glow-accent {
-  box-shadow:
-    0 0 20px rgba(var(--accent-rgb), 0.12),
-    0 0 60px rgba(var(--accent-rgb), 0.04);
+  box-shadow: none;
 }
 
 .glow-accent-strong {
-  box-shadow:
-    0 0 30px rgba(var(--accent-rgb), 0.2),
-    0 0 80px rgba(var(--accent-rgb), 0.08);
+  box-shadow: none;
 }
 
 .text-glow-accent {
-  text-shadow: 0 0 30px rgba(var(--accent-rgb), 0.35);
+  text-shadow: none;
 }
 
 /* ── Scrollbar ── */
+
+/* ── Optical Alignment Tweaks for Icons ── */
+/* Mendorong sedikit semua SVG lucide ke bawah untuk meratakan middle text */
+button > svg.lucide,
+a > svg.lucide,
+span.flex > svg.lucide,
+span.inline-flex > svg.lucide,
+div.flex > svg.lucide {
+  transform: translateY(1px);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }

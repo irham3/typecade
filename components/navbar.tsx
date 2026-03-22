@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, GraduationCap, ChevronDown, Menu, X } from "lucide-react";
+import { Keyboard, Trophy, Users, GraduationCap, ChevronDown, Menu, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -48,22 +48,32 @@ export function Navbar() {
         const nav = navRef.current;
         if (!nav) return;
 
-        const activeIndex = navItems.findIndex(
-            (item) => pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path))
-        );
+        const updatePill = () => {
+            const activeIndex = navItems.findIndex(
+                (item) => pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path))
+            );
 
+            const links = nav.querySelectorAll<HTMLAnchorElement>("[data-nav-link]");
+            const activeLink = links[activeIndex];
+
+            if (activeLink) {
+                setPillStyle({
+                    left: activeLink.offsetLeft,
+                    width: activeLink.offsetWidth,
+                    opacity: 1,
+                });
+            } else {
+                setPillStyle((prev) => ({ ...prev, opacity: 0 }));
+            }
+        };
+
+        updatePill();
+
+        const observer = new ResizeObserver(() => updatePill());
         const links = nav.querySelectorAll<HTMLAnchorElement>("[data-nav-link]");
-        const activeLink = links[activeIndex];
+        links.forEach((link) => observer.observe(link));
 
-        if (activeLink) {
-            setPillStyle({
-                left: activeLink.offsetLeft,
-                width: activeLink.offsetWidth,
-                opacity: 1,
-            });
-        } else {
-            setPillStyle((prev) => ({ ...prev, opacity: 0 }));
-        }
+        return () => observer.disconnect();
     }, [pathname]);
 
     return (
@@ -146,7 +156,7 @@ export function Navbar() {
                                 <ChevronDown size={12} className={`opacity-50 transition-transform duration-200 ${accountOpen ? "rotate-180" : ""}`} />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[260px]">
+                        <DropdownMenuContent align="end" className="w-65">
                             <DropdownMenuLabel className="flex items-center gap-3 px-4 py-3 pb-3 inset-0">
                                 <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center border border-accent/20 overflow-hidden shrink-0">
                                     <UserAvatar

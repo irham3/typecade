@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X } from "@/components/icons";
 import { motion } from "framer-motion";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { User as SupabaseUser } from '@supabase/supabase-js';

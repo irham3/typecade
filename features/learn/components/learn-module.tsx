@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Star, ChevronDown } from "lucide-react";
+import { Star, ChevronDown } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { LEARN_MODULES } from "../data/lessons";
@@ -187,7 +187,7 @@ export function LearnModule() {
                 </div>
 
                 {/* Right: Mock Lesson Viewer */}
-                <div className="w-full bg-[#111111] rounded-[20px] sm:rounded-[24px] border border-white/5 p-5 sm:p-8 flex flex-col justify-between shadow-2xl order-1 lg:order-2 overflow-hidden lg:h-[calc(100vh-280px)] lg:max-h-[600px] lg:min-h-[500px] glass glow-accent relative">
+                <div className="w-full bg-panel-bg rounded-3xl border border-border-dim p-5 sm:p-8 flex flex-col justify-between shadow-sm order-1 lg:order-2 overflow-hidden lg:h-[calc(100vh-280px)] lg:max-h-[600px] lg:min-h-[500px] relative">
 
                     <div className="absolute top-0 right-0 p-4 sm:p-6">
                         <span className="text-[10px] sm:text-xs font-mono px-3 sm:px-4 py-1 sm:py-1.5 bg-white/5 border border-white/10 rounded-full text-text-dim tracking-wider">LESSON {currentLesson.id}</span>

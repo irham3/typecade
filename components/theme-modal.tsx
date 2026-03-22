@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, X } from "lucide-react";
+import { Palette, X } from "@/components/icons";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 

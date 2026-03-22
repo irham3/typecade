@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { FileText } from "@/components/icons";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import type { UserStats } from '@/lib/store';

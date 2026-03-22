@@ -1,4 +1,4 @@
-import { Zap } from "lucide-react";
+import { Zap } from "@/components/icons";
 import { motion } from "framer-motion";
 import { CountUp } from "@/components/ui/count-up";
 import type { UserStats } from '@/lib/store';

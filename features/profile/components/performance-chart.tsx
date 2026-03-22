@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, ChevronDown } from "lucide-react";
+import { Activity, ChevronDown } from "@/components/icons";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {

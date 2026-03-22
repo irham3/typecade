@@ -1,4 +1,4 @@
-import { Eye, Camera, TrendingUp, Target, Hash, Clock } from "lucide-react";
+import { Eye, Camera, TrendingUp, Target, Hash, Clock } from "@/components/icons";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -40,10 +40,8 @@ export function ProfileHeader({ user, displayName, memberSince, stats, setPrevie
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full glass rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col md:flex-row items-center md:items-start gap-5 sm:gap-8 shadow-2xl relative overflow-hidden"
+            className="w-full bg-panel-bg rounded-3xl p-6 sm:p-8 lg:p-10 border border-border-dim shadow-sm flex flex-col md:flex-row items-center md:items-start justify-between gap-6 sm:gap-8 relative overflow-hidden"
         >
-            {/* Decorative accent glow */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-accent/6 rounded-full blur-[100px] pointer-events-none" />
 
             {/* Avatar */}
             <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full p-[2px] shrink-0 relative group">

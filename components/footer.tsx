@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Palette, Settings, Info } from "lucide-react";
+import { Palette, Settings, Info } from "@/components/icons";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 

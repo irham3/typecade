@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore, ModeOption } from "@/lib/store";
-import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "lucide-react";
+import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -166,8 +166,8 @@ export function HomeClient() {
                                 }}
                                 formatOption={(val) => {
                                     if (val === "Custom") {
-                                        if (activeTab === "Words") return `🔧 ${customWordLimit}`;
-                                        if (activeTab === "Time") return `🔧 ${customTimeLimit}s`;
+                                        if (activeTab === "Words") return <><Settings size={13} className="opacity-60 mr-1.5" />{customWordLimit} W</>;
+                                        if (activeTab === "Time") return <><Settings size={13} className="opacity-60 mr-1.5" />{customTimeLimit}s</>;
                                     }
                                     return val;
                                 }}
@@ -258,7 +258,7 @@ export function HomeClient() {
                                             <DropdownMenuItem
                                                 key={lang.code}
                                                 onClick={() => setLanguage(lang.code as "EN" | "ID")}
-                                                className={`justify-between min-w-[120px] ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
+                                                className={`justify-between min-w-30 ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
                                             >
                                                 {lang.label}
                                             </DropdownMenuItem>
@@ -299,7 +299,7 @@ export function HomeClient() {
                                     <DropdownMenuItem
                                         key={style.code}
                                         onClick={() => setTypingStyle(style.code as "modern" | "classic")}
-                                        className={`justify-between min-w-[144px] ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
+                                        className={`justify-between min-w-36 ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
                                     >
                                         {style.label}
                                     </DropdownMenuItem>
@@ -350,10 +350,8 @@ export function HomeClient() {
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
                             transition={{ type: "spring", duration: 0.5, bounce: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 sm:gap-8 glass relative overflow-y-auto max-h-[85vh] z-10 glow-accent hide-scrollbar"
+                            className="bg-panel-bg border border-foreground/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 sm:gap-8 relative overflow-y-auto max-h-[85vh] z-10 hide-scrollbar"
                         >
-                            {/* Decorative blur */}
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[100px] pointer-events-none translate-x-1/2 -translate-y-1/2" />
 
                             <div className="flex items-center justify-between relative z-10">
                                 <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Configure Training</h2>
@@ -403,8 +401,8 @@ export function HomeClient() {
                                             }}
                                             formatOption={(val) => {
                                                 if (val === "Custom") {
-                                                    if (activeTab === "Words") return `🔧 ${customWordLimit}`;
-                                                    if (activeTab === "Time") return `🔧 ${customTimeLimit}s`;
+                                                    if (activeTab === "Words") return <><Settings size={13} className="opacity-60 mr-1.5" />{customWordLimit} W</>;
+                                                    if (activeTab === "Time") return <><Settings size={13} className="opacity-60 mr-1.5" />{customTimeLimit}s</>;
                                                 }
                                                 return val;
                                             }}
