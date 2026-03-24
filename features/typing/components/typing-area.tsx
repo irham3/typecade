@@ -414,7 +414,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 let charStatusClass = "text-text-dim/50";
                 if (typedChar != null) {
                     if (typedChar === char) {
-                        charStatusClass = "text-foreground font-medium";
+                        charStatusClass = "text-foreground font-medium drop-shadow-[0_0_6px_rgba(var(--accent-rgb),0.4)]";
                     } else if (typedChar === " " && char !== " ") {
                         // "Skipped" indicator: Underline instead of red text
                         charStatusClass = "text-text-dim/60 border-b-2 border-error-text/80";
@@ -440,10 +440,10 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
             const spaceTyped = typedChars[spaceIndex];
             const isSpaceCurrent = spaceIndex === typedChars.length;
 
-            let spaceStatusClass = "text-text-dim/40";
+            let spaceStatusClass = "text-text-dim/50";
             if (spaceTyped != null) {
                 if (spaceTyped === " ") {
-                    spaceStatusClass = "text-foreground";
+                    spaceStatusClass = "text-foreground drop-shadow-[0_0_6px_rgba(var(--accent-rgb),0.3)] font-medium";
                 } else {
                     spaceStatusClass = "text-error-text bg-error-bg/50 rounded-sm";
                 }
@@ -502,13 +502,13 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         exit={{ opacity: 0 }}
                         className="w-full relative"
                     >
-                        {/* Live stats bar — collapses when not playing */}
-                        <div
-                            className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out ${status === "playing"
-                                ? "opacity-100 h-8 sm:h-10 mb-2 sm:mb-3"
-                                : "opacity-0 h-0 mb-0"
-                                }`}
-                        >
+                        <div className="w-full h-10 sm:h-12 relative flex flex-col justify-end">
+                            <div
+                                className={`flex items-center justify-between font-mono transition-opacity duration-200 ease-out absolute bottom-2 w-full ${status === "playing"
+                                    ? "opacity-100"
+                                    : "opacity-0 pointer-events-none"
+                                    }`}
+                            >
                             <div className="flex items-center gap-3 sm:gap-5">
                                 <div className="flex items-baseline gap-1 sm:gap-1.5">
                                     <span className={`text-lg sm:text-2xl font-bold tabular-nums drop-shadow-md transition-colors duration-300 ${getWpmColor(wpm)}`} style={{ textShadow: "0 0 15px currentColor" }}>{wpm}</span>
@@ -537,14 +537,15 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     {mode === "time" ? "sec" : "done"}
                                 </span>
                             </div>
+                            </div>
                         </div>
 
                         {/* Typing Area */}
                         <div className="w-full relative mt-4">
 
-                            <div className={`w-full relative transition-all duration-700 rounded-3xl ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border border-accent/20 bg-background/30 p-2 sm:p-4" : ""}`}>
+                            <div className={`w-full relative transition-all duration-200 rounded-3xl p-4 sm:p-6 border bg-background/20 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)] border-accent/50 bg-background/30" : "border-foreground/5"}`}>
                                 <div
-                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/80"
+                                    className="w-full font-mono text-3xl sm:text-4xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none"
                                     onContextMenu={(e) => e.preventDefault()}
                                 >
                                 <div
@@ -604,13 +605,13 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         )}
 
                         {/* Action Bar (Integrated Shortcuts & Buttons) */}
-                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
+                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[14px] lowercase font-mono select-none text-text-dim/50">
                             <button
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-3 transition-all hover:text-foreground"
                                 title="Restart (Tab)"
                             >
-                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim text-[11px] normal-case tracking-normal transition-colors group-hover:text-accent group-hover:bg-accent/10">tab</kbd>
+                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">tab</kbd>
                                 <span className="flex items-center gap-3">
                                     restart
                                 </span>
@@ -622,13 +623,13 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-3 transition-all hover:text-foreground"
                                 title="Shuffle Text (Shift + Enter)"
                             >
                                 <div className="hidden sm:flex items-center gap-1.5">
-                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim text-[11px] normal-case tracking-normal transition-colors group-hover:text-accent group-hover:bg-accent/10">shift</kbd>
+                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">shift</kbd>
                                     <span className="text-text-dim text-[10px] hidden sm:inline">+</span>
-                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim text-[11px] normal-case tracking-normal transition-colors group-hover:text-accent group-hover:bg-accent/10">enter</kbd>
+                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">enter</kbd>
                                 </div>
                                 <span className="flex items-center gap-3">
                                     shuffle

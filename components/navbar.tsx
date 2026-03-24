@@ -44,8 +44,8 @@ export function Navbar() {
 
     return (
         <>
-            <header className={`w-full pt-0 flex justify-center z-50 sticky top-0 transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-10' : 'opacity-100 translate-y-0'}`}>
-                <div className="w-full flex items-center justify-between px-6 sm:px-10 py-3 sm:py-4 bg-panel-bg/60 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20">
+            <header className={`w-full pt-0 flex justify-center z-50 sticky top-0 transition-all duration-500 ease-out bg-panel-bg/60 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20 ${hideUI ? 'opacity-0 pointer-events-none -translate-y-10' : 'opacity-100 translate-y-0'}`}>
+                <div className="w-full max-w-screen-2xl mx-auto flex items-center justify-between px-6 sm:px-12 md:px-16 py-3 sm:py-4">
                     {/* Logo */}
                     <div className="flex flex-1 items-center justify-start">
                         <Link href="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0">
@@ -81,7 +81,7 @@ export function Navbar() {
                                 >
                                     <div className="relative z-10 flex items-center justify-center">
                                         {isActive && (
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 bg-accent/40 blur-lg rounded-full pointer-events-none" />
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 bg-accent/30 blur-md rounded-full pointer-events-none" />
                                         )}
                                         <item.icon
                                             size={28}

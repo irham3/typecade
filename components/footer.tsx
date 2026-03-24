@@ -12,7 +12,7 @@ export function Footer() {
     const hideUI = isTyping && !showUI;
 
     return (
-        <footer className={`w-full max-w-5xl px-4 sm:px-6 py-6 sm:py-8 flex flex-col sm:flex-row items-center justify-end text-text-dim text-xs font-mono border-t border-foreground/5 mt-auto relative gap-4 transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'}`}>
+        <footer className={`w-full max-w-screen-2xl px-2 sm:px-4 py-6 sm:py-8 flex flex-col sm:flex-row items-center justify-end text-text-dim text-xs font-mono border-t border-foreground/5 mt-auto relative gap-4 transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'}`}>
 
             {/* <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild className="gap-1.5 h-auto py-2">

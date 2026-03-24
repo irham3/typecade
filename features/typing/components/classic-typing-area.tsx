@@ -283,7 +283,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
     const renderText = () => {
         return words.map((targetWord, wIdx) => {
-            let className = "px-1 rounded bg-transparent transition-colors ";
+            let className = "px-1 rounded transition-colors ";
 
             if (wIdx < currentWordIndex) {
                 // Past words
@@ -297,9 +297,9 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 // Current word
                 const isTypo = currentInput.length > 0 && !targetWord.startsWith(currentInput);
                 if (isTypo) {
-                    className += "bg-error-bg/30 text-error-text ring-1 ring-error-text/50";
+                    className += "bg-error-bg/80 text-error-text ring-1 ring-error-text";
                 } else {
-                    className += "bg-accent text-[#060b13] font-bold shadow-[0_4px_12px_rgba(var(--accent-rgb),0.3)] px-1.5";
+                    className += "bg-accent text-[#060b13] font-bold shadow-[0_2px_10px_rgba(var(--accent-rgb),0.4)]";
                 }
             } else {
                 // Future words
@@ -310,7 +310,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 <span
                     key={wIdx}
                     ref={wIdx === currentWordIndex ? activeWordRef : null}
-                    className={`inline-block mx-1 leading-tight ${className}`}
+                    className={`inline-block mx-1 leading-tight font-mono text-3xl sm:text-4xl ${className}`}
                 >
                     {targetWord}
                 </span>
@@ -334,9 +334,9 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                     >
                         {/* Live stats bar */}
                         <div
-                            className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out ${status === "playing"
-                                ? "opacity-100 h-8 sm:h-10 mb-2 sm:mb-3 px-2"
-                                : "opacity-0 h-0 mb-0"
+                            className={`flex items-center justify-between font-mono transition-opacity duration-300 ease-out h-8 sm:h-10 mb-2 sm:mb-3 px-2 ${status === "playing"
+                                ? "opacity-100"
+                                : "opacity-0 pointer-events-none"
                                 }`}
                         >
                             <div className="flex items-center gap-3 sm:gap-5">
@@ -363,7 +363,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                         {/* Classic Typing Area containing Words */}
                         <div className="w-full relative mt-4">
 
-                            <div className={`w-full relative transition-all duration-700 glass border border-foreground/5 rounded-3xl p-4 sm:p-6 shadow-lg mb-6 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border-accent/20 bg-background/30" : ""}`}>
+                            <div className={`w-full relative transition-all duration-700 glass border rounded-3xl p-4 sm:p-6 shadow-lg mb-6 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)] border-accent/50 bg-background/30" : "border-foreground/5"}`}>
                                 <div
                                     className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none cursor-default"
                                     onContextMenu={(e) => e.preventDefault()}
@@ -441,13 +441,13 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                         )}
 
                         {/* Action Bar (Integrated Shortcuts & Buttons) */}
-                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
+                        <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[14px] lowercase font-mono select-none text-text-dim/50">
                             <button
                                 onClick={(e) => { e.stopPropagation(); restartText(); }}
-                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-3 transition-all hover:text-foreground"
                                 title="Restart (Tab)"
                             >
-                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
+                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">tab</kbd>
                                 <span className="flex items-center gap-3">
                                     restart
                                 </span>
@@ -459,13 +459,13 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                     setText(getNewText());
                                     restartText();
                                 }}
-                                className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
+                                className="group flex items-center gap-2 sm:gap-3 transition-all hover:text-foreground"
                                 title="Shuffle Text (Shift + Enter)"
                             >
                                 <div className="hidden sm:flex items-center gap-1.5">
-                                    <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">shift</kbd>
-                                    <span className="text-xs opacity-40">+</span>
-                                    <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">enter</kbd>
+                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">shift</kbd>
+                                    <span className="text-text-dim text-[10px] hidden sm:inline">+</span>
+                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">enter</kbd>
                                 </div>
                                 <span className="flex items-center gap-3">
                                     shuffle

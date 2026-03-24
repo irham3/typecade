@@ -46,7 +46,7 @@ export function HomeClient() {
     const setCustomText = useStore(state => state.setCustomText);
     const customShuffle = useStore(state => state.customShuffle);
     const setCustomShuffle = useStore(state => state.setCustomShuffle);
-    
+
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
     const [styleMobileOpen, setStyleMobileOpen] = useState(false);
 
@@ -74,7 +74,7 @@ export function HomeClient() {
 
 
     return (
-        <main className="flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start sm:justify-center pt-2 sm:pt-0 pb-4 lg:pb-16 relative">
+        <main className="flex-1 w-full max-w-screen-2xl px-2 sm:px-4 lg:px-6 flex flex-col items-center justify-start sm:justify-center pt-2 sm:pt-0 pb-4 lg:pb-16 relative">
 
             {/* ── Settings Trigger Button (Mobile & Tablet) ── */}
             <div className={`flex lg:hidden items-center justify-center mb-6 w-full z-10 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-5' : 'opacity-100 translate-y-0'}`}>
@@ -121,9 +121,8 @@ export function HomeClient() {
             </div>
 
             {/* ── Mode Selection Bar (Single Row Desktop) ── */}
-            <motion.div 
-                layout 
-                className={`hidden lg:flex items-center justify-center gap-4 mb-16 overflow-x-auto px-6 py-3 w-fit mx-auto z-10 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-5' : 'opacity-100 translate-y-0'}`}
+            <motion.div
+                className={`hidden lg:flex items-center justify-center gap-4 overflow-x-auto px-6 py-3 w-fit mx-auto z-10 relative transition-opacity duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
             >
                 <div className="flex items-center gap-1.5 shrink-0">
                     <SegmentedControl
@@ -229,7 +228,7 @@ export function HomeClient() {
             </motion.div>
 
             {/* ── Typing Area ── */}
-            <div className="typing-panel w-full px-2 sm:px-6 md:px-8 py-4 sm:py-6">
+            <div className="w-full px-2 sm:px-4 md:px-6 py-4 sm:py-6">
                 <AnimatePresence mode="wait">
                     {typingStyle === "classic" ? (
                         <ClassicTypingView
