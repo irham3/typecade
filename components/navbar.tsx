@@ -136,7 +136,7 @@ export function Navbar() {
                             </DropdownMenu>
                         ) : (
                             <Button
-                                className="px-5 lg:px-7 py-2.5 lg:py-3 h-auto text-sm lg:text-base font-mono font-bold text-[#060b13] bg-accent-secondary uppercase tracking-[0.15em] shadow-[0_0_15px_rgba(var(--accent-secondary-rgb),0.4)] hover:shadow-[0_0_25px_rgba(var(--accent-secondary-rgb),0.6)] hover:bg-accent-secondary/90 border-b-[3px] border-black/40 hover:border-b-[1px] hover:translate-y-[2px] active:border-b-0 active:translate-y-[3px] transition-all duration-150 rounded-lg"
+                                className="px-5 lg:px-7 py-2.5 lg:py-3 h-auto text-sm lg:text-base font-mono font-extrabold text-white bg-accent-secondary uppercase tracking-[0.15em] shadow-[0_0_15px_rgba(var(--accent-secondary-rgb),0.4)] hover:shadow-[0_0_25px_rgba(var(--accent-secondary-rgb),0.6)] hover:bg-accent-secondary/90 border-b-[3px] border-black/40 hover:border-b hover:translate-y-[2px] active:border-b-0 active:translate-y-[3px] transition-all duration-150 rounded-lg"
                                 onClick={() => setAuthModalOpen(true)}
                             >
                                 SIGN IN

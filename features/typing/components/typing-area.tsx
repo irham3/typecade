@@ -216,10 +216,10 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     // Trigger native input changes programmatically from the Virtual Keyboard
     const handleVirtualKeyPress = useCallback((char: string) => {
         if (!inputRef.current) return;
-        
+
         const input = inputRef.current;
         let currentValue = input.value;
-        
+
         if (char === "Backspace") {
             currentValue = currentValue.slice(0, -1);
         } else {
@@ -497,9 +497,10 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 {status !== "finished" ? (
                     <motion.div
                         key="typing-active"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, y: 15, filter: "blur(10px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, y: -15, filter: "blur(10px)" }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                         className="w-full relative"
                     >
                         <div className="w-full h-10 sm:h-12 relative flex flex-col justify-end">
@@ -509,34 +510,34 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                     : "opacity-0 pointer-events-none"
                                     }`}
                             >
-                            <div className="flex items-center gap-3 sm:gap-5">
-                                <div className="flex items-baseline gap-1 sm:gap-1.5">
-                                    <span className={`text-lg sm:text-2xl font-bold tabular-nums drop-shadow-md transition-colors duration-300 ${getWpmColor(wpm)}`} style={{ textShadow: "0 0 15px currentColor" }}>{wpm}</span>
-                                    <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
+                                <div className="flex items-center gap-3 sm:gap-5">
+                                    <div className="flex items-baseline gap-1 sm:gap-1.5">
+                                        <span className={`text-lg sm:text-2xl font-bold tabular-nums drop-shadow-md transition-colors duration-300 ${getWpmColor(wpm)}`} style={{ textShadow: "0 0 15px currentColor" }}>{wpm}</span>
+                                        <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">wpm</span>
+                                    </div>
+                                    <div className="w-px h-3 sm:h-4 bg-foreground/10" />
+                                    <div className="flex items-baseline gap-1 sm:gap-1.5">
+                                        <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
+                                        <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">%</span>
+                                    </div>
+                                    {streak > 4 && (
+                                        <>
+                                            <div className="w-px h-3 sm:h-4 bg-foreground/10" />
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <Flame size={14} className={streak >= 50 ? "text-amber-500 animate-pulse" : "text-amber-500/80"} />
+                                                <span className={`text-lg sm:text-2xl font-bold tabular-nums ${streak >= 50 ? "text-amber-500" : "text-amber-500/80"}`} style={streak >= 50 ? { textShadow: "0 0 15px currentColor" } : {}}>{streak}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                                <div className="w-px h-3 sm:h-4 bg-foreground/10" />
                                 <div className="flex items-baseline gap-1 sm:gap-1.5">
-                                    <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">{accuracy}</span>
-                                    <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">%</span>
+                                    <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">
+                                        {mode === "time" ? timeLeft : `${progress}%`}
+                                    </span>
+                                    <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">
+                                        {mode === "time" ? "sec" : "done"}
+                                    </span>
                                 </div>
-                                {streak > 4 && (
-                                    <>
-                                        <div className="w-px h-3 sm:h-4 bg-foreground/10" />
-                                        <div className="flex items-center gap-1.5 sm:gap-2">
-                                            <Flame size={14} className={streak >= 50 ? "text-amber-500 animate-pulse" : "text-amber-500/80"} />
-                                            <span className={`text-lg sm:text-2xl font-bold tabular-nums ${streak >= 50 ? "text-amber-500" : "text-amber-500/80"}`} style={streak >= 50 ? { textShadow: "0 0 15px currentColor" } : {}}>{streak}</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-1.5">
-                                <span className="text-lg sm:text-2xl font-bold text-foreground/80 tabular-nums">
-                                    {mode === "time" ? timeLeft : `${progress}%`}
-                                </span>
-                                <span className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-widest">
-                                    {mode === "time" ? "sec" : "done"}
-                                </span>
-                            </div>
                             </div>
                         </div>
 
@@ -545,41 +546,41 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
 
                             <div className={`w-full relative transition-all duration-200 rounded-3xl p-4 sm:p-6 border bg-background/20 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)] border-accent/50 bg-background/30" : "border-foreground/5"}`}>
                                 <div
-                                    className="w-full font-mono text-3xl sm:text-4xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none"
+                                    className="w-full font-mono text-3xl sm:text-4xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 px-4 sm:px-8 relative cursor-default select-none"
                                     onContextMenu={(e) => e.preventDefault()}
                                 >
-                                <div
-                                    ref={textContainerRef}
-                                    className="h-[5.4em] overflow-hidden relative w-full"
-                                    style={{
-                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
-                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
-                                    }}
-                                >
                                     <div
-                                        className="transition-transform duration-300 ease-out relative text-left w-full h-full"
-                                        style={{ transform: `translateY(-${translateY}px)` }}
+                                        ref={textContainerRef}
+                                        className="h-[5.4em] overflow-hidden relative w-full"
+                                        style={{
+                                            maskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
+                                            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
+                                        }}
                                     >
-                                        {/* Smooth animated caret — directly inside the moving container */}
                                         <div
-                                            ref={caretRef}
-                                            className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
-                                            style={{
-                                                width: 3,
-                                                opacity: 0,
-                                                transition: "left 80ms ease-out, top 80ms ease-out",
-                                                boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
-                                            }}
-                                        />
+                                            className="transition-transform duration-300 ease-out relative text-left w-full h-full"
+                                            style={{ transform: `translateY(-${translateY}px)` }}
+                                        >
+                                            {/* Smooth animated caret — directly inside the moving container */}
+                                            <div
+                                                ref={caretRef}
+                                                className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
+                                                style={{
+                                                    width: 3,
+                                                    opacity: 0,
+                                                    transition: "left 80ms ease-out, top 80ms ease-out",
+                                                    boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
+                                                }}
+                                            />
 
-                                        {renderText()}
+                                            {renderText()}
+                                        </div>
+
+                                        {/* Particle Overlay */}
+                                        <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'plus-lighter' }} />
                                     </div>
-
-                                    {/* Particle Overlay */}
-                                    <canvas ref={particlesCanvasRef} className="absolute inset-0 pointer-events-none z-0" style={{ mixBlendMode: 'plus-lighter' }} />
                                 </div>
                             </div>
-                        </div>
 
                         </div>
 
@@ -611,7 +612,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 className="group flex items-center gap-2 sm:gap-3 transition-all hover:text-foreground"
                                 title="Restart (Tab)"
                             >
-                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t border-l border-r border-b-2 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">tab</kbd>
+                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-0.5 rounded-md border-t-2 border-l-2 border-r-2 border-b-4 border-foreground/10 text-text-dim text-[11px] normal-case tracking-tight transition-colors group-hover:text-accent group-hover:border-accent/40">tab</kbd>
                                 <span className="flex items-center gap-3">
                                     restart
                                 </span>
@@ -636,7 +637,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 </span>
                             </button>
                         </div>
-                        
+
                         {/* Interactive Virtual Keyboard For Mobile */}
                         <div className="mt-4 sm:mt-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
                             <VirtualKeyboard onKeyPress={handleVirtualKeyPress} />

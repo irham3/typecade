@@ -30,7 +30,7 @@ export function PixelButton({
         <button
             onClick={onClick}
             className={cn(
-                "relative z-10 font-mono transition-all duration-100 cursor-pointer select-none whitespace-nowrap inline-flex items-center justify-center rounded-lg bg-transparent border-t border-l border-r border-b-4 active:border-b active:translate-y-[3px]",
+                "relative z-10 font-mono transition-all duration-100 cursor-pointer select-none whitespace-nowrap inline-flex items-center justify-center rounded-lg bg-transparent border-2 border-b-4 active:border-b-2 active:translate-y-[2px]",
                 size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
                 isActive
                     ? "text-accent border-accent/80 font-bold drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.6)]"

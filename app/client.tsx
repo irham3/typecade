@@ -175,42 +175,79 @@ export function HomeClient() {
                     )}
                 </AnimatePresence>
 
+                <AnimatePresence mode="popLayout">
+                    {activeTab === "Custom" ? (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            className="flex items-center gap-1.5 shrink-0"
+                        >
+                            <div className="w-px h-4 bg-foreground/10 shrink-0" />
+                            <PixelButton
+                                isActive={true}
+                                onClick={() => {
+                                    setCustomTextDraft(customText);
+                                    setIsCustomModalOpen(true);
+                                }}
+                                size="md"
+                                className="px-5"
+                            >
+                                <PenLine size={14} className="mr-2" />
+                                change custom text
+                            </PixelButton>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            className="flex items-center gap-1.5 shrink-0"
+                        >
+                            <div className="w-px h-4 bg-foreground/10 shrink-0" />
+                            {activeTab !== "Quote" && (
+                                <>
+                                    <PixelButton
+                                        isActive={punctuation}
+                                        onClick={() => setPunctuation(!punctuation)}
+                                        size="md"
+                                    >
+                                        @ punctuation
+                                    </PixelButton>
+                                    <PixelButton
+                                        isActive={numbers}
+                                        onClick={() => setNumbers(!numbers)}
+                                        size="md"
+                                    >
+                                        # numbers
+                                    </PixelButton>
+
+                                    <div className="w-px h-4 bg-foreground/10 shrink-0" />
+                                </>
+                            )}
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="gap-2 px-3 h-8 text-text-dim hover:text-foreground">
+                                        <Globe size={14} className="opacity-60" />
+                                        {language}
+                                        <ChevronDown size={12} className="opacity-40" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => setLanguage("EN")}>English (EN)</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => setLanguage("ID")}>Indonesian (ID)</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 <div className="w-px h-4 bg-foreground/10 shrink-0" />
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                    <PixelButton
-                        isActive={punctuation}
-                        onClick={() => setPunctuation(!punctuation)}
-                        size="sm"
-                    >
-                        @ punctuation
-                    </PixelButton>
-                    <PixelButton
-                        isActive={numbers}
-                        onClick={() => setNumbers(!numbers)}
-                        size="sm"
-                    >
-                        # numbers
-                    </PixelButton>
-                </div>
-
-                <div className="w-px h-4 bg-foreground/10 shrink-0" />
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-2 px-3 h-8 text-text-dim hover:text-foreground">
-                                <Globe size={14} className="opacity-60" />
-                                {language}
-                                <ChevronDown size={12} className="opacity-40" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => setLanguage("EN")}>English (EN)</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => setLanguage("ID")}>Indonesian (ID)</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="gap-2 px-3 h-8 text-text-dim hover:text-foreground">
@@ -220,8 +257,8 @@ export function HomeClient() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => setTypingStyle("modern")}>Modern View</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => setTypingStyle("classic")}>Classic View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTypingStyle("modern")}>Modern</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTypingStyle("classic")}>Classic</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -232,7 +269,7 @@ export function HomeClient() {
                 <AnimatePresence mode="wait">
                     {typingStyle === "classic" ? (
                         <ClassicTypingView
-                            key="classic-view"
+                            key={`classic-${activeTab}`}
                             activeTab={activeTab}
                             subOption={subOption === "Custom" ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s") : subOption}
                             customText={customText}
@@ -240,7 +277,7 @@ export function HomeClient() {
                         />
                     ) : (
                         <TypingView
-                            key="modern-view"
+                            key={`modern-${activeTab}`}
                             activeTab={activeTab}
                             subOption={subOption === "Custom" ? (activeTab === "Words" ? customWordLimit : customTimeLimit + "s") : subOption}
                             customText={customText}

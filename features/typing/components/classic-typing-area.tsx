@@ -119,7 +119,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 const isError = hasNewChar && currentInput[currentInput.length - 1] !== targetChar;
 
                 playTypeSound(sound, isError);
-                
+
                 if (isError) {
                     comboRef.current = 0;
                 } else {
@@ -167,10 +167,10 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
     // Trigger native input changes programmatically from the Virtual Keyboard
     const handleVirtualKeyPress = useCallback((char: string) => {
         if (!inputRef.current) return;
-        
+
         const input = inputRef.current;
         let currentValue = input.value;
-        
+
         if (char === "Backspace") {
             currentValue = currentValue.slice(0, -1);
         } else {
@@ -327,9 +327,10 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 {status !== "finished" ? (
                     <motion.div
                         key="typing-active"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, y: 15, filter: "blur(10px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, y: -15, filter: "blur(10px)" }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                         className="w-full relative"
                     >
                         {/* Live stats bar */}
@@ -365,24 +366,24 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
                             <div className={`w-full relative transition-all duration-700 glass border rounded-3xl p-4 sm:p-6 shadow-lg mb-6 ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.25)] border-accent/50 bg-background/30" : "border-foreground/5"}`}>
                                 <div
-                                    className="w-full font-mono text-xl sm:text-2xl tracking-tight text-left relative select-none cursor-default"
+                                    className="w-full font-mono text-3xl sm:text-4xl tracking-tight text-left relative select-none cursor-default px-4 sm:px-8 py-2 sm:py-4"
                                     onContextMenu={(e) => e.preventDefault()}
                                     style={{ lineHeight: 1.8 }}
                                 >
-                                <div
-                                    className="overflow-hidden relative w-full"
-                                    style={{ height: "3.6em" }} // Exactly 2 lines (2 * 1.8em)
-                                >
                                     <div
-                                        className="transition-transform duration-300 ease-out relative text-left"
-                                        style={{ transform: `translateY(-${translateY}px)` }}
+                                        className="overflow-hidden relative w-full"
+                                        style={{ height: "3.6em" }} // Exactly 2 lines (2 * 1.8em)
                                     >
-                                        <div className="-mx-1">
-                                            {renderText()}
+                                        <div
+                                            className="transition-transform duration-300 ease-out relative text-left"
+                                            style={{ transform: `translateY(-${translateY}px)` }}
+                                        >
+                                            <div className="-mx-1">
+                                                {renderText()}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                             </div>
                         </div>
 
