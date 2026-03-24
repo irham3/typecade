@@ -12,14 +12,14 @@ const buttonVariants = cva(
                 default:
                     "bg-foreground/6 text-foreground hover:bg-foreground/10 border border-foreground/6",
                 primary:
-                    "bg-accent text-white hover:bg-accent/90 shadow-[0_0_20px_rgba(var(--accent-rgb),0.25)]",
+                    "bg-accent text-[#060b13] font-bold hover:bg-accent/90 shadow-[0_4px_12px_rgba(var(--accent-rgb),0.3)]",
                 secondary:
                     "bg-foreground/4 text-text-dim hover:text-foreground hover:bg-foreground/8 border border-transparent",
                 outline:
                     "border border-foreground/8 bg-transparent hover:bg-foreground/4 hover:border-foreground/15 text-text-dim hover:text-foreground",
                 ghost: "hover:bg-foreground/5 hover:text-foreground text-text-dim",
                 active: "bg-foreground/8 text-foreground",
-                activeGradient: "text-accent bg-accent/10 shadow-[0_0_10px_rgba(var(--accent-rgb),0.1)] border border-accent/20",
+                activeGradient: "text-[#060b13] bg-accent font-bold shadow-[0_2px_8px_rgba(var(--accent-rgb),0.2)] border border-accent/20",
                 danger: "bg-error-bg/60 text-error-text hover:bg-error-bg/80",
             },
             size: {

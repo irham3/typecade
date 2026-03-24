@@ -411,13 +411,13 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 const index = globalIndex + cIdx;
                 const typedChar = typedChars[index];
 
-                let charStatusClass = "text-text-dim/40";
+                let charStatusClass = "text-text-dim/50";
                 if (typedChar != null) {
                     if (typedChar === char) {
-                        charStatusClass = "text-foreground";
+                        charStatusClass = "text-foreground font-medium";
                     } else if (typedChar === " " && char !== " ") {
                         // "Skipped" indicator: Underline instead of red text
-                        charStatusClass = "text-text-dim/40 border-b-2 border-error-text/80";
+                        charStatusClass = "text-text-dim/60 border-b-2 border-error-text/80";
                     } else {
                         charStatusClass = "text-error-text bg-error-bg/50 rounded-sm";
                     }
@@ -466,8 +466,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
             );
         });
     };
-
-    const showBlurOverlay = !isFocused && status !== "finished";
 
     return (
         <div className="w-full flex flex-col items-center relative" ref={containerRef} onClick={focusInput}>
@@ -582,23 +580,6 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                             </div>
                         </div>
 
-                        {/* Blur / focus overlay */}
-                            <AnimatePresence>
-                                {showBlurOverlay && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="absolute -inset-4 z-10 hidden sm:flex items-center justify-center cursor-pointer backdrop-blur-[6px] rounded-lg"
-                                        onClick={focusInput}
-                                    >
-                                        <span className="text-text-dim text-sm font-sans font-medium tracking-wide">
-                                            Click here or press any key to focus
-                                        </span>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                         </div>
 
                         {/* Progress line */}
@@ -629,7 +610,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 className="group flex items-center gap-2 sm:gap-4 transition-all hover:text-foreground hover:bg-foreground/5 p-2 sm:px-4 sm:py-2 rounded-xl"
                                 title="Restart (Tab)"
                             >
-                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">tab</kbd>
+                                <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim text-[11px] normal-case tracking-normal transition-colors group-hover:text-accent group-hover:bg-accent/10">tab</kbd>
                                 <span className="flex items-center gap-3">
                                     restart
                                 </span>
@@ -645,9 +626,9 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                                 title="Shuffle Text (Shift + Enter)"
                             >
                                 <div className="hidden sm:flex items-center gap-1.5">
-                                    <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">shift</kbd>
-                                    <span className="text-xs opacity-40">+</span>
-                                    <kbd className="bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim/90 text-[11px] normal-case tracking-normal transition-colors group-hover:bg-foreground/10 group-hover:border-foreground/20 group-hover:text-foreground shadow-sm">enter</kbd>
+                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim text-[11px] normal-case tracking-normal transition-colors group-hover:text-accent group-hover:bg-accent/10">shift</kbd>
+                                    <span className="text-text-dim text-[10px] hidden sm:inline">+</span>
+                                    <kbd className="hidden sm:inline-block bg-foreground/5 px-2 py-1 rounded-md border border-foreground/10 text-text-dim text-[11px] normal-case tracking-normal transition-colors group-hover:text-accent group-hover:bg-accent/10">enter</kbd>
                                 </div>
                                 <span className="flex items-center gap-3">
                                     shuffle

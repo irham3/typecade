@@ -105,7 +105,14 @@ export function BoardView() {
 
     return (
         <div className="w-full max-w-4xl flex flex-col pt-6 sm:pt-10">
-            {/* Header: actions only, no redundant title */}
+            {/* Title */}
+            <div className="flex justify-center mb-8 sm:mb-12">
+                <h1 className="text-4xl sm:text-6xl font-pixel uppercase tracking-[0.2em] filter drop-shadow-[0_0_15px_rgba(var(--accent-rgb),0.5)]">
+                    <span className="text-accent">High</span> <span className="text-accent-secondary">Scores</span>
+                </h1>
+            </div>
+
+            {/* Sub-header options */}
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-5 sm:mb-6 gap-3 px-1">
                 <p className="text-text-dim text-sm hidden sm:block">Top speed typists from across the globe.</p>
                 <div className="flex justify-start sm:justify-end overflow-x-auto hide-scrollbar">
@@ -218,6 +225,29 @@ export function BoardView() {
                     </table>
                 </div>
             </div>
+
+            {/* Your Rank Footer Box */}
+            {user && (
+                <div className="mt-8 rounded-xl border-2 border-accent/40 bg-accent/5 p-4 sm:p-5 flex flex-col shadow-[0_0_25px_rgba(var(--accent-rgb),0.2),inset_0_0_15px_rgba(var(--accent-rgb),0.1)]">
+                    <div className="text-center mb-3">
+                        <span className="text-accent-secondary font-display font-bold tracking-widest text-sm uppercase text-glow-accent">Your Rank</span>
+                    </div>
+                    {(() => {
+                        const userRow = board.find(item => item.isCurrentUser) || {
+                            rank: "N/A", user: user.user_metadata?.display_name || user.email?.split("@")[0] || "Player", wpm: 0, acc: 0
+                        };
+                        return (
+                            <div className="flex flex-col sm:flex-row items-center justify-between font-mono text-sm sm:text-base text-foreground gap-2 px-2">
+                                <span className="w-full sm:w-auto text-left">Rank: <span className="text-accent-secondary">{userRow.rank}</span></span>
+                                <span className="w-full sm:w-auto text-center truncate px-2 opacity-80">Typist: [{userRow.user}]</span>
+                                <span className="w-full sm:w-auto text-center font-bold text-accent text-glow-bright">WPM: {userRow.wpm}</span>
+                                <span className="w-full sm:w-auto text-center">Accuracy: {userRow.acc}%</span>
+                                <span className="w-full sm:w-auto text-right text-text-dim text-xs">Date: Today</span>
+                            </div>
+                        );
+                    })()}
+                </div>
+            )}
         </div>
     );
 }

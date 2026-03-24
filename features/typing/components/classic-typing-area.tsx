@@ -289,7 +289,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 // Past words
                 const history = wordHistory[wIdx];
                 if (history?.isCorrect) {
-                    className += "text-accent bg-accent/10";
+                    className += "text-foreground bg-accent/10";
                 } else {
                     className += "text-error-text bg-error-bg/30 line-through decoration-error-text/50";
                 }
@@ -299,11 +299,11 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                 if (isTypo) {
                     className += "bg-error-bg/30 text-error-text ring-1 ring-error-text/50";
                 } else {
-                    className += "bg-foreground/10 text-foreground ring-1 ring-foreground/20";
+                    className += "bg-accent text-[#060b13] font-bold shadow-[0_4px_12px_rgba(var(--accent-rgb),0.3)] px-1.5";
                 }
             } else {
                 // Future words
-                className += "text-text-dim";
+                className += "text-text-dim/50";
             }
 
             return (
@@ -318,7 +318,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         });
     };
 
-    const showBlurOverlay = !isFocused && status !== "finished";
+
 
     return (
         <div className="w-full flex flex-col items-center relative" onClick={focusInput}>
@@ -415,25 +415,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
                                 placeholder={status === "idle" ? "Type the words here..." : ""}
                             />
 
-                            {/* Blur overlay on input only */}
-                            <AnimatePresence>
-                                {showBlurOverlay && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="absolute inset-0 z-10 hidden sm:flex items-center justify-center cursor-pointer backdrop-blur-md rounded-xl"
-                                        onClick={focusInput}
-                                    >
-                                        <div className="bg-panel-bg/80 border border-foreground/10 px-6 py-3 rounded-full flex gap-3 items-center shadow-xl">
-                                            <span className="text-foreground text-sm font-sans font-medium tracking-wide">
-                                                Click here or press any key to focus
-                                            </span>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+
                         </div>
 
 

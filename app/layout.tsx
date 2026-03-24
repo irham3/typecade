@@ -1,12 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Pixelify_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { Pixelify_Sans, Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { LayoutShell } from "./layout-shell";
 import "./globals.css";
 
-const displayFont = Pixelify_Sans({
-  weight: "400",
+const displayFont = Space_Grotesk({
   variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const pixelFont = Pixelify_Sans({
+  weight: "400",
+  variable: "--font-pixel",
   subsets: ["latin"],
 });
 
@@ -114,7 +119,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground`}>
+      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} ${pixelFont.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground tracking-tight`}>
         <AuthProvider>
           <LayoutShell>{children}</LayoutShell>
         </AuthProvider>

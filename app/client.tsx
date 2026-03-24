@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { useStore, ModeOption } from "@/lib/store";
 import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SegmentedControl, PixelButton } from "@/components/ui/segmented-control";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -46,9 +46,8 @@ export function HomeClient() {
     const setCustomText = useStore(state => state.setCustomText);
     const customShuffle = useStore(state => state.customShuffle);
     const setCustomShuffle = useStore(state => state.setCustomShuffle);
-
+    
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
-    const [styleDesktopOpen, setStyleDesktopOpen] = useState(false);
     const [styleMobileOpen, setStyleMobileOpen] = useState(false);
 
     // Custom limit states
@@ -121,12 +120,12 @@ export function HomeClient() {
                 </Button>
             </div>
 
-            {/* ── Settings Bar (Desktop only) ── */}
+            {/* ── Mode Selection Bar (Single Row Desktop) ── */}
             <motion.div 
                 layout 
-                className={`hidden lg:flex items-center justify-center gap-2 mb-10 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full z-10 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-5' : 'opacity-100 translate-y-0'}`}
+                className={`hidden lg:flex items-center justify-center gap-4 mb-16 overflow-x-auto px-6 py-3 w-fit mx-auto z-10 relative transition-all duration-500 ease-out ${hideUI ? 'opacity-0 pointer-events-none -translate-y-5' : 'opacity-100 translate-y-0'}`}
             >
-                <motion.div layout>
+                <div className="flex items-center gap-1.5 shrink-0">
                     <SegmentedControl
                         options={[...modeOptions]}
                         value={activeTab}
@@ -141,19 +140,19 @@ export function HomeClient() {
                         }}
                         className="bg-transparent border-transparent p-0"
                     />
-                </motion.div>
+                </div>
+
+                <div className="w-px h-4 bg-foreground/10 shrink-0" />
 
                 <AnimatePresence mode="popLayout">
                     {activeTab !== "Custom" && (
                         <motion.div
                             layout
-                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
-                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            transition={{ duration: 0.25, ease: "easeOut" }}
-                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            className="flex items-center gap-1.5 shrink-0"
                         >
-                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
                             <SegmentedControl
                                 options={subOptions[activeTab]}
                                 value={subOption}
@@ -166,148 +165,67 @@ export function HomeClient() {
                                 }}
                                 formatOption={(val) => {
                                     if (val === "Custom") {
-                                        if (activeTab === "Words") return <><Settings size={13} className="opacity-60 mr-1.5" />{customWordLimit} W</>;
-                                        if (activeTab === "Time") return <><Settings size={13} className="opacity-60 mr-1.5" />{customTimeLimit}s</>;
+                                        if (activeTab === "Words") return <>{customWordLimit}</>;
+                                        if (activeTab === "Time") return <>{customTimeLimit}</>;
                                     }
                                     return val;
                                 }}
-                                variant="gradient"
                                 className="bg-transparent border-transparent p-0"
                             />
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                <AnimatePresence mode="popLayout">
-                    {(activeTab === "Words" || activeTab === "Time") && (
-                        <motion.div
-                            layout
-                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
-                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            transition={{ duration: 0.25, ease: "easeOut" }}
-                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
-                        >
-                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
+                <div className="w-px h-4 bg-foreground/10 shrink-0" />
 
-                            <div className="flex items-center gap-1 shrink-0">
-                                <Button
-                                    variant={punctuation ? "activeGradient" : "ghost"}
-                                    className="px-3 py-1.5 text-sm"
-                                    onClick={() => setPunctuation(!punctuation)}
-                                >
-                                    @ punctuation
-                                </Button>
-                                <Button
-                                    variant={numbers ? "activeGradient" : "ghost"}
-                                    className="px-3 py-1.5 text-sm"
-                                    onClick={() => setNumbers(!numbers)}
-                                >
-                                    # numbers
-                                </Button>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === "Custom" && (
-                        <motion.div
-                            layout
-                            initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
-                            exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                            transition={{ duration: 0.25, ease: "easeOut" }}
-                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
-                        >
-                            <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
-                            <Button
-                                variant="outline"
-                                className="px-3 py-1.5 text-sm gap-2"
-                                onClick={() => {
-                                    setCustomTextDraft(customText);
-                                    setIsCustomModalOpen(true);
-                                }}
-                            >
-                                <PenLine size={14} />
-                                Edit Text
-                            </Button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence mode="popLayout">
-                    {activeTab !== "Custom" && (
-                        <>
-                            <motion.div layout className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
-                            <motion.div layout>
-                                <DropdownMenu open={langDropdownOpen} onOpenChange={setLangDropdownOpen}>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0"
-                                        >
-                                            <Globe size={14} className="opacity-50" />
-                                            <span>{language}</span>
-                                            <ChevronDown size={12} className={`opacity-30 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-                                        {[
-                                            { code: "EN", label: "English" },
-                                            { code: "ID", label: "Indonesia" }
-                                        ].map(lang => (
-                                            <DropdownMenuItem
-                                                key={lang.code}
-                                                onClick={() => setLanguage(lang.code as "EN" | "ID")}
-                                                className={`justify-between min-w-30 ${language === lang.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
-                                            >
-                                                {lang.label}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence mode="popLayout">
-                    <motion.div
-                        layout
-                        initial={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                        animate={{ opacity: 1, width: "auto", filter: "blur(0px)" }}
-                        exit={{ opacity: 0, width: 0, filter: "blur(4px)" }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                        className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <PixelButton
+                        isActive={punctuation}
+                        onClick={() => setPunctuation(!punctuation)}
+                        size="sm"
                     >
-                        <div className="w-px h-4 bg-foreground/10 hidden sm:block shrink-0" />
-                        <DropdownMenu open={styleDesktopOpen} onOpenChange={setStyleDesktopOpen}>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0"
-                                >
-                                    <Keyboard size={14} className="opacity-50" />
-                                    <span>{typingStyle === "modern" ? "Modern" : "Classic"}</span>
-                                    <ChevronDown size={12} className={`opacity-30 transition-transform duration-300 ${styleDesktopOpen ? "rotate-180" : ""}`} />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-                                {[
-                                    { code: "modern", label: "Modern" },
-                                    { code: "classic", label: "Classic" }
-                                ].map(style => (
-                                    <DropdownMenuItem
-                                        key={style.code}
-                                        onClick={() => setTypingStyle(style.code as "modern" | "classic")}
-                                        className={`justify-between min-w-36 ${typingStyle === style.code ? "bg-accent/15 text-accent font-semibold" : ""}`}
-                                    >
-                                        {style.label}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </motion.div>
-                </AnimatePresence>
+                        @ punctuation
+                    </PixelButton>
+                    <PixelButton
+                        isActive={numbers}
+                        onClick={() => setNumbers(!numbers)}
+                        size="sm"
+                    >
+                        # numbers
+                    </PixelButton>
+                </div>
+
+                <div className="w-px h-4 bg-foreground/10 shrink-0" />
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="gap-2 px-3 h-8 text-text-dim hover:text-foreground">
+                                <Globe size={14} className="opacity-60" />
+                                {language}
+                                <ChevronDown size={12} className="opacity-40" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => setLanguage("EN")}>English (EN)</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setLanguage("ID")}>Indonesian (ID)</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="gap-2 px-3 h-8 text-text-dim hover:text-foreground">
+                                <Keyboard size={14} className="opacity-60" />
+                                {typingStyle === "modern" ? "Modern" : "Classic"}
+                                <ChevronDown size={12} className="opacity-40" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => setTypingStyle("modern")}>Modern View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTypingStyle("classic")}>Classic View</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </motion.div>
 
             {/* ── Typing Area ── */}

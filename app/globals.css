@@ -12,34 +12,48 @@
    - All accent colors pass WCAG AA 3:1 on bg for UI elements
    ────────────────────────────────────── */
 
-/* Warm Precision - Default (Slightly warm off-white and cool dark bg) */
+/* Muted Arcade - Swap palette per user request (#82baeb Highlights, #B68A6E Secondary) */
 :root {
-  --background: #0c0d14;
-  --background-rgb: 12, 13, 20;
-  --background-raised: #111219;
-  --foreground: #e6e4df;
-  --foreground-rgb: 230, 228, 223;
-  --accent: #4952E3;
-  --accent-rgb: 73, 82, 227;
-  --accent-secondary: #5eead4;
-  --accent-secondary-rgb: 94, 234, 212;
+  --background: #060b13;
+  --background-rgb: 6, 11, 19;
+  --background-raised: #0a111f;
+  --foreground: #e5e5e5;
+  --foreground-rgb: 229, 229, 229;
+  --accent: #09E6FB;
+  --accent-rgb: 130, 186, 235;
+  --accent-secondary: #F87C22;
+  --accent-secondary-rgb: 248, 157, 101;
   --error-bg: #3f1521;
   --error-text: #f0717b;
-  --text-dim: #858794;
-  --text-dim-rgb: 133, 135, 148;
-  --panel-bg: #111219;
-  --panel-bg-rgb: 17, 18, 25;
-  --panel-elevated: #1a1b26;
-  --panel-elevated-rgb: 26, 27, 38;
-  --border-dim: #222330;
-  --border-dim-rgb: 34, 35, 48;
-  --border-accent: rgba(99, 102, 241, 0.12);
+  --text-dim: #71727c;
+  --text-dim-rgb: 113, 114, 124;
+  --panel-bg: #0b1220;
+  --panel-bg-rgb: 11, 18, 32;
+  --panel-elevated: #111a2d;
+  --panel-elevated-rgb: 17, 26, 45;
+  --border-dim: #222a3a;
+  --border-dim-rgb: 34, 42, 58;
+  --border-accent: rgba(130, 186, 235, 0.4);
   --gold: #f5c542;
   --gold-rgb: 245, 197, 66;
   --silver: #94a3b8;
   --silver-rgb: 148, 163, 184;
   --bronze: #cd7f32;
   --bronze-rgb: 205, 127, 50;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-background-raised: var(--background-raised);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-text-dim: var(--text-dim);
+  --color-border-dim: var(--border-dim);
+  --color-panel-bg: var(--panel-bg);
+  --color-panel-elevated: var(--panel-elevated);
+  --color-error-text: var(--error-text);
+  --color-error-bg: var(--error-bg);
 }
 
 [data-theme='light'] {
@@ -433,7 +447,9 @@ body {
 }
 
 /* Aurora disabled for cleaner profressional aesthetic */
-.aurora-container, .aurora-bg, .aurora-blob {
+.aurora-container,
+.aurora-bg,
+.aurora-blob {
   display: none !important;
 }
 
@@ -508,21 +524,18 @@ body::before {
   border: 1px solid var(--border-dim);
 }
 
-.glass-subtle {
-  background: rgba(var(--panel-bg-rgb), 0.5);
-  border: 1px solid var(--border-dim);
-}
-
-/* ── Glow effects disabled ── */
 .glow-accent {
-  box-shadow: none;
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.2);
+  border-color: var(--accent) !important;
 }
 
 .glow-accent-strong {
-  box-shadow: none;
+  box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3);
+  border-color: var(--accent) !important;
 }
 
-.text-glow-accent {
+.text-glow-accent,
+.text-glow-bright {
   text-shadow: none;
 }
 
@@ -530,11 +543,11 @@ body::before {
 
 /* ── Optical Alignment Tweaks for Icons ── */
 /* Mendorong sedikit semua SVG lucide ke bawah untuk meratakan middle text */
-button > svg.lucide,
-a > svg.lucide,
-span.flex > svg.lucide,
-span.inline-flex > svg.lucide,
-div.flex > svg.lucide {
+button>svg.lucide,
+a>svg.lucide,
+span.flex>svg.lucide,
+span.inline-flex>svg.lucide,
+div.flex>svg.lucide {
   transform: translateY(1px);
 }
 

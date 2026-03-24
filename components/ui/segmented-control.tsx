@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface SegmentedControlProps<T extends string> {
@@ -14,90 +13,63 @@ interface SegmentedControlProps<T extends string> {
     formatOption?: (val: T) => React.ReactNode;
 }
 
+export function PixelButton({
+    isActive,
+    onClick,
+    children,
+    size = "md",
+    className = "",
+}: {
+    isActive: boolean;
+    onClick?: () => void;
+    children: React.ReactNode;
+    size?: "sm" | "md";
+    className?: string;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={cn(
+                "relative z-10 font-mono transition-all duration-100 cursor-pointer select-none whitespace-nowrap inline-flex items-center justify-center rounded-lg bg-transparent border-t border-l border-r border-b-4 active:border-b active:translate-y-[3px]",
+                size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
+                isActive
+                    ? "text-accent border-accent/80 font-bold drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.6)]"
+                    : "text-text-dim border-border-dim hover:text-foreground hover:border-text-dim/60",
+                className
+            )}
+        >
+            {children}
+        </button>
+    );
+}
+
 export function SegmentedControl<T extends string>({
     options,
     value,
     onChange,
     className = "",
     size = "md",
-    variant = "default",
     formatOption,
 }: SegmentedControlProps<T>) {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
-
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const updateIndicator = () => {
-            const activeIndex = options.indexOf(value);
-            const buttons = container.querySelectorAll<HTMLButtonElement>("[data-segment-btn]");
-            const activeBtn = buttons[activeIndex];
-
-            if (activeBtn) {
-                setIndicatorStyle({
-                    left: activeBtn.offsetLeft,
-                    width: activeBtn.offsetWidth,
-                });
-            }
-        };
-
-        updateIndicator();
-
-        const observer = new ResizeObserver(() => updateIndicator());
-        const buttons = container.querySelectorAll<HTMLButtonElement>("[data-segment-btn]");
-        buttons.forEach((btn) => observer.observe(btn));
-
-        return () => observer.disconnect();
-    }, [value, options]);
 
     return (
         <div
-            ref={containerRef}
             className={cn(
-                "relative inline-flex items-center rounded-2xl p-1 bg-foreground/3 border border-foreground/6",
+                "flex items-center gap-1.5",
                 className
             )}
         >
-            {/* Animated pill indicator */}
-            <motion.div
-                className={cn(
-                    "absolute top-1 bottom-1 rounded-xl z-0",
-                    variant === "gradient"
-                        ? "bg-linear-to-r from-accent/15 to-accent/8 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
-                        : "bg-foreground/10"
-                )}
-                animate={{
-                    left: indicatorStyle.left,
-                    width: indicatorStyle.width,
-                }}
-                transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                }}
-            />
-
             {options.map((option) => {
                 const isActive = value === option;
                 return (
-                    <button
+                    <PixelButton
                         key={option}
-                        data-segment-btn
+                        isActive={isActive}
                         onClick={() => onChange(option)}
-                        className={cn(
-                            "relative z-10 font-medium transition-colors duration-200 cursor-pointer select-none whitespace-nowrap inline-flex items-center justify-center",
-                            size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
-                            isActive
-                                ? variant === "gradient"
-                                    ? "text-accent"
-                                    : "text-foreground"
-                                : "text-text-dim hover:text-foreground/70"
-                        )}
+                        size={size}
                     >
                         {formatOption ? formatOption(option) : option}
-                    </button>
+                    </PixelButton>
                 );
             })}
         </div>
