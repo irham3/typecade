@@ -21,6 +21,12 @@ const buttonVariants = cva(
                 active: "bg-foreground/8 text-foreground",
                 activeGradient: "text-[#060b13] bg-accent font-bold shadow-[0_2px_8px_rgba(var(--accent-rgb),0.2)] border border-accent/20",
                 danger: "bg-error-bg/60 text-error-text hover:bg-error-bg/80",
+                arcade:
+                    "relative bg-accent text-[#060b13] font-mono font-bold uppercase tracking-widest border-t border-l border-r border-white/20 shadow-[0_4px_0_0_rgba(var(--accent-rgb),0.6)] hover:shadow-[0_6px_0_0_rgba(var(--accent-rgb),0.7)] hover:bg-accent/90 active:translate-y-[2px] active:shadow-none transition-all duration-150 rounded-xl",
+                arcadeSecondary:
+                    "relative bg-accent-secondary text-white font-mono font-bold uppercase tracking-widest border-t border-l border-r border-white/20 shadow-[0_4px_0_0_rgba(var(--accent-secondary-rgb),0.6)] hover:shadow-[0_6px_0_0_rgba(var(--accent-secondary-rgb),0.7)] hover:bg-accent-secondary/90 active:translate-y-[2px] active:shadow-none transition-all duration-150 rounded-xl",
+                arcadeOutline:
+                    "relative bg-transparent text-foreground/80 font-mono font-bold uppercase tracking-widest border border-foreground/10 shadow-[0_4px_0_0_rgba(255,255,255,0.05)] hover:bg-foreground/5 hover:text-foreground active:translate-y-[2px] active:shadow-none transition-all duration-150 rounded-xl",
             },
             size: {
                 default: "h-9 px-4 py-2",

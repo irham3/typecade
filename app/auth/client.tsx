@@ -161,7 +161,7 @@ export function AuthClient() {
                 {user && (
                     <div className="border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 rounded-xl px-4 py-4 text-sm mb-6 flex flex-col gap-3">
                         <span>You are signed in as {user.email ?? "active account"}.</span>
-                        <Button variant="primary" onClick={() => router.push("/profile")} className="w-full">
+                        <Button variant="arcade" onClick={() => router.push("/profile")} className="w-full">
                             Continue to Profile
                         </Button>
                     </div>
@@ -190,7 +190,7 @@ export function AuthClient() {
                             </Button>
                         </div>
 
-                        <Button variant="primary" onClick={handleGoogle} className="w-full" disabled={!supabaseReady || isLoading || isSubmitting || cooldownSeconds > 0}>
+                        <Button variant="arcade" onClick={handleGoogle} className="w-full py-6 text-base" disabled={!supabaseReady || isLoading || isSubmitting || cooldownSeconds > 0}>
                             Continue with Google
                         </Button>
 
@@ -247,8 +247,8 @@ export function AuthClient() {
 
                             <Button
                                 type="submit"
-                                variant="outline"
-                                className="w-full"
+                                variant="arcade"
+                                className="w-full py-6 text-base mt-2"
                                 disabled={!supabaseReady || isLoading || isSubmitting || cooldownSeconds > 0}
                             >
                                 {mode === "sign-in" ? "Sign in with email" : "Create account with email"}
