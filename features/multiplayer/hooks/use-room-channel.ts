@@ -234,9 +234,20 @@ export function useRoomChannel({
                 if (leftUserIds.length === 0) return;
                 const c = getSupabaseClient();
                 if (!c) return;
-                void c.from("multiplayer_room_players").delete()
+
+                void c.from("multiplayer_room_players")
+                    .update({ status: "finished" } as unknown as never)
                     .eq("room_id", roomId)
                     .in("user_id", leftUserIds);
+
+                const activePresences = channel.presenceState();
+                const remainingCount = Object.keys(activePresences).length;
+                
+                if (remainingCount === 0) {
+                     void c.from("multiplayer_rooms")
+                        .update({ status: "finished" } as unknown as never)
+                        .eq("id", roomId);
+                }
             })
             .subscribe((status: string) => {
                 if (status === "SUBSCRIBED") {
@@ -274,11 +285,21 @@ export function useRoomChannel({
         if (!roomId || !userId) return;
         const client = getSupabaseClient();
         if (!client) return;
+        
+        const channelState = channelRef.current?.presenceState() || {};
+        const remainingCount = Object.keys(channelState).length;
+        
+        if (remainingCount <= 1) {
+             void client.from("multiplayer_rooms")
+                .update({ status: "finished" } as unknown as never)
+                .eq("id", roomId);
+        }
+
         void client.from("multiplayer_room_players")
-            .delete()
+            .update({ status: "finished" } as unknown as never)
             .eq("room_id", roomId)
             .eq("user_id", userId);
-    }, [roomId, userId]);
+    }, [roomId, userId, channelRef]);
 
     return { loadPlayers, leaveRoom };
 }

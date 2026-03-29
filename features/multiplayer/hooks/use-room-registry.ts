@@ -41,7 +41,25 @@ export function useRoomRegistry() {
                     counts[key] = set.size;
                 });
                 
-                setActiveRoomIds(activeIds);
+                // Track newly empty rooms and mark them finished
+                setActiveRoomIds((prevActive) => {
+                    const emptyRooms = [...prevActive].filter(id => !activeIds.has(id));
+                    if (emptyRooms.length > 0) {
+                        const c = getSupabaseClient();
+                        if (c) {
+                            emptyRooms.forEach(roomId => {
+                                // Only UUID format or length > 6 to avoid trying to update by code
+                                if (roomId.length > 10) {
+                                    void c.from("multiplayer_rooms")
+                                        .update({ status: "finished" } as unknown as never)
+                                        .eq("id", roomId);
+                                }
+                            });
+                        }
+                    }
+                    return activeIds;
+                });
+
                 setRoomPlayerCounts(counts);
             })
             .subscribe();
