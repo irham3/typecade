@@ -29,16 +29,8 @@ type RaceState = "waiting" | "countdown" | "racing" | "finished";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const BOT_SPEEDS: Record<string, number> = { p2: 15, p3: 30, p4: 50, p5: 70, p6: 90, p7: 110 };
-
 const OFFLINE_PLAYERS: Player[] = [
     { id: "p1", name: "TypingNinja (You)", wpm: 0, progress: 0, correctChars: 0, color: "var(--color-accent)", status: "waiting" },
-    { id: "p2", name: "Newbie_Typer", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
-    { id: "p3", name: "SlowPoke", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
-    { id: "p4", name: "AverageJoe", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
-    { id: "p5", name: "FastFingers99", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
-    { id: "p6", name: "Keyboard_Slayer", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
-    { id: "p7", name: "TypeGod_T800", wpm: 0, progress: 0, correctChars: 0, color: "#555", status: "waiting" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -204,12 +196,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     const newProgress = Math.min(100, (player.correctChars / totalChars) * 100);
                     return { ...player, wpm: newWpm, progress: newProgress };
                 }
-                const baseSpeed = BOT_SPEEDS[player.id] ?? 40;
-                const currentWpm = baseSpeed + (Math.random() * 10 - 5);
-                const charsAdded = (currentWpm * 5) / 120;
-                const newCorrectChars = player.correctChars + charsAdded;
-                const newProgress = Math.min(100, (newCorrectChars / totalChars) * 100);
-                return { ...player, correctChars: newCorrectChars, progress: newProgress, wpm: Math.floor(currentWpm), status: newProgress >= 100 ? "finished" : "playing" };
+                return player;
             }));
         }, 500);
         return () => clearInterval(timer);
