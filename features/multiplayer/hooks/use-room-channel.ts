@@ -86,7 +86,8 @@ export function useRoomChannel({
                 const now = Date.now();
                 const mapped = (data as PlayerRow[]).map((row, index) => {
                     const live = livePlayersRef.current[row.user_id] ?? null;
-                    const hasLive = Boolean(live && now - live.sentAt < 10_000);
+                    const isFinishedInDb = row.status === "finished";
+                    const hasLive = Boolean(!isFinishedInDb && live && now - live.sentAt < 10_000);
                     return {
                         id: row.user_id,
                         name: row.display_name,
@@ -101,18 +102,23 @@ export function useRoomChannel({
                 setPlayers(prev => {
                     if (mapped.length === 0) return prev;
                     return mapped.map(serverPlayer => {
-                        // Keep local player's stats from client during a live race to avoid jitter
+                        // 1. If DB confirms the player is finished, strictly use DB final stats.
+                        if (serverPlayer.status === "finished") {
+                            return serverPlayer;
+                        }
+
                         const localPlayer = prev.find(p => p.id === serverPlayer.id);
-                        if (serverPlayer.id === currentUserId && localPlayer) {
-                            // Trust local state unless server says "finished" and local doesn't
-                            if (localPlayer.status !== "finished" || serverPlayer.status === "finished") {
-                                return serverPlayer; // server takes precedence
+                        if (localPlayer) {
+                            // 2. Prevent UI jumping back to "playing" if DB hasn't caught up to our finished state.
+                            if (localPlayer.status === "finished") {
+                                return { ...serverPlayer, wpm: localPlayer.wpm, progress: localPlayer.progress, correctChars: localPlayer.correctChars, status: "finished" };
+                            }
+                            // 3. Keep current player's stats completely smooth from local typing interval, bypassing DB lag.
+                            if (serverPlayer.id === currentUserId) {
+                                return { ...serverPlayer, wpm: localPlayer.wpm, progress: localPlayer.progress, correctChars: localPlayer.correctChars };
                             }
                         }
-                        // Preserve finished player stats (server sometimes lags behind)
-                        if (localPlayer?.status === "finished") {
-                            return { ...serverPlayer, wpm: localPlayer.wpm, progress: localPlayer.progress, correctChars: localPlayer.correctChars, status: "finished" };
-                        }
+                        
                         return serverPlayer;
                     });
                 });
