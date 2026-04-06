@@ -104,15 +104,27 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 email: email.trim(),
                 password: password.trim(),
             })
-            : await client.auth.signUp({
-                email: email.trim(),
-                password: password.trim(),
-                options: {
-                    emailRedirectTo: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-                        ? "http://localhost:3000/profile"
-                        : "https://typecade.com/profile"
-                }
-            });
+            : await (async () => {
+                // Generate a default username from the email prefix
+                const emailPrefix = email.trim().split("@")[0] || "user";
+                const sanitized = emailPrefix.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 16);
+                const defaultUsername = sanitized + "_" + Math.floor(1000 + Math.random() * 9000);
+                const defaultDisplayName = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
+
+                return client.auth.signUp({
+                    email: email.trim(),
+                    password: password.trim(),
+                    options: {
+                        data: {
+                            username: defaultUsername,
+                            display_name: defaultDisplayName,
+                        },
+                        emailRedirectTo: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+                            ? "http://localhost:3000/profile"
+                            : "https://typecade.com/profile"
+                    }
+                });
+            })();
 
         const { error, data } = result;
         setIsSubmitting(false);

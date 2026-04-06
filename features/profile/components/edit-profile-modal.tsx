@@ -33,7 +33,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
             setError(null);
 
             const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            const fileName = `${user.id}-${Date.now()}.${fileExt}`;
             const filePath = `avatars/${fileName}`;
 
             // Upload image to Supabase Storage
@@ -48,16 +48,42 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                 .from('avatars')
                 .getPublicUrl(filePath);
 
-            // Update Auth metadata
-            const { error: updateAuthError } = await client.auth.updateUser({
-                data: { avatar_url: publicUrl }
-            });
+            // Update profiles table — use .select() to verify it actually updated
+            const { data: updatedRows, error: profileErr } = await client.from('profiles')
+                .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+                .eq('user_id', user.id)
+                .select('user_id');
 
-            if (updateAuthError) throw updateAuthError;
+            if (profileErr) {
+                console.error("Profile update error:", profileErr);
+                throw new Error(profileErr.message || "Failed to update profile avatar");
+            }
 
-            // Update profiles table so it becomes public for board
-            await client.from('profiles')
-                .upsert({ user_id: user.id, avatar_url: publicUrl, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+            if (!updatedRows || updatedRows.length === 0) {
+                console.warn("Profile update returned 0 rows — trying upsert...");
+                // The row might not exist yet or RLS blocked the update, try upsert
+                const { error: upsertErr } = await client.from('profiles')
+                    .upsert({
+                        user_id: user.id,
+                        avatar_url: publicUrl,
+                        display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'user_id' });
+
+                if (upsertErr) {
+                    console.error("Profile upsert error:", upsertErr);
+                    throw new Error("Could not save avatar to profile. Check RLS policies.");
+                }
+            }
+
+            // Try to update auth metadata (best-effort)
+            try {
+                await client.auth.updateUser({
+                    data: { avatar_url: publicUrl }
+                });
+            } catch {
+                // Silently ignore — profile table is already updated
+            }
 
             onProfileUpdated();
         } catch (err: unknown) {
@@ -68,6 +94,14 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
         }
     };
 
+    const usernameRegex = /^[a-zA-Z0-9_-]*$/;
+
+    const handleUsernameChange = (value: string) => {
+        // Strip any characters that don't match the allowed pattern
+        const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '');
+        setUsername(sanitized);
+    };
+
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
@@ -75,26 +109,38 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
         const client = getSupabaseClient();
         if (!client) return;
 
+        // Client-side validation
+        if (username && !usernameRegex.test(username)) {
+            setError("Username can only contain letters, numbers, underscores, and hyphens.");
+            return;
+        }
+
         try {
             setIsLoading(true);
             setError(null);
 
-            // Update profile metadata in auth
-            const { error: authErr } = await client.auth.updateUser({
-                data: { username: username, display_name: displayName }
-            });
-            if (authErr) throw authErr;
-
-            // Update profiles table
+            // Update profiles table first (this is the critical/public-facing one)
             const { error: profileErr } = await client.from('profiles')
-                .upsert({
-                    user_id: user.id,
+                .update({
                     display_name: displayName,
-                    username: username,
+                    username: username || null,
                     updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
+                })
+                .eq('user_id', user.id);
 
-            if (profileErr) throw profileErr;
+            if (profileErr) {
+                const msg = (profileErr as { message?: string }).message || "Failed to save profile";
+                throw new Error(msg);
+            }
+
+            // Try to update auth metadata (non-critical, may fail if session is stale)
+            try {
+                await client.auth.updateUser({
+                    data: { username: username, display_name: displayName }
+                });
+            } catch {
+                // Silently ignore — profile table is already updated
+            }
 
             onProfileUpdated();
             setIsOpen(false);
@@ -194,10 +240,11 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                             <input
                                 type="text"
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                onChange={(e) => handleUsernameChange(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                                 placeholder="awesome_typer"
                             />
+                            <p className="text-[11px] text-text-dim/50 font-mono">Only letters, numbers, underscores, and hyphens.</p>
                         </div>
 
                         <div className="pt-4">
