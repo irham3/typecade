@@ -8,6 +8,7 @@ export function useProfileData() {
     const storeStats = useStore(state => state.stats);
     const [stats, setStats] = useState(storeStats);
     const [displayName, setDisplayName] = useState("");
+    const [username, setUsername] = useState("");
     const [memberSince, setMemberSince] = useState("");
     const [timeframe, setTimeframe] = useState("All time");
     const [refreshKey, setRefreshKey] = useState(0);
@@ -42,6 +43,9 @@ export function useProfileData() {
             ]);
 
             const profileRow = (profile ?? null) as { display_name?: string; username?: string; created_at?: string } | null;
+            if (profileRow?.username) {
+                setUsername(profileRow.username);
+            }
             if (profileRow?.display_name) {
                 setDisplayName(profileRow.display_name);
             } else if (profileRow?.username) {
@@ -139,6 +143,7 @@ export function useProfileData() {
         user,
         stats,
         displayName,
+        username,
         memberSince,
         timeframe,
         setTimeframe,

@@ -50,31 +50,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(nextSession ?? null);
             setUser(nextSession?.user ?? null);
 
-            // Ensure every user has a default username (only on sign-in, not token refresh)
+            // Redirect users without a username to onboarding
             if (_event === "SIGNED_IN") {
                 const u = nextSession?.user;
                 if (u && !u.user_metadata?.username) {
-                    const emailPrefix = (u.email?.split("@")[0] || "user");
-                    const sanitized = emailPrefix.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 16);
-                    const defaultUsername = sanitized + "_" + Math.floor(1000 + Math.random() * 9000);
-                    const defaultDisplayName = u.user_metadata?.full_name || u.user_metadata?.name || (sanitized.charAt(0).toUpperCase() + sanitized.slice(1));
-
-                    // Update profiles table (primary — always works with RLS)
-                    await client.from("profiles")
-                        .update({
-                            username: defaultUsername,
-                            display_name: defaultDisplayName,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq("user_id", u.id);
-
-                    // Try to update auth metadata (best-effort)
-                    try {
-                        await client.auth.updateUser({
-                            data: { username: defaultUsername, display_name: defaultDisplayName }
-                        });
-                    } catch {
-                        // Silently ignore — profiles table is already updated
+                    if (window.location.pathname !== "/onboarding") {
+                        window.location.href = "/onboarding";
                     }
                 }
             }

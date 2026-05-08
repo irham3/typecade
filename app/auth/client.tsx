@@ -18,10 +18,48 @@ export function AuthClient() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [username, setUsername] = useState("");
+    const [usernameError, setUsernameError] = useState("");
+    const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);
     const [status, setStatus] = useState<StatusState>({ tone: "idle", message: "" });
+
+    useEffect(() => {
+        if (mode !== "sign-up" || !username.trim()) {
+            const t = setTimeout(() => setUsernameError(""), 0);
+            return () => clearTimeout(t);
+        }
+
+        const checkUsername = async () => {
+            const val = username.trim();
+            if (!/^[a-zA-Z0-9_-]{3,16}$/.test(val)) {
+                setUsernameError("3-16 chars, alphanumeric, _, - only.");
+                return;
+            }
+            
+            setIsCheckingUsername(true);
+            const client = getSupabaseClient();
+            if (client) {
+                const { data } = await client
+                    .from('profiles')
+                    .select('username')
+                    .eq('username', val)
+                    .maybeSingle();
+                
+                if (data) {
+                    setUsernameError("Username is already taken.");
+                } else {
+                    setUsernameError("");
+                }
+            }
+            setIsCheckingUsername(false);
+        };
+
+        const timeout = setTimeout(checkUsername, 500);
+        return () => clearTimeout(timeout);
+    }, [username, mode]);
 
     const statusStyles = useMemo(() => {
         if (status.tone === "success") {
@@ -69,13 +107,23 @@ export function AuthClient() {
             setStatus({ tone: "error", message: "Password cannot be empty." });
             return;
         }
-        if (mode === "sign-up" && password.trim().length < 8) {
-            setStatus({ tone: "error", message: "Password must be at least 8 characters." });
-            return;
-        }
-        if (mode === "sign-up" && password.trim() !== confirmPassword.trim()) {
-            setStatus({ tone: "error", message: "Passwords do not match." });
-            return;
+        if (mode === "sign-up") {
+            if (!username.trim()) {
+                setStatus({ tone: "error", message: "Username cannot be empty." });
+                return;
+            }
+            if (usernameError) {
+                setStatus({ tone: "error", message: usernameError });
+                return;
+            }
+            if (password.trim().length < 8) {
+                setStatus({ tone: "error", message: "Password must be at least 8 characters." });
+                return;
+            }
+            if (password.trim() !== confirmPassword.trim()) {
+                setStatus({ tone: "error", message: "Passwords do not match." });
+                return;
+            }
         }
 
         const client = getSupabaseClient();
@@ -92,27 +140,19 @@ export function AuthClient() {
                 email: email.trim(),
                 password: password.trim(),
             })
-            : await (async () => {
-                // Generate a default username from the email prefix
-                const emailPrefix = email.trim().split("@")[0] || "user";
-                const sanitized = emailPrefix.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 16);
-                const defaultUsername = sanitized + "_" + Math.floor(1000 + Math.random() * 9000);
-                const defaultDisplayName = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
-
-                return client.auth.signUp({
-                    email: email.trim(),
-                    password: password.trim(),
-                    options: {
-                        data: {
-                            username: defaultUsername,
-                            display_name: defaultDisplayName,
-                        },
-                        emailRedirectTo: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-                            ? "http://localhost:3000/profile"
-                            : "https://typecade.com/profile"
-                    }
-                });
-            })();
+            : await client.auth.signUp({
+                email: email.trim(),
+                password: password.trim(),
+                options: {
+                    data: {
+                        username: username.trim(),
+                        display_name: username.trim(),
+                    },
+                    emailRedirectTo: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+                        ? "http://localhost:3000/profile"
+                        : "https://typecade.com/profile"
+                }
+            });
 
         const { error, data } = result;
         setIsSubmitting(false);
@@ -226,6 +266,27 @@ export function AuthClient() {
                                     />
                                 </div>
                             </div>
+
+                            {mode === "sign-up" && (
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Username</label>
+                                        {usernameError && <span className="text-xs text-red-400">{usernameError}</span>}
+                                        {!usernameError && username && !isCheckingUsername && <span className="text-xs text-emerald-400">Available</span>}
+                                    </div>
+                                    <div className={`flex items-center gap-2 bg-foreground/5 border rounded-xl px-4 py-3 ${usernameError ? 'border-red-500/50' : 'border-foreground/5'}`}>
+                                        <span className="text-text-dim text-sm font-semibold">@</span>
+                                        <input
+                                            type="text"
+                                            value={username}
+                                            onChange={(event) => setUsername(event.target.value)}
+                                            placeholder="johndoe"
+                                            className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-text-dim font-sans"
+                                        />
+                                        {isCheckingUsername && <div className="w-4 h-4 border-2 border-text-dim border-t-foreground rounded-full animate-spin" />}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-text-dim uppercase tracking-wider">Password</label>

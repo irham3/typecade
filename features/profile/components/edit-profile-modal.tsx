@@ -94,12 +94,11 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
         }
     };
 
-    const usernameRegex = /^[a-zA-Z0-9_-]*$/;
-
     const handleUsernameChange = (value: string) => {
         // Strip any characters that don't match the allowed pattern
         const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '');
-        setUsername(sanitized);
+        // Enforce max length of 20 characters
+        setUsername(sanitized.slice(0, 20));
     };
 
     const handleSaveProfile = async (e: React.FormEvent) => {
@@ -110,9 +109,19 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
         if (!client) return;
 
         // Client-side validation
-        if (username && !usernameRegex.test(username)) {
-            setError("Username can only contain letters, numbers, underscores, and hyphens.");
-            return;
+        if (username) {
+            if (username.length < 3) {
+                setError("Username must be at least 3 characters long.");
+                return;
+            }
+            if (!/^[a-zA-Z0-9]/.test(username)) {
+                setError("Username must start with a letter or number.");
+                return;
+            }
+            if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+                setError("Username can only contain letters, numbers, underscores, and hyphens.");
+                return;
+            }
         }
 
         try {
@@ -224,7 +233,7 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                         )}
 
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold uppercase tracking-wider text-text-dim">Display Name</label>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-text-dim">Full Name</label>
                             <input
                                 type="text"
                                 value={displayName}
@@ -243,8 +252,9 @@ export function EditProfileModal({ user, currentDisplayName, isOpen, setIsOpen, 
                                 onChange={(e) => handleUsernameChange(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                                 placeholder="awesome_typer"
+                                maxLength={20}
                             />
-                            <p className="text-[11px] text-text-dim/50 font-mono">Only letters, numbers, underscores, and hyphens.</p>
+                            <p className="text-[11px] text-text-dim/50 font-mono mt-1">3-20 characters, starts with a letter or number. Allowed: letters, numbers, _, -</p>
                         </div>
 
                         <div className="pt-4">

@@ -15,6 +15,7 @@ import type { UserStats } from '@/lib/store';
 interface ProfileHeaderProps {
     user: SupabaseUser | null;
     displayName: string;
+    username?: string;
     memberSince: string;
     stats: UserStats;
     setPreviewOpen: (open: boolean) => void;
@@ -27,7 +28,7 @@ const formatHours = (mins: number) => {
     return `${h}h ${m}m`;
 };
 
-export function ProfileHeader({ user, displayName, memberSince, stats, setPreviewOpen, setEditOpen }: ProfileHeaderProps) {
+export function ProfileHeader({ user, displayName, username, memberSince, stats, setPreviewOpen, setEditOpen }: ProfileHeaderProps) {
     const statCards = [
         { label: "Personal Best", value: stats.wpm, suffix: " WPM", icon: TrendingUp, color: "text-accent", delay: 0 },
         { label: "Top Accuracy", value: stats.accuracy, suffix: "%", icon: Target, color: "text-accent-secondary", delay: 100 },
@@ -80,11 +81,14 @@ export function ProfileHeader({ user, displayName, memberSince, stats, setPrevie
             {/* User Info */}
             <div className="flex-1 flex flex-col w-full">
                 <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4">
-                    <div className="flex flex-col items-center md:items-start gap-2">
+                    <div className="flex flex-col items-center md:items-start gap-1">
                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground tracking-tight">{displayName}</h1>
-                        <span className="text-xs font-medium text-text-dim bg-foreground/5 px-3 py-1 rounded-full border border-foreground/10">
-                            {memberSince}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            {username && <span className="text-sm font-medium text-text-dim">@{username}</span>}
+                            <span className="text-[10px] font-medium text-text-dim bg-foreground/5 px-2 py-0.5 rounded-full border border-foreground/10">
+                                {memberSince}
+                            </span>
+                        </div>
                     </div>
                     <Button variant="outline" className="px-5 py-2.5 rounded-xl text-sm font-medium" onClick={() => setEditOpen(true)}>
                         Edit Profile

@@ -10,7 +10,7 @@ import { AvatarPreviewModal } from "./avatar-preview-modal";
 import { EditProfileModal } from "./edit-profile-modal";
 
 export function ProfileView() {
-    const { user, stats, displayName, memberSince, timeframe, setTimeframe, filteredHistory, reloadProfile, isLoading } = useProfileData();
+    const { user, stats, displayName, username, memberSince, timeframe, setTimeframe, filteredHistory, reloadProfile, isLoading } = useProfileData();
     const [previewOpen, setPreviewOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
 
@@ -33,7 +33,8 @@ export function ProfileView() {
         <div className="w-full max-w-5xl pt-4 sm:pt-4 lg:pt-8 font-sans px-0">
             <ProfileHeader 
                 user={user} 
-                displayName={displayName} 
+                displayName={displayName}
+                username={username}
                 memberSince={memberSince} 
                 stats={stats} 
                 setPreviewOpen={setPreviewOpen} 
