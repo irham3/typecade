@@ -506,9 +506,9 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                     >
                         {/* Live stats bar — collapses when not playing */}
                         <div
-                            className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out ${status === "playing"
-                                ? "opacity-100 h-8 sm:h-10 mb-2 sm:mb-3"
-                                : "opacity-0 h-0 mb-0"
+                            className={`flex items-center justify-between font-mono overflow-hidden transition-all duration-300 ease-out h-8 sm:h-10 mb-2 sm:mb-3 ${status === "playing"
+                                ? "opacity-100"
+                                : "opacity-0 pointer-events-none"
                                 }`}
                         >
                             <div className="flex items-center gap-3 sm:gap-5">
@@ -544,7 +544,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         {/* Typing Area */}
                         <div className="w-full relative mt-4">
 
-                            <div className={`w-full relative transition-all duration-700 rounded-3xl ${status === "playing" ? "shadow-[0_0_40px_rgba(var(--accent-rgb),0.15)] border border-accent/20 bg-background/30 p-2 sm:p-4" : ""}`}>
+                            <div className="w-full relative rounded-3xl">
                                 <div
                                     className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/80"
                                     onContextMenu={(e) => e.preventDefault()}
@@ -602,25 +602,24 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         </div>
 
                         {/* Progress line */}
-                        {status === "playing" && (
-                            <div className="w-full h-0.5 bg-foreground/5 rounded-full mt-2 overflow-hidden">
-                                <motion.div
-                                    className="h-full rounded-full"
-                                    style={{
-                                        background: "linear-gradient(90deg, rgba(var(--accent-rgb), 0.8), rgba(var(--accent-secondary-rgb), 0.6))",
-                                    }}
-                                    animate={{
-                                        width: mode === "time"
-                                            ? `${(timeLeft / duration) * 100}%`
-                                            : `${progress}%`,
-                                    }}
-                                    transition={{
-                                        duration: mode === "time" ? 0.5 : 0.3,
-                                        ease: "linear",
-                                    }}
-                                />
-                            </div>
-                        )}
+                        <div className={`w-full h-0.5 bg-foreground/5 rounded-full mt-2 overflow-hidden transition-opacity duration-300 ${status === "playing" ? "opacity-100" : "opacity-0"}`}>
+                            <motion.div
+                                className="h-full rounded-full"
+                                style={{
+                                    background: "linear-gradient(90deg, rgba(var(--accent-rgb), 0.8), rgba(var(--accent-secondary-rgb), 0.6))",
+                                }}
+                                initial={{ width: 0 }}
+                                animate={{
+                                    width: mode === "time"
+                                        ? `${(timeLeft / duration) * 100}%`
+                                        : `${progress}%`,
+                                }}
+                                transition={{
+                                    duration: mode === "time" ? 0.5 : 0.3,
+                                    ease: "linear",
+                                }}
+                            />
+                        </div>
 
                         {/* Action Bar (Integrated Shortcuts & Buttons) */}
                         <div className="w-full flex justify-center gap-10 sm:gap-16 mt-4 sm:mt-12 text-[12px] sm:text-[13px] uppercase tracking-[0.25em] text-text-dim/60 font-mono select-none">
