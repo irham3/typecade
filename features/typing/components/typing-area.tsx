@@ -485,9 +485,16 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 onCopy={(e) => e.preventDefault()}
                 onCut={(e) => e.preventDefault()}
                 onKeyDown={(e) => {
+                    // Prevent caret navigation
+                    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                    // Allow Ctrl+Backspace / Option+Backspace
+                    if ((e.ctrlKey || e.metaKey || e.altKey) && e.key === 'Backspace') return;
                     // Allow Ctrl/Cmd + R (Reload)
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
-                    if (e.ctrlKey || e.metaKey) e.preventDefault();
+                    // Block other shortcuts
+                    if (e.ctrlKey || e.metaKey || e.altKey) e.preventDefault();
                 }}
                 autoFocus
                 autoComplete="off"

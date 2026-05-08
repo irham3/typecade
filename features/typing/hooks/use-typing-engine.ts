@@ -118,7 +118,8 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
             }
         } else if (value.length < typedChars.length) {
             if (value.length <= lastLockedIndexRef.current) {
-                return;
+                // Prevent deleting past locked words. If Ctrl+Backspace goes too far, clamp it to the lock point.
+                value = typedChars.substring(0, lastLockedIndexRef.current + 1);
             }
 
             // Smart Backspace: If the user deleted a space and the previous characters are ALSO spaces 
@@ -241,5 +242,6 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         inputRef,
         handleInput,
         restartText,
+        setTypedChars,
     };
 }

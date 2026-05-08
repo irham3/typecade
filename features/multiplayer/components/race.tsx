@@ -11,6 +11,7 @@ import { useLivePlayerSync, type LivePlayerSyncPayload } from "../hooks/use-live
 import { useRoomData } from "../hooks/use-room-data";
 import { useRoomChannel } from "../hooks/use-room-channel";
 import { useRaceTimer } from "../hooks/use-race-timer";
+import { useTypingEngine } from "@/features/typing/hooks/use-typing-engine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,7 +69,18 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     const [showResults, setShowResults] = useState(true);
     const [players, setPlayers] = useState<Player[]>(OFFLINE_PLAYERS);
     const [targetText, setTargetText] = useState(initialTargetText);
-    const [typedChars, setTypedChars] = useState("");
+    
+    const {
+        typedChars,
+        handleInput: engineHandleInput,
+        setTypedChars,
+        inputRef,
+    } = useTypingEngine({
+        text: targetText,
+        mode: "words",
+        duration: 0,
+    });
+
     const [translateY, setTranslateY] = useState(0);
     const [copied, setCopied] = useState(false);
 
@@ -313,17 +325,21 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (raceState !== "racing") return;
-        const val = e.target.value;
-        setTypedChars(val);
+        engineHandleInput(e);
+    };
 
-        if (!isRealtime && targetText.length - val.length < 150) {
+    // Watch typedChars to update race stats and sync
+    useEffect(() => {
+        if (raceState !== "racing") return;
+
+        if (!isRealtime && targetText.length - typedChars.length < 150) {
             setTargetText(prev => prev + " " + generateWords(raceConfig.language, 30, false, false));
         }
 
         const elapsedMin = startTimeRef.current
             ? Math.max(0.01, (Date.now() - startTimeRef.current) / 1000 / 60)
             : 0.01;
-        const correctChars = val.split("").filter((char, i) => char === targetText[i]).length;
+        const correctChars = typedChars.split("").filter((char, i) => char === targetText[i]).length;
         const wpm = Math.max(0, Math.floor((correctChars / 5) / elapsedMin));
         const totalChars = raceConfig.mode === "words"
             ? raceConfig.value * 5
@@ -341,7 +357,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         if (isRealtime && user && roomId) {
             syncLive({ progress, wpm, correctChars: Math.floor(correctChars), status: isFinished ? "finished" : "playing" });
         }
-    };
+    }, [typedChars, raceState, isRealtime, targetText, raceConfig, startTimeRef, currentUserId, user, roomId, syncLive]);
 
     const copyLink = () => {
         const url = `${window.location.origin}/race?code=${roomCode}`;
@@ -598,9 +614,9 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
             </div>
 
             {/* Typing Zone */}
-            <div className={`relative glass rounded-4xl p-8 sm:p-10 border border-white/10 shadow-2xl overflow-hidden mb-10 shrink-0 transition-opacity duration-300 ${raceState === "racing" ? "opacity-100" : "opacity-50 pointer-events-none grayscale"}`}>
-                <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-accent to-transparent opacity-50" />
+            <div className={`w-full relative rounded-3xl mb-10 shrink-0 transition-opacity duration-300 ${raceState === "racing" ? "opacity-100" : "opacity-50 pointer-events-none grayscale"}`}>
                 <input
+                    ref={inputRef}
                     autoFocus
                     className="absolute inset-0 opacity-0 z-50 cursor-default"
                     value={typedChars}
@@ -609,24 +625,33 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
                     onCopy={(e) => e.preventDefault()}
                     onCut={(e) => e.preventDefault()}
                     onKeyDown={(e) => {
+                        // Prevent caret navigation
+                        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+                            e.preventDefault();
+                        }
+                        // Allow Ctrl+Backspace / Option+Backspace
+                        if ((e.ctrlKey || e.metaKey || e.altKey) && e.key === 'Backspace') return;
                         // Allow Ctrl/Cmd + R (Reload)
                         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
-                        if (e.ctrlKey || e.metaKey) e.preventDefault();
+                        // Block other shortcuts
+                        if (e.ctrlKey || e.metaKey || e.altKey) e.preventDefault();
                     }}
                     disabled={raceState !== "racing"}
                     spellCheck="false"
                     autoComplete="off"
                 />
-                <div
-                    className="h-[3.8em] overflow-hidden relative z-10 w-full rounded-xl font-mono text-3xl sm:text-[2.2rem] leading-[1.65] tracking-tight select-none"
-                    onContextMenu={(e) => e.preventDefault()}
-                    style={{
-                        maskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
-                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
-                    }}
-                >
-                    <div className="transition-transform duration-200 ease-out relative text-left" style={{ transform: `translateY(-${translateY}px)` }}>
-                        {renderText()}
+                <div className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/80">
+                    <div
+                        className="h-[5.4em] overflow-hidden relative z-10 w-full"
+                        onContextMenu={(e) => e.preventDefault()}
+                        style={{
+                            maskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
+                            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)",
+                        }}
+                    >
+                        <div className="transition-transform duration-200 ease-out relative text-left" style={{ transform: `translateY(-${translateY}px)` }}>
+                            {renderText()}
+                        </div>
                     </div>
                 </div>
             </div>

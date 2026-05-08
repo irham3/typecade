@@ -333,9 +333,16 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
                                 onCopy={(e) => e.preventDefault()}
                                 onCut={(e) => e.preventDefault()}
                                 onKeyDown={(e) => {
+                                    // Prevent caret navigation
+                                    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+                                        e.preventDefault();
+                                    }
+                                    // Allow Ctrl+Backspace / Option+Backspace
+                                    if ((e.ctrlKey || e.metaKey || e.altKey) && e.key === 'Backspace') return;
                                     // Allow Ctrl/Cmd + R (Reload)
                                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') return;
-                                    if (e.ctrlKey || e.metaKey) e.preventDefault();
+                                    // Block other shortcuts
+                                    if (e.ctrlKey || e.metaKey || e.altKey) e.preventDefault();
                                 }}
                                 className="absolute opacity-0 -top-25"
                                 autoCorrect="off"
@@ -346,36 +353,38 @@ export function PracticeArea({ lesson, onBack, onComplete }: PracticeProps) {
 
                             {/* Text Area */}
                             <div 
-                                className="bg-[#0A0A0A] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 mb-4 sm:mb-6 font-mono text-lg sm:text-2xl md:text-3xl leading-relaxed tracking-tight relative cursor-default group select-none"
+                                className="w-full relative rounded-3xl mb-4 sm:mb-6"
                                 onClick={focusInput}
                                 onContextMenu={(e) => e.preventDefault()}
                             >
-                                <div
-                                    ref={textContainerRef}
-                                    className="h-[4.5em] overflow-hidden relative w-full"
-                                    style={{
-                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
-                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
-                                    }}
-                                >
+                                <div className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/80">
                                     <div
-                                        className="transition-transform duration-300 ease-out relative text-left"
-                                        style={{ transform: `translateY(-${translateY}px)` }}
-                                    >
-                                        {renderText()}
-                                    </div>
-                                    
-                                    {/* Smooth animated caret — positioned via ref */}
-                                    <div
-                                        ref={caretRef}
-                                        className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
+                                        ref={textContainerRef}
+                                        className="h-[5.4em] overflow-hidden relative w-full"
                                         style={{
-                                            width: 3,
-                                            opacity: 0,
-                                            transition: "left 80ms ease-out, top 80ms ease-out",
-                                            boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
+                                            maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+                                            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
                                         }}
-                                    />
+                                    >
+                                        <div
+                                            className="transition-transform duration-300 ease-out relative text-left"
+                                            style={{ transform: `translateY(-${translateY}px)` }}
+                                        >
+                                            {renderText()}
+                                        </div>
+                                        
+                                        {/* Smooth animated caret — positioned via ref */}
+                                        <div
+                                            ref={caretRef}
+                                            className="absolute z-10 pointer-events-none rounded-full bg-accent will-change-transform animate-caret-blink"
+                                            style={{
+                                                width: 3,
+                                                opacity: 0,
+                                                transition: "left 80ms ease-out, top 80ms ease-out",
+                                                boxShadow: "0 0 8px 1px rgba(var(--accent-rgb), 0.4)",
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
