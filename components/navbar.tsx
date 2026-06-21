@@ -44,6 +44,22 @@ export function Navbar() {
     const showUI = useStore(state => state.showUI);
     const hideUI = isTyping && !showUI;
 
+    // After a visitor completes a test, swap the generic "Sign in" CTA for
+    // a more contextual "Save progress" for ~10 minutes. Saves are now
+    // immediately relevant — they have a result to keep — and the
+    // conversion-focused copy outperforms generic auth copy in our tests.
+    const lastTestCompletedAt = useStore(state => state.lastTestCompletedAt);
+    // Tick once a minute so the derived `recentlyFinished` value re-evaluates.
+    // Date.now() lives inside the setInterval callback (not in render), so
+    // the react-hooks/purity and react-hooks/set-state-in-effect rules pass.
+    const [now, setNow] = useState<number>(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 30_000);
+        return () => clearInterval(id);
+    }, []);
+    const recentlyFinished =
+        !!lastTestCompletedAt && now - lastTestCompletedAt < 10 * 60 * 1000;
+
     useEffect(() => {
         const nav = navRef.current;
         if (!nav) return;
@@ -182,8 +198,9 @@ export function Navbar() {
                         variant="primary"
                         className="px-5 text-sm"
                         onClick={() => setAuthModalOpen(true)}
+                        aria-label={recentlyFinished ? "Save your test result" : "Sign in to Typecade"}
                     >
-                        Sign in
+                        {recentlyFinished ? "Save progress" : "Sign in"}
                     </Button>
                 )}
 
