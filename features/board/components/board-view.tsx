@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Trophy, Crown, Flame } from "@/components/icons";
 import { motion } from "framer-motion";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CountUp } from "@/components/ui/count-up";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { classifySupabaseError, SUPABASE_UNAVAILABLE_MESSAGE } from "@/lib/supabase/error-handler";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -147,11 +149,11 @@ export function BoardView() {
                 </div>
 
                 {/* Body table (SCROLLABLE) */}
-                <div className="max-h-125 sm:max-h-187.5 overflow-y-auto pr-1 sm:pr-2 
-                    [&::-webkit-scrollbar]:w-2 
-                    [&::-webkit-scrollbar-track]:bg-transparent 
-                    [&::-webkit-scrollbar-thumb]:bg-foreground/10 
-                    [&::-webkit-scrollbar-thumb]:rounded-full 
+                <div className="max-h-125 sm:max-h-187.5 overflow-y-auto pr-1 sm:pr-2
+                    [&::-webkit-scrollbar]:w-2
+                    [&::-webkit-scrollbar-track]:bg-transparent
+                    [&::-webkit-scrollbar-thumb]:bg-foreground/10
+                    [&::-webkit-scrollbar-thumb]:rounded-full
                     hover:[&::-webkit-scrollbar-thumb]:bg-foreground/20">
                     <table className="w-full text-left font-sans text-xs sm:text-sm">
                         <colgroup>
@@ -212,10 +214,32 @@ export function BoardView() {
                             ))}
                             {!isLoading && board.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-text-dim">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Trophy size={24} className="opacity-20" />
-                                            <span>{dbUnavailable ? SUPABASE_UNAVAILABLE_MESSAGE : !supabaseReady ? "Connecting to the database…" : "No results yet."}</span>
+                                    <td colSpan={4} className="px-6 py-16 text-center text-text-dim">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-accent/50">
+                                                <Trophy size={28} strokeWidth={1.5} />
+                                            </div>
+                                            <div className="space-y-1.5 max-w-80">
+                                                <h3 className="text-base font-display font-bold text-foreground">
+                                                    {dbUnavailable
+                                                        ? "Database waking up"
+                                                        : !supabaseReady
+                                                            ? "Connecting to the database…"
+                                                            : "The board is empty"}
+                                                </h3>
+                                                <p className="text-sm leading-relaxed">
+                                                    {dbUnavailable
+                                                        ? SUPABASE_UNAVAILABLE_MESSAGE
+                                                        : !supabaseReady
+                                                            ? "If this persists, restart npm run dev to reload env variables."
+                                                            : "No one has claimed a spot in this category yet. Take a test to put your name first."}
+                                                </p>
+                                            </div>
+                                            {!dbUnavailable && supabaseReady && (
+                                                <Button variant="primary" size="sm" asChild>
+                                                    <Link href="/">Take a test to claim rank #1</Link>
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
