@@ -44,6 +44,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
 
     const duration = mode === "time" ? limit : 60;
     const addTestResult = useStore(state => state.addTestResult);
+    const setLastTestCompletedAt = useStore(state => state.setLastTestCompletedAt);
     const setIsTyping = useStore(state => state.setIsTyping);
 
     const pendingResultRef = useRef<{ wpm: number; acc: number; timeTaken: number } | null>(null);
@@ -91,6 +92,7 @@ export function ClassicTypingView({ activeTab, subOption, customText, customShuf
         isFocused,
         onFinish: (finalWpm, finalAcc, timeTaken) => {
             addTestResult({ wpm: finalWpm, accuracy: finalAcc, duration: timeTaken, mode: `${activeTab} ${subOption} ` });
+            setLastTestCompletedAt(Date.now());
             pendingResultRef.current = { wpm: finalWpm, acc: finalAcc, timeTaken };
             setResultKey(prev => prev + 1);
             void saveResult(finalWpm, finalAcc, timeTaken).then((ok) => {

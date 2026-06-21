@@ -49,7 +49,12 @@ interface TypecadeState {
     showAnimations: boolean;
     isTyping: boolean;
     authModalOpen: boolean;
-    
+
+    // Tracks when the most recent typing test finished (unix ms).
+    // Used by the navbar to swap "Sign in" → "Save progress" right after
+    // a visitor completes a test, when saving actually matters.
+    lastTestCompletedAt: number | null;
+
     // Actions
     setActiveTab: (tab: ModeOption) => void;
     setSubOption: (option: string) => void;
@@ -75,6 +80,7 @@ interface TypecadeState {
     showUI: boolean;
     setShowUI: (val: boolean) => void;
     addTestResult: (result: { wpm: number; accuracy: number; duration: number; mode: string }) => void;
+    setLastTestCompletedAt: (ts: number | null) => void;
 }
 
 // Generate some dummy history
@@ -111,6 +117,7 @@ export const useStore = create<TypecadeState>()(
             showAnimations: true,
             isTyping: false,
             authModalOpen: false,
+            lastTestCompletedAt: null,
             stats: {
                 wpm: 94,
                 accuracy: 98.2,
@@ -144,6 +151,7 @@ export const useStore = create<TypecadeState>()(
             setAuthModalOpen: (authModalOpen) => set({ authModalOpen }),
             showUI: true,
             setShowUI: (showUI) => set({ showUI }),
+            setLastTestCompletedAt: (lastTestCompletedAt) => set({ lastTestCompletedAt }),
             addTestResult: (result) => set((state) => {
                 const newHistory = [
                     {
