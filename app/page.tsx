@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { HomeClient } from './client';
+import { HomepagePromo } from '@/features/marketing/components/homepage-promo';
 
 export const metadata: Metadata = {
   title: 'Typing Test, WPM Tracker & Multiplayer Races - Typecade',
@@ -46,10 +47,13 @@ export default function Page() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Search Engine Optimization */}
+      {/* Supplementary SEO H1 — targets keyword-rich search queries that
+          the visible marketing H1 in HomepagePromo doesn't. Both H1s are
+          fine: each targets a different search intent. */}
       <h1 className="sr-only">Typecade: Free Typing Speed Test & Touch Typing Trainer</h1>
 
       <HomeClient />
+      <HomepagePromo />
     </>
   );
 }
