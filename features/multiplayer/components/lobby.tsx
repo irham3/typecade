@@ -356,12 +356,12 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                 </div>
                                 <div className="text-center space-y-1.5 px-6">
                                     <h3 className="text-xl font-display font-bold text-foreground">
-                                        {dbUnavailable ? "Connecting to server…" : "No active arenas"}
+                                        {dbUnavailable ? "Connecting to server…" : "No active races yet"}
                                     </h3>
                                     <p className="text-sm text-text-dim max-w-70 leading-relaxed">
                                         {dbUnavailable
                                             ? "The database is waking up from sleep. This usually takes 1-2 minutes — please wait."
-                                            : "There is no room available for now. Be the first to host an arena and invite others to a typing battle!"}
+                                            : "Be the first to host a race and invite others to a real-time typing battle."}
                                     </p>
                                 </div>
                                 {!dbUnavailable && (
@@ -370,7 +370,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                         className="mt-3 py-2.5 px-8 rounded-xl font-bold text-sm shadow-xl shadow-accent/10 transition-all hover:-translate-y-0.5"
                                         onClick={() => setIsHostModalOpen(true)}
                                     >
-                                        New Arena
+                                        Start a race
                                     </Button>
                                 )}
                             </div>
