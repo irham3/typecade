@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Shield, Search, ChevronDown, Gamepad2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { classifySupabaseError, LOBBY_POLL_INTERVAL_MS } from "@/lib/supabase/error-handler";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRoomRegistry } from "../hooks/use-room-registry";
 import {
@@ -39,6 +40,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
     const [modeOpen, setModeOpen] = useState(false);
     const [isHostModalOpen, setIsHostModalOpen] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+    const [dbUnavailable, setDbUnavailable] = useState(false);
     const { activeRoomIds, roomPlayerCounts } = useRoomRegistry();
 
     const createRoomPayload = useMemo(() => {
@@ -59,40 +61,51 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
             .order("created_at", { ascending: false })
             .limit(50);
         if (error) {
+            // Detect paused/unavailable DB and surface it instead of silently empty list
+            if (classifySupabaseError(error)) {
+                setDbUnavailable(true);
+            }
             if (isInitial) setInitialLoading(false);
             return;
         }
 
+        setDbUnavailable(false);
         const fetchedData = data ?? [];
         setRooms(fetchedData);
 
         if (isInitial) setInitialLoading(false);
     };
 
+    // Debounce wrapper so rapid successive triggers coalesce into one fetch.
+    const loadRoomsDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const scheduleLoadRooms = (isInitial = false) => {
+        if (loadRoomsDebouncedRef.current) clearTimeout(loadRoomsDebouncedRef.current);
+        loadRoomsDebouncedRef.current = setTimeout(() => void loadRooms(isInitial), 250);
+    };
+
     useEffect(() => {
         if (!supabaseReady) return;
-        const timer = setTimeout(() => {
-            void loadRooms(true);
-        }, 0);
-        const client = getSupabaseClient();
-        if (!client) return;
-        const channel = client
-            .channel("room-updates")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "multiplayer_rooms" },
-                () => void loadRooms()
-            )
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "multiplayer_room_players" },
-                () => void loadRooms()
-            )
-            .subscribe();
-        return () => {
-            clearTimeout(timer);
-            void client.removeChannel(channel);
+        // Initial fetch
+        void loadRooms(true);
+
+        // Poll periodically. Cheaper and more predictable than an unfiltered
+        // postgres_changes subscription on every row of two global tables.
+        const pollInterval = setInterval(() => {
+            void loadRooms(false);
+        }, LOBBY_POLL_INTERVAL_MS);
+
+        // Refetch when the tab becomes visible again (user returns from another tab).
+        const onVisibility = () => {
+            if (document.visibilityState === "visible") void loadRooms(false);
         };
+        document.addEventListener("visibilitychange", onVisibility);
+
+        return () => {
+            clearInterval(pollInterval);
+            document.removeEventListener("visibilitychange", onVisibility);
+            if (loadRoomsDebouncedRef.current) clearTimeout(loadRoomsDebouncedRef.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [supabaseReady]);
 
     const resolveDisplayName = async () => {
@@ -342,18 +355,24 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
                                     <Gamepad2 size={40} strokeWidth={1.5} />
                                 </div>
                                 <div className="text-center space-y-1.5 px-6">
-                                    <h3 className="text-xl font-display font-bold text-foreground">No active arenas</h3>
+                                    <h3 className="text-xl font-display font-bold text-foreground">
+                                        {dbUnavailable ? "Connecting to server…" : "No active arenas"}
+                                    </h3>
                                     <p className="text-sm text-text-dim max-w-70 leading-relaxed">
-                                        There is no room available for now. Be the first to host an arena and invite others to a typing battle!
+                                        {dbUnavailable
+                                            ? "The database is waking up from sleep. This usually takes 1-2 minutes — please wait."
+                                            : "There is no room available for now. Be the first to host an arena and invite others to a typing battle!"}
                                     </p>
                                 </div>
-                                <Button
-                                    variant="primary"
-                                    className="mt-3 py-2.5 px-8 rounded-xl font-bold text-sm shadow-xl shadow-accent/10 transition-all hover:-translate-y-0.5"
-                                    onClick={() => setIsHostModalOpen(true)}
-                                >
-                                    New Arena
-                                </Button>
+                                {!dbUnavailable && (
+                                    <Button
+                                        variant="primary"
+                                        className="mt-3 py-2.5 px-8 rounded-xl font-bold text-sm shadow-xl shadow-accent/10 transition-all hover:-translate-y-0.5"
+                                        onClick={() => setIsHostModalOpen(true)}
+                                    >
+                                        New Arena
+                                    </Button>
+                                )}
                             </div>
                         </motion.div>
                     )}
