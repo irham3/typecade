@@ -50,6 +50,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
     const addTestResult = useStore(state => state.addTestResult);
     const setLastTestCompletedAt = useStore(state => state.setLastTestCompletedAt);
     const setIsTyping = useStore(state => state.setIsTyping);
+    const isTyping = useStore(state => state.isTyping);
 
     const activeCharRef = useRef<HTMLSpanElement>(null);
     const [translateY, setTranslateY] = useState(0);
