@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
-import { RotateCcw, ArrowRight, Download, Twitter, Send } from 'lucide-react';
+import { RotateCcw, ArrowRight, Download, Twitter, Send, Linkedin, Copy, Check, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import confetti from 'canvas-confetti';
 import * as htmlToImage from 'html-to-image';
@@ -18,9 +18,25 @@ interface TypingResultsProps {
     onNext: () => void;
 }
 
+// Encode the current result into the short /r/<slug> format. The matching
+// decoder lives in app/r/[slug]/page.tsx — keep the two in sync if you
+// change either side.
+function buildResultSlug(wpm: number, accuracy: number, modeLabel: string): string {
+    const modes = ["Time 15s", "Time 30s", "Time 60s", "Time 120s", "Words 10", "Words 25", "Words 50", "Words 100", "Quote"];
+    const idx = modes.indexOf(modeLabel);
+    return `w${Math.round(wpm)}a${Math.round(accuracy)}m${idx >= 0 ? idx : 2}`;
+}
+
 export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, resultKey, onRetry, onNext }: TypingResultsProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isCapturing, setIsCapturing] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [canNativeShare, setCanNativeShare] = useState(false);
+
+    useEffect(() => {
+        // Detect Web Share API support (mostly mobile Safari/Android Chrome).
+        setCanNativeShare(typeof navigator !== 'undefined' && 'share' in navigator);
+    }, []);
 
     // We assume store.stats.wpm holds the all-time personal best WPM
     const personalBestWpm = useStore(state => state.stats.wpm);
@@ -98,14 +114,55 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
     };
 
     const handleTwitterShare = () => {
-        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on @typecade! \n\nCan you beat my score? Try it now: https://typecade.com`;
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
-    };
+            const slug = buildResultSlug(wpm, accuracy, mode);
+            const url = `https://typecade.com/r/${slug}`;
+            const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on @typecade (${mode})!\n\nCan you beat my score? ${url}`;
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+        };
 
-    const handleWhatsAppShare = () => {
-        const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on Typecade! \nCan you beat my score? https://typecade.com`;
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-    };
+        const handleWhatsAppShare = () => {
+            const slug = buildResultSlug(wpm, accuracy, mode);
+            const url = `https://typecade.com/r/${slug}`;
+            const text = `I just typed ${wpm} WPM with ${accuracy}% accuracy on Typecade (${mode})!\nCan you beat my score? ${url}`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+        };
+
+        const handleLinkedInShare = () => {
+            const slug = buildResultSlug(wpm, accuracy, mode);
+            const url = `https://typecade.com/r/${slug}`;
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        };
+
+        const handleCopyLink = async () => {
+            const slug = buildResultSlug(wpm, accuracy, mode);
+            const url = `https://typecade.com/r/${slug}`;
+            try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch {
+                // Fallback: select-and-prompt
+                window.prompt("Copy your result link:", url);
+            }
+        };
+
+        const handleNativeShare = async () => {
+            const slug = buildResultSlug(wpm, accuracy, mode);
+            const url = `https://typecade.com/r/${slug}`;
+            if (typeof navigator !== 'undefined' && 'share' in navigator) {
+                try {
+                    await navigator.share({
+                        title: `${wpm} WPM on Typecade`,
+                        text: `I just typed ${wpm} WPM with ${accuracy}% accuracy. Can you beat my score?`,
+                        url,
+                    });
+                } catch {
+                    // user cancelled or share not available — ignore
+                }
+            } else {
+                handleCopyLink();
+            }
+        };
 
     return (
         <motion.div
@@ -216,18 +273,35 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                     </Button>
                 </div>
 
-                {/* Share Actions - Smaller and compact */}
-                <div className="flex flex-wrap gap-2 justify-center w-full border-t border-foreground/5 pt-4 sm:pt-6">
-                    <Button variant="ghost" onClick={handleDownloadShare} className="gap-2 text-text-dim hover:text-foreground text-xs py-1 h-8" title="Download Screenshot">
-                        <Download size={14} /> Save Image
-                    </Button>
-                    <Button variant="ghost" onClick={handleTwitterShare} className="gap-2 text-text-dim hover:text-[#1DA1F2] text-xs py-1 h-8" title="Share your result on X">
-                        <Twitter size={14} /> Tweet
-                    </Button>
-                    <Button variant="ghost" onClick={handleWhatsAppShare} className="gap-2 text-text-dim hover:text-[#25D366] text-xs py-1 h-8" title="Send to WhatsApp">
-                        <Send size={14} /> WhatsApp
-                    </Button>
-                </div>
+                {/* Share Actions - Compact row */}
+                                <div className="flex flex-wrap gap-2 justify-center w-full border-t border-foreground/5 pt-4 sm:pt-6">
+                                    <Button variant="ghost" onClick={handleDownloadShare} className="gap-2 text-text-dim hover:text-foreground text-xs py-1 h-8" title="Download Screenshot">
+                                        <Download size={14} /> Save Image
+                                    </Button>
+                                    <Button variant="ghost" onClick={handleTwitterShare} className="gap-2 text-text-dim hover:text-[#1DA1F2] text-xs py-1 h-8" title="Share your result on X">
+                                        <Twitter size={14} /> Tweet
+                                    </Button>
+                                    <Button variant="ghost" onClick={handleLinkedInShare} className="gap-2 text-text-dim hover:text-[#0A66C2] text-xs py-1 h-8" title="Share on LinkedIn">
+                                        <Linkedin size={14} /> LinkedIn
+                                    </Button>
+                                    <Button variant="ghost" onClick={handleWhatsAppShare} className="gap-2 text-text-dim hover:text-[#25D366] text-xs py-1 h-8" title="Send to WhatsApp">
+                                        <Send size={14} /> WhatsApp
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleCopyLink}
+                                        className="gap-2 text-text-dim hover:text-foreground text-xs py-1 h-8"
+                                        title="Copy a shareable link to this result"
+                                    >
+                                        {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                                        {copied ? "Copied!" : "Copy link"}
+                                    </Button>
+                                    {canNativeShare && (
+                                        <Button variant="ghost" onClick={handleNativeShare} className="gap-2 text-text-dim hover:text-foreground text-xs py-1 h-8" title="Share via your device">
+                                            <Share2 size={14} /> Share
+                                        </Button>
+                                    )}
+                                </div>
             </div>
         </motion.div>
     );
