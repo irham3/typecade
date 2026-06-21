@@ -1,23 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Pixelify_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { LayoutShell } from "./layout-shell";
 import { PlausibleAnalytics } from "@/components/analytics";
 import "./globals.css";
 
-const displayFont = Pixelify_Sans({
-  weight: "400",
-  variable: "--font-outfit",
+// Display: Space Grotesk — modern, geometric, distinctive without being
+// quirky. Carries brand personality without screaming it.
+const displayFont = Space_Grotesk({
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-display",
   subsets: ["latin"],
 });
 
+// Body / UI: Inter — the boring-correct choice for dense interface text.
 const sansFont = Inter({
-  variable: "--font-inter",
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
+// Mono: JetBrains Mono — used for the typing area and any numeric readouts.
+// Keep it: the typing surface is the product, the typeface is load-bearing.
 const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 

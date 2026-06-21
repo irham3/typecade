@@ -12,28 +12,31 @@
    - All accent colors pass WCAG AA 3:1 on bg for UI elements
    ────────────────────────────────────── */
 
-/* Warm Precision - Default (Slightly warm off-white and cool dark bg) */
+/* Warm Precision - Default (Slightly warm off-white on cool dark bg).
+   Bg pushed darker (#08090d) for a more premium, focused feel.
+   Accent kept at #4952E3 — distinctive indigo, not generic SaaS blue.
+   Text-dim nudged lighter (#9aa0b4) for better contrast on the darker bg. */
 :root {
-  --background: #0c0d14;
-  --background-rgb: 12, 13, 20;
-  --background-raised: #111219;
-  --foreground: #e6e4df;
-  --foreground-rgb: 230, 228, 223;
+  --background: #08090d;
+  --background-rgb: 8, 9, 13;
+  --background-raised: #0d0e14;
+  --foreground: #e8e6e0;
+  --foreground-rgb: 232, 230, 224;
   --accent: #4952E3;
   --accent-rgb: 73, 82, 227;
   --accent-secondary: #5eead4;
   --accent-secondary-rgb: 94, 234, 212;
   --error-bg: #3f1521;
   --error-text: #f0717b;
-  --text-dim: #858794;
-  --text-dim-rgb: 133, 135, 148;
-  --panel-bg: #111219;
-  --panel-bg-rgb: 17, 18, 25;
-  --panel-elevated: #1a1b26;
-  --panel-elevated-rgb: 26, 27, 38;
-  --border-dim: #222330;
-  --border-dim-rgb: 34, 35, 48;
-  --border-accent: rgba(99, 102, 241, 0.12);
+  --text-dim: #9aa0b4;
+  --text-dim-rgb: 154, 160, 180;
+  --panel-bg: #0d0e14;
+  --panel-bg-rgb: 13, 14, 20;
+  --panel-elevated: #14151c;
+  --panel-elevated-rgb: 20, 21, 28;
+  --border-dim: #1d1e27;
+  --border-dim-rgb: 29, 30, 39;
+  --border-accent: rgba(99, 102, 241, 0.14);
   --gold: #f5c542;
   --gold-rgb: 245, 197, 66;
   --silver: #94a3b8;
@@ -183,9 +186,9 @@
   --color-silver: var(--silver);
   --color-bronze: var(--bronze);
 
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
-  --font-display: var(--font-outfit);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
 
   --animate-caret-blink: caret-blink 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   --animate-aurora-1: aurora-drift-1 24s ease-in-out infinite;

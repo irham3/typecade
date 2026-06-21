@@ -562,19 +562,19 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         </div>
 
                         {/* Typing Area */}
-                        <div className="w-full relative mt-4">
+                        <div className="w-full relative mt-2 sm:mt-4">
 
                             <div className="w-full relative rounded-3xl">
                                 <div
-                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/90"
+                                    className="w-full font-mono text-2xl sm:text-3xl md:text-4xl leading-[1.85] tracking-[0.01em] text-left py-3 sm:py-6 relative cursor-default select-none text-text-dim/90"
                                     onContextMenu={(e) => e.preventDefault()}
                                 >
                                 <div
                                     ref={textContainerRef}
-                                    className="h-[5.4em] overflow-hidden relative w-full"
+                                    className="h-[6em] overflow-hidden relative w-full"
                                     style={{
-                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
-                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
+                                        maskImage: "linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%)",
+                                        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%)",
                                     }}
                                 >
                                     <div
