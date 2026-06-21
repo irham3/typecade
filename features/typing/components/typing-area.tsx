@@ -413,19 +413,23 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                 const index = globalIndex + cIdx;
                 const typedChar = typedChars[index];
 
-                let charStatusClass = "text-text-dim/40";
+                let charStatusClass = "text-text-dim/65";
                 if (typedChar != null) {
                     if (typedChar === char) {
                         charStatusClass = "text-foreground";
                     } else if (typedChar === " " && char !== " ") {
                         // "Skipped" indicator: Underline instead of red text
-                        charStatusClass = "text-text-dim/40 border-b-2 border-error-text/80";
+                        charStatusClass = "text-text-dim/65 border-b-2 border-error-text/80";
                     } else {
                         charStatusClass = "text-error-text bg-error-bg/50 rounded-sm";
                     }
                 }
 
                 const isCurrent = index === typedChars.length;
+                // Blinking caret bar on the next char to type. The bar
+                // disappears while typing (so it doesn't fight the actual
+                // keyboard caret) and reappears when the user pauses.
+                const showCaret = isCurrent && !isTyping;
 
                 return (
                     <span
@@ -434,6 +438,12 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
                         className={`relative transition-colors duration-75 ${charStatusClass}`}
                     >
                         {char}
+                        {showCaret && (
+                            <span
+                                aria-hidden
+                                className="absolute left-0 top-0 bottom-0 w-[2px] bg-accent animate-caret-blink pointer-events-none"
+                            />
+                        )}
                     </span>
                 );
             });
@@ -442,7 +452,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
             const spaceTyped = typedChars[spaceIndex];
             const isSpaceCurrent = spaceIndex === typedChars.length;
 
-            let spaceStatusClass = "text-text-dim/40";
+            let spaceStatusClass = "text-text-dim/65";
             if (spaceTyped != null) {
                 if (spaceTyped === " ") {
                     spaceStatusClass = "text-foreground";
@@ -555,7 +565,7 @@ export function TypingView({ activeTab, subOption, customText, customShuffle }: 
 
                             <div className="w-full relative rounded-3xl">
                                 <div
-                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/80"
+                                    className="w-full font-mono text-xl sm:text-2xl leading-[1.8] tracking-tight text-left py-2 sm:py-4 relative cursor-default select-none text-text-dim/90"
                                     onContextMenu={(e) => e.preventDefault()}
                                 >
                                 <div
