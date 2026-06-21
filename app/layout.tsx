@@ -42,8 +42,13 @@ export const metadata: Metadata = {
   keywords: ["typing test", "typecade", "typing speed test", "wpm test", "typing game", "touch typing", "keyboard mastery", "multiplayer typing"],
   referrer: "origin-when-cross-origin",
   alternates: {
-    canonical: "/",
-  },
+      canonical: "/",
+      languages: {
+        en: "https://typecade.com/",
+        "x-default": "https://typecade.com/",
+        id: "https://typecade.com/id",
+      },
+    },
   robots: {
     index: true,
     follow: true,
