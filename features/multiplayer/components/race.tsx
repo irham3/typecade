@@ -121,7 +121,7 @@ export function MultiplayerRace({ onLeave, roomCode }: { onLeave: () => void; ro
         userId: user?.id ?? null,
         channelRef,
         dbIntervalMs: 3000,
-        broadcastIntervalMs: 16,
+        broadcastIntervalMs: 200, // ~5fps — smooth enough for a typing race, far cheaper than 60fps
     });
 
     // ── 7. Live stats calculation (defined early so it can be used in hooks below)

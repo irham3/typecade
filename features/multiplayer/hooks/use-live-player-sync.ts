@@ -21,7 +21,8 @@ type UseLivePlayerSyncProps = {
     channelRef: MutableRefObject<RealtimeChannel | null>;
     /** Minimum ms between DB writes. Default 2000ms to avoid hammering the DB. */
     dbIntervalMs?: number;
-    /** Minimum ms between broadcast sends. Default 16ms (~60fps). */
+    /** Minimum ms between broadcast sends. Default 200ms (~5fps) — smooth
+     *  enough for a progress bar / WPM display without flooding Realtime. */
     broadcastIntervalMs?: number;
 };
 
@@ -33,7 +34,7 @@ export function useLivePlayerSync({
     userId,
     channelRef,
     dbIntervalMs = 2000,
-    broadcastIntervalMs = 16,
+    broadcastIntervalMs = 200,
 }: UseLivePlayerSyncProps) {
     const lastDbSyncRef = useRef(0);
     const lastBroadcastRef = useRef(0);
@@ -54,7 +55,7 @@ export function useLivePlayerSync({
             sentAt: now,
         };
 
-        // Throttled broadcast (~60fps cap)
+        // Throttled broadcast (~5fps cap)
         if (channelRef.current && now - lastBroadcastRef.current >= broadcastIntervalMs) {
             lastBroadcastRef.current = now;
             void channelRef.current.send({

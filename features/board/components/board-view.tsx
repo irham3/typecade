@@ -5,6 +5,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CountUp } from "@/components/ui/count-up";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { classifySupabaseError, SUPABASE_UNAVAILABLE_MESSAGE } from "@/lib/supabase/error-handler";
 import { useAuth } from "@/lib/auth/auth-context";
 
 const filterOptions = ["All Time", "This Week", "Today", "Words 50", "Time 60s"] as const;
@@ -35,6 +36,7 @@ export function BoardView() {
         total_tests: number;
     }>>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [dbUnavailable, setDbUnavailable] = useState(false);
 
     const queryParams = useMemo(() => {
         const now = new Date();
@@ -68,7 +70,11 @@ export function BoardView() {
                 p_since: queryParams.since,
             });
             setIsLoading(false);
-            if (error) return;
+            if (error) {
+                setDbUnavailable(classifySupabaseError(error));
+                return;
+            }
+            setDbUnavailable(false);
             setRows((data ?? []) as Array<{
                 user_id: string;
                 display_name: string;
@@ -209,7 +215,7 @@ export function BoardView() {
                                     <td colSpan={4} className="px-6 py-12 text-center text-text-dim">
                                         <div className="flex flex-col items-center gap-2">
                                             <Trophy size={24} className="opacity-20" />
-                                            <span>{!supabaseReady ? "Database connecting... (If this persists, please restart your 'npm run dev' to load .env variables)" : "No results yet."}</span>
+                                            <span>{dbUnavailable ? SUPABASE_UNAVAILABLE_MESSAGE : !supabaseReady ? "Connecting to the database…" : "No results yet."}</span>
                                         </div>
                                     </td>
                                 </tr>

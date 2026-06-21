@@ -1,0 +1,30 @@
+<!--
+  Typecade — External Keep-Alive Endpoint
+  ----------------------------------------
+  Halaman statis ini ada untuk di-ping oleh uptime monitor eksternal
+  (UptimeRobot / cron-job.org) yang melakukan fetch ke Supabase REST API.
+
+  CARA PAKAI:
+  1. Setup UptimeRobot (gratis, https://uptimerobot.com):
+     - Monitor Type: HTTP(s)
+     - URL Friendly Name: Typecade Supabase Keep-Alive
+     - URL: https://YOUR-PROJECT.supabase.co/rest/v1/keepalive_log?select=id&limit=1&apikey=YOUR_ANON_KEY
+     - Monitoring Interval: 3600 minutes (1 jam) atau 1440 minutes (1 hari)
+     (ganti YOUR-PROJECT dan YOUR_ANON_KEY dengan nilai asli)
+
+  Ini mengirim 1 request HTTP ke Supabase tiap jam → terhitung sebagai
+  aktivitas REST eksternal → mencegah auto-pause 7-hari.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Typecade Keep-Alive</title>
+    <meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+    <h1>Typecade Keep-Alive</h1>
+    <p>This page exists so external uptime monitors can ping Supabase and prevent the free-tier 7-day auto-pause.</p>
+    <p>See <code>supabase/migrations/0001_keepalive_cron.sql</code> for setup instructions.</p>
+</body>
+</html>

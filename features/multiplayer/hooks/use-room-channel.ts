@@ -180,11 +180,12 @@ export function useRoomChannel({
                 { event: "DELETE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
                 () => loadPlayersRef.current()
             )
-            .on(
-                "postgres_changes",
-                { event: "UPDATE", schema: "public", table: "multiplayer_room_players", filter: `room_id=eq.${roomId}` },
-                () => loadPlayersRef.current()
-            )
+            // NOTE: We intentionally do NOT listen for UPDATE on
+            // multiplayer_room_players. During a race, every player writes
+            // their own row every ~2-3s. An UPDATE listener would trigger a
+            // full loadPlayers() SELECT on every other client for every write,
+            // causing N^2 read amplification. Live progress is already streamed
+            // through the low-cost `broadcast` channel below.
             .on(
                 "postgres_changes",
                 { event: "UPDATE", schema: "public", table: "multiplayer_rooms", filter: `id=eq.${roomId}` },
@@ -256,10 +257,43 @@ export function useRoomChannel({
             }
         });
 
+        // Cleanup the player row when the tab/window is closed or navigated
+        // away. Without this, rows are orphaned → dead rooms in the lobby →
+        // perpetual realtime noise. We use fetch with `keepalive: true` because
+        // it's the reliable way to fire a request during page unload (better
+        // cross-browser support than sendBeacon for authenticated REST calls).
+        const onPageHide = () => {
+            try {
+                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+                const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+                if (!supabaseUrl || !anonKey || !roomId || !userId) return;
+                // DELETE from multiplayer_room_players where room_id + user_id match.
+                // RLS must allow the user to delete their own row (this is the
+                // standard pattern — the existing onExplicitLeave() relies on it).
+                void fetch(
+                    `${supabaseUrl}/rest/v1/multiplayer_room_players?room_id=eq.${encodeURIComponent(roomId)}&user_id=eq.${encodeURIComponent(userId)}`,
+                    {
+                        method: "DELETE",
+                        keepalive: true, // survives page unload
+                        headers: {
+                            "apikey": anonKey,
+                            "Authorization": `Bearer ${anonKey}`,
+                            "Content-Type": "application/json",
+                            "Prefer": "return=minimal",
+                        },
+                    }
+                );
+            } catch {
+                // Best-effort cleanup — swallow errors during page teardown.
+            }
+        };
+        window.addEventListener("pagehide", onPageHide);
+
         // Cleanup: only remove channels — do NOT delete from DB here.
         // DB deletion is handled by: onExplicitLeave (user action) and pagehide (browser close).
         return () => {
             channelRef.current = null;
+            window.removeEventListener("pagehide", onPageHide);
             void client.removeChannel(channel);
             void client.removeChannel(registryChannel);
         };
