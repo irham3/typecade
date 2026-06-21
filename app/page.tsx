@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { HomeClient } from './client';
 import { HomepagePromo } from '@/features/marketing/components/homepage-promo';
+import { NewsletterSignup } from '@/features/marketing/components/newsletter-signup';
 
 export const metadata: Metadata = {
   title: 'Typing Test, WPM Tracker & Multiplayer Races - Typecade',
@@ -36,7 +37,7 @@ export default function Page() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Typecade',
-    url: 'https://typecade.com', // Placeholder URL
+    url: 'https://typecade.com',
     description: 'Free multiplayer typing test with real-time races, leaderboards, and detailed WPM stats.',
   };
 
@@ -54,6 +55,11 @@ export default function Page() {
 
       <HomeClient />
       <HomepagePromo />
+
+      {/* Newsletter capture — sits below the promo block, before the footer. */}
+      <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24 flex justify-center">
+        <NewsletterSignup source="homepage-hero" />
+      </div>
     </>
   );
 }
