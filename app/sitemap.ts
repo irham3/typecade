@@ -21,6 +21,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: route === '' ? 1 : 0.8,
     }));
 
+    // Indonesian-localized routes — currently a strategic landing page and
+    // a translated About page. Add more (e.g. /id/learn) as translations land.
+    const idRoutes: MetadataRoute.Sitemap = [
+        '/id',
+        '/id/about',
+    ].map((route) => ({
+        url: `${baseUrl}${route}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+    }));
+
     const moduleRoutes: MetadataRoute.Sitemap = LEARN_MODULES.map((module) => ({
         url: `${baseUrl}/learn/${module.slug}`,
         lastModified: new Date(),
@@ -37,5 +49,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
     );
 
-    return [...staticRoutes, ...moduleRoutes, ...dynamicRoutes];
+    return [...staticRoutes, ...idRoutes, ...moduleRoutes, ...dynamicRoutes];
 }
