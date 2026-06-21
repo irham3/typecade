@@ -1,0 +1,19 @@
+name: "Typecade — Free Typing Speed Test & WPM Tracker"
+description: "A minimalist typing platform with real-time multiplayer races, a 5-module touch-typing curriculum, and global WPM leaderboards. Built with Next.js 16, Supabase, Tailwind v4."
+topics:
+  - typing-test
+  - wpm
+  - typing-speed
+  - multiplayer
+  - realtime
+  - nextjs
+  - tailwindcss
+  - supabase
+  - typescript
+  - framer-motion
+  - educational
+  - productivity
+  - gamification
+  - zustand
+homepage: "https://typecade.com"
+social_preview: "public/opengraph-image.png"
