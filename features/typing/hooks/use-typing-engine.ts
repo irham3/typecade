@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { calculateWpm, calculateAccuracy, countCorrectChars } from '@/lib/engine/scoring';
 
 export type GameStatus = "idle" | "playing" | "finished";
 
@@ -58,14 +59,14 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         if (pauseStartRef.current !== null) {
             totalPause += Date.now() - pauseStartRef.current;
         }
-        const timeElapsed = (Date.now() - _startTime - totalPause) / 1000 / 60; // in minutes
-        if (timeElapsed <= 0) return { wpm: 0, accuracy: 100 };
+        const elapsedMs = Date.now() - _startTime - totalPause;
+        if (elapsedMs <= 0) return { wpm: 0, accuracy: 100 };
 
-        const correctChars = _typedChars.split("").filter((char, i) => char === _text[i]).length;
-        const currentWpm = Math.max(0, Math.floor((correctChars / 5) / timeElapsed));
-        const currentAcc = Math.max(0, Math.floor((correctChars / Math.max(1, _typedChars.length)) * 100));
-
-        return { wpm: currentWpm, accuracy: currentAcc };
+        const correct = countCorrectChars(_typedChars, _text);
+        return {
+            wpm: calculateWpm(correct, elapsedMs),
+            accuracy: calculateAccuracy(correct, _typedChars.length),
+        };
     }, []);
 
     const completeTest = useCallback(() => {
@@ -164,10 +165,10 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         if (pauseStartRef.current !== null) {
             totalPause += Date.now() - pauseStartRef.current;
         }
-        const timeElapsed = Math.max(0.001, (Date.now() - _startTime - totalPause) / 1000 / 60);
-        const correctChars = value.split("").filter((char, i) => char === text[i]).length;
-        setWpm(Math.max(0, Math.floor((correctChars / 5) / timeElapsed)));
-        setAccuracy(Math.max(0, Math.floor((correctChars / Math.max(1, value.length)) * 100)));
+        const elapsedMs = Math.max(1, Date.now() - _startTime - totalPause);
+        const correctChars = countCorrectChars(value, text);
+        setWpm(calculateWpm(correctChars, elapsedMs));
+        setAccuracy(calculateAccuracy(correctChars, value.length));
 
         // Check completion condition
         if (mode === "words" || mode === "quote") {
