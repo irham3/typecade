@@ -99,9 +99,12 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         }
     }, [timeLeft, mode, status, completeTest]);
 
+    const textRef = useRef(text);
+    useEffect(() => { textRef.current = text; }, [text]);
+
     const restartText = useCallback(() => {
         setStatus("idle");
-        engine.reset(text);
+        engine.reset(textRef.current);
         
         setTypedCharsState("");
         setErrors(0);
@@ -111,7 +114,7 @@ export function useTypingEngine({ text, duration = 60, mode, isFocused = true, o
         setStreak(0);
         
         if (inputRef.current) inputRef.current.focus();
-    }, [duration, engine, text]);
+    }, [duration, engine]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
