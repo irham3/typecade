@@ -2,31 +2,216 @@ import { Application, Container, Graphics, Text, Ticker } from "pixi.js"
 import type { StageType } from "@/lib/engine/overdrive"
 import { createBackground, createBase, createEnemy, V, type EnemyArt } from "./visual-assets"
 import { sfx } from "@/features/overdrive/fx/sfx"
+import type { OverdrivePresentationEvent } from "../presentation/events"
 
-export type SceneState={currentWord:string;upcomingWords:string[];caretIndex:number;wordDirty:boolean;score:number;quota:number;combo:number;mult:number;accuracy:number;timeLeftMs:number;zone:number;stage:StageType;reducedMotion:boolean}
-type Bolt={root:Container;head:Graphics;trail:Graphics;vx:number;targetX:number;life:number}
-type Debris={node:Graphics;vx:number;vy:number;spin:number;life:number;max:number}
-type Popup={node:Text;life:number;max:number;vy:number}
-type Preview={enemy:EnemyArt;slot:number;word:string}
+export type SceneState = { currentWord: string; upcomingWords: string[]; caretIndex: number; wordDirty: boolean; score: number; quota: number; combo: number; mult: number; accuracy: number; timeLeftMs: number; zone: number; stage: StageType; reducedMotion: boolean }
+type Bolt = { root: Container; head: Graphics; trail: Graphics; vx: number; targetX: number; life: number }
+type Debris = { node: Graphics; vx: number; vy: number; spin: number; life: number; max: number }
+type Popup = { node: Text; life: number; max: number; vy: number }
+type Preview = { enemy: EnemyArt; slot: number; word: string }
 
-export class CombatScene{
-  readonly app:Application;readonly stage=new Container();readonly world=new Container();readonly fx=new Container();readonly ui=new Container()
-  private bg=createBackground();private base=createBase();private active:EnemyArt;private previews:Preview[]=[]
-  private bolts:Bolt[]=[];private debris:Debris[]=[];private popups:Popup[]=[];private state:SceneState
-  private lastWord="";private lastCaret=0;private lastDirty=false;private lastScore=0;private lastMult=1;private lastStage:StageType;private lastPreviewKey="";private w=0;private h=0
-  private elapsed=0;private shake=0;private recoil=0;private hitFlash=0;private knockback=0;private freeze=0;private lowTimePulse=0;private quotaPulse=0
-  private readonly edge=new Graphics();private readonly shockwave=new Graphics();private readonly glitchBars=new Graphics()
-  constructor(app:Application,initial:SceneState){this.app=app;this.state=initial;this.lastStage=initial.stage;this.active=createEnemy(initial.stage,initial.currentWord);this.stage.addChild(this.bg.root,this.world,this.fx,this.ui);this.world.addChild(this.base.root,this.active.root);this.ui.addChild(this.edge,this.shockwave,this.glitchBars);app.stage.addChild(this.stage);this.ensurePreviews();this.resize();this.sync(initial);app.ticker.add(this.tick)}
-  resize=()=>{const w=this.app.screen.width,h=this.app.screen.height;if(w===this.w&&h===this.h)return;this.w=w;this.h=h;this.bg.redraw(w,h);this.base.root.position.set(Math.max(90,w*.12),h*.58);this.active.root.position.set(w*.70,h*.50);this.previews.forEach((p,i)=>p.enemy.root.position.set(w*(.82+i*.035),h*(.28+i*.13)));this.edge.clear().rect(0,0,w,h).stroke({color:V.red,width:28,alpha:0})}
-  sync=(next:SceneState)=>{this.state=next;if(next.stage!==this.lastStage){this.lastStage=next.stage;const old=this.active;this.world.removeChild(old.root);old.root.destroy({children:true});this.active=createEnemy(next.stage,next.currentWord);this.active.root.position.set(this.w*.70,this.h*.5);this.world.addChild(this.active.root);if(next.stage==="glitch")sfx.boss()}const previewKey=next.upcomingWords.slice(0,4).join("|");if(previewKey!==this.lastPreviewKey){this.lastPreviewKey=previewKey;this.updatePreviews()}if(next.currentWord!==this.lastWord){const gain=Math.max(0,next.score-this.lastScore);if(this.lastWord){this.destroyEnemy(gain);this.replaceActive(next.currentWord)}this.lastWord=next.currentWord;this.lastCaret=0}if(next.caretIndex>this.lastCaret)for(let i=this.lastCaret;i<next.caretIndex;i++)this.fire();if(next.wordDirty&&!this.lastDirty)this.typo();if(next.mult>this.lastMult)this.multUp();this.active.word.style.fill=next.wordDirty?V.red:next.stage==="rush"?V.pink:next.stage==="glitch"?V.red:V.green;const total=Math.max(1,next.currentWord.length),hp=Math.max(0,(total-next.caretIndex)/total);this.active.hp.clear().roundRect(-62,0,124,8,4).fill({color:V.line}).roundRect(-62,0,124*hp,8,4).fill({color:next.wordDirty?V.red:V.green});const integrity=Math.max(0,Math.min(1,next.accuracy/100)),tone=integrity>=.97?V.green:integrity>=.90?V.yellow:V.red;this.base.integrity.clear().roundRect(-48,0,96,9,5).fill({color:V.line}).roundRect(-48,0,96*integrity,9,5).fill({color:tone});this.lastCaret=next.caretIndex;this.lastDirty=next.wordDirty;this.lastScore=next.score;this.lastMult=next.mult}
-  destroy=()=>{this.app.ticker.remove(this.tick);this.app.stage.removeChild(this.stage);this.stage.destroy({children:true})}
-  private ensurePreviews(){while(this.previews.length<4){const enemy=createEnemy("warmup","");enemy.root.scale.set(.34);enemy.word.style.fontSize=13;enemy.hp.visible=false;this.world.addChild(enemy.root);this.previews.push({enemy,slot:this.previews.length,word:""})}}
-  private updatePreviews(){this.ensurePreviews();this.previews.forEach((p,i)=>{const word=this.state.upcomingWords[i]??"";p.word=word;p.enemy.word.text=word;p.enemy.root.visible=Boolean(word);p.enemy.root.position.set(this.w*(.82+i*.035),this.h*(.28+i*.13))})}
-  private replaceActive(word:string){this.active.word.text=word;this.active.root.alpha=0;this.active.root.scale.set(.72);this.active.root.position.set(this.w*.86,this.h*.5);this.knockback=0;this.active.root.rotation=0}
-  private fire(){sfx.shot(this.state.combo);const root=new Container(),trail=new Graphics().roundRect(-32,-2,36,4,2).fill({color:V.cyan,alpha:.28}),head=new Graphics().circle(0,0,5).fill({color:V.text}).circle(0,0,3).fill({color:V.cyan});root.addChild(trail,head);root.position.set(this.base.root.x+78,this.base.root.y-46);this.fx.addChild(root);this.bolts.push({root,head,trail,vx:1500,targetX:this.active.root.x-60,life:550});this.recoil=1}
-  private typo(){sfx.typo();this.shake=this.state.reducedMotion?0:180;this.knockback=32;this.glitchBars.clear();for(let i=0;i<8;i++)this.glitchBars.rect(Math.random()*this.w,Math.random()*this.h,30+Math.random()*160,2+Math.random()*5).fill({color:V.red,alpha:.3});setTimeout(()=>this.glitchBars.clear(),140)}
-  private multUp(){sfx.mult(this.state.mult);this.freeze=this.state.reducedMotion?0:60;this.quotaPulse=1;this.shockwave.clear().circle(this.active.root.x,this.active.root.y,30).stroke({color:V.violet,width:5,alpha:.8})}
-  private destroyEnemy(gain:number){sfx.word(this.state.combo);const x=this.active.root.x,y=this.active.root.y;this.burst(x,y,this.state.stage==="glitch"?V.red:this.state.stage==="rush"?V.pink:V.green,this.state.reducedMotion?8:34);const text=new Text({text:`+${gain}`,style:{fill:V.yellow,fontFamily:"JetBrains Mono",fontSize:28,fontWeight:"700"}});text.anchor.set(.5);text.position.set(x,y-100);this.fx.addChild(text);this.popups.push({node:text,life:650,max:650,vy:-78});if(!this.state.reducedMotion){this.active.root.scale.set(1.18);this.active.root.rotation=.08}}
-  private burst(x:number,y:number,color:number,count:number){for(let i=0;i<count;i++){if(this.debris.length>=200)this.debris.shift()?.node.destroy();const node=new Graphics().moveTo(-4,-2).lineTo(5,0).lineTo(-4,2).closePath().fill({color:i%5===0?V.text:color});node.position.set(x,y);this.fx.addChild(node);const a=Math.random()*Math.PI*2,s=120+Math.random()*420,l=350+Math.random()*500;this.debris.push({node,vx:Math.cos(a)*s,vy:Math.sin(a)*s,spin:(Math.random()-.5)*8,life:l,max:l})}}
-  private tick=(ticker:Ticker)=>{const dt=Math.min(ticker.deltaMS,50);if(this.freeze>0){this.freeze-=dt;return}this.elapsed+=dt;this.resize();const t=this.elapsed/1000,pressure=this.state.quota>0?Math.min(1,this.state.score/this.state.quota):0,low=this.state.timeLeftMs<=10000;this.bg.stars.x=-((t*(8+pressure*18))%120);this.base.ring.rotation=t*.65;this.base.core.scale.set(1+Math.sin(t*4)*(.06+pressure*.05));this.base.antennaLights.forEach((g,i)=>g.alpha=.35+.65*Math.max(0,Math.sin(t*5+i*1.7)));this.base.cannon.rotation=Math.sin(t*1.4)*.018;this.recoil=Math.max(0,this.recoil-dt/100);this.base.barrel.x=-this.recoil*10;const hover=Math.sin(t*(this.state.stage==="rush"?4.2:2.2))*8;const desiredX=this.w*(low ? 0.56 : 0.68)-this.knockback;this.active.root.x+=(desiredX-this.active.root.x)*Math.min(1,dt*.008);this.active.root.y=this.h*.5+hover;this.active.root.alpha=Math.min(1,this.active.root.alpha+dt/180);const s=this.active.root.scale.x+(1-this.active.root.scale.x)*Math.min(1,dt*.01);this.active.root.scale.set(s);this.knockback=Math.max(0,this.knockback-dt*.12);this.active.thrusters.forEach((g,i)=>{g.alpha=.35+.65*Math.abs(Math.sin(t*14+i));g.scale.x=.75+Math.random()*.35});if(this.active.ringA)this.active.ringA.rotation+=dt*.0015;if(this.active.ringB)this.active.ringB.rotation-=dt*.001;this.hitFlash=Math.max(0,this.hitFlash-dt);this.active.hitLayer.alpha=this.hitFlash/90;if(this.shake>0&&!this.state.reducedMotion){this.shake-=dt;this.world.position.set((Math.random()-.5)*9,(Math.random()-.5)*7)}else this.world.position.set(0,0);this.previews.forEach((p,i)=>{p.enemy.root.y=this.h*(.28+i*.13)+Math.sin(t*1.5+i)*5;p.enemy.root.x-=dt*(.004+pressure*.004);if(p.enemy.root.x<this.w*.74)p.enemy.root.x=this.w*(.82+i*.035)});for(let i=this.bolts.length-1;i>=0;i--){const b=this.bolts[i];b.life-=dt;b.root.x+=b.vx*dt/1000;b.trail.alpha=.18+.18*Math.sin(t*30);if(b.root.x>=b.targetX||b.life<=0){sfx.hit();this.hitFlash=90;this.active.hitLayer.clear().circle(0,0,76).fill({color:V.text,alpha:.6});this.burst(b.root.x,b.root.y,V.cyan,this.state.reducedMotion?2:7);b.root.destroy({children:true});this.bolts.splice(i,1)}}for(let i=this.debris.length-1;i>=0;i--){const d=this.debris[i];d.life-=dt;d.vy+=520*dt/1000;d.node.x+=d.vx*dt/1000;d.node.y+=d.vy*dt/1000;d.node.rotation+=d.spin*dt/1000;d.node.alpha=Math.max(0,d.life/d.max);if(d.life<=0){d.node.destroy();this.debris.splice(i,1)}}for(let i=this.popups.length-1;i>=0;i--){const p=this.popups[i];p.life-=dt;p.node.y+=p.vy*dt/1000;p.node.alpha=Math.max(0,p.life/p.max);p.node.scale.set(1+(1-p.life/p.max)*.18);if(p.life<=0){p.node.destroy();this.popups.splice(i,1)}}this.quotaPulse=Math.max(0,this.quotaPulse-dt/250);if(this.quotaPulse>0){const radius=30+(1-this.quotaPulse)*150;this.shockwave.clear().circle(this.active.root.x,this.active.root.y,radius).stroke({color:V.violet,width:4,alpha:this.quotaPulse})}else this.shockwave.clear();this.lowTimePulse=low?(Math.sin(t*8)+1)/2:0;this.edge.clear().rect(0,0,this.w,this.h).stroke({color:V.red,width:30,alpha:this.lowTimePulse*.25})}
+export class CombatScene {
+  readonly app: Application; readonly stage = new Container(); readonly world = new Container(); readonly fx = new Container(); readonly ui = new Container()
+  private bg = createBackground(); private base = createBase(); private active: EnemyArt; private previews: Preview[] = []
+  private bolts: Bolt[] = []; private debris: Debris[] = []; private popups: Popup[] = []; private state: SceneState
+  private w = 0; private h = 0
+  private elapsed = 0; private shake = 0; private recoil = 0; private hitFlash = 0; private knockback = 0; private freeze = 0; private lowTimePulse = 0; private quotaPulse = 0
+  private readonly edge = new Graphics(); private readonly shockwave = new Graphics(); private readonly glitchBars = new Graphics()
+
+  constructor(app: Application, initial: SceneState) {
+    this.app = app; this.state = initial;
+    this.active = createEnemy(initial.stage, initial.currentWord);
+    this.stage.addChild(this.bg.root, this.world, this.fx, this.ui);
+    this.world.addChild(this.base.root, this.active.root);
+    this.ui.addChild(this.edge, this.shockwave, this.glitchBars);
+    app.stage.addChild(this.stage);
+    this.ensurePreviews();
+    this.resize();
+    this.sync(initial);
+    app.ticker.add(this.tick)
+  }
+
+  resize = () => {
+    const w = this.app.screen.width, h = this.app.screen.height;
+    if (w === this.w && h === this.h) return;
+    this.w = w; this.h = h;
+    this.bg.redraw(w, h);
+    this.base.root.position.set(Math.max(90, w * .12), h * .58);
+    this.active.root.position.set(w * .70, h * .50);
+    this.previews.forEach((p, i) => p.enemy.root.position.set(w * (.82 + i * .035), h * (.28 + i * .13)));
+    this.edge.clear().rect(0, 0, w, h).stroke({ color: V.red, width: 28, alpha: 0 })
+  }
+
+  sync = (next: SceneState) => {
+    this.state = next;
+    
+    // Just persist current word explicitly in case it didn't arrive via event yet
+    if (this.active.word.text !== next.currentWord) {
+      this.active.word.text = next.currentWord
+    }
+
+    this.active.word.style.fill = next.wordDirty ? V.red : next.stage === "rush" ? V.pink : next.stage === "glitch" ? V.red : V.green;
+    const total = Math.max(1, next.currentWord.length), hp = Math.max(0, (total - next.caretIndex) / total);
+    this.active.hp.clear().roundRect(-62, 0, 124, 8, 4).fill({ color: V.line }).roundRect(-62, 0, 124 * hp, 8, 4).fill({ color: next.wordDirty ? V.red : V.green });
+    const integrity = Math.max(0, Math.min(1, next.accuracy / 100)), tone = integrity >= .97 ? V.green : integrity >= .90 ? V.yellow : V.red;
+    this.base.integrity.clear().roundRect(-48, 0, 96, 9, 5).fill({ color: V.line }).roundRect(-48, 0, 96 * integrity, 9, 5).fill({ color: tone });
+  }
+
+  handle(event: OverdrivePresentationEvent): void {
+    if (event.type === "accepted-character") {
+      this.fire(event.combo)
+    } else if (event.type === "rejected-character") {
+      this.typo()
+    } else if (event.type === "word-completed") {
+      this.destroyEnemy(event.scoreGain, event.combo)
+      this.replaceActive(this.state.currentWord)
+      this.updatePreviews()
+    } else if (event.type === "mult-increased") {
+      this.multUp(event.mult)
+    } else if (event.type === "stage-entered") {
+      const old = this.active;
+      this.world.removeChild(old.root);
+      old.root.destroy({ children: true });
+      this.active = createEnemy(event.stage, this.state.currentWord);
+      this.active.root.position.set(this.w * .70, this.h * .5);
+      this.world.addChild(this.active.root);
+      this.updatePreviews();
+      if (event.stage === "glitch") sfx.boss()
+    } else if (event.type === "stage-cleared") {
+      sfx.stageClear()
+    } else if (event.type === "run-over") {
+      sfx.runOver()
+    }
+  }
+
+  destroy = () => { this.app.ticker.remove(this.tick); this.app.stage.removeChild(this.stage); this.stage.destroy({ children: true }) }
+
+  private ensurePreviews() {
+    while (this.previews.length < 4) {
+      const enemy = createEnemy("warmup", "");
+      enemy.root.scale.set(.34);
+      enemy.word.style.fontSize = 13;
+      enemy.hp.visible = false;
+      this.world.addChild(enemy.root);
+      this.previews.push({ enemy, slot: this.previews.length, word: "" })
+    }
+  }
+
+  private updatePreviews() {
+    this.ensurePreviews();
+    this.previews.forEach((p, i) => {
+      const word = this.state.upcomingWords[i] ?? "";
+      p.word = word;
+      p.enemy.word.text = word;
+      p.enemy.root.visible = Boolean(word);
+      p.enemy.root.position.set(this.w * (.82 + i * .035), this.h * (.28 + i * .13))
+    })
+  }
+
+  private replaceActive(word: string) {
+    this.active.word.text = word;
+    this.active.root.alpha = 0;
+    this.active.root.scale.set(.72);
+    this.active.root.position.set(this.w * .86, this.h * .5);
+    this.knockback = 0;
+    this.active.root.rotation = 0
+  }
+
+  private fire(combo: number) {
+    sfx.shot(combo);
+    const root = new Container(), trail = new Graphics().roundRect(-32, -2, 36, 4, 2).fill({ color: V.cyan, alpha: .28 }), head = new Graphics().circle(0, 0, 5).fill({ color: V.text }).circle(0, 0, 3).fill({ color: V.cyan });
+    root.addChild(trail, head);
+    root.position.set(this.base.root.x + 78, this.base.root.y - 46);
+    this.fx.addChild(root);
+    this.bolts.push({ root, head, trail, vx: 1500, targetX: this.active.root.x - 60, life: 550 });
+    this.recoil = 1
+  }
+
+  private typo() {
+    sfx.typo();
+    this.shake = this.state.reducedMotion ? 0 : 180;
+    this.knockback = 32;
+    this.glitchBars.clear();
+    for (let i = 0; i < 8; i++) this.glitchBars.rect(Math.random() * this.w, Math.random() * this.h, 30 + Math.random() * 160, 2 + Math.random() * 5).fill({ color: V.red, alpha: .3 });
+    setTimeout(() => this.glitchBars.clear(), 140)
+  }
+
+  private multUp(mult: number) {
+    sfx.mult(mult);
+    this.freeze = this.state.reducedMotion ? 0 : 60;
+    this.quotaPulse = 1;
+    this.shockwave.clear().circle(this.active.root.x, this.active.root.y, 30).stroke({ color: V.violet, width: 5, alpha: .8 })
+  }
+
+  private destroyEnemy(gain: number, combo: number) {
+    sfx.word(combo);
+    const x = this.active.root.x, y = this.active.root.y;
+    this.burst(x, y, this.state.stage === "glitch" ? V.red : this.state.stage === "rush" ? V.pink : V.green, this.state.reducedMotion ? 8 : 34);
+    const text = new Text({ text: `+${gain}`, style: { fill: V.yellow, fontFamily: "JetBrains Mono", fontSize: 28, fontWeight: "700" } });
+    text.anchor.set(.5);
+    text.position.set(x, y - 100);
+    this.fx.addChild(text);
+    this.popups.push({ node: text, life: 650, max: 650, vy: -78 });
+    if (!this.state.reducedMotion) { this.active.root.scale.set(1.18); this.active.root.rotation = .08 }
+  }
+
+  private burst(x: number, y: number, color: number, count: number) {
+    for (let i = 0; i < count; i++) {
+      if (this.debris.length >= 200) this.debris.shift()?.node.destroy();
+      const node = new Graphics().moveTo(-4, -2).lineTo(5, 0).lineTo(-4, 2).closePath().fill({ color: i % 5 === 0 ? V.text : color });
+      node.position.set(x, y);
+      this.fx.addChild(node);
+      const a = Math.random() * Math.PI * 2, s = 120 + Math.random() * 420, l = 350 + Math.random() * 500;
+      this.debris.push({ node, vx: Math.cos(a) * s, vy: Math.sin(a) * s, spin: (Math.random() - .5) * 8, life: l, max: l })
+    }
+  }
+
+  private tick = (ticker: Ticker) => {
+    const dt = Math.min(ticker.deltaMS, 50);
+    if (this.freeze > 0) { this.freeze -= dt; return }
+    this.elapsed += dt;
+    this.resize();
+    const t = this.elapsed / 1000, pressure = this.state.quota > 0 ? Math.min(1, this.state.score / this.state.quota) : 0, low = this.state.timeLeftMs <= 10000;
+    this.bg.stars.x = -((t * (8 + pressure * 18)) % 120);
+    this.base.ring.rotation = t * .65;
+    this.base.core.scale.set(1 + Math.sin(t * 4) * (.06 + pressure * .05));
+    this.base.antennaLights.forEach((g, i) => g.alpha = .35 + .65 * Math.max(0, Math.sin(t * 5 + i * 1.7)));
+    this.base.cannon.rotation = Math.sin(t * 1.4) * .018;
+    this.recoil = Math.max(0, this.recoil - dt / 100);
+    this.base.barrel.x = -this.recoil * 10;
+    const hover = Math.sin(t * (this.state.stage === "rush" ? 4.2 : 2.2)) * 8;
+    const desiredX = this.w * (low ? 0.56 : 0.68) - this.knockback;
+    this.active.root.x += (desiredX - this.active.root.x) * Math.min(1, dt * .008);
+    this.active.root.y = this.h * .5 + hover;
+    this.active.root.alpha = Math.min(1, this.active.root.alpha + dt / 180);
+    const s = this.active.root.scale.x + (1 - this.active.root.scale.x) * Math.min(1, dt * .01);
+    this.active.root.scale.set(s);
+    this.knockback = Math.max(0, this.knockback - dt * .12);
+    this.active.thrusters.forEach((g, i) => { g.alpha = .35 + .65 * Math.abs(Math.sin(t * 14 + i)); g.scale.x = .75 + Math.random() * .35 });
+    if (this.active.ringA) this.active.ringA.rotation += dt * .0015;
+    if (this.active.ringB) this.active.ringB.rotation -= dt * .001;
+    this.hitFlash = Math.max(0, this.hitFlash - dt);
+    this.active.hitLayer.alpha = this.hitFlash / 90;
+    if (this.shake > 0 && !this.state.reducedMotion) { this.shake -= dt; this.world.position.set((Math.random() - .5) * 9, (Math.random() - .5) * 7) } else this.world.position.set(0, 0);
+    this.previews.forEach((p, i) => { p.enemy.root.y = this.h * (.28 + i * .13) + Math.sin(t * 1.5 + i) * 5; p.enemy.root.x -= dt * (.004 + pressure * .004); if (p.enemy.root.x < this.w * .74) p.enemy.root.x = this.w * (.82 + i * .035) });
+    for (let i = this.bolts.length - 1; i >= 0; i--) {
+      const b = this.bolts[i]; b.life -= dt; b.root.x += b.vx * dt / 1000; b.trail.alpha = .18 + .18 * Math.sin(t * 30);
+      if (b.root.x >= b.targetX || b.life <= 0) {
+        sfx.hit(); this.hitFlash = 90; this.active.hitLayer.clear().circle(0, 0, 76).fill({ color: V.text, alpha: .6 });
+        this.burst(b.root.x, b.root.y, V.cyan, this.state.reducedMotion ? 2 : 7);
+        b.root.destroy({ children: true }); this.bolts.splice(i, 1)
+      }
+    }
+    for (let i = this.debris.length - 1; i >= 0; i--) {
+      const d = this.debris[i]; d.life -= dt; d.vy += 520 * dt / 1000; d.node.x += d.vx * dt / 1000; d.node.y += d.vy * dt / 1000; d.node.rotation += d.spin * dt / 1000; d.node.alpha = Math.max(0, d.life / d.max);
+      if (d.life <= 0) { d.node.destroy(); this.debris.splice(i, 1) }
+    }
+    for (let i = this.popups.length - 1; i >= 0; i--) {
+      const p = this.popups[i]; p.life -= dt; p.node.y += p.vy * dt / 1000; p.node.alpha = Math.max(0, p.life / p.max); p.node.scale.set(1 + (1 - p.life / p.max) * .18);
+      if (p.life <= 0) { p.node.destroy(); this.popups.splice(i, 1) }
+    }
+    this.quotaPulse = Math.max(0, this.quotaPulse - dt / 250);
+    if (this.quotaPulse > 0) { const radius = 30 + (1 - this.quotaPulse) * 150; this.shockwave.clear().circle(this.active.root.x, this.active.root.y, radius).stroke({ color: V.violet, width: 4, alpha: this.quotaPulse }) } else this.shockwave.clear();
+    this.lowTimePulse = low ? (Math.sin(t * 8) + 1) / 2 : 0; this.edge.clear().rect(0, 0, this.w, this.h).stroke({ color: V.red, width: 30, alpha: this.lowTimePulse * .25 })
+  }
 }

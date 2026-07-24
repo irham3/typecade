@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useGame } from "../store"
 import { GameplayCanvas } from "../canvas/gameplay-canvas"
+import { usePresentationEvents } from "../presentation/use-presentation-events"
 import { HudLabel, KeycapSlot, QuotaBar } from "@/components/overdrive/ui"
 import { KEYCAPS, GLITCHES } from "@/lib/engine/overdrive/items"
 import { KEYCAP_ICONS } from "@/components/overdrive/icons"
@@ -39,6 +40,7 @@ function Metric({ label, value, tone = "text-text-hi" }: { label: string; value:
 
 export function Hud() {
   const state = useGame()
+  const events = usePresentationEvents()
   const reducedMotion = useReducedMotion()
   const glitchName = state.activeGlitch ? GLITCHES[state.activeGlitch]?.name : null
 
@@ -91,6 +93,7 @@ export function Hud() {
             zone={state.zone}
             stage={state.stage}
             reducedMotion={reducedMotion}
+            events={events}
           />
 
           <div className="pointer-events-none absolute left-2 top-2 grid grid-cols-3 gap-2 lg:hidden">
