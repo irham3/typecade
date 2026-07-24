@@ -16,7 +16,31 @@ export const useGame = create<GameStore>((set, get) => ({
 		methodsToPatch.forEach(method => {
 			const original = api[method] as Function;
 			(api as any)[method] = (...args: any[]) => {
+				const before = api.snapshot()
 				original(...args)
+				const after = api.snapshot()
+				
+				// feedChar events (accepted/rejected/word-complete/mult-change/stage-entered from typing) 
+				// are handled synchronously in useGameInput to preserve gesture unlocking.
+				// Here we handle non-typing transitions (like timer finishing, continuing).
+				if (method !== 'feedChar') {
+					if (after.stage !== before.stage) {
+						import('./presentation/events').then(({ emitPresentationEvent }) => {
+							emitPresentationEvent({ type: "stage-entered", stage: after.stage })
+						})
+					}
+				}
+				
+				if (before.screen === "stage" && after.screen === "stageResult") {
+					import('./presentation/events').then(({ emitPresentationEvent }) => {
+						emitPresentationEvent({ type: "stage-cleared" })
+					})
+				} else if (before.screen === "stage" && after.screen === "runOver") {
+					import('./presentation/events').then(({ emitPresentationEvent }) => {
+						emitPresentationEvent({ type: "run-over" })
+					})
+				}
+
 				sync()
 			}
 		})

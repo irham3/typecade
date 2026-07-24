@@ -30,11 +30,7 @@ export default function OverdrivePage() {
 	}, [state.screen, state.api, paused])
 
 	// Input handling
-	useGameInput(
-		(c) => state.api?.feedChar(c),
-		() => state.api?.backspace(),
-		state.screen === "stage" && !paused
-	)
+	useGameInput(state.screen === "stage" && !paused)
 
 	// Pause handling
 	useEffect(() => {
