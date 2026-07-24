@@ -45,6 +45,7 @@ export function createRun(opts: { seed: string; words: string[] }) {
 		rerollCost: 5,
 		activeGlitch: null,
 		glitchState: null,
+		runScore: 0,
 	}
 
 	let scorer = createScorer(0)
@@ -142,6 +143,9 @@ export function createRun(opts: { seed: string; words: string[] }) {
 		state.keycaps = []
 		state.macros = []
 		state.rerollCost = 5
+		state.runScore = 0
+		state.finalScore = undefined
+		state.tokenBreakdown = undefined
 		startStage()
 	}
 
@@ -255,26 +259,36 @@ export function createRun(opts: { seed: string; words: string[] }) {
 
 			if (state.score >= state.quota) {
 				let earned = CLEAR_REWARD[state.stage as keyof typeof CLEAR_REWARD]
-				const timeBonus = 0
+				const timeBonus = Math.floor(state.timeLeftMs / 10000) * TIME_BONUS_PER_10S
 				let mTokenMultiplier = 1
 				if (state.glitchState && state.glitchState.tokenMultiplier) {
 					mTokenMultiplier = state.glitchState.tokenMultiplier
 				}
 				const interest = Math.min(Math.floor(state.tokens / 5) * INTEREST_PER_5_TOKENS, modifiers.interestCap)
-				earned += timeBonus + interest
-				earned *= mTokenMultiplier
 				
-				state.tokens += earned
+				const totalEarned = (earned + timeBonus + interest) * mTokenMultiplier
 				
-				events.emit("stage_clear", { zone: state.zone, stage: state.stage, tokensEarned: earned, timeLeftMs: state.timeLeftMs })
+				state.tokenBreakdown = {
+					clearReward: earned * mTokenMultiplier,
+					timeBonus: timeBonus * mTokenMultiplier,
+					interest: interest * mTokenMultiplier,
+					totalEarned
+				}
+				
+				state.tokens += totalEarned
+				state.runScore += state.score
+				
+				events.emit("stage_clear", { zone: state.zone, stage: state.stage, tokensEarned: totalEarned, timeLeftMs: state.timeLeftMs })
 				state.screen = "stageResult"
 				
 				if (state.zone === 8 && state.stage === "glitch") {
 					state.win = true
 				}
 			} else {
+				state.runScore += state.score
+				state.finalScore = state.runScore
 				events.emit("stage_fail", { zone: state.zone, stage: state.stage })
-				events.emit("run_over", { win: false, finalScore: state.score, zoneReached: state.zone })
+				events.emit("run_over", { win: false, finalScore: state.finalScore, zoneReached: state.zone })
 				state.screen = "runOver"
 			}
 		}
@@ -418,6 +432,10 @@ export function createRun(opts: { seed: string; words: string[] }) {
 		start()
 	}
 
+	function quitToMenu() {
+		state.screen = "menu"
+	}
+
 	function api() {
 		return {
 			snapshot,
@@ -434,7 +452,8 @@ export function createRun(opts: { seed: string; words: string[] }) {
 			rerollShop,
 			duplicateRandomKeycap,
 			triggerMacro,
-			restart
+			restart,
+			quitToMenu
 		}
 	}
 

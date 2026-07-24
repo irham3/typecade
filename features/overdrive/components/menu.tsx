@@ -2,6 +2,7 @@
 import Link from "next/link"
 import { useGame } from "@/features/overdrive/store"
 import { PrimaryButton, GhostButton } from "@/components/overdrive/ui"
+import { Screen } from "./screen"
 
 export function Menu() {
 	const init = useGame((s) => s.init)
@@ -10,6 +11,7 @@ export function Menu() {
 		useGame.getState().api?.start()
 	}
 	return (
+		<Screen>
 		<main className="flex min-h-dvh flex-col items-center justify-center gap-12">
 			<div className="text-center">
 				<h1 className="font-pixel text-2xl">TYPECADE</h1>
@@ -26,5 +28,6 @@ export function Menu() {
 				</span>
 			</div>
 		</main>
+		</Screen>
 	)
 }

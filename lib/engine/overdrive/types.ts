@@ -8,6 +8,9 @@ export type RunSnapshot = {
 	stage: StageType
 	timeLeftMs: number
 	score: number
+	runScore: number
+	finalScore?: number
+	tokenBreakdown?: { clearReward:number; timeBonus:number; interest:number; totalEarned:number }
 	quota: number
 	combo: number
 	mult: number

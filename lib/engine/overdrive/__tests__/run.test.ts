@@ -119,4 +119,129 @@ describe("Run State Machine", () => {
 		const stateAfter = api.snapshot()
 		expect(stateAfter.screen).toBe("stageResult")
 	})
+	it("stageScore resets each stage but runScore accumulates once", () => {
+		const api = createRun({ seed: "test", words: mockWords })
+		api.start()
+		
+		let loops = 0
+		while (api.snapshot().score < QUOTA[1].warmup && loops < 1000) {
+			const w = api.snapshot().currentWord
+			for (const c of w) api.feedChar(c)
+			api.feedChar(" ")
+			loops++
+		}
+		
+		const stage1Score = api.snapshot().score
+		api.advance(STAGE_DURATION_MS) // end stage 1
+		
+		let state = api.snapshot()
+		expect(state.runScore).toBe(stage1Score)
+		
+		// enter shop, leave shop -> next stage
+		api.continueToNextStage()
+		api.leaveShop()
+		
+		state = api.snapshot()
+		expect(state.score).toBe(0) // stageScore resets
+		expect(state.runScore).toBe(stage1Score) // runScore retained
+		
+		// score some more
+		loops = 0
+		while (api.snapshot().score < QUOTA[1].rush && loops < 1000) {
+			const w = api.snapshot().currentWord
+			for (const c of w) api.feedChar(c)
+			api.feedChar(" ")
+			loops++
+		}
+		
+		const stage2Score = api.snapshot().score
+		api.advance(STAGE_DURATION_MS) // end stage 2
+		
+		state = api.snapshot()
+		expect(state.runScore).toBe(stage1Score + stage2Score)
+	})
+
+	it("finalScore equals runScore on death", () => {
+		const api = createRun({ seed: "test", words: mockWords })
+		api.start()
+		
+		// advance time without typing -> fail
+		api.advance(STAGE_DURATION_MS)
+		
+		const state = api.snapshot()
+		expect(state.screen).toBe("runOver")
+		expect(state.win).toBe(false)
+		expect(state.finalScore).toBe(state.runScore)
+	})
+
+	it("token breakdown equals the economy formula", () => {
+		const api = createRun({ seed: "test", words: mockWords })
+		api.start()
+		
+		let loops = 0
+		while (api.snapshot().score < QUOTA[1].warmup && loops < 1000) {
+			const w = api.snapshot().currentWord
+			for (const c of w) api.feedChar(c)
+			api.feedChar(" ")
+			loops++
+		}
+		
+		api.advance(30000) // half time left
+		api.advance(30000) // end
+		
+		const state = api.snapshot()
+		expect(state.tokenBreakdown).toBeDefined()
+		expect(state.tokenBreakdown!.totalEarned).toBe(state.tokenBreakdown!.clearReward + state.tokenBreakdown!.timeBonus + state.tokenBreakdown!.interest)
+	})
+
+	it("Zone 8 clear enters Zone 9 endless and still accepts input", () => {
+		const api = createRun({ seed: "test", words: mockWords })
+		api.start()
+		
+		const clearStage = () => {
+			let loops = 0
+			while (api.snapshot().score < api.snapshot().quota && loops < 5000) {
+				const w = api.snapshot().currentWord
+				for (const c of w) api.feedChar(c)
+				api.feedChar(" ")
+				loops++
+			}
+			api.advance(STAGE_DURATION_MS)
+			api.continueToNextStage()
+			api.leaveShop()
+		}
+		
+		// Zone 1 to Zone 8 warmup = 7 zones * 3 stages = 21 stages.
+		// Zone 8 warmup, Zone 8 rush = 2 stages. Total 23 stages to reach Zone 8 glitch.
+		for (let i = 0; i < 23; i++) {
+			clearStage()
+		}
+		
+		let state = api.snapshot()
+		expect(state.zone).toBe(8)
+		expect(state.stage).toBe("glitch")
+		
+		let loops = 0
+		while (api.snapshot().score < QUOTA[8].glitch && loops < 5000) {
+			const w = api.snapshot().currentWord
+			for (const c of w) api.feedChar(c)
+			api.feedChar(" ")
+			loops++
+		}
+		
+		api.advance(STAGE_DURATION_MS)
+		expect(api.snapshot().win).toBe(true) // Game won at Zone 8 glitch
+		
+		api.continueToNextStage()
+		api.leaveShop()
+		
+		state = api.snapshot()
+		expect(state.zone).toBe(9)
+		expect(state.stage).toBe("warmup")
+		
+		// still accepts input
+		const w = api.snapshot().currentWord
+		api.feedChar(w[0])
+		expect(api.snapshot().caretIndex).toBe(1)
+	})
 })

@@ -1,8 +1,5 @@
 "use client"
 import { useEffect, useState } from "react"
-import { useGameFx } from "@/features/overdrive/fx/use-game-fx"
-import { inHitstop } from "@/features/overdrive/fx/dom-fx"
-import { setFxEnabled } from "@/features/overdrive/fx/particles"
 import { useGame } from "@/features/overdrive/store"
 import { useGameInput } from "@/features/overdrive/use-game-input"
 import { Menu } from "@/features/overdrive/components/menu"
@@ -15,12 +12,6 @@ export default function OverdrivePage() {
 	const state = useGame()
 	const [paused, setPaused] = useState(false)
 
-	useGameFx()
-
-	useEffect(() => {
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setFxEnabled(false)
-	}, [])
-
 	// Game Loop (RAF)
 	useEffect(() => {
 		if (state.screen !== "stage" || paused) return
@@ -29,7 +20,7 @@ export default function OverdrivePage() {
 		let raf = 0
 		
 		const tick = (now: number) => {
-			if (!inHitstop(now)) state.api?.advance(now - last)
+			state.api?.advance(now - last)
 			last = now
 			raf = requestAnimationFrame(tick)
 		}
@@ -57,7 +48,7 @@ export default function OverdrivePage() {
 	}, [state.screen])
 
 	return (
-		<div className="relative min-h-dvh">
+		<div className="relative h-dvh w-full min-w-0 max-w-none overflow-hidden">
 			{state.screen === "menu" && <Menu />}
 			{state.screen === "stage" && <Hud />}
 			{state.screen === "stageResult" && <StageResult />}

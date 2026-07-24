@@ -2,6 +2,7 @@
 import { useGame } from "../store"
 import { PrimaryButton, GhostButton, KeycapSlot } from "@/components/overdrive/ui"
 import { formatNumber } from "./hud"
+import { Screen } from "./screen"
 import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 
 export function Shop() {
@@ -9,12 +10,16 @@ export function Shop() {
 	const api = state.api
 
 	return (
+		<Screen>
 		<main className="mx-auto flex min-h-dvh max-w-4xl flex-col py-12 px-6">
 			<header className="flex items-center justify-between border-b border-line pb-6">
 				<h2 className="font-pixel text-2xl">SHOP</h2>
-				<div className="flex items-center gap-4 text-xl">
-					<span className="text-text-mid">Tokens:</span>
-					<span className="font-bold text-acc-yellow tabular-nums">{formatNumber(state.tokens)}</span>
+				<div className="flex flex-col items-end gap-1">
+					<div className="flex items-center gap-4 text-xl">
+						<span className="text-text-mid">Tokens:</span>
+						<span className="font-bold text-acc-yellow tabular-nums">{formatNumber(state.tokens)}</span>
+					</div>
+					<div className="text-xs text-text-mid">Interest next clear: +{Math.min(Math.floor(state.tokens / 5), 5)}</div>
 				</div>
 			</header>
 
@@ -38,7 +43,7 @@ export function Shop() {
 											<strong className="text-sm">{def.name}</strong>
 											<p className="text-xs text-text-mid">{def.description}</p>
 											<button 
-												className="mt-1 rounded bg-bg-2 px-2 py-1 text-xs hover:bg-bg-3"
+												className="mt-1 rounded bg-bg-2 px-2 py-1 text-xs hover:bg-bg-2"
 												onClick={() => api?.sellItem("keycap", i)}
 											>
 												Sell (+{Math.floor(def.basePrice / 2)})
@@ -68,7 +73,7 @@ export function Shop() {
 											<strong className="text-sm">{def.name}</strong>
 											<p className="text-xs text-text-mid">{def.description}</p>
 											<button 
-												className="mt-1 rounded bg-bg-2 px-2 py-1 text-xs hover:bg-bg-3"
+												className="mt-1 rounded bg-bg-2 px-2 py-1 text-xs hover:bg-bg-2"
 												onClick={() => api?.sellItem("macro", i)}
 											>
 												Sell (+{Math.floor(def.basePrice / 2)})
@@ -114,9 +119,9 @@ export function Shop() {
 									<button 
 										disabled={!canBuy}
 										onClick={() => api?.buyItem("keycap", i)}
-										className="rounded bg-bg-2 px-4 py-2 text-sm font-bold text-acc-yellow hover:bg-bg-3 disabled:opacity-30"
+										className="rounded bg-bg-2 px-4 py-2 text-sm font-bold text-acc-yellow hover:bg-bg-2 disabled:opacity-30"
 									>
-										{def.basePrice} 🪙
+										{def.basePrice} TOKENS
 									</button>
 								</div>
 							)
@@ -138,9 +143,9 @@ export function Shop() {
 									<button 
 										disabled={!canBuy}
 										onClick={() => api?.buyItem("macro", 0)}
-										className="rounded bg-bg-2 px-4 py-2 text-sm font-bold text-acc-yellow hover:bg-bg-3 disabled:opacity-30"
+										className="rounded bg-bg-2 px-4 py-2 text-sm font-bold text-acc-yellow hover:bg-bg-2 disabled:opacity-30"
 									>
-										{def.basePrice} 🪙
+										{def.basePrice} TOKENS
 									</button>
 								</div>
 							)
@@ -155,5 +160,6 @@ export function Shop() {
 				</PrimaryButton>
 			</footer>
 		</main>
+		</Screen>
 	)
 }

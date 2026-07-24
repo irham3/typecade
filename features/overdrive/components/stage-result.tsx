@@ -2,6 +2,7 @@
 import { useGame } from "../store"
 import { PrimaryButton, GhostButton } from "@/components/overdrive/ui"
 import { formatNumber } from "./hud"
+import { Screen } from "./screen"
 
 export function StageResult() {
 	const state = useGame()
@@ -9,6 +10,7 @@ export function StageResult() {
 	const isClear = state.score >= state.quota
 
 	return (
+		<Screen>
 		<main className="mx-auto flex min-h-dvh max-w-120 flex-col items-center justify-center gap-6">
 			<h2 className={`font-pixel text-2xl ${isClear ? "text-acc-green" : "text-acc-red"}`}>
 				{isClear ? "STAGE CLEAR" : "QUOTA FAILED"}
@@ -29,10 +31,28 @@ export function StageResult() {
 					<span className="text-text-mid">Time Left</span>
 					<span>{Math.ceil(state.timeLeftMs / 1000)}s</span>
 				</div>
-				{isClear && (
-					<div className="flex justify-between mt-4 border-t border-line pt-2">
-						<span className="text-text-mid">Tokens Earned</span>
-						<span className="font-bold text-acc-yellow tabular-nums">+{state.tokens} (Total)</span>
+				{state.tokenBreakdown && (
+					<div className="flex flex-col gap-2 mt-4 border-t border-line pt-4">
+						<div className="flex justify-between">
+							<span className="text-text-mid">Clear Reward</span>
+							<span className="font-bold text-acc-yellow tabular-nums">+{state.tokenBreakdown.clearReward}</span>
+						</div>
+						<div className="flex justify-between">
+							<span className="text-text-mid">Time Bonus</span>
+							<span className="font-bold text-acc-yellow tabular-nums">+{state.tokenBreakdown.timeBonus}</span>
+						</div>
+						<div className="flex justify-between">
+							<span className="text-text-mid">Interest</span>
+							<span className="font-bold text-acc-yellow tabular-nums">+{state.tokenBreakdown.interest}</span>
+						</div>
+						<div className="flex justify-between border-t border-line pt-2 mt-2">
+							<span className="text-text-mid">Tokens Earned</span>
+							<span className="font-bold text-acc-yellow tabular-nums">+{state.tokenBreakdown.totalEarned}</span>
+						</div>
+						<div className="flex justify-between">
+							<span className="text-text-mid">Current Balance</span>
+							<span className="font-bold text-acc-yellow tabular-nums">{formatNumber(state.tokens)} TOKENS</span>
+						</div>
 					</div>
 				)}
 			</div>
@@ -50,5 +70,6 @@ export function StageResult() {
 				*/}
 			</div>
 		</main>
+		</Screen>
 	)
 }

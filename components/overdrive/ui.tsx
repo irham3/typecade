@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react"
+import type { ButtonHTMLAttributes, ReactNode, HTMLAttributes } from "react"
 
 export type Rarity = "common" | "uncommon" | "rare" | "legendary" | "macro"
 
@@ -42,7 +42,7 @@ export function HudLabel({ children }: { children: ReactNode }) {
 }
 
 export function QuotaBar({ current, target }: { current: number; target: number }) {
-	const pct = Math.min(current / target, 1)
+	const pct = target <= 0 ? 0 : Math.min(current / target, 1)
 	return (
 		<div className="h-3 overflow-hidden rounded-md bg-bg-2">
 			<div
@@ -53,25 +53,23 @@ export function QuotaBar({ current, target }: { current: number; target: number 
 	)
 }
 
-export type KeycapSlotProps = {
+export type KeycapSlotProps = HTMLAttributes<HTMLDivElement> & {
 	rarity?: Rarity
-	children?: ReactNode
-	className?: string
 }
 
-export function KeycapSlot({ rarity = "common", children, className = "" }: KeycapSlotProps) {
+export function KeycapSlot({ rarity = "common", children, className = "", ...rest }: KeycapSlotProps) {
 	// Simple color mapping based on rarity
 	const colors = {
 		common: "border-line text-text-hi",
-		uncommon: "border-acc-green text-acc-green shadow-[0_0_10px_rgba(25,230,140,0.2)]",
-		rare: "border-acc-violet text-acc-violet shadow-[0_0_15px_rgba(188,100,255,0.4)]",
-		legendary: "border-acc-yellow text-acc-yellow shadow-[0_0_20px_rgba(255,200,0,0.6)]",
-		macro: "border-acc-blue text-acc-blue shadow-[0_0_10px_rgba(40,150,255,0.3)]",
+		uncommon: "border-acc-green text-acc-green",
+		rare: "border-acc-violet text-acc-violet",
+		legendary: "border-acc-yellow text-acc-yellow",
+		macro: "border-acc-cyan text-acc-cyan",
 	}
 	const color = colors[rarity]
 
 	return (
-		<div className={`flex h-12 w-12 items-center justify-center rounded-lg border-2 bg-bg-1 font-pixel text-xl transition-all ${color} ${className}`}>
+		<div {...rest} className={`flex h-12 w-12 items-center justify-center rounded-lg border-2 bg-bg-1 font-pixel text-xl transition-all ${color} ${className}`}>
 			{children}
 		</div>
 	)

@@ -14,3 +14,6 @@
 
 **Open Questions for Next Session:**
 - We are ready to start Milestone 1 (M1). The next step is building the headless run state machine and the UI timer. Should we implement the state machine using a dedicated library like XState, or manage it entirely in a custom Zustand slice?
+
+## Milestone 3 (Juice & Presentation) - Pixi Combat Update
+Pixi combat presentation selected; headless engine unchanged; procedural vector assets used; multiplayer/daily/auth deferred.
