@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # /docs/
+
+# OpenNext & Wrangler
+/.open-next
+/.wrangler
+tsc-errors.txt
