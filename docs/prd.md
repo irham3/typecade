@@ -11,9 +11,11 @@
 
 | Metric | Target |
 | --- | --- |
-| First-run completion (start to game over/win) | ≥60% of visitors who start a run |
+| First-run resolution (run_start to run_end, excluding quit/close) | ≥60% of visitors who start a run |
+| Second-run start in the same session | ≥35% of players who resolve their first run |
 | D1 retention of Overdrive players | ≥20% |
-| Share cards generated | ≥10% of finished runs |
+| D7 retention of Overdrive players | ≥8% |
+| Share/challenge action completed | ≥10% of finished runs |
 | Login conversion (after ≥3 runs) | ≥15% |
 | Median FPS on low-end devices | ≥55 fps |
 
@@ -38,14 +40,14 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 | F-2 | `overdrive` feature flag (env + hidden `/overdrive` route) | P0 |
 | F-3 | Migrate deployment from Cloudflare Pages to **Workers (OpenNext)** before the codebase grows | P0 |
 | F-4 | Deterministic seeded RNG (one seed produces identical word order, shop contents, glitches): prerequisite for daily seed and anti-cheat | P0 |
-| F-5 | Basic telemetry events: run_start, stage_clear, run_end, shop_buy, per-zone death | P0 |
+| F-5 | Typed telemetry: run_start, run_abandon, stage_start, stage_clear, run_end, run_restart, shop_offer, shop_buy, shop_sell, item_proc, macro_use, glitch_start, per-zone death; include ruleset version and word-pool language | P0 |
 
 ## EPIC 1: Core Run Loop
 
 | ID | Requirement | Prio |
 | --- | --- | --- |
 | R-1 | Run state machine: Zone (1-8) x Stage (Warm-up/Rush/Glitch), then Shop, then next; game over on failed quota | P0 |
-| R-2 | Scoring engine: `(chars + Base bonus) x Mult`, combo +1 Mult per 10 words, typo resets it (per GDD §2) | P0 |
+| R-2 | Scoring engine: `(chars + Base bonus) x Mult`, combo +1 Mult per 10 words, dirty word scores zero, typo reset resolves on submission, stage clears immediately when Quota is met (per GDD §2) | P0 |
 | R-3 | Quota curve configurable from a single constants file (values from the spreadsheet simulation) | P0 |
 | R-4 | Per-stage timer + stage results (score, accuracy, time left) | P0 |
 | R-5 | Endless mode after Zone 8 (quota x1.8^n) | P0 |
@@ -56,7 +58,7 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 | ID | Requirement | Prio |
 | --- | --- | --- |
 | I-1 | Event-driven item system: Keycaps subscribe to engine events (word_complete, typo, stage_start, etc.); adding items requires no engine changes | P0 |
-| I-2 | 15 MVP Keycaps + 4 Macros (lists in GDD §5-6) | P0 |
+| I-2 | Exact 15 MVP Keycaps + 4 Macros from the canonical manifest in GDD §13 | P0 |
 | I-3 | Shop: 2 Keycap slots + 1 Macro, reroll, sell items, Token economy + interest (GDD §4) | P0 |
 | I-4 | Keycap slot UI (max 5) + effect tooltips | P0 |
 | I-5 | Remaining 12 Keycaps + Firmware | P2 |
@@ -73,7 +75,7 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 
 | ID | Requirement | Prio |
 | --- | --- | --- |
-| J-1 | Render gameplay on a **PixiJS** canvas: text, caret, particles, screen shake, hitstop | P0 |
+| J-1 | Render the custom **Signal Siege** presentation on a PixiJS canvas: Keystone, Packet Shard/Needle Signal/Null Crown glyphs, active text, particles, screen shake, hitstop, and item-proc acknowledgement | P0 |
 | J-2 | Audio: keystroke clicks (3 switch variants), quota riser, glitch sting; Web Audio, lazy-loaded | P1 |
 | J-3 | Reduced-motion setting (accessibility + low-end devices) | P1 |
 
@@ -129,8 +131,8 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 # 4. Data Model (Supabase, draft)
 
 - `profiles`: id (auth), username, created_at
-- `runs`: id, user_id (nullable), seed, mode (daily/free), final_score, final_zone, duration, build (jsonb: keycaps, macros), client_version, created_at
-- `daily_seeds`: date (pk), seed
+- `runs`: id, user_id (nullable), seed, mode (daily/free), language, ruleset_version, rng_version, word_pool_version, final_score, final_zone, duration, build (jsonb: keycaps, macros), client_version, created_at
+- `daily_seeds`: date + language + ruleset_version (composite key), seed
 - `leaderboard_daily`: view/materialized from runs (mode=daily, best per user per date)
 - `replays`: run_id, storage_path (R2/Storage), keystroke_count, verified (bool)
 
@@ -143,11 +145,11 @@ RLS: users can only insert their own runs; leaderboards are public-read; replay 
 | # | Milestone | Scope | Exit criteria |
 | --- | --- | --- | --- |
 | M0 | Simulation and foundation | Balancing spreadsheet, F-1 to F-5 | Quota curve validated; shared engine powers Practice with no regressions |
-| M1 | Playable core | R-1 to R-5, I-1 + 5 hardcoded Keycaps, minimal UI (DOM is fine) | Full 8-zone run playable; "fun" in self-playtest |
+| M1 | Playable core | R-1 to R-5, I-1 + 5 hardcoded Keycaps, minimal UI (DOM is fine) | Full 8-zone run playable; scoring simulation passes; at least 5 external testers can explain Base × Mult and at least 3 voluntarily start a second run |
 | M2 | Full economy | I-2 to I-4, G-1 to G-2 | Runs with shop, 15 items, 5 glitches |
-| M3 | Juice pass | J-1 to J-3 | 60fps on the low-end test device; gameplay clips worth posting on TikTok |
+| M3 | Juice pass | J-1 to J-3 | 60fps on the low-end test device; no layout overlap at the design breakpoints; item procs and failure cause are understandable without narration |
 | M4 | Competitive | D-1 to D-3, A-1 to A-2 | Daily seed + leaderboard + share card working end to end |
-| M5 | **Launch** | Final copy, `/overdrive` landing becomes the homepage, PH/communities/TikTok | Flag opened to the public |
+| M5 | **Launch** | Final copy, `/overdrive` landing becomes the homepage, PH/communities/TikTok | Flag opens only after second-run rate, first-run resolution, crash rate, and low-end FPS meet the agreed soft-launch gate |
 | M6 | Post-launch | D-4 to D-6, A-3, P2 backlog | Ghost race + anti-cheat live |
 
 Branch mapping (per the trunk-based + flag strategy): `refactor/engine-core`, `chore/migrate-workers`, `feat/overdrive-run-loop`, `feat/overdrive-scoring`, `feat/overdrive-shop`, `feat/overdrive-glitches`, `feat/overdrive-canvas`, `feat/overdrive-daily-seed`, `feat/overdrive-share-card`.

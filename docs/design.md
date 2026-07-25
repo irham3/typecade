@@ -16,6 +16,15 @@ Five rules, in priority order:
 4. Max 1 glow layer per element. A second glow gets deleted.
 5. When in doubt, delete.
 
+## Original asset language: Signal Siege
+
+- The visual identity is built from custom code-native **Typecade Glyphs**: key matrices, brackets, split stems, scan marks, and corrupted letterforms.
+- The player object is the **Keystone**, a precision keyboard core. It is a machine/sigil, not a character.
+- Warm-up targets are **Packet Shards**, Rush targets are **Needle Signals**, and Glitch targets are a **Null Crown**. Each silhouette must remain recognizable at 64px.
+- No cartoon faces, generic spaceships, mascots, clip-art, emoji, photorealism, or unrelated AI-generated sprites.
+- The gameplay canvas stays plain and quiet. Structural guide lines may appear at low opacity, but stars, ambient particles, permanent scanlines, and autonomous background animation are banned.
+- Item art uses one custom filled SVG family with a 24×24 viewBox, consistent optical weight, and no rarity color baked into the icon.
+
 | Allowed | Not allowed |
 | --- | --- |
 | Thin glow on the active word and quota bar | Glow on labels, panel borders, static text |
@@ -37,7 +46,7 @@ Five rules, in priority order:
   /* text */
   --text-hi: #E8ECF4;  /* primary text, typed letters */
   --text-mid: #9AA3B5; /* secondary text, labels */
-  --text-dim: #4E576B; /* untyped words */
+  --text-dim: #788296; /* upcoming words; passes 4.5:1 on gameplay surfaces */
 
   /* accent, one color = one meaning */
   --green:  #3BF562;  /* active word, quota fill, success, primary CTA */
@@ -118,37 +127,46 @@ Two fonts, no more:
 | --- | --- | --- |
 | Top bar | top, h 64 | wordmark left, zone-stage in `--cyan`, timer centered 32px, tokens right in `--yellow` |
 | Quota bar | below top bar | h 12, track `--bg-2`, fill `--green`, glow blur 8px opacity 0.35, numbers on the right |
-| Word stream | vertical center | 3 rows: top and bottom `--text-dim` 28px, middle active word 48px `--green` |
+| Word stream | visual focal point | Current target label above the active word; active word 48px; four upcoming words remain secondary and never overlap HUD |
 | Caret | inside active word | 3px vertical line, letter height, `--green`, 1s blink when idle, solid while typing |
 | Left column | left, vertically centered | COMBO (label + pink number), MULT (label + violet number), gap 24 |
 | Right column | right, vertically centered | BASE (`--text-hi` number), SCORE (`--yellow` number), gap 24 |
 | Keycap row | bottom center, h 96 | 5 slots 64x64, gap 12 |
 | Footer | bottom, h 32 | accuracy left, WPM right, 14px `--text-mid` |
 
-Score popup: "+312" 20px `--violet`, spawns at the end of the active word, rises 24px while fading, 300ms, max 3 popups alive at once.
+Responsive exception at widths below 640px: the wordmark collapses to the Typecade mark, Zone and Stage stack on two lines, Keycap and Macro slots render at 48x48, and the build rows stack vertically. The 64x64 slot size remains mandatory from 640px upward. No gameplay control or active Macro may be hidden.
+
+Score popup: "+312" 20px `--violet`, spawns at the active word, travels 24px toward the score HUD while fading, 300ms, max 3 popups alive at once.
+
+Item proc feedback:
+
+- The triggering Keycap slot flashes its rarity border once for 150ms. No additional glow layer.
+- At most one 14px proc label is visible near the active word, for example `WASD +10 BASE`.
+- Protection effects use a small shield-break mark next to Mult; they never interrupt typing.
+- Stage Result includes a compact `BUILD IMPACT` list with the three highest item contributions.
 
 ## 5.2 Shop
 
 - "SHOP" title (Press Start 2P 24px) top left, tokens top right.
-- Item grid, 4 columns, gap 16. Item card: 160px wide, bg `--bg-1`, 2px rarity border, radius 8. Contents: 48px icon, name 16px 700, type + rarity 14px `--text-mid`, token price bottom right in `--yellow`.
+- MVP item grid: 3 columns (the exact 2 Keycap + 1 Macro offer from PRD I-3), gap 16; collapse to 1 column on narrow mobile screens. Item card: 160px minimum width, bg `--bg-1`, 2px rarity border, radius 8. Contents: 48px icon, name 16px 700, type + rarity 14px `--text-mid`, token price bottom right in `--yellow`.
 - Row below the grid: REROLL button (ghost, price in the label) left, LEAVE SHOP (primary) right.
-- Active build panel (5 slots + macro) docked to the bottom, always visible; clicking an item shows tooltip + SELL button.
+- Active build panel (5 Keycap slots + 2 Macro slots) docked to the bottom, always visible; clicking an item shows tooltip + SELL button.
 - Unaffordable items: opacity 0.4, price turns `--red`.
 
 ## 5.3 Run Over
 
 Vertical order, centered, max 480px:
 
-1. "RUN OVER" Press Start 2P 24px `--red` (or "FIRMWARE CLEAR" in `--green` on a win).
+1. "RUN OVER" Press Start 2P 24px `--red` (or "SYSTEM OVERRIDDEN" in `--green` on a win).
 2. Final score 64px `--yellow`. Count-up for 800ms, then static.
 3. 4-row table, 16px: Zone reached, Max combo, Accuracy, Avg WPM.
 4. Tokens earned row: "+35" `--yellow`.
 5. Final build: keycap icon row, 48px.
-6. Buttons: SHARE SCORE (primary) on top, MAIN MENU (ghost) below, gap 12.
+6. Buttons: NEW RUN (primary) on top, SHARE SCORE (ghost) second, MAIN MENU (text/ghost) last, gap 12. Starting a new free run takes one click and less than 2 seconds.
 
 ## 5.4 Main Menu
 
-- Wordmark + tagline 16px `--text-mid`.
+- Custom Typecade Glyph mark + wordmark + tagline 16px `--text-mid`. The mark is vector/code-native and uses no decorative animation.
 - Vertical buttons: PLAY (primary, h 56), DAILY SEED (ghost, shows reset countdown "resets in 07:12:44"), PRACTICE (ghost), LEADERBOARD (text link).
 - Max 2 clicks from page load to typing. No carousel, no banner, no modal on first load.
 
@@ -169,7 +187,7 @@ Vertical order, centered, max 480px:
 | Item tooltip | width 260, bg `--bg-2`, 1px border, radius 8, 150ms show delay. Contents: name 16px 700, rarity badge, effect description 14px, sell value |
 | Primary button | h 44, bg `--green`, text `--bg-0` 14px 700 uppercase, radius 8. Hover: brightness 1.1. Disabled: opacity 0.4 |
 | Ghost button | h 44, transparent bg, 1px `--border`, text `--text-hi`. Hover: bg `--bg-2` |
-| Rarity badge | pill, 12px 700 uppercase, rarity-colored text, rarity color background at 0.12 opacity |
+| Rarity badge | pill, 14px 700 uppercase, rarity-colored text, rarity color background at 0.12 opacity |
 | Progress bar | h 12, radius 6, track `--bg-2`, fill per function |
 | Toast | bottom center, bg `--bg-2`, 1px border, appears in 200ms, auto-dismisses in 3s, max 1 |
 
@@ -191,7 +209,7 @@ Budget: transform and opacity animations only (GPU). No width/height/layout anim
 | Shop / menu transition | fade + 8px slide | 150ms | ease-out |
 | Run over | score count-up | 800ms | ease-out |
 
-Screen shake only on stage clear and KERNEL PANIC. Not on typos, not on every word.
+Screen shake only on stage clear. KERNEL PANIC may add it in v2; it is outside the locked MVP. Never shake on typos or every word.
 
 ## Combo escalation
 
@@ -200,7 +218,7 @@ Screen shake only on stage clear and KERNEL PANIC. Not on typos, not on every wo
 | x1 to x3 | none |
 | x4 to x7 | caret trail, +50% particles per word |
 | x8 to x15 | particles turn `--violet`, background pulse at 0.04 opacity following the typing beat |
-| x16 and up | thin edge glow around the screen, music layer rises |
+| x16 and up | thin edge glow around the screen, word-complete harmonic layer rises |
 
 Combo break: all tier effects drop straight to the new tier, no farewell animation.
 
@@ -231,7 +249,7 @@ Mixing rules:
 
 # 9. Icons
 
-- One source: Game-icons.net. One style: solid single-color `--text-hi` silhouettes. Mixing outline and filled styles is banned.
+- One source: the original **Typecade Glyph** inline SVG set in the repository. One style: solid single-color `--text-hi` silhouettes. Mixing outline and filled styles is banned.
 - Render sizes: 32px (slots, HUD) and 48px (shop, run over). Inline SVG, not an icon font.
 - Icon color never follows rarity. Rarity lives only in borders and badges.
 - Emoji are banned across the entire game UI.
@@ -243,13 +261,15 @@ Mixing rules:
 - State is never color-only. Typo = color + shake + underline. Rarity = color + label. Quota fail = color + text.
 - Click targets at least 44x44px, including keycap slots (64px passes).
 - Once a run starts, all gameplay works without a mouse. Esc = pause. Shop is navigable with Tab + Enter.
+- Every interactive control has a visible `:focus-visible` outline with at least 3:1 contrast.
+- Blackout and Invisible Ink retain readable active input and expose their rules in text; accessibility settings must not silently remove a ranked modifier.
 - Reduced motion: see section 7. Must be tested, not just present.
 
 # 11. Definition of Done per screen
 
 Before a screen counts as done:
 
-- [ ]  No overlapping or overflowing elements at 1280px and 1920px.
+- [ ]  No overlapping or overflowing elements at 390×844, 820×1180, 1366×768, 1440×900, and 1920×1080.
 - [ ]  Every color and size comes from this doc's tokens, no stray hardcoded values.
 - [ ]  Contrast audit passes (section 10).
 - [ ]  60fps under worst case: x16 combo, 200 particles, laptop without a discrete GPU.

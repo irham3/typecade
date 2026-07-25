@@ -42,17 +42,29 @@
 1. Words flow on screen (a stream, like the regular typing mode).
 2. Every **word finished without a typo** scores: `(character count + Base bonus) x current Mult`.
 3. **Combo**: every 10 consecutive words without a typo grants **Mult +1**. A typo resets Mult to 1 (unless an item changes this rule).
-4. Hit the **Quota** before time runs out: stage clear, earn Tokens, enter the **Shop**.
+4. Hit the **Quota** before time runs out: the stage clears immediately, remaining time becomes a Token bonus, then the player enters the **Shop**.
 5. Fail the quota: the **run ends**, results screen + share card.
+
+## Canonical scoring lifecycle
+
+- Typing accuracy is measured per attempted character. A corrected typo still marks the current word dirty.
+- A dirty word awards zero score. Its Mult reset is resolved when that word is submitted.
+- Combo, the natural Mult earned from Combo, stage-only item bonuses, stage score, accuracy, and WPM reset at every stage start.
+- Run-persistent item bonuses, Tokens, inventory, and total run score do not reset between stages.
+- The word that reaches Combo 10/20/30 receives the newly increased Mult.
+- Apply Base bonuses, Base multipliers, additive Mult, Mult multipliers, and final score multipliers in that order; floor the final per-word score to an integer.
+- `stage score` is compared with the current stage Quota. `run score` is the sum of every completed and failed stage score.
+- A stage clears on the first submitted word that meets or exceeds Quota. The player never waits for the timer after earning a clear.
 
 ## Baseline number calibration
 
-Assume an average player at **60 WPM** (≈1 word/second, ≈300 characters/minute):
+Model players from actual per-character accuracy, not a flat percentage applied after scoring. For a five-character word, 96% character accuracy produces only an 81.5% chance of a clean word before corrections. The simulator must reproduce dirty words, broken streaks, and item triggers.
 
-- 60-second stage = ±60 words = ±300 base chars.
-- Natural max combo: Mult ~7 by the end of a stage (no items).
-- Expected Zone 1 score with no items: **±600-900 points**, so the Zone 1 quota must sit below this.
+- 60-second stage at 60 WPM = approximately 60 standardized words / 300 attempted characters.
+- Natural maximum at perfect accuracy is Mult 7 by the end of the stage.
+- Zone 1 must be survivable without owning an item; later zones progressively require a coherent build.
 - From Zone 3-4 onward, quotas **force** the player to own Mult items. Exactly like Balatro: base alone is never enough.
+- The quota table below remains a tuning table until the deterministic simulator and external playtest gates in §10 pass.
 
 ## Why typos must be expensive
 
@@ -120,6 +132,8 @@ These numbers are structured placeholders. **They must be simulated in a spreads
 | Legendary | 10-12 | 2% |
 
 Keycaps can be **sold** back for ~50% (rounded down).
+
+MVP has no Legendary Keycaps in its 15-item manifest, so the Common/Uncommon/Rare weights are normalized across the available pool. The 2% Legendary roll is enabled only when Legendary items enter the pool.
 
 ---
 
@@ -267,7 +281,9 @@ Before coding gameplay: **simulate in a spreadsheet**.
 # 12. Presentation & Juice
 
 - **Render gameplay on a canvas (PixiJS)**, not DOM/Framer Motion: particles + screen shake + 60fps on low-end devices (the majority of ID users).
-- Every word clear: the score number "pops" off the word and flies to the total. Mult up: flash + 50ms hitstop. Glass shatters: 0.3s slow-mo.
+- **Presentation direction is locked: Signal Siege.** The player operates a precision keyboard core against abstract corrupted glyph entities. Do not use cartoon ships, faces, mascots, stock sci-fi sprites, or decorative starfields. Warm-up uses packet shards, Rush uses needle signals, and Glitch uses a fractured key-crown boss silhouette.
+- Every word clear: the score number pops from the active glyph and resolves toward the score HUD. Mult up: flash + 50ms hitstop. Glass shatters: 0.3s slow-mo.
+- Every equipped item must visibly acknowledge a proc without competing with the active word. A stage breakdown attributes score and protection to the build so the player can learn why it worked.
 - Audio: a click per keystroke (sound options: linear/tactile/clicky, keyboard switch theming), a riser when approaching the quota, a sting when a Glitch appears.
 - The aesthetic stays **Cyber-Minimalism**: arcade does not mean tacky; think Balatro: maximalist systems, disciplined visuals.
 
@@ -285,7 +301,9 @@ Before coding gameplay: **simulate in a spreadsheet**.
 **In the MVP:**
 
 - 8 Zones x 3 stages, simple endless mode after the win
-- **15 Keycaps** (8 Common, 5 Uncommon, 2 Rare), **4 Macros**, **no Firmware**
+- **15 Keycaps**: WASD, Vowel Magnet, Longshot, Sprinter, Second Wind, Copper Key, Home Row, Punctuator, Combo Battery, Overclock, Double Tap, Snowball, Interest Bank, Glass Keycap, Vampire
+- **4 Macros**: Escape, Time Freeze, Quota Slash, Insurance
+- No Firmware
 - **5 Glitches** (No Backspace, Sudden Death, Invisible Ink, Blackout, Inflation)
 - Basic shop + reroll, economy per §4
 - Daily seed + daily leaderboard + share card
@@ -317,9 +335,8 @@ Before coding gameplay: **simulate in a spreadsheet**.
 
 **Open questions:**
 
-- Fixed 60-second stage timer, or shrinking in higher zones?
-- Continuous word flow vs per-sentence (quote)?
-- **Gameplay presentation**: abstract text stream vs a ZType-style enemy shooter (words attached to approaching enemies; the boss is a visible Glitch)? The systems (engine, scoring, items, shop, quota) stay identical either way; decide via the M1 prototype playtest, not debate.
+- The MVP uses a fixed 60-second maximum and immediate clear when Quota is reached.
+- The MVP uses continuous word flow. Quote/sentence mode is post-MVP.
 - Mode name: "Overdrive"? "Arcade Run"? "Endless"? (placeholder: OVERDRIVE)
 - Monetization later: cosmetics? supporter tier? (do not think about it before retention exists)
 
@@ -334,11 +351,11 @@ Before coding gameplay: **simulate in a spreadsheet**.
 
 </aside>
 
-## Phase 1: Async Multiplayer (in the MVP)
+## Phase 1: Async Multiplayer
 
-- **Daily Seed leaderboard**: every player plays the same run each day (already in §11).
-- **Ghost Race**: race against another player's keystroke replay, or your own. Feels alive without needing concurrent players.
-- **Challenge Link**: "Beat my run": a link carrying seed + score; the recipient plays identical conditions. Doubles as a distribution engine (1 challenge = 1 potential new user).
+- **MVP:** Daily Seed leaderboard: every player plays the same ruleset, seed, and word-pool language each day (already in §11).
+- **Launch-week/P1:** Ghost Race: race against another player's keystroke replay, or your own. Feels alive without needing concurrent players.
+- **Launch-week/P1:** Challenge Link: "Beat my run": a link carrying ruleset version, word-pool language, seed, and score; the recipient plays identical conditions.
 
 ## Phase 2: Live Race, Private Lobbies
 
