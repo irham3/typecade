@@ -18,8 +18,11 @@ export default defineConfig({
 		},
 	],
 	webServer: {
-		command: "npm run build && npm start",
+		command: "npm run dev",
 		url: "http://localhost:3000",
+		env: {
+			NEXT_PUBLIC_OVERDRIVE: "true",
+		},
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
 	},
