@@ -1,137 +1,247 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useGame } from "../store"
-import { GameplayCanvas } from "../canvas/gameplay-canvas"
+import { useShallow } from "zustand/react/shallow"
+import {
+	PauseIcon,
+	SoundOffIcon,
+	SoundOnIcon,
+	TypecadeMark,
+	ItemGlyph,
+} from "@/components/overdrive/icons"
+import {
+	ItemTooltipContent,
+	KeycapSlot,
+	QuotaBar,
+} from "@/components/overdrive/ui"
+import { GLITCHES, KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { usePresentationEvents } from "../presentation/use-presentation-events"
-import { HudLabel, KeycapSlot, QuotaBar } from "@/components/overdrive/ui"
-import { KEYCAPS, GLITCHES } from "@/lib/engine/overdrive/items"
-import { KEYCAP_ICONS } from "@/components/overdrive/icons"
+import { STAGE_COPY } from "../presentation/stage-copy"
+import { useSettings } from "../settings/store"
+import { useGame } from "../store"
 
-export function formatTime(ms: number) {
-  const total = Math.max(0, Math.ceil(ms / 1000))
-  return `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60).toString().padStart(2, "0")}`
+export function formatTime(milliseconds: number) {
+	const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1_000))
+	const minutes = Math.floor(totalSeconds / 60)
+	const seconds = totalSeconds % 60
+	return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
 }
 
 export function formatNumber(value: number) {
-  return value.toLocaleString("en-US")
+	return value.toLocaleString("en-US", { maximumFractionDigits: 1 })
 }
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const sync = () => setReduced(media.matches)
-    sync()
-    media.addEventListener("change", sync)
-    return () => media.removeEventListener("change", sync)
-  }, [])
-  return reduced
-}
+const stageColor = {
+	warmup: "text-acc-green",
+	rush: "text-acc-pink",
+	glitch: "text-acc-red",
+} as const
 
-function Metric({ label, value, tone = "text-text-hi" }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-lg border border-line bg-bg-1/90 p-3">
-      <HudLabel>{label}</HudLabel>
-      <div className={`mt-1 text-xl font-bold tabular-nums xl:text-2xl ${tone}`}>{value}</div>
-    </div>
-  )
+function Metric({
+	label,
+	value,
+	color = "text-text-hi",
+	align = "left",
+}: {
+	label: string
+	value: string
+	color?: string
+	align?: "left" | "right"
+}) {
+	return (
+		<div className={align === "right" ? "text-right" : ""}>
+			<div className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">{label}</div>
+			<div className={`mt-1 text-2xl font-bold tabular-nums ${color}`}>{value}</div>
+		</div>
+	)
 }
 
 export function Hud() {
-  const state = useGame()
-  const events = usePresentationEvents()
-  const reducedMotion = useReducedMotion()
-  const glitchName = state.activeGlitch ? GLITCHES[state.activeGlitch]?.name : null
+	const state = useGame(useShallow((snapshot) => ({
+		zone: snapshot.zone,
+		stage: snapshot.stage,
+		timeLeftMs: snapshot.timeLeftMs,
+		score: snapshot.score,
+		quota: snapshot.quota,
+		tokens: snapshot.tokens,
+		wpm: snapshot.wpm,
+		accuracy: snapshot.accuracy,
+		combo: snapshot.combo,
+		mult: snapshot.mult,
+		currentWord: snapshot.currentWord,
+		keycaps: snapshot.keycaps,
+		macros: snapshot.macros,
+		activeGlitch: snapshot.activeGlitch,
+		setPaused: snapshot.setPaused,
+		api: snapshot.api,
+	})))
+	const { soundMuted, setSoundMuted } = useSettings(useShallow((settings) => ({
+		soundMuted: settings.soundMuted,
+		setSoundMuted: settings.setSoundMuted,
+	})))
+	const events = usePresentationEvents()
+	const latestItem = [...events].reverse().find((event) => event.type === "item-triggered")
+	const stageCopy = STAGE_COPY[state.stage]
+	const glitch = state.activeGlitch ? GLITCHES[state.activeGlitch] : null
 
-  return (
-    <main
-      data-overdrive-game
-      className="grid h-dvh w-full min-w-0 grid-rows-[64px_36px_minmax(0,1fr)_80px_24px] gap-y-2 overflow-hidden px-3 py-2 sm:px-4"
-    >
-      <header className="grid min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <span className="truncate font-pixel text-sm sm:text-base">TYPECADE</span>
-        <div className="min-w-0 text-center">
-          <div className="truncate text-xs font-bold uppercase tracking-[0.08em] text-acc-cyan sm:text-sm">
-            Zone {state.zone} · {state.stage}
-          </div>
-          {glitchName && <div className="truncate text-[10px] font-bold uppercase text-acc-red">{glitchName}</div>}
-        </div>
-        <div className="flex items-center justify-end gap-3 sm:gap-5">
-          <span className="text-lg font-bold tabular-nums sm:text-2xl">{formatTime(state.timeLeftMs)}</span>
-          <span className="hidden text-sm font-bold tabular-nums text-acc-yellow sm:inline">{formatNumber(state.tokens)} TOKENS</span>
-        </div>
-      </header>
+	return (
+		<div className="pointer-events-none absolute inset-0 z-20 flex select-none flex-col p-3 text-text-hi sm:p-6">
+			<header className="grid h-16 grid-cols-[1fr_auto_1fr] items-start gap-3">
+				<div className="flex min-w-0 items-center gap-2 sm:gap-3">
+					<TypecadeMark className="h-8 w-8 shrink-0 text-acc-green" />
+					<div className="min-w-0">
+						<div className="hidden text-sm font-bold uppercase tracking-[0.08em] text-text-mid sm:block">
+							TYPECADE
+						</div>
+						<div className={`hidden truncate text-sm font-bold uppercase tracking-[0.08em] sm:block ${stageColor[state.stage]}`}>
+							Z{state.zone} · {stageCopy.label}
+						</div>
+						<div className="text-xs font-bold uppercase tracking-normal sm:hidden">
+							<div className="text-text-hi">Z{state.zone}</div>
+							<div className={`whitespace-nowrap ${stageColor[state.stage]}`}>{stageCopy.label}</div>
+						</div>
+					</div>
+				</div>
 
-      <div className="flex min-w-0 items-center gap-3">
-        <HudLabel>Quota</HudLabel>
-        <div className="min-w-0 flex-1"><QuotaBar current={state.score} target={state.quota} /></div>
-        <span className="shrink-0 text-xs tabular-nums text-text-mid sm:text-sm">
-          {formatNumber(state.score)} / {formatNumber(state.quota)}
-        </span>
-      </div>
+				<div className="text-center">
+					<div className="text-3xl font-bold tabular-nums">{formatTime(state.timeLeftMs)}</div>
+					<div className="mt-1 text-sm uppercase tracking-[0.08em] text-text-mid">TIME</div>
+				</div>
 
-      <section className="grid min-h-0 min-w-0 grid-cols-1 gap-3 lg:grid-cols-[152px_minmax(0,1fr)_152px]">
-        <aside className="hidden min-h-0 flex-col justify-center gap-3 lg:flex">
-          <Metric label="Combo" value={String(state.combo)} tone="text-acc-pink" />
-          <Metric label="Mult" value={`x${state.mult}`} tone="text-acc-violet" />
-          <Metric label="Integrity" value={`${state.accuracy}%`} tone={state.accuracy >= 97 ? "text-acc-green" : state.accuracy >= 90 ? "text-acc-yellow" : "text-acc-red"} />
-        </aside>
+				<div className="pointer-events-auto flex items-center justify-end gap-2">
+					<div className="mr-1 text-right">
+						<div className="text-xl font-bold tabular-nums text-acc-yellow">{formatNumber(state.tokens)}</div>
+						<div className="text-sm uppercase tracking-[0.08em] text-text-mid">TOKENS</div>
+					</div>
+					<button
+						className="flex h-11 w-11 items-center justify-center rounded-lg border border-line bg-bg-1 text-text-mid hover:bg-bg-2 hover:text-text-hi"
+						onClick={() => setSoundMuted(!soundMuted)}
+						aria-label={soundMuted ? "Unmute sound" : "Mute sound"}
+					>
+						{soundMuted
+							? <SoundOffIcon className="h-5 w-5" />
+							: <SoundOnIcon className="h-5 w-5" />}
+					</button>
+					<button
+						className="flex h-11 w-11 items-center justify-center rounded-lg border border-line bg-bg-1 text-text-mid hover:bg-bg-2 hover:text-text-hi"
+						onClick={() => state.setPaused(true)}
+						aria-label="Pause game"
+					>
+						<PauseIcon className="h-5 w-5" />
+					</button>
+				</div>
+			</header>
 
-        <div className="relative min-h-0 min-w-0 overflow-hidden rounded-xl border border-line bg-bg-0">
-          <GameplayCanvas
-            currentWord={state.currentWord}
-            upcomingWords={state.upcomingWords}
-            caretIndex={state.caretIndex}
-            wordDirty={state.wordDirty}
-            score={state.score}
-            quota={state.quota}
-            combo={state.combo}
-            mult={state.mult}
-            accuracy={state.accuracy}
-            timeLeftMs={state.timeLeftMs}
-            zone={state.zone}
-            stage={state.stage}
-            reducedMotion={reducedMotion}
-            events={events}
-          />
+			<div className="mt-2">
+				<div className="mb-2 flex items-center justify-between gap-4 text-sm font-bold uppercase tracking-[0.08em]">
+					<span className="text-text-mid">QUOTA</span>
+					<span className="tabular-nums">
+						<span className="text-acc-yellow">{formatNumber(state.score)}</span>
+						<span className="text-text-mid"> / {formatNumber(state.quota)}</span>
+					</span>
+				</div>
+				<QuotaBar current={state.score} target={state.quota} />
+			</div>
 
-          <div className="pointer-events-none absolute left-2 top-2 grid grid-cols-3 gap-2 lg:hidden">
-            <div className="rounded-md border border-line bg-bg-1/90 px-2 py-1 text-xs"><span className="text-text-mid">COMBO </span><b className="text-acc-pink">{state.combo}</b></div>
-            <div className="rounded-md border border-line bg-bg-1/90 px-2 py-1 text-xs"><span className="text-text-mid">MULT </span><b className="text-acc-violet">x{state.mult}</b></div>
-            <div className="rounded-md border border-line bg-bg-1/90 px-2 py-1 text-xs"><span className="text-text-mid">HP </span><b className="text-acc-green">{state.accuracy}%</b></div>
-          </div>
+			{glitch && (
+				<div className="mx-auto mt-3 flex max-w-xl items-center gap-3 border-l-2 border-acc-red bg-bg-1 px-3 py-2 text-sm">
+					<strong className="uppercase tracking-[0.08em] text-acc-red">{glitch.name}</strong>
+					<span className="text-text-mid">{glitch.description}</span>
+				</div>
+			)}
 
-          <div className="pointer-events-none absolute bottom-2 right-2 flex gap-2 lg:hidden">
-            <div className="rounded-md border border-line bg-bg-1/90 px-2 py-1 text-xs text-text-mid">BASE <b className="text-text-hi">{state.currentWord.length}</b></div>
-            <div className="rounded-md border border-line bg-bg-1/90 px-2 py-1 text-xs text-text-mid">SCORE <b className="text-acc-yellow">{formatNumber(state.score)}</b></div>
-          </div>
-        </div>
+			<div className="flex min-h-0 flex-1 items-center justify-between">
+				<div className="flex flex-col gap-6">
+					<Metric label="COMBO" value={String(state.combo)} color="text-acc-pink" />
+					<Metric label="MULT" value={`×${formatNumber(state.mult)}`} color="text-acc-violet" />
+				</div>
+				<div className="flex flex-col gap-6">
+					<Metric label="BASE" value={String(state.currentWord.length)} align="right" />
+					<Metric label="SCORE" value={formatNumber(state.score)} color="text-acc-yellow" align="right" />
+				</div>
+			</div>
 
-        <aside className="hidden min-h-0 flex-col justify-center gap-3 text-right lg:flex">
-          <Metric label="Word Base" value={String(state.currentWord.length)} />
-          <Metric label="Stage Score" value={formatNumber(state.score)} tone="text-acc-yellow" />
-          <Metric label="Tokens" value={formatNumber(state.tokens)} tone="text-acc-yellow" />
-        </aside>
-      </section>
+			<div className="pointer-events-auto flex min-h-24 flex-col items-center justify-end gap-2 sm:flex-row sm:items-end sm:gap-6">
+				<div>
+					<div className="mb-2 text-center text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
+						KEYCAP BUILD
+					</div>
+					<div className="flex gap-2 sm:gap-3">
+						{Array.from({ length: 5 }).map((_, index) => {
+							const id = state.keycaps[index]
+							if (!id) return (
+								<KeycapSlot
+									key={`empty-keycap-${index}`}
+									empty
+									className="h-12 w-12 sm:h-16 sm:w-16"
+									aria-label={`Empty Keycap slot ${index + 1}`}
+								/>
+							)
+							const definition = KEYCAPS[id]
+							const triggered = latestItem?.type === "item-triggered" && latestItem.itemId === id
+							return (
+								<KeycapSlot
+									key={`${id}-${triggered ? latestItem.id : 0}`}
+									rarity={definition.rarity}
+									className={`h-12 w-12 sm:h-16 sm:w-16 ${triggered ? "overdrive-slot-proc" : ""}`}
+									aria-label={`${definition.name} Keycap`}
+									tooltip={
+										<ItemTooltipContent
+											name={definition.name}
+											rarity={definition.rarity}
+											description={definition.description}
+										/>
+									}
+								>
+										<ItemGlyph id={id} type="keycap" className="h-7 w-7 sm:h-8 sm:w-8" />
+								</KeycapSlot>
+							)
+						})}
+					</div>
+				</div>
 
-      <div className="flex min-w-0 items-center justify-start gap-3 overflow-x-auto px-1 sm:justify-center">
-        {state.keycaps.map((id) => {
-          const def = KEYCAPS[id]
-          const Icon = KEYCAP_ICONS[id as keyof typeof KEYCAP_ICONS]
-          return (
-            <div key={id} className="shrink-0" title={`${def.name}: ${def.description}`}>
-              <KeycapSlot rarity={def.rarity}>{Icon ? <Icon className="text-2xl" /> : def.name[0]}</KeycapSlot>
-            </div>
-          )
-        })}
-        {Array.from({ length: Math.max(0, 5 - state.keycaps.length) }).map((_, index) => <KeycapSlot key={`empty-${index}`} />)}
-      </div>
+				<div className="border-t border-line pt-2 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+					<div className="mb-2 text-center text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
+						MACROS
+					</div>
+					<div className="flex gap-3">
+						{Array.from({ length: 2 }).map((_, index) => {
+							const id = state.macros[index]
+							if (!id) return (
+								<KeycapSlot
+									key={`empty-macro-${index}`}
+									empty
+									className="h-12 w-12 sm:h-16 sm:w-16"
+									aria-label={`Empty Macro slot ${index + 1}`}
+								/>
+							)
+							const definition = MACROS[id]
+							return (
+								<button
+									key={id}
+									className="relative"
+									onClick={() => state.api?.triggerMacro(index)}
+									aria-label={`Use ${definition.name}, keyboard shortcut ${index + 1}`}
+								>
+										<KeycapSlot rarity="macro" className="h-12 w-12 sm:h-16 sm:w-16">
+											<ItemGlyph id={id} type="macro" className="h-7 w-7 sm:h-8 sm:w-8" />
+									</KeycapSlot>
+									<span className="absolute left-1 top-1 text-sm font-bold text-acc-cyan">{index + 1}</span>
+								</button>
+							)
+						})}
+					</div>
+				</div>
+			</div>
 
-      <footer className="flex min-w-0 items-center justify-between overflow-hidden text-[10px] text-text-mid sm:text-xs">
-        <span className="truncate">Accuracy is base integrity</span>
-        <span className="truncate text-right">Type the active enemy word to fire</span>
-      </footer>
-    </main>
-  )
+			<footer className="mt-3 flex h-8 items-end justify-between text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
+				<span>
+					<span className={state.accuracy >= 97 ? "text-acc-green" : state.accuracy >= 90 ? "text-acc-yellow" : "text-acc-red"}>
+						{state.accuracy}%
+					</span>{" "}
+					ACCURACY
+				</span>
+				<span><span className="text-text-hi">{state.wpm}</span> WPM</span>
+			</footer>
+		</div>
+	)
 }

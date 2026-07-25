@@ -1,0 +1,105 @@
+"use client"
+
+import { useState } from "react"
+import { useShallow } from "zustand/react/shallow"
+import { GameplayCanvas } from "../canvas/gameplay-canvas"
+import { usePresentationEvents } from "../presentation/use-presentation-events"
+import { useSettings } from "../settings/store"
+import { useGame } from "../store"
+
+function ProcFeedback() {
+	const events = usePresentationEvents()
+	const latest = [...events].reverse().find(
+		(event) => event.type === "item-triggered" || event.type === "macro-used",
+	)
+	if (!latest) return null
+
+	return (
+		<div
+			key={latest.id}
+			className="overdrive-proc pointer-events-none absolute left-1/2 top-[34%] z-20 -translate-x-1/2 border-l-2 border-acc-violet bg-bg-0 px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-text-hi"
+			aria-live="polite"
+		>
+			{latest.type === "item-triggered"
+				? `${latest.label} · ${latest.contribution.label}`
+				: latest.result}
+		</div>
+	)
+}
+
+export function GameplayLayer() {
+	const [initializationError, setInitializationError] = useState<Error | null>(null)
+	const [attempt, setAttempt] = useState(0)
+	const state = useGame(useShallow((snapshot) => ({
+		currentWord: snapshot.currentWord,
+		upcomingWords: snapshot.upcomingWords,
+		caretIndex: snapshot.caretIndex,
+		wordDirty: snapshot.wordDirty,
+		score: snapshot.score,
+		quota: snapshot.quota,
+		combo: snapshot.combo,
+		mult: snapshot.mult,
+		accuracy: snapshot.accuracy,
+		timeLeftMs: snapshot.timeLeftMs,
+		zone: snapshot.zone,
+		stage: snapshot.stage,
+		activeGlitch: snapshot.activeGlitch,
+		paused: snapshot.paused,
+		quitToMenu: snapshot.quitToMenu,
+	})))
+	const settings = useSettings()
+	const events = usePresentationEvents()
+
+	if (initializationError) {
+		return (
+			<div className="absolute inset-0 z-50 flex items-center justify-center bg-bg-0 p-6 text-text-hi">
+				<div className="overdrive-panel w-full max-w-md p-6">
+					<h2 className="font-pixel text-xl text-acc-red">RENDER LINK FAILED</h2>
+					<p className="mt-4 text-sm leading-6 text-text-mid">
+						The gameplay renderer could not start. Your run state is still safe.
+					</p>
+					<div className="mt-6 flex flex-col gap-3 sm:flex-row">
+						<button
+							className="overdrive-primary flex-1"
+							onClick={() => {
+								setInitializationError(null)
+								setAttempt((value) => value + 1)
+							}}
+						>
+							TRY AGAIN
+						</button>
+						<button className="overdrive-ghost flex-1" onClick={state.quitToMenu}>
+							MAIN MENU
+						</button>
+					</div>
+				</div>
+			</div>
+		)
+	}
+
+	return (
+		<>
+			<GameplayCanvas
+				key={attempt}
+				currentWord={state.currentWord}
+				upcomingWords={state.upcomingWords}
+				caretIndex={state.caretIndex}
+				wordDirty={state.wordDirty}
+				score={state.score}
+				quota={state.quota}
+				combo={state.combo}
+				mult={state.mult}
+				accuracy={state.accuracy}
+				timeLeftMs={state.timeLeftMs}
+				zone={state.zone}
+				stage={state.stage}
+				activeGlitch={state.activeGlitch}
+				reducedMotion={settings.reducedMotion ?? false}
+				screenShake={settings.screenShake}
+				events={events}
+				onInitializationError={setInitializationError}
+			/>
+			<ProcFeedback />
+		</>
+	)
+}

@@ -1,13 +1,34 @@
-import type { StageType } from "@/lib/engine/overdrive"
+import type {
+  ItemContribution,
+  StageType,
+} from "@/lib/engine/overdrive"
 
 export type OverdrivePresentationEvent =
   | { id: number; type: "accepted-character"; character: string; index: number; combo: number }
   | { id: number; type: "rejected-character"; character: string }
-  | { id: number; type: "word-completed"; word: string; scoreGain: number; combo: number }
+  | {
+      id: number;
+      type: "word-completed";
+      word: string;
+      characterBase: number;
+      itemBaseBonus: number;
+      effectiveMult: number;
+      scoreGain: number;
+      appliedItemIds: string[];
+      combo: number
+    }
   | { id: number; type: "mult-increased"; mult: number }
   | { id: number; type: "stage-entered"; stage: StageType }
   | { id: number; type: "stage-cleared" }
   | { id: number; type: "run-over" }
+  | {
+      id: number
+      type: "item-triggered"
+      itemId: string
+      label: string
+      contribution: ItemContribution
+    }
+  | { id: number; type: "macro-used"; itemId: string; result: string }
 
 type PresentationEventInput<T> = T extends { id: number } ? Omit<T, "id"> : never
 export type OverdrivePresentationEventInput = PresentationEventInput<OverdrivePresentationEvent>
@@ -15,7 +36,7 @@ export type OverdrivePresentationEventInput = PresentationEventInput<OverdrivePr
 const MAX_EVENTS = 96
 let nextId = 1
 let events: OverdrivePresentationEvent[] = []
-let listeners = new Set<() => void>()
+const listeners = new Set<() => void>()
 
 export function emitPresentationEvent(
   event: OverdrivePresentationEventInput,

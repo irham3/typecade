@@ -1,217 +1,421 @@
 import { Application, Container, Graphics, Text, Ticker } from "pixi.js"
 import type { StageType } from "@/lib/engine/overdrive"
-import { createBackground, createBase, createEnemy, V, type EnemyArt } from "./visual-assets"
 import { sfx } from "@/features/overdrive/fx/sfx"
 import type { OverdrivePresentationEvent } from "../presentation/events"
+import {
+	createBackground,
+	createKeystone,
+	createTarget,
+	drawActiveWord,
+	stageAccent,
+	V,
+	type TargetArt,
+} from "./visual-assets"
 
-export type SceneState = { currentWord: string; upcomingWords: string[]; caretIndex: number; wordDirty: boolean; score: number; quota: number; combo: number; mult: number; accuracy: number; timeLeftMs: number; zone: number; stage: StageType; reducedMotion: boolean }
-type Bolt = { root: Container; head: Graphics; trail: Graphics; vx: number; targetX: number; life: number }
-type Debris = { node: Graphics; vx: number; vy: number; spin: number; life: number; max: number }
-type Popup = { node: Text; life: number; max: number; vy: number }
-type Preview = { enemy: EnemyArt; slot: number; word: string }
+export type SceneState = {
+	currentWord: string
+	upcomingWords: string[]
+	caretIndex: number
+	wordDirty: boolean
+	score: number
+	quota: number
+	combo: number
+	mult: number
+	accuracy: number
+	timeLeftMs: number
+	zone: number
+	stage: StageType
+	activeGlitch: string | null
+	reducedMotion: boolean
+	screenShake: boolean
+}
+
+type Bolt = {
+	node: Graphics
+	targetX: number
+	velocity: number
+	life: number
+}
+
+type Fragment = {
+	node: Graphics
+	vx: number
+	vy: number
+	spin: number
+	life: number
+	maxLife: number
+}
+
+type Popup = {
+	node: Text
+	life: number
+	maxLife: number
+}
 
 export class CombatScene {
-  readonly app: Application; readonly stage = new Container(); readonly world = new Container(); readonly fx = new Container(); readonly ui = new Container()
-  private bg = createBackground(); private base = createBase(); private active: EnemyArt; private previews: Preview[] = []
-  private bolts: Bolt[] = []; private debris: Debris[] = []; private popups: Popup[] = []; private state: SceneState
-  private w = 0; private h = 0
-  private elapsed = 0; private shake = 0; private recoil = 0; private hitFlash = 0; private knockback = 0; private freeze = 0; private lowTimePulse = 0; private quotaPulse = 0
-  private readonly edge = new Graphics(); private readonly shockwave = new Graphics(); private readonly glitchBars = new Graphics()
+	readonly app: Application
+	readonly stage = new Container()
+	private readonly world = new Container()
+	private readonly effects = new Container()
+	private readonly overlay = new Container()
+	private readonly background = createBackground()
+	private readonly keystone = createKeystone()
+	private readonly previewLayer = new Container()
+	private readonly lowTimeEdge = new Graphics()
+	private readonly typoBars = new Graphics()
+	private target: TargetArt
+	private state: SceneState
+	private bolts: Bolt[] = []
+	private fragments: Fragment[] = []
+	private popups: Popup[] = []
+	private width = 0
+	private height = 0
+	private wordAgeMs = 0
+	private eventIndex = 0
+	private wordShakeMs = 0
+	private typoBarsMs = 0
+	private hitFlashMs = 0
 
-  constructor(app: Application, initial: SceneState) {
-    this.app = app; this.state = initial;
-    this.active = createEnemy(initial.stage, initial.currentWord);
-    this.stage.addChild(this.bg.root, this.world, this.fx, this.ui);
-    this.world.addChild(this.base.root, this.active.root);
-    this.ui.addChild(this.edge, this.shockwave, this.glitchBars);
-    app.stage.addChild(this.stage);
-    this.ensurePreviews();
-    this.resize();
-    this.sync(initial);
-    app.ticker.add(this.tick)
-  }
+	constructor(app: Application, initial: SceneState) {
+		this.app = app
+		this.state = initial
+		this.target = createTarget(initial.stage)
+		this.stage.addChild(this.background.root, this.world, this.effects, this.overlay)
+		this.world.addChild(this.keystone.root, this.target.root, this.previewLayer)
+		this.overlay.addChild(this.lowTimeEdge, this.typoBars)
+		this.app.stage.addChild(this.stage)
+		this.resize()
+		this.sync(initial)
+		this.app.ticker.add(this.tick)
+	}
 
-  resize = () => {
-    const w = this.app.screen.width, h = this.app.screen.height;
-    if (w === this.w && h === this.h) return;
-    this.w = w; this.h = h;
-    this.bg.redraw(w, h);
-    this.base.root.position.set(Math.max(90, w * .12), h * .58);
-    this.active.root.position.set(w * .70, h * .50);
-    this.previews.forEach((p, i) => p.enemy.root.position.set(w * (.82 + i * .035), h * (.28 + i * .13)));
-    this.edge.clear().rect(0, 0, w, h).stroke({ color: V.red, width: 28, alpha: 0 })
-  }
+	resize = () => {
+		const width = this.app.screen.width
+		const height = this.app.screen.height
+		if (width === this.width && height === this.height) return
+		this.width = width
+		this.height = height
+		this.background.redraw(width, height, this.state.stage === "glitch")
 
-  sync = (next: SceneState) => {
-    this.state = next;
-    
-    // Just persist current word explicitly in case it didn't arrive via event yet
-    if (this.active.word.text !== next.currentWord) {
-      this.active.word.text = next.currentWord
-    }
+		const compact = width < 640
+		this.keystone.root.scale.set(compact ? 0.55 : 1)
+		this.keystone.root.position.set(compact ? 88 : width * 0.14, height * 0.5)
+		this.target.root.scale.set(compact ? 0.72 : 1)
+		this.target.root.position.set(compact ? width * 0.61 : width * 0.58, height * 0.47)
+		this.positionPreviews()
+		this.drawBlackout()
+	}
 
-    this.active.word.style.fill = next.wordDirty ? V.red : next.stage === "rush" ? V.pink : next.stage === "glitch" ? V.red : V.green;
-    const total = Math.max(1, next.currentWord.length), hp = Math.max(0, (total - next.caretIndex) / total);
-    this.active.hp.clear().roundRect(-62, 0, 124, 8, 4).fill({ color: V.line }).roundRect(-62, 0, 124 * hp, 8, 4).fill({ color: next.wordDirty ? V.red : V.green });
-    const integrity = Math.max(0, Math.min(1, next.accuracy / 100)), tone = integrity >= .97 ? V.green : integrity >= .90 ? V.yellow : V.red;
-    this.base.integrity.clear().roundRect(-48, 0, 96, 9, 5).fill({ color: V.line }).roundRect(-48, 0, 96 * integrity, 9, 5).fill({ color: tone });
-  }
+	sync = (next: SceneState) => {
+		const wordChanged = next.currentWord !== this.state.currentWord
+		const stageChanged = next.stage !== this.state.stage
+		this.state = next
 
-  handle(event: OverdrivePresentationEvent): void {
-    if (event.type === "accepted-character") {
-      this.fire(event.combo)
-    } else if (event.type === "rejected-character") {
-      this.typo()
-    } else if (event.type === "word-completed") {
-      this.destroyEnemy(event.scoreGain, event.combo)
-      this.replaceActive(this.state.currentWord)
-      this.updatePreviews()
-    } else if (event.type === "mult-increased") {
-      this.multUp(event.mult)
-    } else if (event.type === "stage-entered") {
-      const old = this.active;
-      this.world.removeChild(old.root);
-      old.root.destroy({ children: true });
-      this.active = createEnemy(event.stage, this.state.currentWord);
-      this.active.root.position.set(this.w * .70, this.h * .5);
-      this.world.addChild(this.active.root);
-      this.updatePreviews();
-      if (event.stage === "glitch") sfx.boss()
-    } else if (event.type === "stage-cleared") {
-      sfx.stageClear()
-    } else if (event.type === "run-over") {
-      sfx.runOver()
-    }
-  }
+		if (stageChanged) this.replaceTarget(next.stage)
+		if (
+			wordChanged
+			|| stageChanged
+			|| next.caretIndex !== this.lastCaretIndex
+			|| next.wordDirty !== this.lastDirty
+		) {
+			drawActiveWord(this.target, next.currentWord, next.caretIndex, next.wordDirty)
+			if (wordChanged) this.wordAgeMs = 0
+			this.lastCaretIndex = next.caretIndex
+			this.lastDirty = next.wordDirty
+		}
 
-  destroy = () => { this.app.ticker.remove(this.tick); this.app.stage.removeChild(this.stage); this.stage.destroy({ children: true }) }
+		const remaining = Math.max(0, next.currentWord.length - next.caretIndex)
+		const ratio = next.currentWord.length === 0 ? 0 : remaining / next.currentWord.length
+		this.target.progress
+			.clear()
+			.roundRect(-64, 0, 128, 8, 4)
+			.fill({ color: V.panel2 })
+			.roundRect(-64, 0, 128 * ratio, 8, 4)
+			.fill({ color: next.wordDirty ? V.red : V.green })
 
-  private ensurePreviews() {
-    while (this.previews.length < 4) {
-      const enemy = createEnemy("warmup", "");
-      enemy.root.scale.set(.34);
-      enemy.word.style.fontSize = 13;
-      enemy.hp.visible = false;
-      this.world.addChild(enemy.root);
-      this.previews.push({ enemy, slot: this.previews.length, word: "" })
-    }
-  }
+		const integrity = Math.max(0, Math.min(1, next.accuracy / 100))
+		const integrityColor = integrity >= 0.97 ? V.green : integrity >= 0.9 ? V.yellow : V.red
+		this.keystone.integrity
+			.clear()
+			.roundRect(-48, 0, 96, 8, 4)
+			.fill({ color: V.panel2 })
+			.roundRect(-48, 0, 96 * integrity, 8, 4)
+			.fill({ color: integrityColor })
 
-  private updatePreviews() {
-    this.ensurePreviews();
-    this.previews.forEach((p, i) => {
-      const word = this.state.upcomingWords[i] ?? "";
-      p.word = word;
-      p.enemy.word.text = word;
-      p.enemy.root.visible = Boolean(word);
-      p.enemy.root.position.set(this.w * (.82 + i * .035), this.h * (.28 + i * .13))
-    })
-  }
+		if (wordChanged || stageChanged || next.upcomingWords !== this.lastUpcoming) {
+			this.drawPreviews()
+			this.lastUpcoming = next.upcomingWords
+		}
+		this.drawBlackout()
+	}
 
-  private replaceActive(word: string) {
-    this.active.word.text = word;
-    this.active.root.alpha = 0;
-    this.active.root.scale.set(.72);
-    this.active.root.position.set(this.w * .86, this.h * .5);
-    this.knockback = 0;
-    this.active.root.rotation = 0
-  }
+	private lastCaretIndex = -1
+	private lastDirty = false
+	private lastUpcoming: string[] | null = null
 
-  private fire(combo: number) {
-    sfx.shot(combo);
-    const root = new Container(), trail = new Graphics().roundRect(-32, -2, 36, 4, 2).fill({ color: V.cyan, alpha: .28 }), head = new Graphics().circle(0, 0, 5).fill({ color: V.text }).circle(0, 0, 3).fill({ color: V.cyan });
-    root.addChild(trail, head);
-    root.position.set(this.base.root.x + 78, this.base.root.y - 46);
-    this.fx.addChild(root);
-    this.bolts.push({ root, head, trail, vx: 1500, targetX: this.active.root.x - 60, life: 550 });
-    this.recoil = 1
-  }
+	handle(event: OverdrivePresentationEvent) {
+		if (event.type === "accepted-character") {
+			this.fire(event.combo)
+			return
+		}
+		if (event.type === "rejected-character") {
+			this.reject()
+			return
+		}
+		if (event.type === "word-completed") {
+			this.completeWord(event.scoreGain, event.combo)
+			return
+		}
+		if (event.type === "mult-increased") {
+			sfx.mult(event.mult)
+			return
+		}
+		if (event.type === "stage-entered") {
+			this.replaceTarget(event.stage)
+			if (event.stage === "glitch") sfx.boss()
+			return
+		}
+		if (event.type === "stage-cleared") {
+			sfx.stageClear()
+			return
+		}
+		if (event.type === "run-over") sfx.runOver()
+	}
 
-  private typo() {
-    sfx.typo();
-    this.shake = this.state.reducedMotion ? 0 : 180;
-    this.knockback = 32;
-    this.glitchBars.clear();
-    for (let i = 0; i < 8; i++) this.glitchBars.rect(Math.random() * this.w, Math.random() * this.h, 30 + Math.random() * 160, 2 + Math.random() * 5).fill({ color: V.red, alpha: .3 });
-    setTimeout(() => this.glitchBars.clear(), 140)
-  }
+	destroy = () => {
+		this.app.ticker.remove(this.tick)
+		if (this.stage.parent) this.stage.parent.removeChild(this.stage)
+		if (!this.stage.destroyed) this.stage.destroy({ children: true })
+	}
 
-  private multUp(mult: number) {
-    sfx.mult(mult);
-    this.freeze = this.state.reducedMotion ? 0 : 60;
-    this.quotaPulse = 1;
-    this.shockwave.clear().circle(this.active.root.x, this.active.root.y, 30).stroke({ color: V.violet, width: 5, alpha: .8 })
-  }
+	private replaceTarget(stage: StageType) {
+		this.world.removeChild(this.target.root)
+		this.target.root.destroy({ children: true })
+		this.target = createTarget(stage)
+		this.world.addChildAt(this.target.root, 1)
+		this.lastCaretIndex = -1
+		this.lastDirty = !this.state.wordDirty
+		this.background.redraw(this.width, this.height, stage === "glitch")
+		this.width = 0
+		this.resize()
+		drawActiveWord(this.target, this.state.currentWord, this.state.caretIndex, this.state.wordDirty)
+	}
 
-  private destroyEnemy(gain: number, combo: number) {
-    sfx.word(combo);
-    const x = this.active.root.x, y = this.active.root.y;
-    this.burst(x, y, this.state.stage === "glitch" ? V.red : this.state.stage === "rush" ? V.pink : V.green, this.state.reducedMotion ? 8 : 34);
-    const text = new Text({ text: `+${gain}`, style: { fill: V.yellow, fontFamily: "JetBrains Mono", fontSize: 28, fontWeight: "700" } });
-    text.anchor.set(.5);
-    text.position.set(x, y - 100);
-    this.fx.addChild(text);
-    this.popups.push({ node: text, life: 650, max: 650, vy: -78 });
-    if (!this.state.reducedMotion) { this.active.root.scale.set(1.18); this.active.root.rotation = .08 }
-  }
+	private positionPreviews() {
+		this.previewLayer.position.set(
+			this.width < 640 ? this.width * 0.61 : this.width * 0.58,
+			this.height * 0.47 + (this.width < 640 ? 56 : 72),
+		)
+	}
 
-  private burst(x: number, y: number, color: number, count: number) {
-    for (let i = 0; i < count; i++) {
-      if (this.debris.length >= 200) this.debris.shift()?.node.destroy();
-      const node = new Graphics().moveTo(-4, -2).lineTo(5, 0).lineTo(-4, 2).closePath().fill({ color: i % 5 === 0 ? V.text : color });
-      node.position.set(x, y);
-      this.fx.addChild(node);
-      const a = Math.random() * Math.PI * 2, s = 120 + Math.random() * 420, l = 350 + Math.random() * 500;
-      this.debris.push({ node, vx: Math.cos(a) * s, vy: Math.sin(a) * s, spin: (Math.random() - .5) * 8, life: l, max: l })
-    }
-  }
+	private drawPreviews() {
+		for (const child of this.previewLayer.removeChildren()) child.destroy()
+		this.state.upcomingWords.slice(0, 4).forEach((word, index) => {
+			const row = new Container()
+			const marker = new Graphics()
+				.moveTo(-12, 6)
+				.lineTo(-4, 10)
+				.lineTo(-12, 14)
+				.closePath()
+				.fill({ color: stageAccent(this.state.stage), alpha: 0.45 })
+			const label = new Text({
+				text: word,
+				style: {
+					fill: V.dim,
+					fontFamily: "JetBrains Mono",
+					fontSize: this.width < 640 ? 18 : 28,
+				},
+			})
+			label.anchor.set(0.5, 0)
+			row.y = index * (this.width < 640 ? 28 : 36)
+			row.addChild(marker, label)
+			this.previewLayer.addChild(row)
+		})
+		this.positionPreviews()
+	}
 
-  private tick = (ticker: Ticker) => {
-    const dt = Math.min(ticker.deltaMS, 50);
-    if (this.freeze > 0) { this.freeze -= dt; return }
-    this.elapsed += dt;
-    this.resize();
-    const t = this.elapsed / 1000, pressure = this.state.quota > 0 ? Math.min(1, this.state.score / this.state.quota) : 0, low = this.state.timeLeftMs <= 10000;
-    this.bg.stars.x = -((t * (8 + pressure * 18)) % 120);
-    this.base.ring.rotation = t * .65;
-    this.base.core.scale.set(1 + Math.sin(t * 4) * (.06 + pressure * .05));
-    this.base.antennaLights.forEach((g, i) => g.alpha = .35 + .65 * Math.max(0, Math.sin(t * 5 + i * 1.7)));
-    this.base.cannon.rotation = Math.sin(t * 1.4) * .018;
-    this.recoil = Math.max(0, this.recoil - dt / 100);
-    this.base.barrel.x = -this.recoil * 10;
-    const hover = Math.sin(t * (this.state.stage === "rush" ? 4.2 : 2.2)) * 8;
-    const desiredX = this.w * (low ? 0.56 : 0.68) - this.knockback;
-    this.active.root.x += (desiredX - this.active.root.x) * Math.min(1, dt * .008);
-    this.active.root.y = this.h * .5 + hover;
-    this.active.root.alpha = Math.min(1, this.active.root.alpha + dt / 180);
-    const s = this.active.root.scale.x + (1 - this.active.root.scale.x) * Math.min(1, dt * .01);
-    this.active.root.scale.set(s);
-    this.knockback = Math.max(0, this.knockback - dt * .12);
-    this.active.thrusters.forEach((g, i) => { g.alpha = .35 + .65 * Math.abs(Math.sin(t * 14 + i)); g.scale.x = .75 + Math.random() * .35 });
-    if (this.active.ringA) this.active.ringA.rotation += dt * .0015;
-    if (this.active.ringB) this.active.ringB.rotation -= dt * .001;
-    this.hitFlash = Math.max(0, this.hitFlash - dt);
-    this.active.hitLayer.alpha = this.hitFlash / 90;
-    if (this.shake > 0 && !this.state.reducedMotion) { this.shake -= dt; this.world.position.set((Math.random() - .5) * 9, (Math.random() - .5) * 7) } else this.world.position.set(0, 0);
-    this.previews.forEach((p, i) => { p.enemy.root.y = this.h * (.28 + i * .13) + Math.sin(t * 1.5 + i) * 5; p.enemy.root.x -= dt * (.004 + pressure * .004); if (p.enemy.root.x < this.w * .74) p.enemy.root.x = this.w * (.82 + i * .035) });
-    for (let i = this.bolts.length - 1; i >= 0; i--) {
-      const b = this.bolts[i]; b.life -= dt; b.root.x += b.vx * dt / 1000; b.trail.alpha = .18 + .18 * Math.sin(t * 30);
-      if (b.root.x >= b.targetX || b.life <= 0) {
-        sfx.hit(); this.hitFlash = 90; this.active.hitLayer.clear().circle(0, 0, 76).fill({ color: V.text, alpha: .6 });
-        this.burst(b.root.x, b.root.y, V.cyan, this.state.reducedMotion ? 2 : 7);
-        b.root.destroy({ children: true }); this.bolts.splice(i, 1)
-      }
-    }
-    for (let i = this.debris.length - 1; i >= 0; i--) {
-      const d = this.debris[i]; d.life -= dt; d.vy += 520 * dt / 1000; d.node.x += d.vx * dt / 1000; d.node.y += d.vy * dt / 1000; d.node.rotation += d.spin * dt / 1000; d.node.alpha = Math.max(0, d.life / d.max);
-      if (d.life <= 0) { d.node.destroy(); this.debris.splice(i, 1) }
-    }
-    for (let i = this.popups.length - 1; i >= 0; i--) {
-      const p = this.popups[i]; p.life -= dt; p.node.y += p.vy * dt / 1000; p.node.alpha = Math.max(0, p.life / p.max); p.node.scale.set(1 + (1 - p.life / p.max) * .18);
-      if (p.life <= 0) { p.node.destroy(); this.popups.splice(i, 1) }
-    }
-    this.quotaPulse = Math.max(0, this.quotaPulse - dt / 250);
-    if (this.quotaPulse > 0) { const radius = 30 + (1 - this.quotaPulse) * 150; this.shockwave.clear().circle(this.active.root.x, this.active.root.y, radius).stroke({ color: V.violet, width: 4, alpha: this.quotaPulse }) } else this.shockwave.clear();
-    this.lowTimePulse = low ? (Math.sin(t * 8) + 1) / 2 : 0; this.edge.clear().rect(0, 0, this.w, this.h).stroke({ color: V.red, width: 30, alpha: this.lowTimePulse * .25 })
-  }
+	private fire(combo: number) {
+		sfx.shot(combo)
+		const node = new Graphics()
+			.rect(-28, -1, 28, 2)
+			.fill({ color: V.cyan, alpha: 0.3 })
+			.moveTo(0, -4)
+			.lineTo(9, 0)
+			.lineTo(0, 4)
+			.closePath()
+			.fill({ color: V.text })
+		node.position.set(
+			this.keystone.root.x + (this.width < 640 ? 44 : 72),
+			this.keystone.root.y,
+		)
+		this.effects.addChild(node)
+		this.bolts.push({
+			node,
+			targetX: this.target.root.x - 48,
+			velocity: 1_400,
+			life: 500,
+		})
+	}
+
+	private reject() {
+		sfx.typo()
+		this.wordShakeMs = this.state.reducedMotion ? 0 : 120
+		this.typoBarsMs = 120
+		this.typoBars.clear()
+		for (let index = 0; index < 5; index += 1) {
+			const x = ((this.eventIndex * 83 + index * 137) % Math.max(1, this.width - 96)) + 48
+			const y = ((this.eventIndex * 47 + index * 79) % Math.max(1, this.height - 192)) + 96
+			const barWidth = 32 + ((index * 29 + this.eventIndex * 11) % 96)
+			this.typoBars.rect(x, y, barWidth, 2).fill({ color: V.red, alpha: 0.35 })
+		}
+		this.eventIndex += 1
+	}
+
+	private completeWord(scoreGain: number, combo: number) {
+		sfx.word(combo)
+		const x = this.target.root.x
+		const y = this.target.root.y - 88
+		this.burst(x, y, stageAccent(this.state.stage), this.state.reducedMotion ? 0 : 10)
+
+		const popup = new Text({
+			text: `+${scoreGain}`,
+			style: {
+				fill: V.violet,
+				fontFamily: "JetBrains Mono",
+				fontSize: 20,
+				fontWeight: "700",
+			},
+		})
+		popup.anchor.set(0.5)
+		popup.position.set(this.target.root.x, this.target.root.y - 40)
+		this.effects.addChild(popup)
+		this.popups.push({ node: popup, life: 300, maxLife: 300 })
+		this.wordAgeMs = 0
+	}
+
+	private burst(x: number, y: number, color: number, count: number) {
+		for (let index = 0; index < count; index += 1) {
+			if (this.fragments.length >= 200) {
+				const oldest = this.fragments.shift()
+				oldest?.node.destroy()
+			}
+			const node = new Graphics()
+				.moveTo(-4, -2)
+				.lineTo(5, 0)
+				.lineTo(-4, 2)
+				.closePath()
+				.fill({ color: index % 5 === 0 ? V.text : color })
+			node.position.set(x, y)
+			this.effects.addChild(node)
+			const angle = ((index * 2.399963 + this.eventIndex * 0.41) % (Math.PI * 2))
+			const speed = 140 + ((index * 47 + this.eventIndex * 31) % 220)
+			const life = 300
+			this.fragments.push({
+				node,
+				vx: Math.cos(angle) * speed,
+				vy: Math.sin(angle) * speed,
+				spin: index % 2 === 0 ? 5 : -5,
+				life,
+				maxLife: life,
+			})
+		}
+		this.eventIndex += 1
+	}
+
+	private drawBlackout() {
+		const blackout = this.background.blackout
+		blackout.clear()
+		if (this.state.activeGlitch !== "blackout") return
+		const compact = this.width < 640
+		const caretX = this.target.root.x
+			+ this.target.wordLayer.x
+			+ this.target.caret.x
+			+ (compact ? 0 : 0)
+		const caretY = this.target.root.y
+		blackout
+			.rect(0, 0, this.width, this.height)
+			.fill({ color: V.bg, alpha: 0.94 })
+			.circle(caretX, caretY, compact ? 96 : 144)
+			.cut()
+	}
+
+	private tick = (ticker: Ticker) => {
+		const delta = Math.min(ticker.deltaMS, 50)
+		this.resize()
+		this.wordAgeMs += delta
+
+		if (this.state.activeGlitch === "invisible_ink" && this.wordAgeMs > 1_000) {
+			const fade = Math.max(0.08, 1 - (this.wordAgeMs - 1_000) / 300)
+			for (const child of this.target.wordLayer.children) {
+				child.alpha = child === this.target.caret ? 1 : fade
+			}
+		} else {
+			for (const child of this.target.wordLayer.children) child.alpha = 1
+		}
+
+		if (this.wordShakeMs > 0) {
+			this.wordShakeMs -= delta
+			const direction = Math.floor(this.wordShakeMs / 20) % 2 === 0 ? 1 : -1
+			this.target.wordLayer.x = direction * 4
+		} else {
+			this.target.wordLayer.x = 0
+		}
+
+		if (this.typoBarsMs > 0) {
+			this.typoBarsMs -= delta
+			this.typoBars.alpha = Math.max(0, this.typoBarsMs / 120)
+		} else {
+			this.typoBars.clear()
+		}
+
+		this.hitFlashMs = Math.max(0, this.hitFlashMs - delta)
+		this.target.hitLayer.alpha = this.hitFlashMs / 80
+
+		for (let index = this.bolts.length - 1; index >= 0; index -= 1) {
+			const bolt = this.bolts[index]
+			bolt.life -= delta
+			bolt.node.x += bolt.velocity * delta / 1_000
+			if (bolt.node.x >= bolt.targetX || bolt.life <= 0) {
+				sfx.hit()
+				this.hitFlashMs = 80
+				bolt.node.destroy()
+				this.bolts.splice(index, 1)
+			}
+		}
+
+		for (let index = this.fragments.length - 1; index >= 0; index -= 1) {
+			const fragment = this.fragments[index]
+			fragment.life -= delta
+			fragment.node.x += fragment.vx * delta / 1_000
+			fragment.node.y += fragment.vy * delta / 1_000
+			fragment.node.rotation += fragment.spin * delta / 1_000
+			fragment.node.alpha = Math.max(0, fragment.life / fragment.maxLife)
+			if (fragment.life <= 0) {
+				fragment.node.destroy()
+				this.fragments.splice(index, 1)
+			}
+		}
+
+		for (let index = this.popups.length - 1; index >= 0; index -= 1) {
+			const popup = this.popups[index]
+			popup.life -= delta
+			const progress = 1 - popup.life / popup.maxLife
+			popup.node.x += 24 * delta / popup.maxLife
+			popup.node.y -= 24 * delta / popup.maxLife
+			popup.node.alpha = Math.max(0, 1 - progress)
+			if (popup.life <= 0) {
+				popup.node.destroy()
+				this.popups.splice(index, 1)
+			}
+		}
+
+		const lowTime = this.state.timeLeftMs <= 10_000
+		const lowTimeAlpha = lowTime
+			? 0.08 + (10_000 - this.state.timeLeftMs) / 10_000 * 0.16
+			: 0
+		this.lowTimeEdge
+			.clear()
+			.rect(0, 0, this.width, this.height)
+			.stroke({ color: V.red, width: 8, alpha: lowTimeAlpha })
+	}
 }

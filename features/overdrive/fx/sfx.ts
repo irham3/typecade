@@ -4,6 +4,22 @@ let compressor: DynamicsCompressorNode | null = null
 let volume = 0.5
 let muted = false
 let unlocked = false
+let noiseState = 0x6d2b79f5
+let keyVariationIndex = 0
+
+function nextNoiseSample() {
+  noiseState ^= noiseState << 13
+  noiseState ^= noiseState >>> 17
+  noiseState ^= noiseState << 5
+  return (noiseState >>> 0) / 4_294_967_296
+}
+
+function nextKeyFrequency() {
+  const offsets = [0, 97, 43, 181, 119, 23]
+  const frequency = 1_450 + offsets[keyVariationIndex % offsets.length]
+  keyVariationIndex += 1
+  return frequency
+}
 
 export function unlock(): void {
   if (unlocked) return
@@ -46,7 +62,7 @@ function noise(ms: number, peak = 0.08, delay = 0) {
   const buffer = ctx.createBuffer(1, length, ctx.sampleRate)
   const data = buffer.getChannelData(0)
   for (let i = 0; i < length; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / length)
+    data[i] = (nextNoiseSample() * 2 - 1) * (1 - i / length)
   }
   const src = ctx.createBufferSource()
   const gain = ctx.createGain()
@@ -61,7 +77,7 @@ function noise(ms: number, peak = 0.08, delay = 0) {
 
 export const sfx = {
   unlock,
-  key() { tone(1450 + Math.random() * 240, "square", 24, 0.045) },
+  key() { tone(nextKeyFrequency(), "square", 24, 0.045) },
   shot(combo: number) { tone(520 + Math.min(combo, 30) * 9, "square", 65, 0.09, 900 + combo * 8) },
   hit() { 
     tone(180, "triangle", 55, 0.08, 110)

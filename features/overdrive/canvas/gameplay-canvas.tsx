@@ -4,102 +4,188 @@ import { Application } from "pixi.js"
 import { CombatScene, type SceneState } from "./combat-scene"
 import { getLatestPresentationEventId, type OverdrivePresentationEvent } from "../presentation/events"
 
-export type GameplayCanvasProps = SceneState & { events: readonly OverdrivePresentationEvent[] }
+export type GameplayCanvasProps = SceneState & {
+  events: readonly OverdrivePresentationEvent[]
+  onInitializationError?: (error: Error) => void
+}
+
+function toError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value))
+}
+
+function consumePendingEvents(
+  scene: CombatScene,
+  events: readonly OverdrivePresentationEvent[],
+  lastConsumedRef: React.MutableRefObject<number>,
+  hostRef: React.RefObject<HTMLDivElement | null>
+): void {
+  for (const event of events) {
+    if (event.id > lastConsumedRef.current) {
+      scene.handle(event)
+      lastConsumedRef.current = event.id
+    }
+  }
+  if (hostRef.current) {
+    hostRef.current.dataset.eventId = String(lastConsumedRef.current)
+  }
+}
+
+function waitForUsableSize(
+  host: HTMLElement,
+  isCancelled: () => boolean,
+  register: (observer: ResizeObserver | null) => void,
+): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    if (isCancelled()) return resolve(null)
+
+    const r = host.getBoundingClientRect()
+    if (r.width >= 2 && r.height >= 2) {
+      return resolve({ width: Math.floor(r.width), height: Math.floor(r.height) })
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      if (isCancelled()) {
+        observer.disconnect()
+        register(null)
+        resolve(null)
+        return
+      }
+      const rect = entries[0].contentRect
+      if (rect.width >= 2 && rect.height >= 2) {
+        observer.disconnect()
+        register(null)
+        resolve({ width: Math.floor(rect.width), height: Math.floor(rect.height) })
+      }
+    })
+
+    register(observer)
+    observer.observe(host)
+  })
+}
 
 export function GameplayCanvas(props: GameplayCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<CombatScene | null>(null)
-  const latest = useRef(props)
-  latest.current = props
   const lastConsumedEventIdRef = useRef(0)
 
+  const latestRef = useRef(props)
+  useEffect(() => {
+    latestRef.current = props
+  }, [props])
+
+  // 1. Mount/unmount effect: create observer, app, and scene once.
   useEffect(() => {
     let cancelled = false
-    let observer: ResizeObserver | null = null
+    let sizeObserver: ResizeObserver | null = null
+    let resizeListenerObserver: ResizeObserver | null = null
     let app: Application | null = null
 
     void (async () => {
-      const host = hostRef.current
-      if (!host) return
-      
-      // Before async initialization, capture baseline ID so we don't replay stale events
-      lastConsumedEventIdRef.current = getLatestPresentationEventId()
-      
-      app = new Application()
-      await app.init({
-        background: 0x0a0e14,
-        antialias: true,
-        autoDensity: true,
-        resolution: Math.min(devicePixelRatio || 1, 2)
-      })
-      if (cancelled) {
-        try { app.destroy(true) } catch (e) {}
-        return
-      }
-      
-      host.replaceChildren(app.canvas)
-      Object.assign(app.canvas.style, { width: "100%", height: "100%", display: "block" })
-      
-      const scene = new CombatScene(app, latest.current)
-      sceneRef.current = scene
-      
-      const resize = () => {
-        const r = host.getBoundingClientRect()
-        // Do not force minimum renderer height larger than its host
-        const w = Math.max(1, Math.floor(r.width))
-        const h = Math.max(1, Math.floor(r.height))
-        if (app && ((app.screen.width !== w) || (app.screen.height !== h))) {
-          app.renderer.resize(w, h)
-          scene.resize()
+      try {
+        const host = hostRef.current
+        if (!host) return
+
+        lastConsumedEventIdRef.current = getLatestPresentationEventId()
+
+        const size = await waitForUsableSize(
+          host,
+          () => cancelled,
+          (obs) => { sizeObserver = obs }
+        )
+
+        if (cancelled || !size) return
+
+        const appInstance = new Application()
+        await appInstance.init({
+          width: size.width,
+          height: size.height,
+          background: 0x0a0e14,
+          antialias: true,
+          autoDensity: true,
+          resolution: Math.min(window.devicePixelRatio || 1, 2),
+          preference: "webgl",
+        })
+
+        if (cancelled) {
+          appInstance.destroy(true)
+          return
+        }
+
+        app = appInstance
+        host.replaceChildren(app.canvas)
+        Object.assign(app.canvas.style, { width: "100%", height: "100%", display: "block" })
+
+        const scene = new CombatScene(app, latestRef.current)
+        sceneRef.current = scene
+
+        // Flush any events missed during async init
+        scene.sync(latestRef.current)
+        consumePendingEvents(scene, latestRef.current.events, lastConsumedEventIdRef, hostRef)
+
+        const resize = () => {
+          const rect = host.getBoundingClientRect()
+          const nw = Math.max(1, Math.floor(rect.width))
+          const nh = Math.max(1, Math.floor(rect.height))
+          if (app && ((app.screen.width !== nw) || (app.screen.height !== nh))) {
+            app.renderer.resize(nw, nh)
+            scene.resize()
+          }
+        }
+        resizeListenerObserver = new ResizeObserver(resize)
+        resizeListenerObserver.observe(host)
+      } catch (err) {
+        if (!cancelled && latestRef.current.onInitializationError) {
+          latestRef.current.onInitializationError(toError(err))
         }
       }
-      observer = new ResizeObserver(resize)
-      observer.observe(host)
-      resize()
-      
-      scene.sync(latest.current)
-      
-      // Consume events immediately after init
-      for (const event of latest.current.events) {
-        if (event.id > lastConsumedEventIdRef.current) scene.handle(event)
-        if (event.id > lastConsumedEventIdRef.current) lastConsumedEventIdRef.current = event.id
-      }
-      host.dataset.eventId = String(lastConsumedEventIdRef.current)
     })()
-    
+
     return () => {
       cancelled = true
-      observer?.disconnect()
-      sceneRef.current?.destroy()
-      sceneRef.current = null
-      try { app?.destroy(true, { children: true }) } catch (e) {}
+      if (sizeObserver) {
+        sizeObserver.disconnect()
+        sizeObserver = null
+      }
+      if (resizeListenerObserver) {
+        resizeListenerObserver.disconnect()
+        resizeListenerObserver = null
+      }
+      if (sceneRef.current) {
+        sceneRef.current.destroy()
+        sceneRef.current = null
+      }
+      if (app) {
+        app.destroy(true)
+        app = null
+      }
     }
   }, [])
-  
+
+  // 2. Persistent-state effect
   useEffect(() => {
     const scene = sceneRef.current
     if (scene) {
       scene.sync(props)
-      for (const event of props.events) {
-        if (event.id > lastConsumedEventIdRef.current) scene.handle(event)
-        if (event.id > lastConsumedEventIdRef.current) lastConsumedEventIdRef.current = event.id
-      }
-      if (hostRef.current) {
-        hostRef.current.dataset.eventId = String(lastConsumedEventIdRef.current)
-      }
     }
   }, [props])
-  
+
+  // 3. Event effect
+  useEffect(() => {
+    if (sceneRef.current) {
+      consumePendingEvents(sceneRef.current, props.events, lastConsumedEventIdRef, hostRef)
+    }
+  }, [props.events])
+
   return (
-    <div 
-      ref={hostRef} 
-      data-pixi-host 
-      data-testid="pixi-gameplay" 
+    <div
+      ref={hostRef}
+      data-pixi-host
+      data-testid="pixi-gameplay"
       data-current-word={props.currentWord}
       data-caret-index={String(props.caretIndex)}
       data-score={String(props.score)}
       data-stage={props.stage}
-      data-event-id={String(lastConsumedEventIdRef.current)}
+      data-event-id="0"
       className="absolute inset-0 h-full w-full min-h-0 min-w-0 overflow-hidden bg-bg-0"
     />
   )
