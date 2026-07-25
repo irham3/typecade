@@ -1,16 +1,29 @@
-import { test, expect } from "@playwright/test"
+import { expect, test } from "@playwright/test"
 
-test("overdrive starts combat and renders Pixi", async ({ page }) => {
+test("starts a playable Pixi run without browser errors", async ({ page }) => {
+	const errors: Error[] = []
+	page.on("pageerror", (error) => errors.push(error))
+
 	await page.goto("/overdrive")
-	await page.getByRole("button", { name: "Play" }).click()
-	await expect(page.getByTestId("pixi-gameplay")).toBeVisible()
-	await expect(page.getByText(/Zone 1/i)).toBeVisible()
-	await page.keyboard.type("test")
-	await expect(page.locator("canvas")).toHaveCount(1)
+	const title = page.getByRole("heading", { name: "TYPECADE" })
+	await expect(title).toBeVisible()
+	await expect(page.getByRole("button", { name: /^DAILY SEED \d{2}:\d{2}:\d{2}$/ })).toBeVisible()
+	const titleFont = await title.evaluate((element) => getComputedStyle(element).fontFamily)
+	expect(titleFont).toContain("Press Start 2P")
+	const rootFont = await page.locator("[data-overdrive-root]").evaluate(
+		(element) => getComputedStyle(element).fontFamily,
+	)
+	expect(rootFont).toContain("JetBrains Mono")
+	await page.getByRole("button", { name: "PLAY", exact: true }).click()
+
+	await expect(page.getByTestId("pixi-gameplay").locator("canvas")).toHaveCount(1)
+	await expect(page.getByText("Z1 · WARM-UP")).toBeVisible()
+	await expect(page.getByText("KEYCAP BUILD")).toBeVisible()
+	expect(errors).toEqual([])
 })
 
-test("practice remains available", async ({ page }) => {
+test("keeps the existing Practice route available", async ({ page }) => {
 	await page.goto("/overdrive")
-	await page.getByRole("link", { name: "Practice" }).click()
+	await page.getByRole("link", { name: "PRACTICE" }).click()
 	await expect(page).toHaveURL(/\/$/)
 })
