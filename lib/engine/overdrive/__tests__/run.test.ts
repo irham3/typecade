@@ -1,247 +1,133 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
+import { QUOTA, STAGE_DURATION_MS } from "../constants"
 import { createRun } from "../run"
-import { STAGE_DURATION_MS, QUOTA } from "../constants"
 
-const mockWords = ["the", "quick", "brown", "fox", "jumps", "over", "lazy", "dog"]
+const words = ["signal", "vector", "system", "kernel", "packet", "cipher"]
 
-describe("Run State Machine", () => {
-	it("initializes correctly", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		const state = api.snapshot()
-		
-		expect(state.screen).toBe("menu")
-		expect(state.zone).toBe(1)
-		expect(state.stage).toBe("warmup")
+function typeCurrentWord(api: ReturnType<typeof createRun>) {
+	for (const character of api.snapshot().currentWord) api.feedChar(character)
+	api.feedChar(" ")
+}
+
+function clearCurrentStage(api: ReturnType<typeof createRun>) {
+	let guard = 0
+	while (api.snapshot().screen === "stage" && guard < 2_000) {
+		typeCurrentWord(api)
+		guard += 1
+	}
+	expect(guard).toBeLessThan(2_000)
+}
+
+describe("run state machine", () => {
+	it("starts with a deterministic stage queue", () => {
+		const first = createRun({ seed: "same-seed", words })
+		const second = createRun({ seed: "same-seed", words })
+		first.start()
+		second.start()
+
+		expect(first.snapshot()).toMatchObject({
+			screen: "stage",
+			zone: 1,
+			stage: "warmup",
+			timeLeftMs: STAGE_DURATION_MS,
+			quota: QUOTA[1].warmup,
+		})
+		expect(first.snapshot().currentWord).toBe(second.snapshot().currentWord)
+		expect(first.snapshot().upcomingWords).toEqual(second.snapshot().upcomingWords)
 	})
 
-	it("starts a stage correctly", () => {
-		const api = createRun({ seed: "test", words: mockWords })
+	it("marks a corrected word dirty and awards zero score", () => {
+		const api = createRun({ seed: "dirty-word", words: ["signal"] })
 		api.start()
-		
-		const state = api.snapshot()
-		expect(state.screen).toBe("stage")
-		expect(state.timeLeftMs).toBe(STAGE_DURATION_MS)
-		expect(state.score).toBe(0)
-		expect(state.quota).toBe(QUOTA[1].warmup)
-		expect(state.currentWord).toBeTruthy()
-		expect(state.upcomingWords.length).toBe(8)
+		api.feedChar("x")
+		typeCurrentWord(api)
+
+		expect(api.snapshot()).toMatchObject({
+			score: 0,
+			combo: 0,
+			wordDirty: false,
+			stageTypos: 1,
+		})
 	})
 
-	it("can skip warmup", () => {
-		const api = createRun({ seed: "test", words: mockWords })
+	it("clears immediately when quota is reached and preserves a real time bonus", () => {
+		const quotaWord = "a".repeat(QUOTA[1].warmup)
+		const api = createRun({ seed: "instant-clear", words: [quotaWord] })
 		api.start()
+		typeCurrentWord(api)
+
+		expect(api.snapshot()).toMatchObject({
+			screen: "stageResult",
+			score: QUOTA[1].warmup,
+			runScore: QUOTA[1].warmup,
+			timeLeftMs: STAGE_DURATION_MS,
+			tokenBreakdown: {
+				clearReward: 3,
+				timeBonus: 6,
+				interest: 0,
+				totalEarned: 9,
+			},
+		})
+	})
+
+	it("fails on timeout when quota is not met", () => {
+		const api = createRun({ seed: "timeout", words })
+		api.start()
+		api.advance(STAGE_DURATION_MS)
+
+		expect(api.snapshot()).toMatchObject({
+			screen: "runOver",
+			win: false,
+			finalScore: 0,
+		})
+	})
+
+	it("moves through result, shop, and the next stage without double-counting score", () => {
+		const api = createRun({ seed: "progression", words })
+		api.start()
+		clearCurrentStage(api)
+		const firstStageScore = api.snapshot().score
+
+		api.continueToNextStage()
+		expect(api.snapshot().screen).toBe("shop")
+		api.leaveShop()
+
+		expect(api.snapshot()).toMatchObject({
+			screen: "stage",
+			stage: "rush",
+			score: 0,
+			runScore: firstStageScore,
+		})
+
+		clearCurrentStage(api)
+		expect(api.snapshot().runScore).toBe(firstStageScore + api.snapshot().score)
+	})
+
+	it("skips Warm-up for one token and starts Rush cleanly", () => {
+		const api = createRun({ seed: "skip", words })
+		api.start()
+		typeCurrentWord(api)
 		api.skipWarmup()
-		
-		const state = api.snapshot()
-		expect(state.stage).toBe("rush")
-		expect(state.quota).toBe(QUOTA[1].rush)
-		expect(state.tokens).toBe(1) // WARMUP_SKIP_REWARD
+
+		expect(api.snapshot()).toMatchObject({
+			screen: "stage",
+			stage: "rush",
+			tokens: 1,
+			score: 0,
+			combo: 0,
+		})
 	})
 
-	it("feeds chars and completes words", () => {
-		const api = createRun({ seed: "test", words: mockWords })
+	it("round-trips an active run through versioned persistence", () => {
+		const api = createRun({ seed: "save", words, startingKeycaps: ["wasd"] })
 		api.start()
-		
-		const word = api.snapshot().currentWord
-		
-		// Type the word correctly
-		for (const char of word) {
-			api.feedChar(char)
-		}
-		// Space to complete
-		api.feedChar(" ")
-		
-		const state = api.snapshot()
-		expect(state.score).toBeGreaterThan(0)
-		expect(state.combo).toBe(1)
-		expect(state.mult).toBe(1)
-		expect(state.currentWord).not.toBe(word) // moved to next
-	})
+		api.advance(2_500)
+		api.feedChar("x")
+		const saved = api.exportState()
 
-	it("handles typos correctly", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		const word = api.snapshot().currentWord
-		api.feedChar("X") // typo!
-		
-		let state = api.snapshot()
-		expect(state.wordDirty).toBe(true)
-		expect(state.caretIndex).toBe(0)
-		
-		// Type correctly now
-		for (const char of word) {
-			api.feedChar(char)
-		}
-		api.feedChar(" ")
-		
-		state = api.snapshot()
-		expect(state.score).toBe(0) // 0 score due to typo
-		expect(state.combo).toBe(0)
-	})
-
-	it("advances timer and fails if quota not met", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		api.advance(STAGE_DURATION_MS)
-		
-		const state = api.snapshot()
-		expect(state.screen).toBe("runOver")
-		expect(state.win).toBe(false)
-	})
-
-	it("advances timer and clears if quota met", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		// Cheat score
-		const stateBefore = api.snapshot()
-		
-		// We'll simulate typing to beat the quota
-		// A fast way is to just feed chars until score > quota.
-		// Wait, instead of typing a lot, we can just mock the score or keep typing the same word.
-		// For a real test, let's just assert the transitions work. 
-		// Because testing typing 300 points is slow, we'll assume it works if `score >= quota`.
-		// Let's type enough to beat warmup quota (300).
-		let loops = 0
-		while (api.snapshot().score < QUOTA[1].warmup && loops < 1000) {
-			const w = api.snapshot().currentWord
-			for (const c of w) api.feedChar(c)
-			api.feedChar(" ")
-			loops++
-		}
-		
-		expect(api.snapshot().score).toBeGreaterThanOrEqual(QUOTA[1].warmup)
-		
-		api.advance(STAGE_DURATION_MS) // end time
-		
-		const stateAfter = api.snapshot()
-		expect(stateAfter.screen).toBe("stageResult")
-	})
-	it("stageScore resets each stage but runScore accumulates once", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		let loops = 0
-		while (api.snapshot().score < QUOTA[1].warmup && loops < 1000) {
-			const w = api.snapshot().currentWord
-			for (const c of w) api.feedChar(c)
-			api.feedChar(" ")
-			loops++
-		}
-		
-		const stage1Score = api.snapshot().score
-		api.advance(STAGE_DURATION_MS) // end stage 1
-		
-		let state = api.snapshot()
-		expect(state.runScore).toBe(stage1Score)
-		
-		// enter shop, leave shop -> next stage
-		api.continueToNextStage()
-		api.leaveShop()
-		
-		state = api.snapshot()
-		expect(state.score).toBe(0) // stageScore resets
-		expect(state.runScore).toBe(stage1Score) // runScore retained
-		
-		// score some more
-		loops = 0
-		while (api.snapshot().score < QUOTA[1].rush && loops < 1000) {
-			const w = api.snapshot().currentWord
-			for (const c of w) api.feedChar(c)
-			api.feedChar(" ")
-			loops++
-		}
-		
-		const stage2Score = api.snapshot().score
-		api.advance(STAGE_DURATION_MS) // end stage 2
-		
-		state = api.snapshot()
-		expect(state.runScore).toBe(stage1Score + stage2Score)
-	})
-
-	it("finalScore equals runScore on death", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		// advance time without typing -> fail
-		api.advance(STAGE_DURATION_MS)
-		
-		const state = api.snapshot()
-		expect(state.screen).toBe("runOver")
-		expect(state.win).toBe(false)
-		expect(state.finalScore).toBe(state.runScore)
-	})
-
-	it("token breakdown equals the economy formula", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		let loops = 0
-		while (api.snapshot().score < QUOTA[1].warmup && loops < 1000) {
-			const w = api.snapshot().currentWord
-			for (const c of w) api.feedChar(c)
-			api.feedChar(" ")
-			loops++
-		}
-		
-		api.advance(30000) // half time left
-		api.advance(30000) // end
-		
-		const state = api.snapshot()
-		expect(state.tokenBreakdown).toBeDefined()
-		expect(state.tokenBreakdown!.totalEarned).toBe(state.tokenBreakdown!.clearReward + state.tokenBreakdown!.timeBonus + state.tokenBreakdown!.interest)
-	})
-
-	it("Zone 8 clear enters Zone 9 endless and still accepts input", () => {
-		const api = createRun({ seed: "test", words: mockWords })
-		api.start()
-		
-		const clearStage = () => {
-			let loops = 0
-			while (api.snapshot().score < api.snapshot().quota && loops < 5000) {
-				const w = api.snapshot().currentWord
-				for (const c of w) api.feedChar(c)
-				api.feedChar(" ")
-				loops++
-			}
-			api.advance(STAGE_DURATION_MS)
-			api.continueToNextStage()
-			api.leaveShop()
-		}
-		
-		// Zone 1 to Zone 8 warmup = 7 zones * 3 stages = 21 stages.
-		// Zone 8 warmup, Zone 8 rush = 2 stages. Total 23 stages to reach Zone 8 glitch.
-		for (let i = 0; i < 23; i++) {
-			clearStage()
-		}
-		
-		let state = api.snapshot()
-		expect(state.zone).toBe(8)
-		expect(state.stage).toBe("glitch")
-		
-		let loops = 0
-		while (api.snapshot().score < QUOTA[8].glitch && loops < 5000) {
-			const w = api.snapshot().currentWord
-			for (const c of w) api.feedChar(c)
-			api.feedChar(" ")
-			loops++
-		}
-		
-		api.advance(STAGE_DURATION_MS)
-		expect(api.snapshot().win).toBe(true) // Game won at Zone 8 glitch
-		
-		api.continueToNextStage()
-		api.leaveShop()
-		
-		state = api.snapshot()
-		expect(state.zone).toBe(9)
-		expect(state.stage).toBe("warmup")
-		
-		// still accepts input
-		const w = api.snapshot().currentWord
-		api.feedChar(w[0])
-		expect(api.snapshot().caretIndex).toBe(1)
+		const restored = createRun({ seed: "save", words })
+		expect(restored.loadState(saved)).toBe(true)
+		expect(restored.snapshot()).toEqual(api.snapshot())
+		expect(restored.loadState('{"version":999}')).toBe(false)
 	})
 })

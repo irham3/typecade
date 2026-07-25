@@ -1,57 +1,60 @@
 import type { GlitchDef } from "./registry"
-import { CLEAR_REWARD } from "../constants"
 
 export const GLITCHES: Record<string, GlitchDef> = {
-	"invisible_ink": {
+	invisible_ink: {
 		id: "invisible_ink",
 		name: "Invisible Ink",
 		type: "glitch",
-		description: "Words fade 1s after appearing",
-		// This is mostly a rendering hint for the UI, no engine logic needed other than UI reading active glitch
+		description: "Words fade out 1 second after appearing",
 	},
-	"no_backspace": {
+	no_backspace: {
 		id: "no_backspace",
 		name: "No Backspace",
 		type: "glitch",
-		description: "Backspace is disabled",
-		// Implementation is handled in run.ts backspace() by checking active glitch
+		description: "Backspace is locked",
 	},
-	"sudden_death": {
+	sudden_death: {
 		id: "sudden_death",
 		name: "Sudden Death",
 		type: "glitch",
-		description: "3 typos = fail",
+		description: "3 typos = instant stage fail",
 		onStageStart: ({ state }) => {
-			// We can store a counter in state or use a local variable via closure?
-			// The plugin instances are singletons in the registry, so we shouldn't use closures here.
-			// Actually, we can just use `events.on` inside `run.ts` if we don't have state extensions.
-			// Let's add a general `glitchState` to RunSnapshot.
+			state.glitchState = { typos: 0 }
 		},
-		onTypo: ({ state, events }) => {
-			if (!state.glitchState) state.glitchState = { typos: 0 }
-			state.glitchState.typos = (state.glitchState.typos || 0) + 1
-			if (state.glitchState.typos >= 3) {
-				// Instant fail
-				state.timeLeftMs = 0 // force fail on next advance, or directly fail
-			}
-		}
+		onTypo: (ctx) => {
+			const typos = Number(ctx.state.glitchState?.typos ?? 0) + 1
+			ctx.state.glitchState = { ...(ctx.state.glitchState ?? {}), typos }
+			if (typos >= 3) ctx.forceFail = true
+		},
 	},
-	"blackout": {
+	blackout: {
 		id: "blackout",
 		name: "Blackout",
 		type: "glitch",
-		description: "Dark except caret radius",
-		// Rendering hint only
+		description: "Screen is dark except a small radius around the caret",
 	},
-	"inflation": {
+	inflation: {
 		id: "inflation",
 		name: "Inflation",
 		type: "glitch",
 		description: "Quota +50%, Token reward x2",
 		onStageStart: ({ state }) => {
 			state.quota = Math.floor(state.quota * 1.5)
-			if (!state.glitchState) state.glitchState = {}
-			state.glitchState.tokenMultiplier = 2
-		}
-	}
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				tokenMultiplier: 2,
+				inflatedQuota: true,
+			}
+		},
+		onCancel: ({ state }) => {
+			if (state.glitchState?.inflatedQuota === true) {
+				state.quota = Math.round(state.quota / 1.5)
+			}
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				tokenMultiplier: 1,
+				inflatedQuota: false,
+			}
+		},
+	},
 }

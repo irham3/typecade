@@ -1,24 +1,38 @@
 import { WORDS_PER_MULT } from "./constants"
 
-export type WordResult = { gained: number; clean: boolean; combo: number; mult: number }
+export type WordResult = {
+	clean: boolean
+	combo: number
+	mult: number
+	multIncreased: boolean
+}
 
-export function createScorer(baseBonus = 0) {
-	let combo = 0
-	let mult = 1
+/**
+ * Natural typing streak state. Item bonuses are deliberately evaluated by the
+ * item hooks in run.ts so the scorer remains deterministic and item-agnostic.
+ */
+export function createScorer(initial?: { combo?: number; mult?: number }) {
+	let combo = initial?.combo ?? 0
+	let mult = initial?.mult ?? 1
+
 	return {
-		get combo() { return combo },
-		get mult() { return mult },
-		completeWord(word: string, hadTypo: boolean, shieldMult: boolean = false): WordResult {
+		get combo() {
+			return combo
+		},
+		get mult() {
+			return mult
+		},
+		completeWord(hadTypo: boolean, preserveMult = false): WordResult {
 			if (hadTypo) {
 				combo = 0
-				if (!shieldMult) {
-					mult = 1
-				}
-				return { gained: 0, clean: false, combo, mult }
+				if (!preserveMult) mult = 1
+				return { clean: false, combo, mult, multIncreased: false }
 			}
+
 			combo += 1
-			if (combo > 0 && combo % WORDS_PER_MULT === 0) mult += 1
-			return { gained: (word.length + baseBonus) * mult, clean: true, combo, mult }
+			const multIncreased = combo % WORDS_PER_MULT === 0
+			if (multIncreased) mult += 1
+			return { clean: true, combo, mult, multIncreased }
 		},
 	}
 }

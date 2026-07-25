@@ -1,68 +1,50 @@
-import { describe, it, expect } from "vitest"
-import { createScorer } from "../scoring"
+import { describe, expect, it } from "vitest"
 import { WORDS_PER_MULT } from "../constants"
+import { createScorer } from "../scoring"
 
-describe("Scoring Engine", () => {
-	it("calculates score correctly without typos", () => {
-		const scorer = createScorer(0)
-		
-		// Word 1: "test" (length 4) -> Base 4 * Mult 1 = 4
-		const res1 = scorer.completeWord("test", false)
-		expect(res1.gained).toBe(4)
-		expect(res1.combo).toBe(1)
-		expect(res1.mult).toBe(1)
-		
-		// Word 2: "hello" (length 5) -> Base 5 * Mult 1 = 5
-		const res2 = scorer.completeWord("hello", false)
-		expect(res2.gained).toBe(5)
-		expect(res2.combo).toBe(2)
-		expect(res2.mult).toBe(1)
+describe("natural streak scorer", () => {
+	it("increments combo without calculating presentation score", () => {
+		const scorer = createScorer()
+
+		expect(scorer.completeWord(false)).toEqual({
+			clean: true,
+			combo: 1,
+			mult: 1,
+			multIncreased: false,
+		})
 	})
 
-	it("increases mult every 10 words", () => {
-		const scorer = createScorer(0)
-		
-		for (let i = 0; i < WORDS_PER_MULT - 1; i++) {
-			scorer.completeWord("a", false)
+	it("raises Mult on the milestone word", () => {
+		const scorer = createScorer()
+
+		for (let index = 1; index < WORDS_PER_MULT; index += 1) {
+			scorer.completeWord(false)
 		}
-		
-		expect(scorer.combo).toBe(9)
-		expect(scorer.mult).toBe(1)
-		
-		// 10th word
-		const res = scorer.completeWord("a", false)
-		expect(res.combo).toBe(10)
-		expect(res.mult).toBe(2) // Mult increased!
-		
-		// 20th word
-		for (let i = 0; i < WORDS_PER_MULT - 1; i++) {
-			scorer.completeWord("a", false)
-		}
-		const res2 = scorer.completeWord("a", false)
-		expect(res2.combo).toBe(20)
-		expect(res2.mult).toBe(3)
+
+		const milestone = scorer.completeWord(false)
+		expect(milestone.combo).toBe(10)
+		expect(milestone.mult).toBe(2)
+		expect(milestone.multIncreased).toBe(true)
 	})
 
-	it("resets combo and mult on typo", () => {
-		const scorer = createScorer(0)
-		
-		for (let i = 0; i < WORDS_PER_MULT; i++) {
-			scorer.completeWord("a", false)
-		}
-		expect(scorer.combo).toBe(10)
-		expect(scorer.mult).toBe(2)
-		
-		const res = scorer.completeWord("typo", true)
-		expect(res.gained).toBe(0)
-		expect(res.combo).toBe(0)
-		expect(res.mult).toBe(1)
-		expect(res.clean).toBe(false)
+	it("resets combo and Mult after a dirty word", () => {
+		const scorer = createScorer({ combo: 10, mult: 2 })
+
+		expect(scorer.completeWord(true)).toEqual({
+			clean: false,
+			combo: 0,
+			mult: 1,
+			multIncreased: false,
+		})
 	})
 
-	it("applies baseBonus correctly", () => {
-		const scorer = createScorer(10)
-		const res = scorer.completeWord("a", false)
-		// length 1 + 10 base = 11 * 1 = 11
-		expect(res.gained).toBe(11)
+	it("can preserve Mult while still breaking combo", () => {
+		const scorer = createScorer({ combo: 10, mult: 2 })
+
+		expect(scorer.completeWord(true, true)).toMatchObject({
+			clean: false,
+			combo: 0,
+			mult: 2,
+		})
 	})
 })
