@@ -826,9 +826,20 @@ body:has([data-overdrive-root]) > div:not([hidden]) {
   animation: overdrive-stage-clear 900ms ease-out forwards;
 }
 
+@keyframes overdrive-build-arrival {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.9); }
+  35% { opacity: 1; transform: translateY(0) scale(1.08); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.overdrive-build-arrival {
+  animation: overdrive-build-arrival 600ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .overdrive-proc,
-  .overdrive-slot-proc {
+  .overdrive-slot-proc,
+  .overdrive-build-arrival {
     animation-duration: 1ms;
   }
 
