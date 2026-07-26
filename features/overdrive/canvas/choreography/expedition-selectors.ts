@@ -29,7 +29,6 @@ function normalizedIndex(index: number, wordLength: number) {
 export function selectEncounterBeat(
 	score: number,
 	quota: number,
-	_targetOrdinal: number,
 ): EncounterBeat {
 	if (!Number.isFinite(quota) || quota <= 0) return "ingress"
 	const ratio = Math.max(0, Number.isFinite(score) ? score : 0) / quota

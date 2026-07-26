@@ -27,8 +27,8 @@ import {
 } from "../visual-assets"
 import type { SceneState } from "../combat-scene"
 import { targetLane } from "./target-lanes"
-
-type TargetRole = "active" | "upcoming" | "distant" | "retiring" | "available"
+import { FormationDirector, type FormationState, type FormationTarget } from "../formation/formation-director"
+import { computeFormationLayout } from "../formation/formation-layout"
 
 type Transition = {
 	elapsedMs: number
@@ -50,27 +50,12 @@ type WardenVisual = {
 	baseScale: number
 }
 
-type EnemySlot = {
-	root: Container
-	rig: RigInstance
-	shadow: Graphics
-	integrity: Graphics
-	label: Text
-	accent: number
-	ordinal: number
-	role: TargetRole
-	baseScale: number
-	hitMs: number
-	retireMs: number
-	transition: Transition | null
-}
-
 type PendingContact = {
 	position: {
 		x: number
 		y: number
 	}
-	target: EnemySlot
+	target: FormationTarget
 	tone: number
 	finisher: boolean
 }
@@ -146,35 +131,6 @@ function createWarden(assets: LoadedRigAssets): WardenVisual {
 	}
 }
 
-function createEnemy(
-	assets: LoadedRigAssets,
-	stage: StageType,
-): EnemySlot {
-	const root = new Container()
-	const rig = new RigInstance(assets.definition, assets.textures)
-	const shadow = new Graphics()
-		.ellipse(0, 12, 88, 16)
-		.fill({ color: V.bg, alpha: 0.58 })
-	const integrity = new Graphics()
-	const accent = stageAccent(stage)
-	const label = createLabel(targetClassName(stage), accent)
-	root.addChild(shadow, rig.root, integrity, label)
-	return {
-		root,
-		rig,
-		shadow,
-		integrity,
-		label,
-		accent,
-		ordinal: 0,
-		role: "available",
-		baseScale: 1,
-		hitMs: 0,
-		retireMs: 0,
-		transition: null,
-	}
-}
-
 export class CombatDirector {
 	readonly root = new Container()
 	readonly signalNodes = new Container()
@@ -192,11 +148,8 @@ export class CombatDirector {
 		},
 	})
 	private readonly warden: WardenVisual
-	private readonly enemyAssets: LoadedRigAssets
 	private readonly stage: StageType
-	private readonly staged: EnemySlot[] = []
-	private readonly retiring: EnemySlot[] = []
-	private readonly available: EnemySlot[] = []
+	private readonly formation: FormationDirector
 	private readonly pendingContacts: PendingContact[] = []
 	private readonly popups: ScorePopup[] = []
 	private readonly queuedItemEffects: QueuedItemEffect[] = []
@@ -224,8 +177,17 @@ export class CombatDirector {
 	) {
 		this.state = initial
 		this.stage = initial.stage
-		this.enemyAssets = assets.enemy
 		this.warden = createWarden(assets.warden)
+		
+		const formationState: FormationState = {
+			targetOrdinal: initial.targetOrdinal,
+			stage: initial.stage,
+			zone: initial.zone,
+			focusPaused: initial.focusPaused,
+			reducedMotion: initial.reducedMotion,
+		}
+		this.formation = new FormationDirector(formationState, assets.enemy)
+		
 		this.rescueCallout.anchor.set(0.5)
 		this.root.addChild(
 			this.actors,
@@ -235,24 +197,7 @@ export class CombatDirector {
 			this.pressureLine,
 			this.rescueCallout,
 		)
-		this.actors.addChild(this.warden.root)
-
-		for (let index = 0; index < INITIAL_ENEMY_INSTANCES; index += 1) {
-			const slot = createEnemy(assets.enemy, initial.stage)
-			this.actors.addChild(slot.root)
-			if (index < 3) {
-				slot.ordinal = initial.targetOrdinal + index
-				slot.role = index === 0
-					? "active"
-					: index === 1
-						? "upcoming"
-						: "distant"
-				this.staged.push(slot)
-			} else {
-				slot.root.visible = false
-				this.available.push(slot)
-			}
-		}
+		this.actors.addChild(this.warden.root, this.formation.root)
 
 		this.warden.rig.play(
 			initial.focusPaused || initial.overdriveCharge >= 100
@@ -260,9 +205,6 @@ export class CombatDirector {
 				: "idle",
 			{ force: true },
 		)
-		for (const slot of this.staged) {
-			slot.rig.play("locomotion", { force: true })
-		}
 	}
 
 	resize(width: number, height: number) {
@@ -298,14 +240,9 @@ export class CombatDirector {
 		this.warden.integrity.position.set(0, -wardenPixels / 2)
 		this.warden.shadow.y = wardenPixels * 0.42
 
-		for (const slot of [
-			...this.staged,
-			...this.retiring,
-			...this.available,
-		]) {
-			slot.baseScale = targetPixels / slot.rig.getVisualSize().height
-		}
-		this.layoutStaged(false)
+		const layout = computeFormationLayout(this.formation as any, width, height)
+		this.formation.resize(width, height, layout)
+
 		this.redrawSignalNodes()
 		this.redrawIntegrity()
 		this.rescueCallout.position.set(width / 2, height * SCENE.rescueCalloutY)
@@ -314,11 +251,19 @@ export class CombatDirector {
 	sync(state: SceneState) {
 		const focusStarted = !this.state.focusPaused && state.focusPaused
 		this.state = state
+
+		this.formation.sync({
+			targetOrdinal: state.targetOrdinal,
+			stage: state.stage,
+			zone: state.zone,
+			focusPaused: state.focusPaused,
+			reducedMotion: state.reducedMotion,
+		})
+
 		if (focusStarted) {
 			this.pressureMs = 0
 			this.pressureLine.clear()
 			this.warden.rig.play("ready", { force: true })
-			this.staged[0]?.rig.play("idle", { force: true })
 		}
 		if (
 			state.currentWord !== this.lastWord
@@ -382,16 +327,11 @@ export class CombatDirector {
 	update(deltaMs: number) {
 		const delta = Math.max(0, Math.min(deltaMs, 50))
 		const wardenFrame = this.warden.rig.update(delta)
-		for (const slot of [
-			...this.staged,
-			...this.retiring,
-		]) {
-			slot.rig.update(delta)
-		}
+		
+		this.formation.update(delta)
+
 		if (wardenFrame.contactEdge) this.resolveNextContact()
 		this.updateWardenTravel(delta)
-		this.updateTargetTransitions(delta)
-		this.updateRetiring(delta)
 		this.updateHits(delta)
 		this.updatePressure(delta)
 		this.updateAegis(delta)
@@ -406,13 +346,7 @@ export class CombatDirector {
 		this.popups.length = 0
 		this.itemPresentation.destroy()
 		this.warden.rig.destroy()
-		for (const slot of [
-			...this.staged,
-			...this.retiring,
-			...this.available,
-		]) {
-			slot.rig.destroy()
-		}
+		this.formation.destroy()
 		this.effects.destroy()
 		this.root.destroy({ children: true })
 	}
@@ -420,7 +354,7 @@ export class CombatDirector {
 	private acceptCharacter(
 		event: Extract<OverdrivePresentationEvent, { type: "accepted-character" }>,
 	) {
-		const target = this.slotForOrdinal(event.targetOrdinal) ?? this.staged[0]
+		const target = this.slotForOrdinal(event.targetOrdinal)
 		if (!target) return
 		const chain = (
 			["chain-1", "chain-2", "chain-3"] as const
@@ -447,7 +381,7 @@ export class CombatDirector {
 	private completeWord(
 		event: Extract<OverdrivePresentationEvent, { type: "word-completed" }>,
 	) {
-		const target = this.slotForOrdinal(event.targetOrdinal) ?? this.staged[0]
+		const target = this.slotForOrdinal(event.targetOrdinal)
 		if (!target) return
 		const existingContact = [...this.pendingContacts]
 			.reverse()
@@ -488,86 +422,20 @@ export class CombatDirector {
 			this.effects.spawnOverdriveColumn(from, to)
 		}
 
-		this.retireTarget(target, event.scoreGain > 0)
 		this.spawnScorePopup(target, event.scoreGain)
-		this.promoteTargets(event.targetOrdinal)
 		this.returnDelayMs = event.overdriveReleased
 			? MOTION.overdriveMs
 			: MOTION.attackMs
 	}
 
-	private retireTarget(target: EnemySlot, clean: boolean) {
-		target.role = "retiring"
-		target.retireMs = MOTION.defeatMs
-		target.transition = null
-		target.label.visible = false
-		target.integrity.visible = false
-		target.rig.play("defeat", { force: true })
-		if (clean) {
-			this.effects.spawnDefeat(
-				this.targetCorePosition(target),
-				this.stage,
-			)
-		}
-	}
-
-	private promoteTargets(resolvedOrdinal: number) {
-		this.pressureMs = 0
-		this.pressureStrikeStarted = false
-		this.pressureLine.clear()
-		const activeIndex = this.staged.findIndex(
-			(slot) => slot.ordinal === resolvedOrdinal,
-		)
-		if (activeIndex >= 0) {
-			const [resolved] = this.staged.splice(activeIndex, 1)
-			this.retiring.push(resolved)
-		}
-		while (this.staged.length > 2) {
-			const overflow = this.staged.pop()
-			if (overflow) this.available.push(overflow)
-		}
-		const slot = this.available.shift()
-			?? createEnemy(this.enemyAssets, this.stage)
-		if (!slot.root.parent) this.actors.addChild(slot.root)
-		slot.ordinal = resolvedOrdinal + 3
-		slot.role = "distant"
-		slot.retireMs = 0
-		slot.hitMs = 0
-		slot.transition = null
-		slot.root.visible = true
-		slot.root.position.set(0, 0)
-		slot.root.alpha = 1
-		slot.baseScale = this.targetBaseScale(slot)
-		slot.rig.setTint(WHITE_TINT)
-		slot.rig.play("locomotion", { force: true })
-		this.staged.push(slot)
-		for (const [index, staged] of this.staged.entries()) {
-			staged.role = index === 0
-				? "active"
-				: index === 1
-					? "upcoming"
-					: "distant"
-		}
-		this.layoutStaged(true)
-		this.redrawIntegrity()
-	}
-
-	private targetBaseScale(slot: EnemySlot) {
-		const compact = this.width < SCENE.compactWidth
-		const targetHeight = compact
-			? SCENE.targetHeight.compact
-			: SCENE.targetHeight.desktop
-		const targetPixels = Math.min(
-			this.height * targetHeight.ratio,
-			targetHeight.max,
-		)
-		return targetPixels / slot.rig.getVisualSize().height
+	private slotForOrdinal(ordinal: number) {
+		return this.formation.getActiveTargets().get(ordinal)
 	}
 
 	private startCharacterTravel(
 		index: number,
 		wordLength: number,
-		target: EnemySlot,
+		target: FormationTarget,
 	) {
 		const gap = target.root.x - (
 			this.width * (
@@ -596,7 +464,7 @@ export class CombatDirector {
 		if (this.overdriveMs > 0) {
 			this.overdriveMs = Math.max(0, this.overdriveMs - deltaMs)
 			const progress = 1 - this.overdriveMs / MOTION.overdriveMs
-			const target = this.staged[0] ?? this.retiring.at(-1)
+			const target = this.slotForOrdinal(this.state.targetOrdinal)
 			const targetX = target?.root.x ?? this.width * SCENE.targetAnchor.desktop.x
 			const anchorX = this.width * (
 				this.width < SCENE.compactWidth
@@ -654,47 +522,9 @@ export class CombatDirector {
 		)
 	}
 
-	private updateTargetTransitions(deltaMs: number) {
-		for (const slot of this.staged) {
-			const transition = slot.transition
-			if (!transition) continue
-			transition.elapsedMs = Math.min(
-				transition.durationMs,
-				transition.elapsedMs + deltaMs,
-			)
-			const progress = transition.elapsedMs / transition.durationMs
-			const eased = 1 + 2.70158 * (progress - 1) ** 3
-				+ 1.70158 * (progress - 1) ** 2
-			slot.root.position.set(
-				transition.fromX
-					+ (transition.toX - transition.fromX) * eased,
-				transition.fromY
-					+ (transition.toY - transition.fromY) * eased,
-			)
-			slot.root.alpha = transition.fromAlpha
-				+ (transition.toAlpha - transition.fromAlpha) * progress
-			if (progress >= 1) slot.transition = null
-		}
-	}
-
-	private updateRetiring(deltaMs: number) {
-		for (let index = this.retiring.length - 1; index >= 0; index -= 1) {
-			const slot = this.retiring[index]
-			slot.retireMs = Math.max(0, slot.retireMs - deltaMs)
-			slot.root.alpha = slot.retireMs / MOTION.defeatMs
-			if (slot.retireMs > 0) continue
-			slot.role = "available"
-			slot.root.visible = false
-			slot.root.alpha = 1
-			slot.rig.controller.clear()
-			this.retiring.splice(index, 1)
-			this.available.push(slot)
-		}
-	}
-
 	private updateHits(deltaMs: number) {
-		for (const slot of [...this.staged, ...this.retiring]) {
-			if (slot.hitMs > 0) {
+		for (const slot of this.formation.getActiveTargets().values()) {
+			if (slot.isHit || slot.hitMs > 0) {
 				slot.hitMs = Math.max(0, slot.hitMs - deltaMs)
 				slot.rig.setTint(V.text)
 			} else {
@@ -732,7 +562,7 @@ export class CombatDirector {
 			&& elapsed >= MOTION.enemyAnticipationMs
 		) {
 			this.pressureStrikeStarted = true
-			const active = this.staged[0]
+			const active = this.slotForOrdinal(this.state.targetOrdinal)
 			active?.rig.play("attack", { force: true })
 			this.warden.rig.play("block", { force: true })
 			if (active) {
@@ -745,7 +575,7 @@ export class CombatDirector {
 		}
 		if (this.pressureMs === 0) {
 			this.pressureLine.clear()
-			this.staged[0]?.rig.play("locomotion", { force: true })
+			this.slotForOrdinal(this.state.targetOrdinal)?.rig.play("locomotion", { force: true })
 			this.warden.rig.play(
 				this.state.overdriveCharge >= 100 ? "ready" : "idle",
 				{ force: true },
@@ -754,7 +584,7 @@ export class CombatDirector {
 	}
 
 	private startPressure() {
-		const active = this.staged[0]
+		const active = this.slotForOrdinal(this.state.targetOrdinal)
 		if (!active) return
 		this.pressureMs = MOTION.enemyAttackMs
 		this.pressureStrikeStarted = false
@@ -777,7 +607,7 @@ export class CombatDirector {
 		this.pressureMs = 0
 		this.pressureLine.clear()
 		this.warden.rig.play("block", { force: true })
-		this.staged[0]?.rig.play("special", { force: true })
+		this.slotForOrdinal(this.state.targetOrdinal)?.rig.play("special", { force: true })
 		const anchor = this.warden.rig.getPartGlobalPosition("near_forearm")
 		this.effects.spawnShield({
 			x: anchor.x + this.width * SCENE.aegisShield.anchorX,
@@ -795,7 +625,7 @@ export class CombatDirector {
 		this.rescueCallout.alpha = Math.min(1, this.aegisMs / 150)
 		if (this.aegisMs === 0) {
 			this.rescueCallout.text = ""
-			this.staged[0]?.rig.play("locomotion", { force: true })
+			this.slotForOrdinal(this.state.targetOrdinal)?.rig.play("locomotion", { force: true })
 			this.warden.rig.play("ready", { force: true })
 		}
 	}
@@ -813,104 +643,6 @@ export class CombatDirector {
 		contact.target.rig.play("hit")
 	}
 
-	private layoutStaged(animate: boolean) {
-		for (const [index, slot] of this.staged.entries()) {
-			const role = index === 0
-				? "active"
-				: index === 1
-					? "upcoming"
-					: "distant"
-			slot.role = role
-			this.layoutSlot(slot, role, animate)
-		}
-	}
-
-	private layoutSlot(
-		slot: EnemySlot,
-		role: Exclude<TargetRole, "retiring" | "available">,
-		animate: boolean,
-	) {
-		const compact = this.width < SCENE.compactWidth
-		const anchor = compact
-			? SCENE.targetAnchor.compact
-			: SCENE.targetAnchor.desktop
-		const lanes = compact
-			? SCENE.targetLanes.compact
-			: SCENE.targetLanes.desktop
-		const staging = compact
-			? SCENE.targetStaging.compact
-			: SCENE.targetStaging.desktop
-		const roleIndex = role === "active" ? 0 : role === "upcoming" ? 1 : 2
-		const x = this.width * (
-			anchor.x
-			+ (
-				roleIndex === 1
-					? staging.upcomingOffsetX
-					: roleIndex === 2
-						? staging.distantOffsetX
-						: 0
-			)
-		)
-		const y = this.height * lanes[targetLane(slot.ordinal)]
-		const scale = slot.baseScale * (
-			role === "active"
-				? 1
-				: role === "upcoming"
-					? staging.upcomingScale
-					: staging.distantScale
-		)
-		const alpha = role === "active"
-			? 1
-			: role === "upcoming"
-				? staging.upcomingAlpha
-				: staging.distantAlpha
-		slot.rig.root.scale.set(scale)
-		slot.label.visible = role === "active"
-		slot.integrity.visible = role === "active"
-		slot.shadow.y = (
-			this.height * (
-				compact
-					? SCENE.targetHeight.compact.ratio
-					: SCENE.targetHeight.desktop.ratio
-			)
-		) * 0.4
-		const targetPixels = Math.min(
-			this.height * (
-				compact
-					? SCENE.targetHeight.compact.ratio
-					: SCENE.targetHeight.desktop.ratio
-			),
-			compact
-				? SCENE.targetHeight.compact.max
-				: SCENE.targetHeight.desktop.max,
-		)
-		slot.label.position.set(0, -targetPixels / 2 - 24)
-		slot.integrity.position.set(0, -targetPixels / 2)
-		slot.root.visible = true
-
-		if (!animate) {
-			slot.root.position.set(x, y)
-			slot.root.alpha = alpha
-			slot.transition = null
-			return
-		}
-		const entry = compact
-			? SCENE.targetEntry.compact
-			: SCENE.targetEntry.desktop
-		const entering = role === "distant"
-			&& slot.root.alpha >= 0.99
-			&& slot.root.x === 0
-		slot.transition = {
-			elapsedMs: 0,
-			durationMs: MOTION.entryMs,
-			fromX: entering ? x + entry : slot.root.x,
-			fromY: entering ? y : slot.root.y,
-			toX: x,
-			toY: y,
-			fromAlpha: entering ? 0 : slot.root.alpha,
-			toAlpha: alpha,
-		}
-	}
 
 	private redrawSignalNodes() {
 		for (const child of this.signalNodes.removeChildren()) {
@@ -963,7 +695,7 @@ export class CombatDirector {
 	}
 
 	private redrawIntegrity() {
-		const active = this.staged[0]
+		const active = this.slotForOrdinal(this.state.targetOrdinal)
 		if (!active) return
 		drawTargetIntegrity(
 			active,
@@ -1022,7 +754,7 @@ export class CombatDirector {
 		}
 	}
 
-	private targetCorePosition(slot: EnemySlot) {
+	private targetCorePosition(slot: FormationTarget) {
 		return slot.rig.getPartGlobalPosition(
 			this.stage === "warmup"
 				? "core_torso"
@@ -1032,12 +764,9 @@ export class CombatDirector {
 		)
 	}
 
-	private slotForOrdinal(ordinal: number) {
-		return [...this.staged, ...this.retiring]
-			.find((slot) => slot.ordinal === ordinal)
-	}
 
-	private spawnScorePopup(slot: EnemySlot, scoreGain: number) {
+
+	private spawnScorePopup(slot: FormationTarget, scoreGain: number) {
 		while (this.popups.length >= EFFECTS.scorePopupCap) {
 			const oldest = this.popups.shift()
 			oldest?.node.destroy()
@@ -1117,7 +846,7 @@ export class CombatDirector {
 				y: warden.y - SCENE.integrityWidth / 2,
 			}
 		}
-		const active = this.staged[0]
+		const active = this.slotForOrdinal(this.state.targetOrdinal)
 		if (active) {
 			const position = this.targetCorePosition(active)
 			return {

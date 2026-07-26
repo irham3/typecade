@@ -3,21 +3,22 @@ import {
 	Container,
 	Graphics,
 	Ticker,
-	type Texture,
 } from "pixi.js"
 import type { StageType, ThreatBand } from "@/lib/engine/overdrive"
 import { sfx } from "@/features/overdrive/fx/sfx"
 import type { OverdrivePresentationEvent } from "../presentation/events"
 import type { LoadedRigAssets } from "./assets/combat-assets"
+import type { LoadedEnvironmentAssets } from "./environment/environment-assets"
+import { EnvironmentDirector } from "./environment/environment-director"
+import { CameraDirector } from "./camera/camera-director"
+import { selectEncounterBeat } from "./choreography/expedition-selectors"
 import { CombatDirector } from "./choreography/combat-director"
 import {
-	createBackground,
 	createCommandRail,
 	drawCommandRail,
 	MOTION,
 	SCENE,
 	V,
-	type BackgroundArt,
 	type CommandRailArt,
 } from "./visual-assets"
 
@@ -48,7 +49,7 @@ export type SceneState = {
 }
 
 export type CombatSceneAssets = {
-	arena: Texture
+	environment: LoadedEnvironmentAssets
 	warden: LoadedRigAssets
 	enemy: LoadedRigAssets
 }
@@ -56,8 +57,11 @@ export type CombatSceneAssets = {
 export class CombatScene {
 	readonly app: Application
 	readonly stage = new Container()
+	// cameraRoot receives camera transforms. overlay stays fixed.
+	private readonly cameraRoot = new Container()
 	private readonly overlay = new Container()
-	private readonly background: BackgroundArt
+	private readonly environment: EnvironmentDirector
+	private readonly camera: CameraDirector
 	private readonly director: CombatDirector
 	private readonly rail: CommandRailArt
 	private readonly lowTimeEdge = new Graphics()
@@ -71,7 +75,6 @@ export class CombatScene {
 	private wordShakeMs = 0
 	private typoBarsMs = 0
 	private equationMs = 0
-	private stageShakeMs = 0
 	private hitstopMs = 0
 	private lastCaretIndex = -1
 	private lastDirty = false
@@ -85,19 +88,38 @@ export class CombatScene {
 	) {
 		this.app = app
 		this.state = initial
-		this.background = createBackground(assets.arena)
+
+		this.environment = new EnvironmentDirector(assets.environment, {
+			stage: initial.stage,
+			reducedMotion: initial.reducedMotion,
+			focusPaused: initial.focusPaused,
+			targetOrdinal: initial.targetOrdinal,
+			overdriveCharge: initial.overdriveCharge,
+		})
+		this.camera = new CameraDirector(this.cameraRoot, {
+			reducedMotion: initial.reducedMotion,
+			screenShake: initial.screenShake,
+			focusPaused: initial.focusPaused,
+			overdriveCharge: initial.overdriveCharge,
+		})
 		this.director = new CombatDirector(initial, assets)
 		this.rail = createCommandRail()
-		this.stage.addChild(
-			this.background.root,
+
+		// World content inside cameraRoot (can be translated by camera)
+		this.cameraRoot.addChild(
+			this.environment.worldBack,
 			this.director.root,
-			this.overlay,
+			this.environment.worldFront,
 		)
+
+		// Fixed overlay (never translated by camera)
 		this.overlay.addChild(
 			this.rail.root,
 			this.lowTimeEdge,
 			this.typoBars,
 		)
+
+		this.stage.addChild(this.cameraRoot, this.overlay)
 		this.app.stage.addChild(this.stage)
 		this.resize()
 		this.sync(initial)
@@ -110,7 +132,8 @@ export class CombatScene {
 		if (width === this.width && height === this.height) return
 		this.width = width
 		this.height = height
-		this.background.redraw(width, height, this.state.stage)
+		this.environment.resize(width, height)
+		this.camera.resize(width, height)
 		this.director.resize(width, height)
 		this.rail.root.position.set(
 			width * SCENE.wordAnchor.x,
@@ -123,7 +146,22 @@ export class CombatScene {
 	sync = (next: SceneState) => {
 		const wordChanged = next.currentWord !== this.state.currentWord
 		this.state = next
+
+		this.environment.sync({
+			stage: next.stage,
+			reducedMotion: next.reducedMotion,
+			focusPaused: next.focusPaused,
+			targetOrdinal: next.targetOrdinal,
+			overdriveCharge: next.overdriveCharge,
+		})
+		this.camera.sync({
+			reducedMotion: next.reducedMotion,
+			screenShake: next.screenShake,
+			focusPaused: next.focusPaused,
+			overdriveCharge: next.overdriveCharge,
+		})
 		this.director.sync(next)
+
 		if (
 			wordChanged
 			|| next.caretIndex !== this.lastCaretIndex
@@ -139,9 +177,15 @@ export class CombatScene {
 			this.lastUpcoming = next.upcomingWords
 		}
 		this.drawBlackout()
+
+		// Sync encounter beat to the environment director
+		const beat = selectEncounterBeat(next.score, next.quota)
+		this.environment.handleBeat(beat)
 	}
 
 	handle(event: OverdrivePresentationEvent) {
+		this.environment.handle(event)
+		this.camera.handle(event)
 		this.director.handle(event)
 		if (event.type === "accepted-character") {
 			sfx.shot(event.combo)
@@ -166,9 +210,6 @@ export class CombatScene {
 		if (event.type === "stage-cleared") {
 			sfx.stageClear()
 			this.hitstopMs = this.state.reducedMotion ? 0 : MOTION.hitstopMs
-			this.stageShakeMs = this.state.reducedMotion || !this.state.screenShake
-				? 0
-				: MOTION.stageShakeMs
 			return
 		}
 		if (event.type === "run-over") sfx.runOver()
@@ -177,6 +218,8 @@ export class CombatScene {
 	destroy = () => {
 		this.app.ticker.remove(this.tick)
 		this.director.destroy()
+		this.camera.destroy()
+		this.environment.destroy()
 		if (this.stage.parent) this.stage.parent.removeChild(this.stage)
 		if (!this.stage.destroyed) this.stage.destroy({ children: true })
 	}
@@ -266,7 +309,7 @@ export class CombatScene {
 	}
 
 	private drawBlackout() {
-		const blackout = this.background.blackout
+		const blackout = this.environment.blackout
 		blackout.clear()
 		if (this.state.activeGlitch !== "blackout") return
 		const compact = this.width < SCENE.compactWidth
@@ -294,11 +337,13 @@ export class CombatScene {
 		this.resize()
 		this.elapsedMs += delta
 		this.wordAgeMs += delta
-		this.background.tick(this.elapsedMs, this.state.reducedMotion)
 		if (this.hitstopMs > 0) {
 			this.hitstopMs = Math.max(0, this.hitstopMs - delta)
 			return
 		}
+		this.camera.update(delta)
+		this.environment.setCameraTravel(this.cameraRoot.x, this.cameraRoot.scale.x)
+		this.environment.update(delta)
 		this.director.update(delta)
 		this.updateRailMotion(delta)
 		this.updateStageFeedback(delta)
@@ -342,16 +387,6 @@ export class CombatScene {
 			this.typoBars.alpha = this.typoBarsMs / MOTION.typoMs
 		} else {
 			this.typoBars.clear()
-		}
-		if (this.stageShakeMs > 0) {
-			this.stageShakeMs = Math.max(0, this.stageShakeMs - delta)
-			const step = Math.floor(this.stageShakeMs / 20)
-			this.stage.position.set(
-				step % 2 === 0 ? 6 : -6,
-				step % 3 === 0 ? 3 : -3,
-			)
-		} else {
-			this.stage.position.set(0, 0)
 		}
 		const lowTime = this.state.timeLeftMs <= 10_000
 		const lowTimeAlpha = lowTime

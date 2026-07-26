@@ -127,6 +127,8 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
         host.dataset.rigFallback = String(
           assets.warden.fallback || assets.enemy.fallback,
         )
+        host.dataset.environmentId = assets.environment.definition.id
+        host.dataset.environmentFallback = String(assets.environment.fallback)
 
         const scene = new CombatScene(app, latestRef.current, assets)
         sceneRef.current = scene

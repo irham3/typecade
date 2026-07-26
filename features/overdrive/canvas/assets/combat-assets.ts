@@ -1,8 +1,9 @@
+import { Assets } from "pixi.js"
+import type { Spritesheet, Texture } from "pixi.js"
 import {
-	Assets,
-	Texture,
-} from "pixi.js"
-import type { Spritesheet } from "pixi.js"
+	loadEnvironmentAssets,
+	type LoadedEnvironmentAssets,
+} from "../environment/environment-assets"
 import type { StageType } from "@/lib/engine/overdrive"
 import type {
 	AnimationClip,
@@ -264,12 +265,12 @@ async function loadWithFallback(rigId: CombatRigId) {
 export async function loadCombatRigAssets(stage: StageType): Promise<{
 	warden: LoadedRigAssets
 	enemy: LoadedRigAssets
-	arena: Texture
+	environment: LoadedEnvironmentAssets
 }> {
-	const [warden, enemy, arena] = await Promise.all([
+	const [warden, enemy, environment] = await Promise.all([
 		loadWithFallback("warden"),
 		loadWithFallback(stageEnemy[stage]),
-		Assets.load<Texture>("/overdrive/art/signal-trench-arena-v2.png"),
+		loadEnvironmentAssets(),
 	])
-	return { warden, enemy, arena }
+	return { warden, enemy, environment }
 }

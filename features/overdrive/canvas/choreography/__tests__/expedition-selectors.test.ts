@@ -7,17 +7,17 @@ import {
 
 describe("selectEncounterBeat", () => {
 	it("uses the canonical quota boundaries", () => {
-		expect(selectEncounterBeat(0, 100, 0)).toBe("ingress")
-		expect(selectEncounterBeat(39, 100, 9)).toBe("ingress")
-		expect(selectEncounterBeat(40, 100, 10)).toBe("relay-breach")
-		expect(selectEncounterBeat(74, 100, 18)).toBe("relay-breach")
-		expect(selectEncounterBeat(75, 100, 19)).toBe("extraction")
-		expect(selectEncounterBeat(140, 100, 30)).toBe("extraction")
+		expect(selectEncounterBeat(0, 100)).toBe("ingress")
+		expect(selectEncounterBeat(39, 100)).toBe("ingress")
+		expect(selectEncounterBeat(40, 100)).toBe("relay-breach")
+		expect(selectEncounterBeat(74, 100)).toBe("relay-breach")
+		expect(selectEncounterBeat(75, 100)).toBe("extraction")
+		expect(selectEncounterBeat(140, 100)).toBe("extraction")
 	})
 
 	it("does not create alternate progress from WPM-like input", () => {
-		expect(selectEncounterBeat(0, 0, 90)).toBe("ingress")
-		expect(selectEncounterBeat(-10, 100, 90)).toBe("ingress")
+		expect(selectEncounterBeat(0, 0)).toBe("ingress")
+		expect(selectEncounterBeat(-10, 100)).toBe("ingress")
 	})
 })
 
