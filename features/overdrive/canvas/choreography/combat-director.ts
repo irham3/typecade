@@ -723,7 +723,10 @@ export class CombatDirector {
 			},
 		})
 		node.anchor.set(0.5)
-		node.position.copyFrom(this.targetCorePosition(slot))
+		node.position.set(
+			this.width * SCENE.wordAnchor.x,
+			this.height * SCENE.wordAnchor.y,
+		)
 		this.effects.root.addChild(node)
 		this.popups.push({
 			node,
@@ -736,8 +739,6 @@ export class CombatDirector {
 			const popup = this.popups[index]
 			popup.lifeMs = Math.max(0, popup.lifeMs - deltaMs)
 			const progress = 1 - popup.lifeMs / MOTION.defeatMs
-			popup.node.x += EFFECTS.scorePopupTravel
-				* deltaMs / MOTION.defeatMs
 			popup.node.y -= EFFECTS.scorePopupTravel
 				* deltaMs / MOTION.defeatMs
 			popup.node.alpha = 1 - progress
@@ -782,10 +783,9 @@ export class CombatDirector {
 			|| target === "time"
 			|| target === "rail"
 		) {
-			const warden = this.warden.rig.getPartGlobalPosition("torso")
 			return {
-				x: warden.x,
-				y: warden.y - SCENE.integrityWidth / 2,
+				x: this.width * SCENE.wordAnchor.x,
+				y: this.height * SCENE.wordAnchor.y,
 			}
 		}
 		const active = this.slotForOrdinal(this.state.targetOrdinal)

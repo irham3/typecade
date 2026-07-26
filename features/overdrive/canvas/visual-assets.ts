@@ -231,7 +231,7 @@ export const EFFECTS = {
 	defeatFragments: 18,
 	fragmentWidth: 9,
 	fragmentHeight: 4,
-	scorePopupTravel: 24,
+	scorePopupTravel: 12,
 	scorePopupCap: 3,
 } as const
 
