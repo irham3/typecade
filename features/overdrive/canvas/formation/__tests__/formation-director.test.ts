@@ -33,7 +33,7 @@ function makeMockAssets(): LoadedRigAssets {
 				{ id: "packet-stalker", enabledPartIds: [], baseScale: 1 },
 			],
 		},
-		textures: {} as any,
+		textures: {} as Record<string, import("pixi.js").Texture>,
 		fallback: false,
 	}
 }

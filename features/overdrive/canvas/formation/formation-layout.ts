@@ -9,7 +9,6 @@ export type EnvironmentLayout = {
 }
 
 export function computeFormationLayout(
-	director: EnvironmentDirector,
 	width: number,
 	height: number,
 ): EnvironmentLayout {

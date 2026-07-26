@@ -58,7 +58,7 @@ export function Menu() {
 			<main className="relative min-h-dvh overflow-y-auto bg-bg-0 px-4 text-text-hi sm:px-6">
 				<div className="pointer-events-none fixed inset-0">
 					<Image
-						src="/overdrive/art/signal-trench-arena-v2.png"
+						src="/overdrive/art/environment/layers/bg_back.png"
 						alt=""
 						fill
 						priority
