@@ -11,8 +11,21 @@ export function useGameInput(enabled: boolean) {
 		const handler = (e: KeyboardEvent) => {
 			if (e.ctrlKey || e.metaKey || e.altKey) return
 
-			// Handle space completion explicitly based on engine behavior.
-			// The engine accepts spaces even if word is not complete, but only completes it if caretIndex === length.
+			if (e.key === "Enter") {
+				e.preventDefault()
+				const state = useGame.getState()
+				if (
+					state.screen === "stage"
+					&& state.zone >= 3
+					&& state.caretIndex === state.currentWord.length
+					&& state.overdriveCharge >= 100
+					&& !state.wordDirty
+				) {
+					emitPresentationEvent({ type: "overdrive-intent" })
+					state.api?.releaseOverdrive()
+				}
+				return
+			}
 
 			if (e.key === "Backspace") {
 				e.preventDefault()
@@ -43,31 +56,27 @@ export function useGameInput(enabled: boolean) {
 				sfx.unlock()
 				sfx.key()
 
-				if (e.key === " ") {
-					// Check if a word was completed by this space
-					// Word complete handled by store.ts syncing engine events
-				} else if (
-					before.caretIndex < before.currentWord.length
+				if (
+					e.key !== " "
+					&& before.caretIndex < before.currentWord.length
 					&& after.stageTypos > before.stageTypos
 				) {
-					// We typed a visible character that wasn't space, and caret didn't advance.
-					// This implies a typo occurred (unless we are past the word length).
 					emitPresentationEvent({
 						type: "rejected-character",
-						character: e.key
+						character: e.key,
 					})
 				}
 
 				if (after.mult > before.mult) {
 					emitPresentationEvent({
 						type: "mult-increased",
-						mult: after.mult
+						mult: after.mult,
 					})
 				}
 				if (after.stage !== before.stage) {
 					emitPresentationEvent({
 						type: "stage-entered",
-						stage: after.stage
+						stage: after.stage,
 					})
 				}
 			}

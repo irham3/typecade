@@ -33,6 +33,7 @@ export type OverdrivePresentationEvent =
   | { id: number; type: "stage-entered"; stage: StageType }
   | { id: number; type: "stage-cleared" }
   | { id: number; type: "overdrive-ready" }
+  | { id: number; type: "overdrive-intent" }
   | { id: number; type: "aegis-rescue"; rescueNumber: number; timeAddedMs: number }
   | { id: number; type: "run-over" }
   | {

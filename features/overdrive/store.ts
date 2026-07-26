@@ -24,6 +24,7 @@ type RunApi = ReturnType<typeof createRun>
 
 type GameStore = RunSnapshot & {
 	api?: RunApi
+	armedItemIds: string[]
 	paused: boolean
 	stageReady: boolean
 	coachingEnabled: boolean
@@ -82,7 +83,11 @@ export const useGame = create<GameStore>((set, get) => {
 	}
 
 	function attach(api: RunApi) {
-		const sync = () => set({ ...api.snapshot(), api })
+		const sync = () => set({
+			...api.snapshot(),
+			api,
+			armedItemIds: api.previewItemTriggers(),
+		})
 		const transition = (action: () => void) => {
 			const before = api.snapshot()
 			action()
@@ -223,6 +228,7 @@ export const useGame = create<GameStore>((set, get) => {
 			start: api.start,
 			skipWarmup: api.skipWarmup,
 			feedChar: api.feedChar,
+			releaseOverdrive: api.releaseOverdrive,
 			backspace: api.backspace,
 			advance: api.advance,
 			continueToNextStage: api.continueToNextStage,
@@ -249,6 +255,7 @@ export const useGame = create<GameStore>((set, get) => {
 			}
 		}
 		api.feedChar = (character) => transition(() => raw.feedChar(character))
+		api.releaseOverdrive = () => transition(raw.releaseOverdrive)
 		api.backspace = () => transition(raw.backspace)
 		api.advance = (ms) => transition(() => raw.advance(ms))
 		api.continueToNextStage = () => {
@@ -347,7 +354,12 @@ export const useGame = create<GameStore>((set, get) => {
 			return loaded
 		}
 
-		set({ ...api.snapshot(), api, paused: false })
+		set({
+			...api.snapshot(),
+			api,
+			armedItemIds: api.previewItemTriggers(),
+			paused: false,
+		})
 		return api
 	}
 
@@ -380,6 +392,7 @@ export const useGame = create<GameStore>((set, get) => {
 
 	return {
 		...initialSnapshot,
+		armedItemIds: [],
 		paused: false,
 		stageReady: false,
 		coachingEnabled: false,

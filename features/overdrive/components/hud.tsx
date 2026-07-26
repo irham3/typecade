@@ -77,6 +77,7 @@ export function Hud() {
 		focusPaused: snapshot.focusPaused,
 		threatBand: snapshot.threatBand,
 		overdriveCharge: snapshot.overdriveCharge,
+		armedItemIds: snapshot.armedItemIds,
 		setPaused: snapshot.setPaused,
 		api: snapshot.api,
 	})))
@@ -256,11 +257,13 @@ export function Hud() {
 							)
 							const definition = KEYCAPS[id]
 							const triggered = latestItem?.type === "item-triggered" && latestItem.itemId === id
+							const armed = state.armedItemIds.includes(id)
 							return (
 								<KeycapSlot
 									key={`${id}-${triggered ? latestItem.id : 0}`}
 									rarity={definition.rarity}
-									className={`h-11 w-11 sm:h-16 sm:w-16 ${triggered ? "overdrive-slot-proc" : ""}`}
+									className={`h-11 w-11 sm:h-16 sm:w-16 ${triggered ? "overdrive-slot-proc" : ""} ${armed ? "overdrive-slot-armed" : ""}`}
+									data-armed={armed || undefined}
 									aria-label={`${definition.name} Keycap`}
 									tooltip={
 										<ItemTooltipContent
@@ -319,7 +322,9 @@ export function Hud() {
 					ACCURACY
 				</span>
 				<span className={state.overdriveCharge >= 100 ? "text-acc-yellow" : "text-acc-cyan"}>
-					OVERDRIVE {state.overdriveCharge}%
+					{state.overdriveCharge >= 100 && state.zone >= 3
+						? "ENTER: OVERDRIVE"
+						: `OVERDRIVE ${state.overdriveCharge}%`}
 				</span>
 				<span><span className="text-text-hi">{state.wpm}</span> WPM</span>
 			</footer>
