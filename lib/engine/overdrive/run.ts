@@ -27,6 +27,7 @@ import {
 } from "./constants"
 import { getStageQuota, isStandardClear, nextStagePosition } from "./progression"
 import { createRng } from "../rng"
+import { createFormationSchedule } from "./formations"
 import { GLITCHES, KEYCAPS, MACROS } from "./items"
 import type {
 	BaseItemContext,
@@ -44,7 +45,7 @@ const MAX_MACROS = 2
 const SHOP_REROLL_BASE = 5
 const BUILD_TRIGGER_BIAS = 0.12
 const ANTI_REPEAT_WINDOW = 30
-const SAVE_VERSION = 5
+const SAVE_VERSION = 6
 
 function stageDurationMs(stage: StageType): number {
 	return STAGE_DURATION_BY_TYPE[stage]
@@ -129,6 +130,7 @@ export function createRun(opts: CreateRunOptions) {
 	let wordsRng = rootRng.fork("words")
 	let shopRng = rootRng.fork("shop")
 	let glitchRng = rootRng.fork("glitch")
+	let formationRng = rootRng.fork("formation")
 	let recentWords: string[] = []
 
 	const startingKeycaps = (opts.startingKeycaps ?? []).filter((id) => KEYCAPS[id]).slice(0, MAX_KEYCAPS)
@@ -150,6 +152,7 @@ export function createRun(opts: CreateRunOptions) {
 		threatBand: threatBandForZone(startingZone),
 		overdriveCharge: 0,
 		targetOrdinal: 0,
+		formationSchedule: [],
 		score: 0,
 		runScore: 0,
 		standardScore: 0,
@@ -204,6 +207,7 @@ export function createRun(opts: CreateRunOptions) {
 		wordsRng = rootRng.fork("words")
 		shopRng = rootRng.fork("shop")
 		glitchRng = rootRng.fork("glitch")
+		formationRng = rootRng.fork("formation")
 		recentWords = []
 	}
 
@@ -221,6 +225,7 @@ export function createRun(opts: CreateRunOptions) {
 			macros: [...state.macros],
 			shopKeycaps: [...state.shopKeycaps],
 			upcomingWords: [...state.upcomingWords],
+			formationSchedule: [...state.formationSchedule],
 			glitchState: state.glitchState ? { ...state.glitchState } : null,
 			stageItemImpact: cloneImpactMap(state.stageItemImpact),
 			runItemImpact: cloneImpactMap(state.runItemImpact),
@@ -409,6 +414,11 @@ export function createRun(opts: CreateRunOptions) {
 		state.wordDirty = false
 		state.caretIndex = 0
 		state.stageItemImpact = {}
+		state.formationSchedule = createFormationSchedule(
+			state.stage,
+			state.zone,
+			formationRng,
+		)
 		state.tokenBreakdown = undefined
 		state.glitchState = null
 		state.currentWord = getBuildBiasedWord()
@@ -469,6 +479,7 @@ export function createRun(opts: CreateRunOptions) {
 			threatBand: threatBandForZone(startingZone),
 			overdriveCharge: 0,
 			targetOrdinal: 0,
+			formationSchedule: [],
 			score: 0,
 			runScore: 0,
 			standardScore: 0,
@@ -1064,6 +1075,7 @@ export function createRun(opts: CreateRunOptions) {
 				overdriveCharge: Number(save.state.overdriveCharge ?? 0),
 				targetOrdinal: Number(save.state.targetOrdinal ?? 0),
 				totalTokensEarned: Number(save.state.totalTokensEarned ?? 0),
+				formationSchedule: [...save.state.formationSchedule],
 				keycaps: [...save.state.keycaps],
 				macros: [...save.state.macros],
 				shopKeycaps: [...save.state.shopKeycaps],

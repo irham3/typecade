@@ -2,6 +2,16 @@ export type StageType = "warmup" | "rush" | "glitch"
 export type RunMode = "free" | "daily" | "practice"
 export type WordPoolLanguage = "EN" | "ID"
 export type ThreatBand = "protected" | "pressure" | "overclocked" | "lethal"
+export type FormationVariantId =
+	| "packet-stalker"
+	| "cache-hound"
+	| "relay-ram"
+	| "needle-wraith"
+	| "vector-mantis"
+	| "spine-courier"
+	| "null-crown"
+	| "crown-hand"
+	| "void-shard"
 
 export type Screen =
 	| "menu"
@@ -42,6 +52,7 @@ export type RunSnapshot = {
 	threatBand: ThreatBand
 	overdriveCharge: number
 	targetOrdinal: number
+	formationSchedule: FormationVariantId[]
 	score: number
 	runScore: number
 	standardScore: number
