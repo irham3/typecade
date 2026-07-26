@@ -16,11 +16,11 @@ Five rules, in priority order:
 4. Max 1 glow layer per element. A second glow gets deleted.
 5. Preserve silhouette and readability before adding detail.
 
-## Original asset language: Signal Siege — character combat
+## Original asset language: Signal Expedition — typing-driven arcade combat
 
 - The visual identity combines original raster character/environment art with custom code-native **Typecade Glyphs**: key matrices, brackets, split stems, scan marks, and corrupted letterforms.
 - The player is the **Keystone Warden**: a non-human mechanical sentinel with key-switch armor, an oversized keycap shoulder, a readable visor slit, and a forearm typing cannon. Its silhouette is broad, grounded, and angled toward the target.
-- Warm-up targets are **Packet Stalkers**, Rush targets are **Needle Wraiths**, and Glitch targets are the **Null Crown**. Each class has a distinct silhouette and remains recognizable at 96px.
+- Warm-up targets are the **Packet family** (Packet Stalker, Cache Hound, Relay Ram), Rush targets are the **Needle family** (Needle Wraith, Vector Mantis, Spine Courier), and Glitch targets are the **Null family** (Null Crown, Crown Hand, Void Shard). Every variant has a distinct silhouette and remains recognizable at 96px.
 - Character rendering style: premium stylized 3D source renders converted into modular 2D rigs, hard-surface cel shading, restrained material texture, graphic shadow shapes, and no photorealistic detail. Character art uses one orthographic side-facing three-quarter camera so attack direction remains obvious.
 - Environment rendering style: cyber-industrial signal trench with layered relay towers, keyboard-plate architecture, cables, and controlled haze. It uses the same hard-surface painted language and contains no readable text.
 - No cartoon proportions, cute faces, human protagonists, generic spaceships, mascots, clip art, emoji, photorealism, visual references to copyrighted characters, or unrelated asset packs.
@@ -116,8 +116,8 @@ Two fonts, no more:
 | Target lane y: high / mid / low | 42% / 48% / 54% | 40% / 46% / 52% |
 | Upcoming target x offset | 9% | 8% |
 | Distant target x offset | 15% | 14% |
-| Upcoming target scale / alpha | 72% / 0.32 | 68% / 0.28 |
-| Distant target scale / alpha | 52% / 0.16 | 48% / 0.14 |
+| Upcoming target scale / alpha | 72% / 0.54 | 68% / 0.48 |
+| Distant reinforcement scale / alpha | 52% / 0.30 | 48% / 0.26 |
 | Warden visual height | 42% of canvas, max 400px | 26% of canvas, max 216px |
 | Target visual height | 38% of canvas, max 360px | 25% of canvas, max 200px |
 | Active word anchor | x 54%, y 66% | x 54%, y 66% |
@@ -132,15 +132,32 @@ The active word is not attached to the target sprite. It sits on a high-contrast
 
 Combat-effect geometry is also tokenized: the Aegis callout sits at y 34%; its shield spans y 30%-72% from an x 8% Warden offset with a 5% forward edge and 2% back edge. The Overdrive impact column spans y 14%-82%. Overdrive reaches 78% of the Warden-to-target gap, travels outward for 58% of its 320ms lifecycle, and returns during the remaining 42%. An ordinary contact ring has a 28px radius and 2px stroke; a finishing contact uses a 52px radius and 4px stroke. Attack smears are 8px wide. A defeat emits exactly 18 fragments, each inside a 9x4px silhouette. Letter bolts reach contact in 110ms. Effects share one 200-object live cap.
 
+### Signal Trench environment layers
+
+| Layer | Camera travel ratio | Required motion |
+| --- | ---: | --- |
+| Far sky and tower silhouettes | 0.08 | slow light-state change |
+| Distant relay machinery | 0.2 | mechanical phase and authored sparks |
+| Midground cables, doors, and conduits | 0.45 | door travel and cable sway |
+| Battle deck and ground markings | 1 | camera track and impact light |
+| Foreground gantries, pipes, and debris | 1.25 | pooled occlusion passes |
+| Atmosphere and light spill | camera-relative | haze bands and beat fades |
+
+Cable sway stays within 8px of its authored anchor. Ingress keeps the relay aperture closed, Relay breach opens the machinery path, and Extraction opens the Shop route. Reduced motion removes continuous parallax, cable sway, loose particles, and camera impulses while retaining light-state changes, contact shadows, and atmosphere fades.
+
+Character integration layers are mandatory: deck-aligned contact shadow, cyan lower rim, low-alpha stage reflection, deck impact light, foreground leg haze, role-based depth desaturation, and local contact debris. These layers never tint the command rail.
+
 ## Rig asset delivery
 
-- Arena master: 16:9 landscape PNG, minimum 1536×1024 source, center-safe for 4:3 and mobile crops, no text or characters.
+- Environment kit: six isolated source layers using one three-quarter camera, material language, cyan key light, and restrained magenta corruption light. Runtime far and atmosphere layers may use half resolution before character quality is reduced.
 - Editable rig sheets use PNG with at least 12% clear padding around every separated component. Runtime atlases may use alpha WebP after compatibility validation.
 - Every component keeps one identity, material language, light direction, perspective, and scale. Pivot markers stay inside their frame bounds.
-- Warden clips: `idle`, `ready`, `chain-1`, `chain-2`, `chain-3`, `dash`, `execute`, `block`, `hurt`, `recover`, `overdrive`.
+- Warden clips: `idle`, `ready`, `cannon-burst`, `rail-step`, `tether-pull`, `breach-slide`, `recoil-vault`, `crossfire-pivot`, `execution`, `overdrive-breach`, `block`, `hurt`, `recover`.
 - Enemy clips: `locomotion`, `idle`, `anticipation`, `attack`, `hit`, `defeat`, `special`.
+- Every enemy-family atlas contains its three canonical variant silhouettes as base parts plus optional attachments. A stage never loads another enemy-family atlas for variation.
 - Each full-body action uses 8-12 authored key poses where the silhouette changes. Runtime interpolation runs at the renderer frame rate.
-- The first playable stage loads at most 5MB of compressed combat art. A stage keeps at most two full character atlases resident and targets 64MB of GPU texture memory.
+- Grounded Warden clips keep at least one foot within 4px of the authored ground line. Root Y does not create ordinary attack travel.
+- The first playable stage loads at most 5MB of compressed combat art. A stage keeps the Warden atlas, one enemy-family atlas, and one environment kit resident and targets 64MB of GPU texture memory.
 - Character edges must remain crisp at 0.5 scale and contain no chroma-key remnants. Broken joints, scale jumps, floating feet, and camera changes are release blockers.
 
 # 5. Screen Specs
@@ -293,12 +310,12 @@ Budget: transform and opacity animations only (GPU). No width/height/layout anim
 | Warden ready loop | articulated breathing, weight transfer, visor tracking, cannon settling, and foot contact | 1,200ms loop | linear interpolation |
 | Target locomotion | class-specific articulated motion: Packet gait, Needle spine flight, Null plate orbit | 800-1,200ms loop | linear interpolation |
 | Correct letter | letter shifts from `--text-dim` to bright, no transition | 0ms | instant |
-| Accepted character attack | chain clip starts within 50ms and reaches an articulated contact frame within 90ms; recovery may cancel into the next chain | 35ms anticipation + 55ms contact + 90ms recover | cubic-out |
+| Accepted character attack | selected grounded verb starts within 50ms and reaches an articulated contact frame within 90ms; recovery may cancel into the next verb | 35ms anticipation + 55ms contact + 90ms recover | cubic-out |
 | Character hit | enemy articulates away from the contact, moves 8px, and flashes a white silhouette | 90ms | ease-out |
 | Wrong letter | letter flashes `--red`  • underline, active word shakes 4px horizontally | 120ms / 80ms | linear |
-| Word complete | Warden enters `execute` then `recover`; target enters `defeat`, exits 48px and dissolves, score popup rises 24px, 18 fragments | 300ms | ease-out |
+| Word complete | Warden enters `execution` then a backward settle; the target uses its family defeat, exits 48px, and resolves the score popup | 300ms | ease-out |
 | Overdrive ready | Warden enters `ready`, cannon core locks, arena rim pulses once, command rail charge locks, one rising audio cue | 260ms | ease-out |
-| Overdrive release | `overdrive` clip crosses 78% of the Warden-to-target gap; its 58% outward / 42% return travel creates a y 14%-82% impact column and snap-return afterimage | 320ms | cubic-out |
+| Overdrive release | `overdrive-breach` crosses 78% of the Warden-to-target gap; its 58% outward / 42% return travel creates a y 14%-82% impact column and snap-return afterimage | 320ms | cubic-out |
 | Enemy pressure attack | enemy `anticipation` then `attack`, directional line, Warden `block`, contact ring; no camera shake | 240ms + 120ms | ease-in / ease-out |
 | Aegis rescue | lethal enemy `attack`, Warden `block`, shield plane fractures, `+30S` callout, cyan recovery wave | 600ms | ease-out |
 | Next target | upcoming rig promotes to active while the distant rig enters from 48px | 180ms | ease-out-back |
@@ -313,22 +330,61 @@ Budget: transform and opacity animations only (GPU). No width/height/layout anim
 
 Screen shake only on stage clear and Overdrive release, maximum 6px and 3px respectively. KERNEL PANIC may add it in v2; it is outside the locked MVP. Never shake on typos or ordinary words.
 
-Runtime ambient limits: maximum 24 low-contrast motes, each 2px, alpha <=0.12, speed <=12px/s. Parallax layers move no more than 8px from origin. Ambient animation freezes under reduced motion.
+Runtime ambient limits: maximum 24 low-contrast motes, each 2px, alpha <=0.12, speed <=12px/s. Parallax follows the canonical layer ratios. Cable anchors move no more than 8px. Ambient travel freezes under reduced motion.
+
+## Camera cues
+
+`CameraDirector` combines journey, combat, impact, and accessibility channels. It transforms the world only; the command rail and HUD remain screen-space.
+
+| Event | Cue |
+| --- | --- |
+| Encounter beat change | 600ms track to the next set-piece |
+| Rail step | lateral follow capped at 40px |
+| Tether pull | push-in capped at 2% |
+| Crossfire pivot | 120ms pan and 180ms settle |
+| Execution | 50ms hold and 180ms settle |
+| Overdrive breach | 3% push-in and 3px shake maximum |
+| Aegis rescue | brace toward the Warden, then release |
+| Stage clear | track through the opened Extraction route |
 
 ## Combo escalation
 
-| Tier | Added effect |
+| Combo | Added effect |
 | --- | --- |
-| x1 to x3 | none |
-| x4 to x7 | caret trail, +50% particles per word |
-| x8 to x15 | particles turn `--violet`, background pulse at 0.04 opacity following the typing beat |
-| x16 and up | thin edge glow around the screen, word-complete harmonic layer rises |
+| 0 to 3 | base path and contact |
+| 4 to 7 | one extra afterimage and denser contact fragments |
+| 8 to 15 | violet secondary trail and environment beat light |
+| 16 and above | thin screen-edge current and family-specific defeat accent |
 
 Combo break: all tier effects drop straight to the new tier, no farewell animation.
 
+## Item combat signatures
+
+Every MVP item keeps its 48px HUD acknowledgement and adds one attributable world response:
+
+| Item | Combat signature |
+| --- | --- |
+| WASD | four directional targeting brackets |
+| Vowel Magnet | small cyan letter orbit pulled into the cannon |
+| Longshot | elongated barrel trace and compressed impact |
+| Sprinter | grounded green speed wake during the opening window |
+| Second Wind | broken red trail rewound into a yellow finisher |
+| Copper Key | one Token spark resolving toward the HUD |
+| Home Row | horizontal sequence of illuminated deck key plates |
+| Punctuator | punctuation glyph creating a sharp contact notch |
+| Combo Battery | pink shield segment absorbing the break |
+| Overclock | opened cannon vents retaining a stage heat light |
+| Double Tap | delayed second contact from the opposite angle |
+| Snowball | persistent frost-white armor edge marks |
+| Interest Bank | stored Token pips orbiting the rear shoulder |
+| Glass Keycap | prism plane forming on proc and fracturing on loss |
+| Vampire | red return trail transferring from target to Warden |
+
+Macro effects originate near the Macro rail before entering world space and never reuse a passive Keycap signature.
+
 ## Reduced motion
 
-`prefers-reduced-motion` or the in-game toggle: disable shake, hitstop, particles, background pulse, and count-up. Keep articulated pose changes, contact readability, color changes, popup fades, and 150ms transitions. Gameplay must remain fully readable.
+`prefers-reduced-motion` or the in-game toggle: disable shake, hitstop, continuous parallax travel, camera impulses, cable sway, loose particles, background pulse, and count-up. Keep articulated pose changes, contact readability, contact shadows, environment light-state changes, atmosphere fades, color changes, popup fades, and 150ms transitions. Gameplay must remain fully readable.
 
 # 8. Audio Spec
 

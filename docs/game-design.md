@@ -94,7 +94,7 @@ The scoring rules stay deep, but the first interaction must be obvious without r
 
 - A new stage opens in a **ready gate**. The stage timer does not move until the first printable key. That key is processed as normal input, so the gate adds no click and no lost keystroke.
 - The active word and caret are always the highest-contrast elements. Zone 1 labels the exact input contract (`FIND 1 KEY`, `TYPE 2 KEYS`, or `TYPE 3 LETTERS`) and auto-executes. Zone 2 changes the completed rail to **SPACE — EXECUTE** or **SPACE — OVERDRIVE** at full charge. Zone 3 and later show **SPACE — EXECUTE** and **ENTER — OVERDRIVE** together at full charge.
-- Each accepted character advances the Warden through a deterministic attack chain: launch, cross-field dash, strike, recoil, and recover. The corresponding enemy letter-node breaks on impact. The Warden must change pose and position; firing from one fixed anchor for an entire word is not acceptable.
+- Each accepted character advances the Warden through a deterministic grounded action. The current word, accepted-character index, target lane, Combo tier, Overdrive state, and triggered items select the action. The corresponding enemy signal-node breaks on impact.
 - Resolution ends the encounter: a clean word destroys the target and awards score; a dirty Zone 2 word receives Aegis Recovery; a dirty Zone 3+ word awards zero and breaks Mult according to the canonical rules.
 - A corrected dirty word remains visibly marked **AEGIS RECOVERY — BASE ONLY** in Zone 2 or **CORRUPTED — 0 SCORE** in Zone 3+. This makes the consequence honest before submission instead of surprising the player afterward.
 - First-run coaching is embedded in the command rail without pausing play: Zone 1 uses `FIND 1 KEY — AUTO-FIRES`, `TYPE 2 KEYS — AUTO-FIRES`, and `TYPE 3 LETTERS — AUTO-FIRES`; Zone 2 introduces `TYPE THE WORD — SPACE EXECUTES`; then the Combo rail teaches `10 CLEAN WORDS = +1 MULT`. A Zone 2 typo changes the outcome copy to `AEGIS RECOVERY — BASE ONLY`; Zone 3+ uses `CORRECT IT, THEN EXECUTE — THIS WORD SCORES 0`.
@@ -109,6 +109,63 @@ The scoring rules stay deep, but the first interaction must be obvious without r
 - The one-viewport Shop shows exact effects, trigger conditions, active build, next Quota, and the previous stage's strongest contribution. Keys 1, 2, and 3 buy offers, R rerolls, Tab navigates, and Enter deploys.
 
 The intended rhythm is: **read → strike → reposition → execute → charge → burst → choose**. Any animation, panel, or explanation that delays this rhythm is a defect.
+
+### Signal Expedition stage journey
+
+Every stage is one continuous journey through Ingress, Relay breach, and Extraction.
+
+- Ingress begins at quota ratio 0.
+- Relay breach begins at quota ratio 0.4.
+- Extraction begins at quota ratio 0.75.
+- Score divided by Quota decides the current beat. `targetOrdinal` only orders presentation work when one completed word crosses a threshold.
+- Beat transitions never block typing and never use measured WPM.
+
+The stage shows the Keystone Warden, one active target, one upcoming target, and one distant reinforcement when the viewport supports four silhouettes. Compact layouts may crop the distant reinforcement but must keep its entry telegraph.
+
+Each stage family contains three silhouettes in one resident atlas:
+
+| Stage | Family variants |
+| --- | --- |
+| Warm-up | Packet Stalker, Cache Hound, Relay Ram |
+| Rush | Needle Wraith, Vector Mantis, Spine Courier |
+| Glitch | Null Crown, Crown Hand, Void Shard |
+
+The headless run creates a family-variant schedule from the run's seeded RNG when a stage starts and persists it with the run. Presentation reads the schedule by target ordinal. Rendering code never chooses a random formation.
+
+### Typing-driven action grammar
+
+The Warden has eight deterministic verbs:
+
+| Verb | Combat use |
+| --- | --- |
+| Cannon burst | planted first contact and complete single-letter training attack |
+| Rail step | heel-to-toe advance during short signals |
+| Tether pull | braced cable attack against high or distant targets |
+| Breach slide | low grounded lane change |
+| Recoil vault | one authored airborne accent in a long word |
+| Crossfire pivot | grounded turn toward a promoted lane |
+| Execution | final-character contact, follow-through, and backward settle |
+| Overdrive breach | explicit or protected full-arena release |
+
+Chain rules:
+
+- A single-letter target uses Cannon burst and resolves immediately.
+- Two and three-character signals use only Cannon burst, Rail step, and Execution.
+- Four to six-character words use two grounded verbs before Execution.
+- Words of seven or more characters may contain Tether pull or one Recoil vault. Recoil vault may occur at most once in the word.
+- Consecutive accepted keys within 140ms cancel recovery into the next verb.
+- A pause longer than 400ms returns the Warden to a planted ready pose without resetting word progress.
+- A typo uses recoil or block. It never launches the Warden.
+- Space resolves the current spatial setup without teleporting the Warden home.
+- Enter at full charge replaces the ordinary finisher with Overdrive breach.
+
+Grounding rules:
+
+- Cannon burst, Rail step, Breach slide, and Crossfire pivot keep at least one foot within 4px of the authored ground line.
+- Grounded travel uses root X on the deck path. Vertical movement comes from leg compression and torso articulation.
+- A foot releases only after the opposite foot plants.
+- The contact shadow follows the weighted foot.
+- Returning home uses a backward step or recoil settle, never a mirrored attack arc.
 
 ## Baseline number calibration
 
@@ -339,15 +396,15 @@ Before changing gameplay numbers: run the deterministic simulation harness and r
 # 12. Presentation & Juice
 
 - **Render gameplay on a canvas (PixiJS)**, not DOM/Framer Motion: layered character animation, pose changes, cross-field movement, projectiles, particles, hit reactions, and camera response at 60fps on low-end devices.
-- **Presentation direction is locked: Signal Siege — character combat.** The player operates the **Keystone Warden**, a compact mechanical sentinel built from key-switch, keycap, and keyboard-plate geometry. It has a readable head, torso, typing cannon, and braced combat pose without becoming a cute mascot or a human character.
+- **Presentation direction is locked: Signal Expedition — typing-driven arcade combat.** The player operates the **Keystone Warden**, a compact mechanical sentinel built from key-switch, keycap, and keyboard-plate geometry. It has a readable head, torso, typing cannon, and braced combat pose without becoming a cute mascot or a human character.
 - Every target is a short combat encounter tied to one word. Its letters become destructible signal-nodes arranged along a readable attack path. Each accepted character moves the Warden to the next node and breaks it. The final accepted character enters an execution pose; a clean submission destroys the target, while a dirty submission makes it phase out with no score. The next target enters immediately so typing never waits for animation.
-- Warm-up fields **Packet Stalkers**, small corrupted relay creatures; Rush fields **Needle Wraiths**, fast signal hunters; Glitch fields the **Null Crown**, a large fractured boss construct. Their silhouette, locomotion, anticipation, hit reaction, defeat, and entry motion must be readable without labels.
+- Warm-up fields the **Packet family**, Rush fields the **Needle family**, and Glitch fields the **Null family**. Each family has the three canonical variants above. Their silhouette, locomotion, anticipation, hit reaction, defeat, and entry motion must be readable without labels.
 - Original raster character and environment art is allowed and preferred when it creates a stronger silhouette than code-native geometry. Assets must be project-owned or commercial-safe, stored locally, versioned, documented in `CREDITS.md`, and composited with code-driven effects. Stock sci-fi sprites, clip art, emoji, photorealism, generic spaceships, and unrelated asset packs remain banned.
-- The arena is a layered cyber-industrial signal trench rather than an empty grid. Low-contrast parallax, distant machinery, cable motion, and haze may move continuously to establish depth; gameplay accents remain brighter than the world.
+- The arena is a layered cyber-industrial Signal Trench rather than an empty grid or one drifting master image. Far towers, relay machinery, midground cables and doors, the battle deck, foreground structures, atmosphere, and light move independently. Ingress, Relay breach, and Extraction recompose one coherent kit into a continuous journey.
 - Every word clear: the score number pops from the defeated target and resolves toward the score HUD. Mult up: flash + 50ms hitstop. Glass shatters: 0.3s slow-mo.
-- The Warden uses an articulated 2D rig with `idle`, `ready`, `chain-1`, `chain-2`, `chain-3`, `dash`, `execute`, `block`, `hurt`, `recover`, and `overdrive` clips. Each enemy uses `locomotion`, `idle`, `anticipation`, `attack`, `hit`, `defeat`, and `special`. The runtime interpolates authored key poses at the renderer frame rate.
+- The Warden uses an articulated 2D rig with `idle`, `ready`, `cannon-burst`, `rail-step`, `tether-pull`, `breach-slide`, `recoil-vault`, `crossfire-pivot`, `execution`, `overdrive-breach`, `block`, `hurt`, and `recover` clips. Each enemy uses `locomotion`, `idle`, `anticipation`, `attack`, `hit`, `defeat`, and `special`. The runtime interpolates authored key poses at the renderer frame rate.
 - Full-body raster swapping, a single transformed master, and ambient bobbing do not satisfy character animation. Attacks require grounded anticipation, articulated travel, contact frames, recoil, follow-through, and recovery.
-- The arena shows one active enemy plus two low-contrast upcoming enemies. Only the active enemy owns signal nodes or attack telegraphs. Target lanes follow a persisted deterministic choreography table.
+- The arena shows one active enemy, one readable upcoming enemy, and one distant reinforcement. Only the active enemy owns signal nodes or attack telegraphs. Target lanes and family variants follow persisted deterministic schedules.
 - Full Overdrive changes the command rail, Warden silhouette, audio layer, and attack choreography before it changes score. The release crosses the arena, creates a full-height impact column, and returns control within 320ms.
 - Every enemy periodically telegraphs an attack based on the remaining stage time. These attacks create pressure and authored block/dodge reactions but do not introduce a second health system in MVP. The lethal timeout attack is the only attack that resolves the stage outcome.
 - Aegis rescue requires a distinct Warden block pose, an enemy attack pose, a shield break or deflection effect, a `+30S` callout, and a changed arena state. It must feel like surviving an attack, not like the timer silently jumping.
