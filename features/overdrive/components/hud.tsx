@@ -200,73 +200,21 @@ export function Hud() {
 				</div>
 			)}
 
-			<div className="mt-2 grid grid-cols-4 border-y border-line bg-bg-0/80 py-2 text-center sm:hidden">
-				<div>
-					<div className="text-xs font-bold uppercase text-text-mid">Combo</div>
-					<div className="mt-1 font-bold tabular-nums text-acc-pink">{state.combo}</div>
-				</div>
-				<div className="border-l border-line">
-					<div className="text-xs font-bold uppercase text-text-mid">Mult</div>
-					<div className="mt-1 font-bold tabular-nums text-acc-violet">×{formatNumber(state.mult)}</div>
-				</div>
-				<div className="border-l border-line">
-					<div className="text-xs font-bold uppercase text-text-mid">Base</div>
-					<div className="mt-1 font-bold tabular-nums text-text-hi">{state.currentWord.length}</div>
-				</div>
-				<div className="border-l border-line">
-					<div className="text-xs font-bold uppercase text-text-mid">Score</div>
-					<div className="mt-1 font-bold tabular-nums text-acc-yellow">{formatNumber(state.score)}</div>
-				</div>
-				<div
-					className="col-span-4 mx-2 mt-2 flex gap-1"
-					aria-label={`${comboProgress} of 10 clean words to the next Mult`}
-				>
-					{Array.from({ length: 10 }, (_, index) => (
-						<span
-							key={`mobile-combo-segment-${index}`}
-							className={`h-1 flex-1 ${index < comboProgress ? "bg-acc-pink" : "bg-bg-2"}`}
-						/>
-					))}
-				</div>
-			</div>
+			<div className="flex-1 min-h-0" />
 
-			<div className="flex min-h-0 flex-1 items-center justify-between">
-				<div className="hidden border-l-2 border-acc-pink bg-bg-0/80 px-3 py-3 sm:block">
-					<Metric label="COMBO" value={String(state.combo)} color="text-acc-pink" />
-					<div className="mt-3 flex w-32 gap-1" aria-label={`${comboProgress} of 10 clean words to the next Mult`}>
-						{Array.from({ length: 10 }, (_, index) => (
-							<span
-								key={`combo-segment-${index}`}
-								className={`h-1 flex-1 ${index < comboProgress ? "bg-acc-pink" : "bg-bg-2"}`}
-							/>
-						))}
-					</div>
-					<div className="mt-2 text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
-						{comboProgress} / 10 TO MULT
-					</div>
-					<div className="mt-6">
-					<Metric label="MULT" value={`×${formatNumber(state.mult)}`} color="text-acc-violet" />
-					</div>
-				</div>
-				<div className="hidden flex-col gap-6 border-r-2 border-acc-yellow bg-bg-0/80 px-3 py-3 sm:flex">
-					<Metric label="BASE" value={String(state.currentWord.length)} align="right" />
-					<Metric label="SCORE" value={formatNumber(state.score)} color="text-acc-yellow" align="right" />
-				</div>
-			</div>
-
-			<div className="pointer-events-auto flex min-h-0 items-end justify-center gap-2 sm:min-h-24 sm:gap-6">
+			<div className="pointer-events-auto flex items-end justify-start gap-2 sm:gap-4">
 				<div>
-					<div className="mb-2 hidden text-center text-sm font-bold uppercase tracking-[0.08em] text-text-mid sm:block">
+					<div className="mb-2 hidden text-left text-xs font-bold uppercase tracking-[0.08em] text-text-mid sm:block">
 						KEYCAP BUILD
 					</div>
-					<div className="flex gap-1 sm:gap-3">
+					<div className="flex gap-1">
 						{Array.from({ length: 5 }).map((_, index) => {
 							const id = state.keycaps[index]
 							if (!id) return (
 								<KeycapSlot
 									key={`keycap-slot-${index}`}
 									empty
-									className="h-11 w-11 sm:h-16 sm:w-16"
+									className="h-9 w-9 sm:h-12 sm:w-12"
 									aria-label={`Empty Keycap slot ${index + 1}`}
 								/>
 							)
@@ -278,7 +226,7 @@ export function Hud() {
 								<KeycapSlot
 									key={`keycap-slot-${index}`}
 									rarity={definition.rarity}
-									className={`h-11 w-11 sm:h-16 sm:w-16 ${armed ? "overdrive-slot-armed" : ""}`}
+									className={`h-9 w-9 sm:h-12 sm:w-12 ${armed ? "overdrive-slot-armed" : ""}`}
 									data-armed={armed || undefined}
 									aria-label={`${definition.name} Keycap`}
 									tooltip={
@@ -295,7 +243,7 @@ export function Hud() {
 											triggered ? "overdrive-slot-proc" : ""
 										}`}
 									>
-										<ItemGlyph id={id} type="keycap" className="h-7 w-7 sm:h-8 sm:w-8" />
+										<ItemGlyph id={id} type="keycap" className="h-6 w-6 sm:h-7 sm:w-7" />
 									</span>
 								</KeycapSlot>
 							)
@@ -303,18 +251,18 @@ export function Hud() {
 					</div>
 				</div>
 
-				<div className="border-l border-line pl-2 sm:pl-6">
-					<div className="mb-2 hidden text-center text-sm font-bold uppercase tracking-[0.08em] text-text-mid sm:block">
+				<div className="border-l border-line pl-2 sm:pl-4">
+					<div className="mb-2 hidden text-left text-xs font-bold uppercase tracking-[0.08em] text-text-mid sm:block">
 						MACROS
 					</div>
-					<div className="flex gap-1 sm:gap-3">
+					<div className="flex gap-1">
 						{Array.from({ length: 2 }).map((_, index) => {
 							const id = state.macros[index]
 							if (!id) return (
 								<KeycapSlot
 									key={`macro-slot-${index}`}
 									empty
-									className="h-11 w-11 sm:h-16 sm:w-16"
+									className="h-9 w-9 sm:h-12 sm:w-12"
 									aria-label={`Empty Macro slot ${index + 1}`}
 								/>
 							)
@@ -330,7 +278,7 @@ export function Hud() {
 								>
 									<KeycapSlot
 										rarity="macro"
-										className="h-11 w-11 sm:h-16 sm:w-16"
+										className="h-9 w-9 sm:h-12 sm:w-12"
 									>
 										<span
 											key={`macro-proc-${index}-${triggered ? latestMacro.id : 0}`}
@@ -338,10 +286,10 @@ export function Hud() {
 												triggered ? "overdrive-slot-proc" : ""
 											}`}
 										>
-											<ItemGlyph id={id} type="macro" className="h-7 w-7 sm:h-8 sm:w-8" />
+											<ItemGlyph id={id} type="macro" className="h-6 w-6 sm:h-7 sm:w-7" />
 										</span>
 									</KeycapSlot>
-									<span className="absolute left-1 top-1 text-sm font-bold text-acc-cyan">{index + 1}</span>
+									<span className="absolute left-1 top-1 text-[10px] font-bold text-acc-cyan">{index + 1}</span>
 								</button>
 							)
 						})}

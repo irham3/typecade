@@ -199,12 +199,7 @@ type Mote = {
 	phase: number
 }
 
-export type BackgroundArt = {
-	root: Container
-	blackout: Graphics
-	redraw: (width: number, height: number, stage: StageType) => void
-	tick: (elapsedMs: number, reducedMotion: boolean) => void
-}
+
 
 export function stageAccent(stage: StageType) {
 	if (stage === "rush") return V.pink
@@ -218,133 +213,7 @@ export function targetClassName(stage: StageType) {
 	return "PACKET STALKER"
 }
 
-export function createBackground(texture: Texture): BackgroundArt {
-	const root = new Container()
-	const image = new Sprite(texture)
-	const darkWash = new Graphics()
-	const stageWash = new Graphics()
-	const motesLayer = new Container()
-	const haze = new Graphics()
-	const foreground = new Graphics()
-	const glitchScan = new Graphics()
-	const blackout = new Graphics()
-	const motes: Mote[] = []
-	let width = 0
-	let height = 0
 
-	image.anchor.set(0.5)
-	image.alpha = 0.46
-	root.addChild(
-		image,
-		darkWash,
-		stageWash,
-		motesLayer,
-		haze,
-		foreground,
-		glitchScan,
-		blackout,
-	)
-
-	for (let index = 0; index < MOTION.moteCount; index += 1) {
-		const node = new Graphics()
-			.circle(0, 0, MOTION.moteSize)
-			.fill({
-				color: index % 5 === 0 ? V.green : V.cyan,
-				alpha: MOTION.moteMaxAlpha * (0.35 + (index % 4) * 0.2),
-			})
-		motesLayer.addChild(node)
-		motes.push({
-			node,
-			baseX: ((index * 47 + 23) % 101) / 100,
-			baseY: ((index * 71 + 17) % 97) / 100,
-			speed: 4 + (index % 5) * 2,
-			phase: index * 0.61,
-		})
-	}
-
-	return {
-		root,
-		blackout,
-		redraw(nextWidth, nextHeight, stage) {
-			width = nextWidth
-			height = nextHeight
-			const coverScale = Math.max(
-				width / texture.width,
-				height / texture.height,
-			) * 1.04
-			image.scale.set(coverScale)
-			image.position.set(width / 2, height / 2)
-
-			darkWash
-				.clear()
-				.rect(0, 0, width, height)
-				.fill({ color: V.bg, alpha: 0.5 })
-
-			stageWash
-				.clear()
-				.rect(0, 0, width, height)
-				.fill({
-					color: stageAccent(stage),
-					alpha: stage === "glitch" ? 0.055 : 0.025,
-				})
-
-			const compact = width < SCENE.compactWidth
-			const coverHeight = height * (
-				compact
-					? SCENE.foregroundHeight.compact
-					: SCENE.foregroundHeight.desktop
-			)
-			foreground
-				.clear()
-				.rect(0, height - coverHeight, width, coverHeight)
-				.fill({ color: V.bg, alpha: 0.76 })
-				.moveTo(0, height - coverHeight)
-				.lineTo(width, height - coverHeight)
-				.stroke({ color: V.cyan, width: 1, alpha: 0.18 })
-
-			haze
-				.clear()
-				.ellipse(width * 0.52, height * 0.48, width * 0.4, height * 0.12)
-				.fill({ color: V.cyan, alpha: 0.025 })
-				.ellipse(width * 0.42, height * 0.62, width * 0.34, height * 0.08)
-				.fill({ color: V.green, alpha: 0.018 })
-
-			glitchScan.clear()
-			if (stage === "glitch") {
-				for (let y = 96; y < height - 96; y += 12) {
-					glitchScan
-						.rect(24, y, Math.max(0, width - 48), 1)
-						.fill({ color: V.red, alpha: 0.035 })
-				}
-			}
-
-			for (const mote of motes) {
-				mote.node.position.set(mote.baseX * width, mote.baseY * height)
-			}
-		},
-		tick(elapsedMs, reducedMotion) {
-			if (reducedMotion) {
-				image.position.set(width / 2, height / 2)
-				haze.position.set(0, 0)
-				return
-			}
-			const phase = elapsedMs / 8_000
-			image.position.set(
-				width / 2 + Math.sin(phase) * MOTION.parallaxPx,
-				height / 2 + Math.cos(phase * 0.73) * MOTION.parallaxPx * 0.5,
-			)
-			haze.position.set(
-				Math.sin(phase * 1.3) * MOTION.parallaxPx,
-				Math.cos(phase) * MOTION.parallaxPx * 0.25,
-			)
-			for (const mote of motes) {
-				const travel = (elapsedMs / 1_000) * Math.min(mote.speed, MOTION.moteMaxSpeed)
-				mote.node.y = (mote.baseY * height - travel + height) % Math.max(1, height)
-				mote.node.x = mote.baseX * width + Math.sin(phase + mote.phase) * MOTION.parallaxPx
-			}
-		},
-	}
-}
 
 export function createCommandRail(): CommandRailArt {
 	const root = new Container()

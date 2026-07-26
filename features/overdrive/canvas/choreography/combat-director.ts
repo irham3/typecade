@@ -374,7 +374,6 @@ export class CombatDirector {
 		})
 		if (this.pendingContacts.length > 2) this.pendingContacts.shift()
 		this.warden.rig.play(chain, { queueContact: true })
-		this.startCharacterTravel(event.index, event.word.length, target)
 		this.returnDelayMs = 0
 	}
 
