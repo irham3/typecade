@@ -120,6 +120,7 @@ export class CombatScene {
 			this.rail.root,
 			this.lowTimeEdge,
 			this.typoBars,
+			this.environment.blackout,
 		)
 
 		this.stage.addChild(this.cameraRoot, this.overlay)
@@ -183,6 +184,9 @@ export class CombatScene {
 
 		// Sync encounter beat to the environment director
 		const beat = selectEncounterBeat(next.score, next.quota)
+		if (beat !== this.environment.currentBeat) {
+			this.camera.focusBeat(beat)
+		}
 		this.environment.handleBeat(beat)
 	}
 

@@ -58,12 +58,12 @@ export function Menu() {
 			<main className="relative min-h-dvh overflow-y-auto bg-bg-0 px-4 text-text-hi sm:px-6">
 				<div className="pointer-events-none fixed inset-0">
 					<Image
-						src="/overdrive/art/environment/layers/bg_back.png"
+						src="/overdrive/art/environment/signal-trench-machinery-v1.webp"
 						alt=""
 						fill
 						priority
 						sizes="100vw"
-						className="object-cover object-center opacity-40"
+						className="object-cover object-center opacity-50"
 					/>
 					<div className="absolute inset-0 bg-bg-0/70" />
 				</div>

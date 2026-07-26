@@ -102,7 +102,7 @@ export class FormationDirector {
 		this.enemyAssets = enemyAssets
 		this.buildPool()
 		this.generateSchedule(initial.stage, initial.zone)
-		this.updatePromotions()
+		this.ensureVisibleFormation()
 	}
 
 	private buildPool() {
@@ -156,26 +156,35 @@ export class FormationDirector {
 	}
 
 	sync(state: FormationState) {
+		const targetChanged = state.targetOrdinal !== this.state.targetOrdinal
+		
 		if (state.stage !== this.state.stage || state.zone !== this.state.zone) {
 			this.generateSchedule(state.stage, state.zone)
 		}
 		
 		this.state = state
-		this.updatePromotions()
+		
+		if (targetChanged) {
+			this.promoteTarget(state.targetOrdinal)
+		}
+		
+		this.ensureVisibleFormation()
 	}
 
 	handle(event: OverdrivePresentationEvent) {
 		if (this.state.focusPaused) return
 		
-		if (event.type === "word-completed") {
-			const target = this.activeTargets.get(event.targetOrdinal)
-			if (target) {
-				target.isHit = true
-				target.role = "retiring"
-				target.rig.play("defeat", { force: true })
-				this.updatePromotions()
-			}
-		}
+		if (event.type !== "word-completed") return
+		
+		const target = this.activeTargets.get(event.targetOrdinal)
+		if (!target) return
+		
+		target.isHit = true
+		target.hitMs = 0
+		target.role = "retiring"
+		target.integrity.visible = false
+		target.label.visible = false
+		target.rig.play("defeat", { force: true })
 	}
 
 	update(deltaMs: number) {
@@ -231,23 +240,23 @@ export class FormationDirector {
 		this.updateLayout()
 	}
 
-	private updatePromotions() {
-		// Ensure current active target is promoted
-		const currentOrdinal = this.state.targetOrdinal
-		
-		// If we don't have the active target spawned, spawn it
-		if (!this.activeTargets.has(currentOrdinal)) {
-			this.spawnTarget(currentOrdinal, "active")
-		} else {
-			const target = this.activeTargets.get(currentOrdinal)!
-			if (target.role !== "retiring") {
-				target.role = "active"
-			}
+	private ensureVisibleFormation() {
+		const ordinal = this.state.targetOrdinal
+		this.ensureTarget(ordinal, "active")
+		this.ensureTarget(ordinal + 1, "queued")
+		this.ensureTarget(ordinal + 2, "reinforcing")
+	}
+	
+	private promoteTarget(ordinal: number) {
+		const target = this.activeTargets.get(ordinal)
+		if (target && target.role !== "retiring") {
+			target.role = "active"
 		}
-		
-		// Ensure we have queued targets
-		if (!this.activeTargets.has(currentOrdinal + 1)) {
-			this.spawnTarget(currentOrdinal + 1, "reinforcing")
+	}
+
+	private ensureTarget(ordinal: number, role: FormationRole) {
+		if (!this.activeTargets.has(ordinal)) {
+			this.spawnTarget(ordinal, role)
 		}
 	}
 
@@ -291,25 +300,50 @@ export class FormationDirector {
 	}
 
 	private getRoleX(role: FormationRole): number {
-		if (this.width < 640) {
-			return role === "active" ? this.width * 0.75 : this.width * 0.95
+		const compact = this.width < 640
+		
+		if (compact) {
+			if (role === "active") return this.width * 0.70
+			if (role === "queued") return this.width * 0.87
+			if (role === "reinforcing") return this.width * 1.03
+			return this.width * 1.1
 		}
-		return role === "active" ? this.width * 0.65 : this.width * 0.85
+		
+		if (role === "active") return this.width * 0.70
+		if (role === "queued") return this.width * 0.84
+		if (role === "reinforcing") return this.width * 0.96
+		return this.width * 1.1
+	}
+
+	private getTargetScale(slot: FormationTarget): number {
+		const compact = this.width < 640
+		const targetPixels = Math.min(
+			this.height * (compact ? 0.18 : 0.26),
+			compact ? 144 : 244,
+		)
+		const visualHeight = Math.max(1, slot.rig.getVisualSize().height)
+		const roleMultiplier = slot.role === "active" ? 1 :
+			slot.role === "queued" ? (compact ? 0.5 : 0.62) :
+			slot.role === "reinforcing" ? (compact ? 0.34 : 0.42) :
+			0.82
+			
+		return (targetPixels / visualHeight) * roleMultiplier
 	}
 
 	private updateLayout() {
-		const { deckY, scale } = this.layout
+		const { deckY } = this.layout
 		
 		for (const slot of this.slots) {
 			if (!slot.root.visible) continue
 			
+			const targetScale = this.getTargetScale(slot)
 			slot.root.position.set(slot.layoutX, deckY)
-			slot.root.scale.set(scale)
+			slot.root.scale.set(targetScale)
+			slot.layoutScale = targetScale
 			
-			// Adjust label and integrity positions based on visual size
 			const visualHeight = slot.rig.getVisualSize().height
-			slot.integrity.position.set(0, -visualHeight * 0.75)
-			slot.label.position.set(0, -visualHeight * 0.75 - 24)
+			slot.integrity.position.set(0, -visualHeight * 0.52)
+			slot.label.position.set(0, -visualHeight * 0.52 - 24 / targetScale)
 			
 			this.updateShadow(slot)
 		}
@@ -320,7 +354,7 @@ export class FormationDirector {
 			if (!b.root.visible) return -1
 			const orderA = a.role === "active" ? 10 : a.role === "queued" ? 5 : 0
 			const orderB = b.role === "active" ? 10 : b.role === "queued" ? 5 : 0
-			return orderB - orderA
+			return orderA - orderB
 		})
 		
 		for (let i = 0; i < this.slots.length; i++) {
@@ -332,17 +366,20 @@ export class FormationDirector {
 		const alpha = SHADOW_ALPHA[slot.role as keyof typeof SHADOW_ALPHA] ?? SHADOW_ALPHA.retiring
 		
 		slot.shadow.clear()
+		slot.reflection.clear()
+		
 		if (this.state.reducedMotion) return
 		
 		slot.shadow
 			.ellipse(0, 0, 80, 24)
 			.fill({ color: V.bg, alpha })
 			
-		// Approximate reflection
-		slot.reflection.clear()
 		slot.reflection
 			.ellipse(0, 30, 60, 40)
-			.fill({ color: V.cyan, alpha: alpha * 0.5 })
+			.fill({
+				color: V.cyan,
+				alpha: this.state.reducedMotion ? alpha * 0.3 : alpha * 0.5,
+			})
 	}
 
 	destroy() {

@@ -119,9 +119,12 @@ export class EnvironmentDirector {
 	readonly worldBack = new Container()
 	readonly worldFront = new Container()
 	readonly blackout = new Graphics()
+	
+	private readonly baseFill = new Graphics()
 
 	private readonly assets: LoadedEnvironmentAssets
 	private readonly layerSprites: Partial<Record<EnvironmentLayerRole, Sprite>> = {}
+	private readonly layerBasePositions: Partial<Record<EnvironmentLayerRole, { x: number; y: number }>> = {}
 	private readonly sparks: SparkParticle[] = []
 	private readonly sparksLayer = new Container()
 	private readonly cablesLayer = new Graphics()
@@ -155,6 +158,7 @@ export class EnvironmentDirector {
 		this.assets = assets
 		this.state = initialState
 
+		this.worldBack.addChildAt(this.baseFill, 0)
 		this.buildLayers()
 		this.buildSparks()
 		this.buildCables()
@@ -194,7 +198,6 @@ export class EnvironmentDirector {
 		}
 
 		this.worldFront.addChild(this.atmosphereOverlay)
-		this.worldFront.addChild(this.blackout)
 	}
 
 	private buildSparks() {
@@ -245,6 +248,13 @@ export class EnvironmentDirector {
 		this.redrawAtmosphere()
 	}
 
+	private setLayerBasePosition(role: EnvironmentLayerRole, x: number, y: number) {
+		const sprite = this.layerSprites[role]
+		if (!sprite) return
+		this.layerBasePositions[role] = { x, y }
+		sprite.position.set(x, y)
+	}
+
 	private positionLayers() {
 		const { layout, height } = this
 
@@ -252,36 +262,35 @@ export class EnvironmentDirector {
 		const farSprite = this.layerSprites.far
 		if (farSprite) {
 			farSprite.scale.set(layout.scale)
-			farSprite.position.set(0, layout.horizonY)
+			this.setLayerBasePosition("far", 0, layout.horizonY)
 		}
 
 		// Machinery — above horizon
 		const machinerySprite = this.layerSprites.machinery
 		if (machinerySprite) {
 			machinerySprite.scale.set(layout.scale)
-			machinerySprite.position.set(0, layout.horizonY)
+			this.setLayerBasePosition("machinery", 0, layout.horizonY)
 		}
 
 		// Midground — around horizon
 		const midgroundSprite = this.layerSprites.midground
 		if (midgroundSprite) {
 			midgroundSprite.scale.set(layout.scale)
-			midgroundSprite.position.set(0, layout.horizonY + height * 0.08)
+			this.setLayerBasePosition("midground", 0, layout.horizonY + height * 0.08)
 		}
 
 		// Deck — stable combat footing
 		const deckSprite = this.layerSprites.deck
 		if (deckSprite) {
 			deckSprite.scale.set(layout.scale)
-			deckSprite.position.set(0, layout.deckY)
+			this.setLayerBasePosition("deck", 0, layout.deckY)
 		}
 
 		// Foreground — below actor feet but above deck
 		const foregroundSprite = this.layerSprites.foreground
 		if (foregroundSprite) {
 			foregroundSprite.scale.set(layout.scale)
-			foregroundSprite.position.set(0, layout.foregroundY + height * 0.12)
-			// Reduce alpha on compact if it harms readability
+			this.setLayerBasePosition("foreground", 0, layout.foregroundY + height * 0.12)
 			foregroundSprite.alpha = this.compact ? 0.72 : 1
 		}
 
@@ -307,8 +316,20 @@ export class EnvironmentDirector {
 		)
 	}
 
+	private redrawBase() {
+		this.baseFill
+			.clear()
+			.rect(0, 0, this.width, this.height * 0.38)
+			.fill({ color: 0x080c14 })
+			.rect(0, this.height * 0.38, this.width, this.height * 0.3)
+			.fill({ color: 0x0b111b })
+			.rect(0, this.height * 0.68, this.width, this.height * 0.32)
+			.fill({ color: 0x070a10 })
+	}
+
 	private redrawAtmosphere() {
 		const { width, height } = this
+		this.redrawBase()
 		this.atmosphereOverlay
 			.clear()
 			.rect(0, 0, width, height)
@@ -395,29 +416,30 @@ export class EnvironmentDirector {
 	}
 
 	private updateParallax() {
-		if (this.state.reducedMotion) {
-			// No continuous parallax in reduced motion.
-			return
-		}
-		const cx = this.cameraX
-
 		for (const [role, sprite] of Object.entries(this.layerSprites) as [EnvironmentLayerRole, Sprite | undefined][]) {
 			if (!sprite) continue
+			
+			const base = this.layerBasePositions[role]
+			if (!base) continue
+			
+			if (this.state.reducedMotion) {
+				sprite.position.set(base.x, base.y)
+				continue
+			}
+			
 			const ratio = PARALLAX[role] ?? 1
-			const baseX = sprite.position.x
-			// Apply parallax offset relative to camera travel.
-			sprite.position.x = -cx * ratio + (baseX - sprite.position.x + baseX)
+			sprite.position.set(base.x - this.cameraX * ratio, base.y)
 		}
 
-		// Slow far-layer drift
-		if (this.layerSprites.far && !this.state.reducedMotion) {
+		const far = this.layerSprites.far
+		const farBase = this.layerBasePositions.far
+		
+		if (far && farBase && !this.state.reducedMotion) {
 			const phase = this.elapsedMs / 12_000
-			const drift = Math.sin(phase) * 4
-			const driftY = Math.cos(phase * 0.7) * 1.5
-			const far = this.layerSprites.far
-			const baseX = -(this.cameraX * PARALLAX.far)
-			far.position.x = baseX + drift
-			far.position.y = this.layout.horizonY + driftY
+			far.position.set(
+				farBase.x - this.cameraX * (PARALLAX.far ?? 1) + Math.sin(phase) * 4,
+				farBase.y + Math.cos(phase * 0.7) * 1.5,
+			)
 		}
 	}
 

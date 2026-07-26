@@ -280,6 +280,8 @@ export class CombatDirector {
 	}
 
 	handle(event: OverdrivePresentationEvent) {
+		this.formation.handle(event)
+
 		if (event.type === "accepted-character") {
 			this.acceptCharacter(event)
 			return
@@ -423,6 +425,9 @@ export class CombatDirector {
 			
 			if (event.verb === "execution") {
 				this.effects.emitExecution(targetPosition, this.state.stage, true, event.combo)
+			} else if (event.verb === "overdrive-breach") {
+				this.effects.emitCannonBurst(muzzle, targetPosition, event.combo)
+				// Overdrive Breach specific effects can be added here later
 			} else if (event.overdriveReleased) {
 				this.effects.emitCannonBurst(muzzle, targetPosition, event.combo)
 			} else {
@@ -566,8 +571,15 @@ export class CombatDirector {
 		const contact = this.pendingContacts.shift()
 		if (!contact) return
 		sfx.hit()
+		
+		const corePosition = this.targetCorePosition(contact.target)
+		const impactPosition = contact.finisher ? corePosition : {
+			x: contact.position.x * 0.4 + corePosition.x * 0.6,
+			y: contact.position.y * 0.4 + corePosition.y * 0.6,
+		}
+		
 		this.effects.spawnContact(
-			contact.position,
+			impactPosition,
 			contact.tone,
 			contact.finisher,
 		)

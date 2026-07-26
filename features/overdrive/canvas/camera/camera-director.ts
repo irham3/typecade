@@ -127,6 +127,26 @@ export class CameraDirector {
 			this.shakeImportance = -1
 		}
 	}
+	
+	focusBeat(beat: string) {
+		if (this.state.reducedMotion) return
+		
+		const toX = beat === "relay-breach" || beat === "signal-run" ? -this.width * 0.1 :
+			beat === "extraction" ? this.width * 0.1 : 0
+			
+		const toZoom = beat === "relay-breach" || beat === "signal-run" ? 1.05 : 1
+		
+		this.transition = {
+			fromX: this.combatPose.x,
+			fromY: this.combatPose.y,
+			fromZoom: this.combatPose.zoom,
+			toX,
+			toY: 0,
+			toZoom,
+			elapsedMs: 0,
+			durationMs: 1200,
+		}
+	}
 
 	handle(event: OverdrivePresentationEvent) {
 		if (this.state.focusPaused) return
