@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest"
 import { sampleTrack } from "../interpolate"
 import type { RigTransform } from "../rig-definition"
 

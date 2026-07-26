@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest"
 import { AnimationController } from "../animation-controller"
 import type {
 	AnimationClip,
@@ -121,5 +122,25 @@ describe("AnimationController", () => {
 		const frame = controller.update(0)
 		expect(frame.clip).toBe("chain-2")
 		expect(frame.localTimeMs).toBe(0)
+	})
+
+	it("exposes cadence state and preserves queued contact on a forced verb", () => {
+		const controller = new AnimationController(definition)
+		controller.play("block")
+		controller.update(40)
+		controller.play("chain-1", { queueContact: true })
+
+		expect(controller.activeClipName).toBe("block")
+		expect(controller.activeLocalTimeMs).toBe(40)
+		expect(controller.pendingContactCount).toBe(1)
+
+		controller.play("chain-2", {
+			force: true,
+			preservePendingContacts: true,
+		})
+
+		expect(controller.activeClipName).toBe("chain-2")
+		expect(controller.activeLocalTimeMs).toBe(0)
+		expect(controller.pendingContactCount).toBe(1)
 	})
 })

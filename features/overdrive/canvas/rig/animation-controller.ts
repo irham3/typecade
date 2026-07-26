@@ -35,11 +35,20 @@ export class AnimationController {
 		return this.pendingContacts
 	}
 
+	get activeClipName() {
+		return this.activeClip.name
+	}
+
+	get activeLocalTimeMs() {
+		return this.localTimeMs
+	}
+
 	play(
 		name: AnimationClipName,
 		options: {
 			force?: boolean
 			queueContact?: boolean
+			preservePendingContacts?: boolean
 		} = {},
 	) {
 		const requested = this.definition.clips[name]
@@ -60,7 +69,9 @@ export class AnimationController {
 			return false
 		}
 
-		if (options.force) this.pendingContacts = 0
+		if (options.force && !options.preservePendingContacts) {
+			this.pendingContacts = 0
+		}
 		this.activeClip = requested
 		this.localTimeMs = 0
 		this.contactEmitted = false

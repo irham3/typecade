@@ -3,12 +3,14 @@ import {
 	Sprite,
 	Texture,
 } from "pixi.js"
+import type { FormationVariantId } from "@/lib/engine/overdrive"
 import { AnimationController } from "./animation-controller"
 import type {
 	AnimationClipName,
 	AnimationFrameState,
 	RigDefinition,
 	RigTransform,
+	RigVariantDefinition,
 } from "./rig-definition"
 
 type RigPartInstance = {
@@ -27,6 +29,7 @@ export class RigInstance {
 	readonly root = new Container()
 	readonly controller: AnimationController
 	private readonly parts = new Map<string, RigPartInstance>()
+	private activeVariant: RigVariantDefinition | null = null
 
 	constructor(
 		readonly definition: RigDefinition,
@@ -73,6 +76,7 @@ export class RigInstance {
 		options?: {
 			force?: boolean
 			queueContact?: boolean
+			preservePendingContacts?: boolean
 		},
 	) {
 		return this.controller.play(name, options)
@@ -90,6 +94,24 @@ export class RigInstance {
 
 	setAlpha(alpha: number) {
 		this.root.alpha = alpha
+	}
+
+	setVariant(variantId: FormationVariantId) {
+		const variant = this.definition.variants?.find(
+			(candidate) => candidate.id === variantId,
+		)
+		if (!variant) return false
+		this.activeVariant = variant
+		const enabledParts = new Set(variant.enabledPartIds)
+		for (const [partId, part] of this.parts) {
+			part.container.visible = enabledParts.has(partId)
+		}
+		this.applyFrame(this.controller.update(0))
+		return true
+	}
+
+	get variantScale() {
+		return this.activeVariant?.baseScale ?? 1
 	}
 
 	getVisualSize() {
@@ -121,7 +143,12 @@ export class RigInstance {
 	private applyFrame(frame: AnimationFrameState) {
 		for (const [partId, transform] of Object.entries(frame.transforms)) {
 			const part = this.parts.get(partId)
-			if (part) applyTransform(part.container, transform)
+			if (!part) continue
+			const override = this.activeVariant?.transformOverrides?.[partId]
+			applyTransform(
+				part.container,
+				override ? { ...transform, ...override } : transform,
+			)
 		}
 	}
 }

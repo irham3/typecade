@@ -1,3 +1,5 @@
+import type { FormationVariantId } from "@/lib/engine/overdrive"
+
 export type RigTransform = {
 	x: number
 	y: number
@@ -29,6 +31,14 @@ export type AnimationClipName =
 	| "hurt"
 	| "recover"
 	| "overdrive"
+	| "cannon-burst"
+	| "rail-step"
+	| "tether-pull"
+	| "breach-slide"
+	| "recoil-vault"
+	| "crossfire-pivot"
+	| "execution"
+	| "overdrive-breach"
 	| "locomotion"
 	| "anticipation"
 	| "attack"
@@ -60,12 +70,20 @@ export type RigPartDefinition = {
 	zIndex: number
 }
 
+export type RigVariantDefinition = {
+	id: FormationVariantId
+	enabledPartIds: readonly string[]
+	transformOverrides?: Readonly<Record<string, Partial<RigTransform>>>
+	baseScale: number
+}
+
 export type RigDefinition = {
 	id: string
 	atlasUrl: string
 	defaultClip: AnimationClipName
 	parts: readonly RigPartDefinition[]
 	clips: Readonly<Partial<Record<AnimationClipName, AnimationClip>>>
+	variants?: readonly RigVariantDefinition[]
 }
 
 export type AnimationFrameState = {

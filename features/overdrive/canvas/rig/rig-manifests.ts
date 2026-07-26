@@ -6,6 +6,7 @@ import type {
 	RigPartDefinition,
 	RigTrack,
 	RigTransform,
+	RigVariantDefinition,
 } from "./rig-definition"
 
 export type CombatRigId = "warden" | "packet" | "needle" | "null"
@@ -207,6 +208,209 @@ const wardenClips = clipRecord([
 			{ atMs: 1_200, rotation: -0.08 },
 		]),
 	]),
+	clip("cannon-burst", 180, false, 1, [
+		track("torso", [
+			{ atMs: 0, x: 0 },
+			{ atMs: 35, x: -4 },
+			{ atMs: 76, x: 2, easing: "cubic-out" },
+			{ atMs: 180, x: 0 },
+		]),
+		track("pelvis", [
+			{ atMs: 0, y: 70 },
+			{ atMs: 35, y: 73 },
+			{ atMs: 96, y: 72 },
+			{ atMs: 180, y: 70 },
+		]),
+		track("near_shoulder", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 35, rotation: -0.2 },
+			{ atMs: 76, rotation: 0.12, easing: "cubic-out" },
+			{ atMs: 180, rotation: -0.08 },
+		]),
+		track("near_forearm", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 35, rotation: -0.2 },
+			{ atMs: 76, rotation: 0.14, easing: "cubic-out" },
+			{ atMs: 180, rotation: -0.08 },
+		]),
+		track("cannon_barrel", [
+			{ atMs: 0, scaleX: 1 },
+			{ atMs: 76, scaleX: 0.9 },
+			{ atMs: 128, scaleX: 1.04, easing: "ease-out-back" },
+			{ atMs: 180, scaleX: 1 },
+		]),
+	], 76, 96),
+	clip("rail-step", 200, false, 1, [
+		track("torso", [
+			{ atMs: 0, x: 0 },
+			{ atMs: 32, x: -4 },
+			{ atMs: 88, x: 28, easing: "cubic-out" },
+			{ atMs: 140, x: 18 },
+			{ atMs: 200, x: 0 },
+		]),
+		track("pelvis", [
+			{ atMs: 0, y: 70 },
+			{ atMs: 48, y: 73 },
+			{ atMs: 120, y: 71 },
+			{ atMs: 200, y: 70 },
+		]),
+		track("near_thigh", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 48, rotation: -0.14 },
+			{ atMs: 112, rotation: 0.1, easing: "cubic-out" },
+			{ atMs: 200, rotation: 0 },
+		]),
+		track("near_shin", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 48, rotation: 0.18 },
+			{ atMs: 112, rotation: -0.08 },
+			{ atMs: 200, rotation: 0 },
+		]),
+	], 88, 116),
+	clip("tether-pull", 220, false, 2, [
+		track("torso", [
+			{ atMs: 0, x: 0 },
+			{ atMs: 44, x: -10 },
+			{ atMs: 104, x: 8, easing: "cubic-out" },
+			{ atMs: 164, x: -6 },
+			{ atMs: 220, x: 0 },
+		]),
+		track("pelvis", [
+			{ atMs: 0, y: 70 },
+			{ atMs: 44, y: 72 },
+			{ atMs: 164, y: 73 },
+			{ atMs: 220, y: 70 },
+		]),
+		track("near_shoulder", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 44, rotation: -0.38 },
+			{ atMs: 104, rotation: 0.2, easing: "ease-out-back" },
+			{ atMs: 220, rotation: -0.08 },
+		]),
+		track("near_forearm", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 44, rotation: -0.28 },
+			{ atMs: 104, rotation: 0.3, easing: "cubic-out" },
+			{ atMs: 220, rotation: -0.08 },
+		]),
+	], 104, 132),
+	clip("breach-slide", 220, false, 2, [
+		track("torso", [
+			{ atMs: 0, x: 0 },
+			{ atMs: 36, x: -4 },
+			{ atMs: 106, x: 42, easing: "cubic-out" },
+			{ atMs: 164, x: 28 },
+			{ atMs: 220, x: 0 },
+		]),
+		track("pelvis", [
+			{ atMs: 0, y: 70 },
+			{ atMs: 36, y: 73 },
+			{ atMs: 106, y: 74 },
+			{ atMs: 164, y: 72 },
+			{ atMs: 220, y: 70 },
+		]),
+		track("near_thigh", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 36, rotation: -0.2 },
+			{ atMs: 106, rotation: 0.16 },
+			{ atMs: 220, rotation: 0 },
+		]),
+		track("near_shin", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 36, rotation: 0.24 },
+			{ atMs: 106, rotation: -0.12 },
+			{ atMs: 220, rotation: 0 },
+		]),
+	], 106, 140),
+	clip("recoil-vault", 260, false, 3, [
+		track("torso", [
+			{ atMs: 0, x: 0, y: 0 },
+			{ atMs: 40, x: -8, y: 3 },
+			{ atMs: 116, x: 30, y: -28, easing: "cubic-out" },
+			{ atMs: 172, x: 44, y: -12 },
+			{ atMs: 212, x: 30, y: 2 },
+			{ atMs: 260, x: 0, y: 0 },
+		]),
+		track("near_thigh", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 116, rotation: -0.28 },
+			{ atMs: 212, rotation: 0.12 },
+			{ atMs: 260, rotation: 0 },
+		]),
+		track("far_thigh", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 116, rotation: 0.22 },
+			{ atMs: 212, rotation: -0.1 },
+			{ atMs: 260, rotation: 0 },
+		]),
+	], 172, 212),
+	clip("crossfire-pivot", 220, false, 2, [
+		track("torso", [
+			{ atMs: 0, x: 0 },
+			{ atMs: 48, x: -6 },
+			{ atMs: 108, x: 12, easing: "cubic-out" },
+			{ atMs: 220, x: 0 },
+		]),
+		track("pelvis", [
+			{ atMs: 0, y: 70 },
+			{ atMs: 48, y: 72 },
+			{ atMs: 108, y: 73 },
+			{ atMs: 220, y: 70 },
+		]),
+		track("head", [
+			{ atMs: 0, rotation: -0.01 },
+			{ atMs: 48, rotation: -0.16 },
+			{ atMs: 108, rotation: 0.14, easing: "ease-out-back" },
+			{ atMs: 220, rotation: -0.01 },
+		]),
+		track("near_shoulder", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 48, rotation: -0.24 },
+			{ atMs: 108, rotation: 0.18 },
+			{ atMs: 220, rotation: -0.08 },
+		]),
+	], 108, 140),
+	clip("execution", 300, false, 4, [
+		track("torso", [
+			{ atMs: 0, x: 0 },
+			{ atMs: 52, x: -8 },
+			{ atMs: 138, x: 52, easing: "cubic-out" },
+			{ atMs: 210, x: 22 },
+			{ atMs: 300, x: 0 },
+		]),
+		track("pelvis", [
+			{ atMs: 0, y: 70 },
+			{ atMs: 52, y: 73 },
+			{ atMs: 138, y: 72 },
+			{ atMs: 300, y: 70 },
+		]),
+		track("near_shoulder", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 52, rotation: -0.32 },
+			{ atMs: 138, rotation: 0.24, easing: "cubic-out" },
+			{ atMs: 300, rotation: -0.08 },
+		]),
+		track("near_forearm", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 52, rotation: -0.26 },
+			{ atMs: 138, rotation: 0.28, easing: "cubic-out" },
+			{ atMs: 300, rotation: -0.08 },
+		]),
+	], 138, 210),
+	clip("overdrive-breach", 320, false, 6, [
+		track("torso", [
+			{ atMs: 0, x: 0, y: 0 },
+			{ atMs: 48, x: -12, y: 4 },
+			{ atMs: 186, x: 120, y: -18, easing: "cubic-out" },
+			{ atMs: 250, x: 42, y: 0 },
+			{ atMs: 320, x: 0, y: 0, easing: "cubic-out" },
+		]),
+		track("cannon_core", [
+			{ atMs: 0, scaleX: 1, scaleY: 1, alpha: 0.8 },
+			{ atMs: 96, scaleX: 1.35, scaleY: 1.35, alpha: 1, easing: "ease-out-back" },
+			{ atMs: 320, scaleX: 1, scaleY: 1, alpha: 0.8 },
+		]),
+	], 186, 220),
 	clip("chain-1", 180, false, 1, [
 		track("torso", [
 			{ atMs: 0, x: 0, rotation: 0 },
@@ -662,23 +866,139 @@ const nullClips = clipRecord([
 	], 210, 260),
 ])
 
+const packetPartIds = packetParts.map((definition) => definition.id)
+const needlePartIds = needleParts.map((definition) => definition.id)
+const nullPartIds = nullParts.map((definition) => definition.id)
+
+const packetVariants: readonly RigVariantDefinition[] = [
+	{
+		id: "packet-stalker",
+		enabledPartIds: packetPartIds,
+		baseScale: 1,
+	},
+	{
+		id: "cache-hound",
+		enabledPartIds: packetPartIds,
+		transformOverrides: {
+			head: { scaleX: 0.86, scaleY: 0.9, x: -64 },
+			tail_base: { rotation: -0.16, y: 0 },
+			near_back_plate: { scaleX: 0.82, scaleY: 1.12 },
+			far_back_plate: { scaleX: 0.82, scaleY: 1.12 },
+		},
+		baseScale: 0.94,
+	},
+	{
+		id: "relay-ram",
+		enabledPartIds: packetPartIds,
+		transformOverrides: {
+			head: { scaleX: 1.24, scaleY: 1.16, x: -54 },
+			jaw: { scaleX: 1.12, scaleY: 1.08 },
+			near_back_plate: { scaleX: 1.18, scaleY: 1.22, y: -52 },
+			far_back_plate: { scaleX: 1.18, scaleY: 1.22, y: -46 },
+		},
+		baseScale: 1.08,
+	},
+]
+
+const needleVariants: readonly RigVariantDefinition[] = [
+	{
+		id: "needle-wraith",
+		enabledPartIds: needlePartIds,
+		baseScale: 1,
+	},
+	{
+		id: "vector-mantis",
+		enabledPartIds: needlePartIds,
+		transformOverrides: {
+			near_blade_forearm: { scaleX: 1.22, scaleY: 1.08, rotation: -0.18 },
+			far_blade_forearm: { scaleX: 1.22, scaleY: 1.08, rotation: 0.18 },
+			near_fin: { rotation: -0.2, scaleX: 1.14 },
+			far_fin: { rotation: 0.2, scaleX: 1.14 },
+		},
+		baseScale: 1.02,
+	},
+	{
+		id: "spine-courier",
+		enabledPartIds: needlePartIds,
+		transformOverrides: {
+			spine_front: { scaleX: 1.2, scaleY: 1.12 },
+			spine_rear: { scaleX: 1.3, scaleY: 1.16 },
+			tail_segment_one: { scaleX: 1.18 },
+			tail_segment_two: { scaleX: 1.24 },
+			tail_tip: { scaleX: 1.28 },
+		},
+		baseScale: 0.96,
+	},
+]
+
+const nullVariants: readonly RigVariantDefinition[] = [
+	{
+		id: "null-crown",
+		enabledPartIds: nullPartIds,
+		baseScale: 1,
+	},
+	{
+		id: "crown-hand",
+		enabledPartIds: nullPartIds,
+		transformOverrides: {
+			near_hand: { scaleX: 1.28, scaleY: 1.28 },
+			far_hand: { scaleX: 1.28, scaleY: 1.28 },
+			crown_near_plate: { rotation: -0.18, scaleY: 0.9 },
+			crown_far_plate: { rotation: 0.18, scaleY: 0.9 },
+		},
+		baseScale: 1.04,
+	},
+	{
+		id: "void-shard",
+		enabledPartIds: nullPartIds,
+		transformOverrides: {
+			void_core: { scaleX: 0.82, scaleY: 1.14 },
+			crown_center: { scaleX: 0.78, scaleY: 1.34 },
+			crown_near_plate: { rotation: -0.3, scaleY: 1.28 },
+			crown_far_plate: { rotation: 0.3, scaleY: 1.28 },
+			lower_core: { scaleX: 0.74, scaleY: 1.34 },
+		},
+		baseScale: 0.92,
+	},
+]
+
 const createDefinition = (
 	id: CombatRigId,
 	defaultClip: AnimationClipName,
 	parts: readonly RigPartDefinition[],
 	clips: Readonly<Partial<Record<AnimationClipName, AnimationClip>>>,
+	variants?: readonly RigVariantDefinition[],
 ): RigDefinition => ({
 	id,
 	atlasUrl: `/overdrive/art/rigs/${id}-rig-v1.json`,
 	defaultClip,
 	parts,
 	clips,
+	variants,
 })
 
 export const WARDEN_RIG = createDefinition("warden", "idle", wardenParts, wardenClips)
-export const PACKET_RIG = createDefinition("packet", "locomotion", packetParts, packetClips)
-export const NEEDLE_RIG = createDefinition("needle", "locomotion", needleParts, needleClips)
-export const NULL_RIG = createDefinition("null", "locomotion", nullParts, nullClips)
+export const PACKET_RIG = createDefinition(
+	"packet",
+	"locomotion",
+	packetParts,
+	packetClips,
+	packetVariants,
+)
+export const NEEDLE_RIG = createDefinition(
+	"needle",
+	"locomotion",
+	needleParts,
+	needleClips,
+	needleVariants,
+)
+export const NULL_RIG = createDefinition(
+	"null",
+	"locomotion",
+	nullParts,
+	nullClips,
+	nullVariants,
+)
 
 export const COMBAT_RIG_MANIFESTS: Record<CombatRigId, RigDefinition> = {
 	warden: WARDEN_RIG,
