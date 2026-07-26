@@ -1,6 +1,7 @@
 export type StageType = "warmup" | "rush" | "glitch"
 export type RunMode = "free" | "daily" | "practice"
 export type WordPoolLanguage = "EN" | "ID"
+export type ThreatBand = "protected" | "pressure" | "overclocked" | "lethal"
 
 export type Screen =
 	| "menu"
@@ -33,6 +34,13 @@ export type RunSnapshot = {
 	stage: StageType
 	endless: boolean
 	timeLeftMs: number
+	stageDurationMs: number
+	aegisActive: boolean
+	aegisRescues: number
+	stageRescued: boolean
+	focusPaused: boolean
+	threatBand: ThreatBand
+	overdriveCharge: number
 	score: number
 	runScore: number
 	standardScore: number
@@ -83,12 +91,33 @@ export type EngineEvents = {
 		word: string
 		characterBase: number
 		itemBaseBonus: number
+		effectiveBase: number
 		effectiveMult: number
+		finalMultiplier: number
 		scoreGain: number
+		overdriveReleased: boolean
+		aegisRecovery: boolean
+		autoExecuted: boolean
 		appliedItemIds: string[]
 		combo: number
 	}
 	typo: { expected: string; got: string; ignored: boolean }
+	character_accepted: {
+		character: string
+		caretIndex: number
+		charge: number
+		becameReady: boolean
+	}
+	overdrive_ready: { charge: number }
+	overdrive_released: { word: string; scoreGain: number }
+	aegis_rescue: {
+		zone: number
+		stage: StageType
+		rescueNumber: number
+		timeAddedMs: number
+	}
+	focus_pause: { idleMs: number }
+	focus_resume: { timeLeftMs: number }
 	mult_change: { mult: number }
 	mult_increased: { mult: number }
 	quota_progress: { score: number; quota: number }

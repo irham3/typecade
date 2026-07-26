@@ -3,24 +3,19 @@ import { getStageQuota } from "../progression"
 
 describe("Progression Logic", () => {
 	it("calculates correct quota for standard zones", () => {
-		expect(getStageQuota(1, "warmup")).toBe(300)
-		expect(getStageQuota(8, "warmup")).toBe(50000)
-		expect(getStageQuota(8, "rush")).toBe(75000)
-		expect(getStageQuota(8, "glitch")).toBe(100000)
+		expect(getStageQuota(1, "warmup")).toBe(5)
+		expect(getStageQuota(8, "warmup")).toBe(7000)
+		expect(getStageQuota(8, "rush")).toBe(9000)
+		expect(getStageQuota(8, "glitch")).toBe(12000)
 	})
 	
-	it("calculates exact requested quotes for Zone 9+ using 1.8 exponent", () => {
-		// As required by Prompt 9 examples:
-		// Zone 9 Warm-up = 90,000 (50,000 * 1.8^1 = 90,000)
-		expect(getStageQuota(9, "warmup")).toBe(90000)
+	it("applies the documented 1.8 endless exponent after Zone 8", () => {
+		expect(getStageQuota(9, "warmup")).toBe(12600)
 		
-		// Zone 9 Rush = 135,000 (75,000 * 1.8^1 = 135,000)
-		expect(getStageQuota(9, "rush")).toBe(135000)
+		expect(getStageQuota(9, "rush")).toBe(16200)
 		
-		// Zone 9 Glitch = 180,000 (100,000 * 1.8^1 = 180,000)
-		expect(getStageQuota(9, "glitch")).toBe(180000)
+		expect(getStageQuota(9, "glitch")).toBe(21600)
 		
-		// Zone 10 Glitch = 324,000 (100,000 * 1.8^2 = 100,000 * 3.24 = 324,000)
-		expect(getStageQuota(10, "glitch")).toBe(324000)
+		expect(getStageQuota(10, "glitch")).toBe(38880)
 	})
 })

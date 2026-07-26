@@ -25,6 +25,7 @@ function enterGlitch(glitchId: string, macros: string[] = []) {
 		seed: seedFor(glitchId),
 		words: [quotaWord],
 		startingMacros: macros,
+		startingZone: 3,
 	})
 	api.start()
 	typeCurrentWord(api)
@@ -80,7 +81,7 @@ describe("MVP Glitches", () => {
 	it("Inflation raises quota and doubles rewards until Escape cancels it", () => {
 		const api = enterGlitch("inflation", ["escape"])
 		expect(api.snapshot()).toMatchObject({
-			quota: 900,
+			quota: 195,
 			glitchState: {
 				tokenMultiplier: 2,
 				inflatedQuota: true,
@@ -89,7 +90,7 @@ describe("MVP Glitches", () => {
 
 		api.triggerMacro(0)
 		expect(api.snapshot()).toMatchObject({
-			quota: 600,
+			quota: 130,
 			glitchState: {
 				cancelled: true,
 				tokenMultiplier: 1,

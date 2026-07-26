@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { QUOTA, STAGE_DURATION_MS } from "../constants"
+import {
+	AEGIS_RESCUE_MS,
+	OVERDRIVE_CHARGE_MAX,
+	QUOTA,
+	STAGE_DURATION_BY_TYPE,
+	STAGE_DURATION_MS,
+} from "../constants"
 import { createRun } from "../run"
 
 const words = ["signal", "vector", "system", "kernel", "packet", "cipher"]
@@ -30,14 +36,17 @@ describe("run state machine", () => {
 			zone: 1,
 			stage: "warmup",
 			timeLeftMs: STAGE_DURATION_MS,
+			stageDurationMs: STAGE_DURATION_BY_TYPE.warmup,
 			quota: QUOTA[1].warmup,
+			aegisActive: true,
+			threatBand: "protected",
 		})
 		expect(first.snapshot().currentWord).toBe(second.snapshot().currentWord)
 		expect(first.snapshot().upcomingWords).toEqual(second.snapshot().upcomingWords)
 	})
 
 	it("marks a corrected word dirty and awards zero score", () => {
-		const api = createRun({ seed: "dirty-word", words: ["signal"] })
+		const api = createRun({ seed: "dirty-word", words: ["signal"], startingZone: 3 })
 		api.start()
 		api.feedChar("x")
 		typeCurrentWord(api)
@@ -50,11 +59,54 @@ describe("run state machine", () => {
 		})
 	})
 
-	it("clears immediately when quota is reached and preserves a real time bonus", () => {
-		const quotaWord = "a".repeat(QUOTA[1].warmup)
-		const api = createRun({ seed: "instant-clear", words: [quotaWord] })
+	it("starts with one-key auto-execute and forgives training-route typos", () => {
+		const api = createRun({ seed: "literal-beginner", words })
 		api.start()
+		const expected = api.snapshot().currentWord
+		expect(expected).toHaveLength(1)
+		api.feedChar(expected === "x" ? "z" : "x")
+		expect(api.snapshot()).toMatchObject({
+			wordDirty: false,
+			stageTypos: 1,
+			score: 0,
+		})
+
+		api.feedChar(expected)
+		expect(api.snapshot()).toMatchObject({
+			caretIndex: 0,
+			score: 1,
+			combo: 1,
+		})
+	})
+
+	it("awards Base-only Aegis Recovery for corrected words in Zone 2", () => {
+		const api = createRun({ seed: "aegis-recovery", words })
+		let recovered = false
+		api.events.on("word_complete", ({ aegisRecovery }) => {
+			recovered = recovered || aegisRecovery
+		})
+		api.start()
+		for (let stage = 0; stage < 3; stage += 1) {
+			clearCurrentStage(api)
+			api.continueToNextStage()
+			api.leaveShop()
+		}
+		expect(api.snapshot()).toMatchObject({ zone: 2, stage: "warmup" })
+		const word = api.snapshot().currentWord
+		api.feedChar(word[0] === "x" ? "z" : "x")
 		typeCurrentWord(api)
+
+		expect(api.snapshot()).toMatchObject({
+			score: word.length,
+			combo: 0,
+		})
+		expect(recovered).toBe(true)
+	})
+
+	it("clears immediately when quota is reached and preserves a real time bonus", () => {
+		const api = createRun({ seed: "instant-clear", words })
+		api.start()
+		clearCurrentStage(api)
 
 		expect(api.snapshot()).toMatchObject({
 			screen: "stageResult",
@@ -63,23 +115,117 @@ describe("run state machine", () => {
 			timeLeftMs: STAGE_DURATION_MS,
 			tokenBreakdown: {
 				clearReward: 3,
-				timeBonus: 6,
+				timeBonus: 7,
 				interest: 0,
-				totalEarned: 9,
+				totalEarned: 10,
 			},
 		})
 	})
 
-	it("fails on timeout when quota is not met", () => {
+	it("uses a visible Aegis rescue instead of ending an early run on timeout", () => {
 		const api = createRun({ seed: "timeout", words })
+		let rescues = 0
+		api.events.on("aegis_rescue", () => {
+			rescues += 1
+		})
 		api.start()
-		api.advance(STAGE_DURATION_MS)
+		for (let elapsed = 0; elapsed < STAGE_DURATION_MS; elapsed += 3_000) {
+			api.advance(3_000)
+			api.backspace()
+		}
 
+		expect(api.snapshot()).toMatchObject({
+			screen: "stage",
+			timeLeftMs: AEGIS_RESCUE_MS,
+			aegisActive: true,
+			aegisRescues: 1,
+			stageRescued: true,
+		})
+		expect(rescues).toBe(1)
+	})
+
+	it("pauses the protected clock after four idle seconds and resumes on input", () => {
+		const api = createRun({ seed: "focus-pause", words })
+		api.start()
+		api.advance(4_000)
+		expect(api.snapshot()).toMatchObject({
+			focusPaused: true,
+			timeLeftMs: STAGE_DURATION_MS - 4_000,
+		})
+
+		api.advance(60_000)
+		expect(api.snapshot().timeLeftMs).toBe(STAGE_DURATION_MS - 4_000)
+		api.feedChar(api.snapshot().currentWord[0])
+		expect(api.snapshot().focusPaused).toBe(false)
+	})
+
+	it("lets a literal 1 WPM player clear the first stage without rushing", () => {
+		const api = createRun({ seed: "one-wpm", words })
+		api.start()
+
+		let guard = 0
+		while (api.snapshot().screen === "stage" && guard < 10) {
+			api.advance(12_000)
+			api.feedChar(api.snapshot().currentWord)
+			guard += 1
+		}
+
+		expect(guard).toBe(QUOTA[1].warmup)
+		expect(api.snapshot()).toMatchObject({
+			screen: "stageResult",
+			score: QUOTA[1].warmup,
+			wpm: 1,
+			aegisRescues: 0,
+		})
+	})
+
+	it("ends on timeout after the protected zones", () => {
+		const api = createRun({ seed: "lethal-timeout", words })
+		api.start()
+
+		for (let clearedStages = 0; clearedStages < 6; clearedStages += 1) {
+			clearCurrentStage(api)
+			api.continueToNextStage()
+			api.leaveShop()
+		}
+
+		expect(api.snapshot()).toMatchObject({
+			screen: "stage",
+			zone: 3,
+			stage: "warmup",
+			aegisActive: false,
+			threatBand: "pressure",
+		})
+		api.advance(STAGE_DURATION_BY_TYPE.warmup)
 		expect(api.snapshot()).toMatchObject({
 			screen: "runOver",
 			win: false,
-			finalScore: 0,
 		})
+	})
+
+	it("charges on accepted characters and doubles a clean release at full charge", () => {
+		const api = createRun({ seed: "overdrive", words: ["signal"] })
+		let releases = 0
+		let releasedScore = 0
+		api.events.on("overdrive_released", ({ scoreGain }) => {
+			releases += 1
+			releasedScore = scoreGain
+		})
+		api.start()
+
+		let guard = 0
+		while (releases === 0 && guard < 100) {
+			if (api.snapshot().screen === "stage") typeCurrentWord(api)
+			else if (api.snapshot().screen === "stageResult") api.continueToNextStage()
+			else if (api.snapshot().screen === "shop") api.leaveShop()
+			guard += 1
+		}
+
+		expect(guard).toBeLessThan(100)
+		expect(OVERDRIVE_CHARGE_MAX).toBe(100)
+		expect(api.snapshot().overdriveCharge).toBe(0)
+		expect(releasedScore).toBeGreaterThan(0)
+		expect(releases).toBe(1)
 	})
 
 	it("moves through result, shop, and the next stage without double-counting score", () => {

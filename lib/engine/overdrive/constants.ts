@@ -1,17 +1,30 @@
-export const STAGE_DURATION_MS = 60_000
+export const STAGE_DURATION_BY_TYPE = {
+	warmup: 75_000,
+	rush: 70_000,
+	glitch: 65_000,
+} as const
+// Backwards-compatible alias for callers that need the initial Warm-up clock.
+export const STAGE_DURATION_MS = STAGE_DURATION_BY_TYPE.warmup
+export const AEGIS_PROTECTED_ZONE_MAX = 2
+export const AEGIS_RESCUE_MS = 30_000
+export const FOCUS_PAUSE_IDLE_MS = 4_000
+export const OVERDRIVE_CHARGE_MAX = 100
+export const OVERDRIVE_CHARGE_PER_CHARACTER = 3
+export const OVERDRIVE_TYPO_DRAIN = 15
+export const OVERDRIVE_SCORE_MULTIPLIER = 2
 export const WORDS_PER_MULT = 10        // +1 Mult per 10 clean words
 export const ENDLESS_QUOTA_FACTOR = 1.8 // quota x1.8^n after Zone 8
 
 // Copy this table 1:1 from docs/game-design.md §3.
 export const QUOTA: Record<number, { warmup: number; rush: number; glitch: number }> = {
-	1: { warmup: 300, rush: 450, glitch: 600 },
-	2: { warmup: 800, rush: 1200, glitch: 1600 },
-	3: { warmup: 2000, rush: 3000, glitch: 4000 },
-	4: { warmup: 5000, rush: 7500, glitch: 10000 },
-	5: { warmup: 11000, rush: 16500, glitch: 22000 },
-	6: { warmup: 20000, rush: 30000, glitch: 40000 },
-	7: { warmup: 35000, rush: 52000, glitch: 70000 },
-	8: { warmup: 50000, rush: 75000, glitch: 100000 },
+	1: { warmup: 5, rush: 8, glitch: 12 },
+	2: { warmup: 8, rush: 12, glitch: 18 },
+	3: { warmup: 60, rush: 90, glitch: 130 },
+	4: { warmup: 180, rush: 260, glitch: 380 },
+	5: { warmup: 500, rush: 700, glitch: 1000 },
+	6: { warmup: 1200, rush: 1800, glitch: 2500 },
+	7: { warmup: 3000, rush: 4500, glitch: 6000 },
+	8: { warmup: 7000, rush: 9000, glitch: 12000 },
 }
 
 // Economy, from docs/game-design.md §4:

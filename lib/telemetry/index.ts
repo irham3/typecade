@@ -4,7 +4,7 @@ import type {
 	WordPoolLanguage,
 } from "@/lib/engine/overdrive"
 
-export const OVERDRIVE_RULESET_VERSION = "mvp-2026-07-25"
+export const OVERDRIVE_RULESET_VERSION = "mvp-2026-07-26-beginner-route"
 export const OVERDRIVE_RNG_VERSION = "mulberry32-v1"
 export const OVERDRIVE_WORD_POOL_VERSION = "2026-07-25"
 

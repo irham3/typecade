@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vitest"
-import { createRun } from "../run"
+import { createRun as createBaseRun } from "../run"
 import { KEYCAPS, MACROS } from "../items"
+
+function createRun(options: Parameters<typeof createBaseRun>[0]) {
+	return createBaseRun({ ...options, startingZone: 3 })
+}
 
 function typeCurrentWord(api: ReturnType<typeof createRun>) {
 	for (const character of api.snapshot().currentWord) api.feedChar(character)
 	api.feedChar(" ")
+}
+
+function clearCurrentStage(api: ReturnType<typeof createRun>) {
+	let guard = 0
+	while (api.snapshot().screen === "stage" && guard < 2_000) {
+		typeCurrentWord(api)
+		guard += 1
+	}
+	expect(guard).toBeLessThan(2_000)
 }
 
 describe("MVP item system", () => {
@@ -46,6 +59,33 @@ describe("MVP item system", () => {
 		api.start()
 		typeCurrentWord(api)
 		expect(api.snapshot().score).toBe(expectedScore)
+	})
+
+	it("emits the resolved score factors used by presentation feedback", () => {
+		const api = createRun({
+			seed: "score-equation",
+			words: ["abcdefgh"],
+			startingKeycaps: ["longshot"],
+		})
+		let result: {
+			effectiveBase: number
+			effectiveMult: number
+			finalMultiplier: number
+			scoreGain: number
+		} | null = null
+		api.events.on("word_complete", (payload) => {
+			result = payload
+		})
+
+		api.start()
+		typeCurrentWord(api)
+
+		expect(result).toMatchObject({
+			effectiveBase: 16,
+			effectiveMult: 1,
+			finalMultiplier: 1,
+			scoreGain: 16,
+		})
 	})
 
 	it("does not leak transient WASD and Sprinter bonuses between words", () => {
@@ -169,8 +209,8 @@ describe("MVP item system", () => {
 		api.start()
 		typeCurrentWord(api)
 		expect(api.snapshot().score).toBe(3)
-		api.feedChar("x")
-		api.advance(60_000)
+		for (let typo = 0; typo < 10; typo += 1) api.feedChar("x")
+		clearCurrentStage(api)
 		expect(api.snapshot().keycaps).not.toContain("glass_keycap")
 	})
 
@@ -183,7 +223,7 @@ describe("MVP item system", () => {
 		api.start()
 		for (let index = 0; index < 10; index += 1) typeCurrentWord(api)
 		api.feedChar("x")
-		expect(api.snapshot().timeLeftMs).toBe(57_000)
+		expect(api.snapshot().timeLeftMs).toBe(72_000)
 		typeCurrentWord(api)
 		typeCurrentWord(api)
 		expect(api.snapshot().score).toBe(13)
@@ -208,9 +248,9 @@ describe("MVP item system", () => {
 		})
 		freeze.start()
 		freeze.triggerMacro(0)
-		expect(freeze.snapshot().timeLeftMs).toBe(80_000)
+		expect(freeze.snapshot().timeLeftMs).toBe(95_000)
 		freeze.triggerMacro(0)
-		expect(freeze.snapshot().quota).toBe(225)
+		expect(freeze.snapshot().quota).toBe(45)
 		expect(freeze.snapshot().macros).toHaveLength(0)
 
 		const insurance = createRun({

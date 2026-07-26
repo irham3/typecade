@@ -5,12 +5,20 @@ import type {
 	ItemImpact,
 	RunMode,
 	RunSnapshot,
+	StageType,
+	ThreatBand,
 	WordPoolLanguage,
 } from "./types"
 import { createScorer } from "./scoring"
 import {
-	STAGE_DURATION_MS,
-	QUOTA,
+	STAGE_DURATION_BY_TYPE,
+	AEGIS_PROTECTED_ZONE_MAX,
+	AEGIS_RESCUE_MS,
+	FOCUS_PAUSE_IDLE_MS,
+	OVERDRIVE_CHARGE_MAX,
+	OVERDRIVE_CHARGE_PER_CHARACTER,
+	OVERDRIVE_TYPO_DRAIN,
+	OVERDRIVE_SCORE_MULTIPLIER,
 	CLEAR_REWARD,
 	TIME_BONUS_PER_10S,
 	INTEREST_PER_5_TOKENS,
@@ -35,7 +43,18 @@ const MAX_MACROS = 2
 const SHOP_REROLL_BASE = 5
 const BUILD_TRIGGER_BIAS = 0.12
 const ANTI_REPEAT_WINDOW = 30
-const SAVE_VERSION = 3
+const SAVE_VERSION = 5
+
+function stageDurationMs(stage: StageType): number {
+	return STAGE_DURATION_BY_TYPE[stage]
+}
+
+function threatBandForZone(zone: number): ThreatBand {
+	if (zone <= 2) return "protected"
+	if (zone <= 4) return "pressure"
+	if (zone <= 6) return "overclocked"
+	return "lethal"
+}
 
 export type CreateRunOptions = {
 	seed: string
@@ -45,6 +64,7 @@ export type CreateRunOptions = {
 	startingKeycaps?: string[]
 	startingMacros?: string[]
 	startingTokens?: number
+	startingZone?: number
 }
 
 type SavedRun = {
@@ -60,6 +80,20 @@ type SavedRun = {
 	preserveMultForWord: boolean
 	insuranceArmed: boolean
 	stageElapsedMs: number
+	stageIdleMs: number
+}
+
+const BEGINNER_SIGNALS: Record<WordPoolLanguage, Record<StageType, string[]>> = {
+	EN: {
+		warmup: ["f", "j", "d", "k", "s", "l", "a", "e", "i", "o"],
+		rush: ["as", "in", "it", "to", "of", "on", "up", "go", "we", "no"],
+		glitch: ["the", "and", "you", "for", "run", "key", "hit", "win", "tap", "aim"],
+	},
+	ID: {
+		warmup: ["f", "j", "d", "k", "s", "l", "a", "i", "u", "e"],
+		rush: ["di", "ke", "ya", "ku", "mu", "ok", "se", "me", "be", "la"],
+		glitch: ["dan", "aku", "dia", "ini", "ada", "mau", "dua", "iya", "kau", "nya"],
+	},
 }
 
 function emptyImpact(): ItemImpact {
@@ -80,6 +114,7 @@ export function createRun(opts: CreateRunOptions) {
 	if (opts.words.length === 0) throw new Error("Overdrive requires a non-empty word pool")
 
 	const events = createEmitter<EngineEvents>()
+	const startingZone = Math.max(1, Math.floor(opts.startingZone ?? 1))
 	const sourceWords = [...new Set(opts.words.map((word) => word.trim()).filter(Boolean))]
 	const longWords = sourceWords.filter((word) => word.replace(/[^\p{L}]/gu, "").length >= 8)
 	const doubleLetterWords = sourceWords.filter((word) => /(.)\1/i.test(word))
@@ -102,15 +137,22 @@ export function createRun(opts: CreateRunOptions) {
 		screen: "menu",
 		mode: opts.mode ?? "free",
 		language: opts.language ?? "EN",
-		zone: 1,
+		zone: startingZone,
 		stage: "warmup",
 		endless: false,
-		timeLeftMs: STAGE_DURATION_MS,
+		timeLeftMs: stageDurationMs("warmup"),
+		stageDurationMs: stageDurationMs("warmup"),
+		aegisActive: startingZone <= AEGIS_PROTECTED_ZONE_MAX,
+		aegisRescues: 0,
+		stageRescued: false,
+		focusPaused: false,
+		threatBand: threatBandForZone(startingZone),
+		overdriveCharge: 0,
 		score: 0,
 		runScore: 0,
 		standardScore: 0,
 		endlessScore: 0,
-		quota: QUOTA[1].warmup,
+		quota: getStageQuota(startingZone, "warmup"),
 		combo: 0,
 		maxCombo: 0,
 		mult: 1,
@@ -153,6 +195,7 @@ export function createRun(opts: CreateRunOptions) {
 	let insuranceArmed = false
 	let stageInterestCap = INTEREST_CAP
 	let stageElapsedMs = 0
+	let stageIdleMs = 0
 
 	function resetRng() {
 		rootRng = createRng(opts.seed)
@@ -245,6 +288,25 @@ export function createRun(opts: CreateRunOptions) {
 	}
 
 	function getBuildBiasedWord(): string {
+		const trainingPool = state.zone === 1
+			? BEGINNER_SIGNALS[state.language][state.stage]
+			: state.zone === 2
+				? sourceWords.filter((word) => {
+					const length = word.replace(/[^\p{L}]/gu, "").length
+					return length >= 3 && length <= 5
+				})
+				: null
+		if (trainingPool && trainingPool.length > 0) {
+			let signal = trainingPool[0]
+			for (let attempt = 0; attempt < 24; attempt += 1) {
+				signal = wordsRng.pick(trainingPool)
+				if (!recentWords.includes(signal.toLowerCase())) break
+			}
+			recentWords.push(signal.toLowerCase())
+			recentWords = recentWords.slice(-Math.min(ANTI_REPEAT_WINDOW, trainingPool.length))
+			return signal
+		}
+
 		const pools: string[][] = []
 		if (state.keycaps.includes("longshot") && longWords.length > 0) pools.push(longWords)
 		if (state.keycaps.includes("double_tap") && doubleLetterWords.length > 0) pools.push(doubleLetterWords)
@@ -263,7 +325,11 @@ export function createRun(opts: CreateRunOptions) {
 		recentWords.push(repeatKey)
 		recentWords = recentWords.slice(-ANTI_REPEAT_WINDOW)
 
-		if (state.keycaps.includes("punctuator") && wordsRng.next() < BUILD_TRIGGER_BIAS) {
+		if (
+			state.zone >= 3
+			&& state.keycaps.includes("punctuator")
+			&& wordsRng.next() < BUILD_TRIGGER_BIAS
+		) {
 			candidate += wordsRng.pick([...punctuation])
 		}
 		return candidate
@@ -285,6 +351,13 @@ export function createRun(opts: CreateRunOptions) {
 		}
 	}
 
+	function registerInputIntent() {
+		stageIdleMs = 0
+		if (!state.focusPaused) return
+		state.focusPaused = false
+		events.emit("focus_resume", { timeLeftMs: state.timeLeftMs })
+	}
+
 	function persistentMult(): number {
 		let add = 0
 		let multiplier = 1
@@ -298,7 +371,13 @@ export function createRun(opts: CreateRunOptions) {
 
 	function startStage() {
 		state.screen = "stage"
-		state.timeLeftMs = STAGE_DURATION_MS
+		state.stageDurationMs = stageDurationMs(state.stage)
+		state.timeLeftMs = state.stageDurationMs
+		state.aegisActive = !state.endless && state.zone <= AEGIS_PROTECTED_ZONE_MAX
+		state.aegisRescues = 0
+		state.stageRescued = false
+		state.focusPaused = false
+		state.threatBand = threatBandForZone(state.zone)
 		state.score = 0
 		state.quota = getStageQuota(state.zone, state.stage)
 		state.combo = 0
@@ -323,6 +402,7 @@ export function createRun(opts: CreateRunOptions) {
 		insuranceArmed = false
 		stageInterestCap = INTEREST_CAP
 		stageElapsedMs = 0
+		stageIdleMs = 0
 
 		forEachKeycap((id, _index, base) => {
 			const definition = KEYCAPS[id]
@@ -332,8 +412,10 @@ export function createRun(opts: CreateRunOptions) {
 			stageInterestCap = context.interestCap
 		})
 
-		if (state.stage === "glitch") {
-			const ids = Object.keys(GLITCHES)
+		if (state.stage === "glitch" && state.zone > 1) {
+			const ids = Object.keys(GLITCHES).filter(
+				(id) => state.zone >= 3 || id !== "sudden_death",
+			)
 			state.activeGlitch = glitchRng.pick(ids)
 			state.glitchState = {}
 			const glitch = GLITCHES[state.activeGlitch]
@@ -355,17 +437,24 @@ export function createRun(opts: CreateRunOptions) {
 		state = {
 			...state,
 			screen: "menu",
-			zone: 1,
+			zone: startingZone,
 			stage: "warmup",
 			endless: false,
-			timeLeftMs: STAGE_DURATION_MS,
+			timeLeftMs: stageDurationMs("warmup"),
+			stageDurationMs: stageDurationMs("warmup"),
+			aegisActive: startingZone <= AEGIS_PROTECTED_ZONE_MAX,
+			aegisRescues: 0,
+			stageRescued: false,
+			focusPaused: false,
+			threatBand: threatBandForZone(startingZone),
+			overdriveCharge: 0,
 			score: 0,
 			runScore: 0,
 			standardScore: 0,
 			endlessScore: 0,
 			finalScore: undefined,
 			tokenBreakdown: undefined,
-			quota: QUOTA[1].warmup,
+			quota: getStageQuota(startingZone, "warmup"),
 			combo: 0,
 			maxCombo: 0,
 			mult: 1,
@@ -438,7 +527,9 @@ export function createRun(opts: CreateRunOptions) {
 
 		const tokenMultiplier = Number(state.glitchState?.tokenMultiplier ?? 1)
 		const clearReward = CLEAR_REWARD[state.stage]
-		const timeBonus = Math.floor(state.timeLeftMs / 10_000) * TIME_BONUS_PER_10S
+		const timeBonus = state.stageRescued
+			? 0
+			: Math.floor(state.timeLeftMs / 10_000) * TIME_BONUS_PER_10S
 		const interest = Math.min(
 			Math.floor(state.tokens / 5) * INTEREST_PER_5_TOKENS,
 			stageInterestCap,
@@ -467,6 +558,20 @@ export function createRun(opts: CreateRunOptions) {
 		if (isStandardClear(state.zone, state.stage) && !state.endless) state.win = true
 	}
 
+	function rescueWithAegis(): boolean {
+		if (!state.aegisActive || state.screen !== "stage") return false
+		state.aegisRescues += 1
+		state.stageRescued = true
+		state.timeLeftMs += AEGIS_RESCUE_MS
+		events.emit("aegis_rescue", {
+			zone: state.zone,
+			stage: state.stage,
+			rescueNumber: state.aegisRescues,
+			timeAddedMs: AEGIS_RESCUE_MS,
+		})
+		return true
+	}
+
 	function failStage(reason: "timeout" | "sudden_death" | "time_penalty") {
 		if (state.screen !== "stage") return
 		resolveItemStageEnd(false)
@@ -485,6 +590,11 @@ export function createRun(opts: CreateRunOptions) {
 
 	function submitWord() {
 		const result = scorer.completeWord(state.wordDirty, preserveMultForWord)
+		const aegisRecovery = !result.clean
+			&& state.aegisActive
+			&& state.zone === 2
+		const releasesOverdrive = result.clean
+			&& state.overdriveCharge >= OVERDRIVE_CHARGE_MAX
 		const elapsedMs = stageElapsedMs
 		const appliedItemIds: string[] = []
 		const contextBase = {
@@ -497,7 +607,7 @@ export function createRun(opts: CreateRunOptions) {
 			baseMultiplier: 1,
 			multAdd: 0,
 			multMultiplier: 1,
-			finalMultiplier: 1,
+			finalMultiplier: releasesOverdrive ? OVERDRIVE_SCORE_MULTIPLIER : 1,
 			appliedItemIds,
 		}
 
@@ -519,7 +629,9 @@ export function createRun(opts: CreateRunOptions) {
 		const modifiedBase = (state.currentWord.length + contextBase.baseBonus) * contextBase.baseMultiplier
 		const scoreGain = result.clean
 			? Math.floor(modifiedBase * effectiveMult * contextBase.finalMultiplier)
-			: 0
+			: aegisRecovery
+				? Math.floor(modifiedBase)
+				: 0
 		const baselineScore = result.clean
 			? Math.floor(state.currentWord.length * result.mult)
 			: 0
@@ -535,6 +647,7 @@ export function createRun(opts: CreateRunOptions) {
 		}
 
 		recordScoreImpact(appliedItemIds, Math.max(0, scoreGain - baselineScore))
+		if (releasesOverdrive) state.overdriveCharge = 0
 
 		const resolvedBase = {
 			...contextBase,
@@ -551,11 +664,22 @@ export function createRun(opts: CreateRunOptions) {
 			word: state.currentWord,
 			characterBase: state.currentWord.length,
 			itemBaseBonus: contextBase.baseBonus,
-			effectiveMult,
+			effectiveBase: modifiedBase,
+			effectiveMult: aegisRecovery ? 1 : effectiveMult,
+			finalMultiplier: aegisRecovery ? 1 : contextBase.finalMultiplier,
 			scoreGain,
+			overdriveReleased: releasesOverdrive,
+			aegisRecovery,
+			autoExecuted: state.zone === 1,
 			appliedItemIds: [...appliedItemIds],
 			combo: state.combo,
 		})
+		if (releasesOverdrive) {
+			events.emit("overdrive_released", {
+				word: state.currentWord,
+				scoreGain,
+			})
+		}
 		if (result.multIncreased) {
 			events.emit("mult_increased", { mult: persistentMult() })
 		}
@@ -579,6 +703,7 @@ export function createRun(opts: CreateRunOptions) {
 
 	function feedChar(character: string) {
 		if (state.screen !== "stage") return
+		registerInputIntent()
 
 		if (character === " ") {
 			if (state.caretIndex === state.currentWord.length) submitWord()
@@ -588,12 +713,29 @@ export function createRun(opts: CreateRunOptions) {
 
 		const expected = state.currentWord[state.caretIndex]
 		if (character === expected) {
+			const previousCharge = state.overdriveCharge
 			stageAttemptedChars += 1
 			stageCorrectChars += 1
 			runAttemptedChars += 1
 			runCorrectChars += 1
 			state.caretIndex += 1
+			state.overdriveCharge = Math.min(
+				OVERDRIVE_CHARGE_MAX,
+				state.overdriveCharge + OVERDRIVE_CHARGE_PER_CHARACTER,
+			)
+			const becameReady = previousCharge < OVERDRIVE_CHARGE_MAX
+				&& state.overdriveCharge === OVERDRIVE_CHARGE_MAX
+			events.emit("character_accepted", {
+				character,
+				caretIndex: state.caretIndex,
+				charge: state.overdriveCharge,
+				becameReady,
+			})
+			if (becameReady) events.emit("overdrive_ready", { charge: state.overdriveCharge })
 			updateTypingStats()
+			if (state.zone === 1 && state.caretIndex === state.currentWord.length) {
+				submitWord()
+			}
 			return
 		}
 
@@ -611,7 +753,9 @@ export function createRun(opts: CreateRunOptions) {
 		stageAttemptedChars += 1
 		runAttemptedChars += 1
 		const isFirstTypoInWord = !state.wordDirty
-		state.wordDirty = true
+		const trainingForgiveness = state.aegisActive && state.zone === 1
+		if (!trainingForgiveness) state.wordDirty = true
+		state.overdriveCharge = Math.max(0, state.overdriveCharge - OVERDRIVE_TYPO_DRAIN)
 		state.stageTypos += 1
 		state.totalTypos += 1
 
@@ -653,26 +797,42 @@ export function createRun(opts: CreateRunOptions) {
 		events.emit("typo", { expected, got: character, ignored: false })
 
 		if (forceFail) failStage("sudden_death")
-		else if (state.timeLeftMs <= 0) failStage("time_penalty")
+		else if (state.timeLeftMs <= 0 && !rescueWithAegis()) failStage("time_penalty")
 	}
 
 	function backspace() {
 		if (state.screen !== "stage") return
+		registerInputIntent()
 		if (state.activeGlitch === "no_backspace" && state.glitchState?.cancelled !== true) return
 		if (state.caretIndex > 0) state.caretIndex -= 1
 	}
 
 	function advance(ms: number) {
 		if (state.screen !== "stage" || !Number.isFinite(ms) || ms <= 0) return
-		const delta = Math.min(ms, state.timeLeftMs)
+		state.runDurationMs += ms
+		stageElapsedMs += ms
+
+		let timerDelta = ms
+		if (state.aegisActive) {
+			const remainingFocusGrace = Math.max(0, FOCUS_PAUSE_IDLE_MS - stageIdleMs)
+			timerDelta = Math.min(ms, remainingFocusGrace)
+			stageIdleMs += ms
+			if (stageIdleMs >= FOCUS_PAUSE_IDLE_MS && !state.focusPaused) {
+				state.focusPaused = true
+				events.emit("focus_pause", { idleMs: stageIdleMs })
+			}
+		} else {
+			stageIdleMs += ms
+			state.focusPaused = false
+		}
+
+		const delta = Math.min(timerDelta, state.timeLeftMs)
 		state.timeLeftMs = Math.max(0, state.timeLeftMs - delta)
-		state.runDurationMs += delta
-		stageElapsedMs += delta
 		updateTypingStats()
 
 		if (state.timeLeftMs === 0) {
 			if (state.score >= state.quota) completeStage()
-			else failStage("timeout")
+			else if (!rescueWithAegis()) failStage("timeout")
 		}
 	}
 
@@ -774,6 +934,7 @@ export function createRun(opts: CreateRunOptions) {
 
 	function triggerMacro(index: number) {
 		if (state.screen !== "stage") return
+		registerInputIntent()
 		const id = state.macros[index]
 		const definition = MACROS[id]
 		if (!definition) return
@@ -835,6 +996,7 @@ export function createRun(opts: CreateRunOptions) {
 			preserveMultForWord,
 			insuranceArmed,
 			stageElapsedMs,
+			stageIdleMs,
 		}
 		return JSON.stringify(save)
 	}
@@ -844,13 +1006,26 @@ export function createRun(opts: CreateRunOptions) {
 			const parsed: unknown = JSON.parse(json)
 			if (
 				!isRecord(parsed)
-				|| (parsed.version !== 2 && parsed.version !== SAVE_VERSION)
+				|| parsed.version !== SAVE_VERSION
 				|| !isRecord(parsed.state)
 			) return false
 			const save = parsed as unknown as SavedRun
+			const savedStage = save.state.stage ?? state.stage
+			const savedZone = Number(save.state.zone ?? state.zone)
+			const savedEndless = Boolean(save.state.endless)
 			state = {
 				...state,
 				...save.state,
+				stageDurationMs: Number(save.state.stageDurationMs ?? stageDurationMs(savedStage)),
+				aegisActive: Boolean(
+					save.state.aegisActive
+					?? (!savedEndless && savedZone <= AEGIS_PROTECTED_ZONE_MAX),
+				),
+				aegisRescues: Number(save.state.aegisRescues ?? 0),
+				stageRescued: Boolean(save.state.stageRescued ?? false),
+				focusPaused: Boolean(save.state.focusPaused ?? false),
+				threatBand: save.state.threatBand ?? threatBandForZone(savedZone),
+				overdriveCharge: Number(save.state.overdriveCharge ?? 0),
 				totalTokensEarned: Number(save.state.totalTokensEarned ?? 0),
 				keycaps: [...save.state.keycaps],
 				macros: [...save.state.macros],
@@ -867,6 +1042,7 @@ export function createRun(opts: CreateRunOptions) {
 			preserveMultForWord = save.preserveMultForWord
 			insuranceArmed = save.insuranceArmed
 			stageElapsedMs = save.stageElapsedMs
+			stageIdleMs = Number(save.stageIdleMs ?? 0)
 			ensureItemRuntime()
 			return true
 		} catch {
