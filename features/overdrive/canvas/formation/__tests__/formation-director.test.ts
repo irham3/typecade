@@ -44,13 +44,16 @@ describe("FormationDirector", () => {
 		const director = new FormationDirector(state, assets)
 		
 		const activeTargets = director.getActiveTargets()
-		expect(activeTargets.size).toBe(2) // 0 (active) and 1 (reinforcing)
+		expect(activeTargets.size).toBe(3) // 0 (active), 1 (upcoming), 2 (distant)
 		
 		const current = activeTargets.get(0)!
 		expect(current.role).toBe("active")
 		
-		const next = activeTargets.get(1)!
-		expect(next.role).toBe("reinforcing")
+		const next1 = activeTargets.get(1)!
+		expect(next1.role).toBe("upcoming")
+
+		const next2 = activeTargets.get(2)!
+		expect(next2.role).toBe("distant")
 	})
 
 	it("promotes targets as ordinal advances", () => {
@@ -64,8 +67,11 @@ describe("FormationDirector", () => {
 		const current = activeTargets.get(1)!
 		expect(current.role).toBe("active")
 		
-		const next = activeTargets.get(2)!
-		expect(next.role).toBe("reinforcing")
+		const next1 = activeTargets.get(2)!
+		expect(next1.role).toBe("upcoming")
+		
+		const next2 = activeTargets.get(3)!
+		expect(next2.role).toBe("distant")
 	})
 
 	it("marks target as retiring on word completion", () => {
@@ -96,12 +102,10 @@ describe("FormationDirector", () => {
 		const retiringTarget = director.getActiveTargets().get(0)!
 		const initialX = retiringTarget.layoutX
 		
-		director.update(50)
-		expect(retiringTarget.layoutX).toBeGreaterThan(initialX)
-		
-		// Move it far off screen
-		retiringTarget.layoutX = 2000
-		director.update(50)
+		// Move it over time (delta is clamped to 50ms)
+		for (let i = 0; i < 8; i++) {
+			director.update(50)
+		} // 50 + (50 * 8) = 450ms > 380ms
 		
 		// Should be recycled and removed from active targets map
 		expect(director.getActiveTargets().has(0)).toBe(false)

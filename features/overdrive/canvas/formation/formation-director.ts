@@ -13,12 +13,12 @@ import type { EnvironmentLayout } from "./formation-layout"
 
 const SHADOW_ALPHA = {
 	active: 0.15,
-	queued: 0.08,
+	upcoming: 0.08,
+	distant: 0.04,
 	retiring: 0.05,
-	reinforcing: 0.04,
 } as const
 
-export type FormationRole = "active" | "queued" | "retiring" | "reinforcing"
+export type FormationRole = "active" | "upcoming" | "distant" | "retiring"
 
 export type FormationTarget = {
 	id: string
@@ -32,15 +32,25 @@ export type FormationTarget = {
 	integrity: Graphics
 	label: Text
 	accent: number
+	lane: "high" | "mid" | "low"
+	lifeMs: number
+	roleLifeMs: number
+	
+	targetX: number
+	targetY: number
+	targetScale: number
+	targetAlpha: number
+	
 	layoutX: number
+	layoutY: number
 	layoutScale: number
+	
 	isHit: boolean
 	hitMs: number
 }
 
 const POOL_SIZE = 8
 
-// A pseudo-RNG for predictable formations based on score/zone.
 function createDeterministicRng(seed: number) {
 	let state = seed % 2147483647
 	if (state <= 0) state += 2147483646
@@ -79,6 +89,15 @@ export type FormationState = {
 	zone: number
 	focusPaused: boolean
 	reducedMotion: boolean
+}
+
+function cubicOut(t: number) {
+	return 1 - Math.pow(1 - t, 3)
+}
+
+function laneForOrdinal(ordinal: number): "high" | "mid" | "low" {
+	const lanes = ["mid", "high", "low"] as const
+	return lanes[Math.abs(ordinal) % lanes.length]
 }
 
 export class FormationDirector {
@@ -121,7 +140,7 @@ export class FormationDirector {
 			this.slots.push({
 				id: `target-${i}`,
 				ordinal: -1,
-				role: "queued",
+				role: "upcoming",
 				variant: "cache-hound",
 				root: container,
 				rig,
@@ -130,7 +149,15 @@ export class FormationDirector {
 				integrity,
 				label,
 				accent: 0xffffff,
+				lane: "mid",
+				lifeMs: 0,
+				roleLifeMs: 0,
+				targetX: 0,
+				targetY: 0,
+				targetScale: 1,
+				targetAlpha: 1,
 				layoutX: 0,
+				layoutY: 0,
 				layoutScale: 1,
 				isHit: false,
 				hitMs: 0,
@@ -152,7 +179,8 @@ export class FormationDirector {
 		this.width = width
 		this.height = height
 		this.layout = layout
-		this.updateLayout()
+		this.updateLayoutTargets()
+		this.snapLayout()
 	}
 
 	sync(state: FormationState) {
@@ -165,10 +193,10 @@ export class FormationDirector {
 		this.state = state
 		
 		if (targetChanged) {
-			this.promoteTarget(state.targetOrdinal)
+			this.ensureVisibleFormation()
 		}
 		
-		this.ensureVisibleFormation()
+		this.updateLayoutTargets()
 	}
 
 	handle(event: OverdrivePresentationEvent) {
@@ -182,9 +210,11 @@ export class FormationDirector {
 		target.isHit = true
 		target.hitMs = 0
 		target.role = "retiring"
+		target.roleLifeMs = 0
 		target.integrity.visible = false
 		target.label.visible = false
 		target.rig.play("defeat", { force: true })
+		this.updateLayoutTargets()
 	}
 
 	update(deltaMs: number) {
@@ -194,64 +224,85 @@ export class FormationDirector {
 		for (const slot of this.slots) {
 			if (!slot.root.visible) continue
 			
+			slot.lifeMs += delta
+			slot.roleLifeMs += delta
 			slot.rig.update(delta)
 			
-			// Move retiring targets out
 			if (slot.role === "retiring") {
-				slot.layoutX += delta * 0.8
-				// Recycle if off screen
-				if (slot.layoutX > this.width + 300) {
-					this.recycleSlot(slot)
+				if (slot.isHit) {
+					slot.hitMs += delta
+					const defeatDuration = 300 // SCENE or MOTION.defeatMs + 80
+					if (slot.hitMs > defeatDuration + 80) {
+						this.recycleSlot(slot)
+						continue
+					}
+					slot.targetX += delta * 0.4 // Move max 160-220 px right
 				}
 			}
 			
-			// Move reinforcing targets in
-			if (slot.role === "reinforcing") {
-				const targetX = this.getRoleX("queued")
-				if (slot.layoutX > targetX) {
-					slot.layoutX = Math.max(targetX, slot.layoutX - delta * 0.6)
-				} else {
-					slot.role = "queued"
-				}
+			const transitionMs = slot.role === "upcoming" ? 260 : slot.role === "active" ? 220 : 300
+			const t = Math.min(1, slot.roleLifeMs / transitionMs)
+			const ease = this.state.reducedMotion ? 1 : cubicOut(t)
+			
+			if (this.state.reducedMotion) {
+				slot.layoutX = slot.targetX
+				slot.layoutY = slot.targetY
+				slot.layoutScale = slot.targetScale
+				slot.root.alpha = slot.targetAlpha
+			} else {
+				// We lerp effectively with a smooth factor
+				const smooth = 0.2
+				slot.layoutX += (slot.targetX - slot.layoutX) * smooth
+				slot.layoutY += (slot.targetY - slot.layoutY) * smooth
+				slot.layoutScale += (slot.targetScale - slot.layoutScale) * smooth
+				slot.root.alpha += (slot.targetAlpha - slot.root.alpha) * smooth
 			}
 			
-			// Move queued targets up
-			if (slot.role === "queued") {
-				const activeSlot = this.slots.find(s => s.role === "active")
-				const targetX = this.getRoleX("queued")
-				
-				// Move closer to active if there is none
-				if (!activeSlot && slot.layoutX > this.getRoleX("active")) {
-					slot.layoutX = Math.max(this.getRoleX("active"), slot.layoutX - delta * 0.4)
-				} else if (slot.layoutX > targetX) {
-					slot.layoutX = Math.max(targetX, slot.layoutX - delta * 0.3)
-				}
-			}
-			
-			// Move active targets up
-			if (slot.role === "active") {
-				const targetX = this.getRoleX("active")
-				if (slot.layoutX > targetX) {
-					slot.layoutX = Math.max(targetX, slot.layoutX - delta * 0.4)
-				}
-			}
+			this.applyLayout(slot)
 		}
 		
-		this.updateLayout()
+		this.sortSlots()
 	}
 
 	private ensureVisibleFormation() {
-		const ordinal = this.state.targetOrdinal
-		this.ensureTarget(ordinal, "active")
-		this.ensureTarget(ordinal + 1, "queued")
-		this.ensureTarget(ordinal + 2, "reinforcing")
-	}
-	
-	private promoteTarget(ordinal: number) {
-		const target = this.activeTargets.get(ordinal)
-		if (target && target.role !== "retiring") {
-			target.role = "active"
+		const current = this.state.targetOrdinal
+		
+		// Update roles
+		for (const slot of this.activeTargets.values()) {
+			if (slot.role === "retiring") continue
+			
+			const oldRole = slot.role
+			if (slot.ordinal === current) slot.role = "active"
+			else if (slot.ordinal === current + 1) slot.role = "upcoming"
+			else if (slot.ordinal === current + 2) slot.role = "distant"
+			else if (slot.ordinal < current) {
+				slot.role = "retiring"
+				if (!slot.isHit) {
+					slot.isHit = true
+					slot.hitMs = 0
+					slot.integrity.visible = false
+					slot.label.visible = false
+					slot.rig.play("defeat", { force: true })
+				}
+			}
+			
+			if (slot.role !== oldRole) {
+				slot.roleLifeMs = 0
+				if (slot.role === "active") {
+					slot.lane = "mid"
+					slot.integrity.visible = true
+					slot.label.visible = true
+				} else if (slot.role === "upcoming" || slot.role === "distant") {
+					slot.lane = laneForOrdinal(slot.ordinal)
+					slot.integrity.visible = false
+					slot.label.visible = false
+				}
+			}
 		}
+
+		this.ensureTarget(current, "active")
+		this.ensureTarget(current + 1, "upcoming")
+		this.ensureTarget(current + 2, "distant")
 	}
 
 	private ensureTarget(ordinal: number, role: FormationRole) {
@@ -270,19 +321,29 @@ export class FormationDirector {
 		slot.ordinal = ordinal
 		slot.role = role
 		slot.variant = variantId
+		slot.lane = role === "active" ? "mid" : laneForOrdinal(ordinal)
 		slot.isHit = false
+		slot.hitMs = 0
+		slot.lifeMs = 0
+		slot.roleLifeMs = 0
 		slot.accent = stageAccent(this.state.stage)
-		slot.label.text = targetClassName(this.state.stage)
+		slot.label.text = targetClassName(this.state.stage).toUpperCase()
 		slot.label.style.fill = slot.accent
 		
-		slot.integrity.visible = true
-		slot.label.visible = true
+		slot.integrity.visible = role === "active"
+		slot.label.visible = role === "active"
 		slot.rig.setVariant(variantId)
 		slot.rig.play("locomotion", { force: true })
 		slot.rig.setTint(0xffffff)
 		slot.rig.setAlpha(1)
 		
-		slot.layoutX = role === "active" ? this.getRoleX("active") : this.width + 200
+		this.updateLayoutTargetsForSlot(slot)
+		
+		slot.layoutX = this.width + 300
+		slot.layoutY = slot.targetY
+		slot.layoutScale = slot.targetScale
+		slot.root.alpha = 0
+		
 		slot.root.visible = true
 		
 		this.activeTargets.set(ordinal, slot)
@@ -299,65 +360,74 @@ export class FormationDirector {
 		slot.rig.root.position.set(0, 0)
 	}
 
-	private getRoleX(role: FormationRole): number {
+	private updateLayoutTargets() {
+		for (const slot of this.slots) {
+			if (!slot.root.visible) continue
+			this.updateLayoutTargetsForSlot(slot)
+		}
+	}
+
+	private updateLayoutTargetsForSlot(slot: FormationTarget) {
+		if (slot.role === "retiring") return // X moves in update, Y/Scale locked
+		
 		const compact = this.width < SCENE.compactWidth
 		const anchor = compact ? SCENE.targetAnchor.compact.x : SCENE.targetAnchor.desktop.x
 		const staging = compact ? SCENE.targetStaging.compact : SCENE.targetStaging.desktop
-		
-		if (role === "active") return this.width * anchor
-		if (role === "queued") return this.width * (anchor + staging.upcomingOffsetX)
-		if (role === "reinforcing") return this.width * (anchor + staging.distantOffsetX)
-		return this.width * 1.1
-	}
-
-	private getTargetScale(slot: FormationTarget): number {
-		const compact = this.width < SCENE.compactWidth
+		const lanes = compact ? SCENE.targetLanes.compact : SCENE.targetLanes.desktop
 		const heightToken = compact ? SCENE.targetHeight.compact : SCENE.targetHeight.desktop
-		const staging = compact ? SCENE.targetStaging.compact : SCENE.targetStaging.desktop
-
-		const targetPixels = Math.min(
-			this.height * heightToken.ratio,
-			heightToken.max,
-		)
+		
+		// X
+		if (slot.role === "active") slot.targetX = this.width * anchor
+		else if (slot.role === "upcoming") slot.targetX = this.width * (anchor + staging.upcomingOffsetX)
+		else if (slot.role === "distant") slot.targetX = this.width * (anchor + staging.distantOffsetX)
+		
+		// Y
+		slot.targetY = this.height * lanes[slot.lane]
+		
+		// Scale
+		const targetPixels = Math.min(this.height * heightToken.ratio, heightToken.max)
 		const visualHeight = Math.max(1, slot.rig.getVisualSize().height)
-		const roleMultiplier = slot.role === "active" ? 1 :
-			slot.role === "queued" ? staging.upcomingScale :
-			slot.role === "reinforcing" ? staging.distantScale :
-			0.82
-			
-		return (targetPixels / visualHeight) * roleMultiplier
+		const baseScale = targetPixels / visualHeight
+		
+		let roleMultiplier = 1
+		if (slot.role === "upcoming") roleMultiplier = staging.upcomingScale
+		else if (slot.role === "distant") roleMultiplier = staging.distantScale
+		
+		slot.targetScale = baseScale * roleMultiplier
+		
+		// Alpha
+		if (slot.role === "active") slot.targetAlpha = 1
+		else if (slot.role === "upcoming") slot.targetAlpha = staging.upcomingAlpha
+		else if (slot.role === "distant") slot.targetAlpha = staging.distantAlpha
 	}
 
-	private updateLayout() {
-		const { deckY } = this.layout
-		
+	private snapLayout() {
 		for (const slot of this.slots) {
 			if (!slot.root.visible) continue
-			
-			const targetScale = this.getTargetScale(slot)
-			slot.root.position.set(slot.layoutX, deckY)
-			slot.root.scale.set(targetScale)
-			slot.layoutScale = targetScale
-			
-			const visualHeight = slot.rig.getVisualSize().height
-			slot.integrity.position.set(0, -visualHeight * 0.52)
-			slot.label.position.set(0, -visualHeight * 0.52 - 24 / targetScale)
-			
-			this.updateShadow(slot)
+			slot.layoutX = slot.targetX
+			slot.layoutY = slot.targetY
+			slot.layoutScale = slot.targetScale
+			slot.root.alpha = slot.targetAlpha
+			this.applyLayout(slot)
 		}
+		this.sortSlots()
+	}
+
+	private applyLayout(slot: FormationTarget) {
+		slot.root.position.set(slot.layoutX, slot.layoutY)
+		slot.root.scale.set(slot.layoutScale)
 		
-		// Sort by Y/role so active is in front
-		this.slots.sort((a, b) => {
-			if (!a.root.visible) return 1
-			if (!b.root.visible) return -1
-			const orderA = a.role === "active" ? 10 : a.role === "queued" ? 5 : 0
-			const orderB = b.role === "active" ? 10 : b.role === "queued" ? 5 : 0
-			return orderA - orderB
-		})
+		const visualHeight = slot.rig.getVisualSize().height
+		slot.integrity.position.set(0, -visualHeight * 0.52)
+		slot.label.position.set(0, -visualHeight * 0.52 - 24 / slot.layoutScale)
 		
-		for (let i = 0; i < this.slots.length; i++) {
-			this.root.setChildIndex(this.slots[i].root, i)
-		}
+		// Compensate shadow and reflection to stay on deck
+		const deckY = this.layout.deckY
+		const dy = deckY - slot.layoutY
+		slot.shadow.y = dy / slot.layoutScale
+		slot.reflection.y = dy / slot.layoutScale
+		
+		this.updateShadow(slot)
 	}
 
 	private updateShadow(slot: FormationTarget) {
@@ -366,24 +436,53 @@ export class FormationDirector {
 		const staging = compact ? SCENE.targetStaging.compact : SCENE.targetStaging.desktop
 		
 		let fade = 1
-		if (slot.role === "queued") fade = staging.upcomingAlpha
-		if (slot.role === "reinforcing") fade = staging.distantAlpha
+		if (slot.role === "upcoming") fade = staging.upcomingAlpha
+		if (slot.role === "distant") fade = staging.distantAlpha
 
 		slot.shadow.clear()
 		slot.reflection.clear()
 		
-		if (this.state.reducedMotion) return
+		if (this.state.reducedMotion) {
+			// Shadow stays visible even in reduced motion
+			slot.shadow
+				.ellipse(0, 0, 80, 24)
+				.fill({ color: V.bg, alpha: alpha * fade })
+			return
+		}
 		
 		slot.shadow
 			.ellipse(0, 0, 80, 24)
 			.fill({ color: V.bg, alpha: alpha * fade })
 			
+		const refAlpha = slot.role === "active" ? 0.07 : slot.role === "upcoming" ? 0.025 : 0.01
 		slot.reflection
 			.ellipse(0, 30, 60, 40)
 			.fill({
-				color: V.cyan,
-				alpha: this.state.reducedMotion ? alpha * 0.3 * fade : alpha * 0.5 * fade,
+				color: slot.accent,
+				alpha: refAlpha * fade,
 			})
+	}
+
+	private sortSlots() {
+		// active in front, upcoming behind active, distant behind upcoming, retiring behind active but front of distant
+		const renderOrder = [...this.slots].sort((a, b) => {
+			if (!a.root.visible) return 1
+			if (!b.root.visible) return -1
+			
+			function orderOf(role: string) {
+				if (role === "active") return 40
+				if (role === "retiring") return 30
+				if (role === "upcoming") return 20
+				if (role === "distant") return 10
+				return 0
+			}
+			
+			return orderOf(a.role) - orderOf(b.role)
+		})
+		
+		for (let i = 0; i < renderOrder.length; i++) {
+			this.root.setChildIndex(renderOrder[i].root, i)
+		}
 	}
 
 	destroy() {
