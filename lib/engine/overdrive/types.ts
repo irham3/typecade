@@ -41,6 +41,7 @@ export type RunSnapshot = {
 	focusPaused: boolean
 	threatBand: ThreatBand
 	overdriveCharge: number
+	targetOrdinal: number
 	score: number
 	runScore: number
 	standardScore: number

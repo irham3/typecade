@@ -35,6 +35,7 @@ import type {
 	StageStartContext,
 	TypoContext,
 	WordResolvedContext,
+	WordPreviewContext,
 	WordScoreContext,
 } from "./items/registry"
 
@@ -148,6 +149,7 @@ export function createRun(opts: CreateRunOptions) {
 		focusPaused: false,
 		threatBand: threatBandForZone(startingZone),
 		overdriveCharge: 0,
+		targetOrdinal: 0,
 		score: 0,
 		runScore: 0,
 		standardScore: 0,
@@ -369,6 +371,24 @@ export function createRun(opts: CreateRunOptions) {
 		return (scorer.mult + add) * multiplier
 	}
 
+	function previewItemTriggers(): string[] {
+		if (state.screen !== "stage" || state.wordDirty) return []
+		const triggered: string[] = []
+		forEachKeycap((id, _index, base) => {
+			const definition = KEYCAPS[id]
+			if (!definition.previewWord) return
+			const context: WordPreviewContext = {
+				word: state.currentWord,
+				elapsedMs: stageElapsedMs,
+				combo: state.combo + 1,
+				stageData: { ...base.stageData },
+				runData: { ...base.runData },
+			}
+			if (definition.previewWord(context)) triggered.push(id)
+		})
+		return triggered
+	}
+
 	function startStage() {
 		state.screen = "stage"
 		state.stageDurationMs = stageDurationMs(state.stage)
@@ -448,6 +468,7 @@ export function createRun(opts: CreateRunOptions) {
 			focusPaused: false,
 			threatBand: threatBandForZone(startingZone),
 			overdriveCharge: 0,
+			targetOrdinal: 0,
 			score: 0,
 			runScore: 0,
 			standardScore: 0,
@@ -588,13 +609,16 @@ export function createRun(opts: CreateRunOptions) {
 		state.screen = "runOver"
 	}
 
-	function submitWord() {
+	type SubmissionMode = "standard" | "overdrive"
+
+	function submitWord(mode: SubmissionMode = "standard") {
 		const result = scorer.completeWord(state.wordDirty, preserveMultForWord)
 		const aegisRecovery = !result.clean
 			&& state.aegisActive
 			&& state.zone === 2
 		const releasesOverdrive = result.clean
 			&& state.overdriveCharge >= OVERDRIVE_CHARGE_MAX
+			&& (state.zone <= 2 || mode === "overdrive")
 		const elapsedMs = stageElapsedMs
 		const appliedItemIds: string[] = []
 		const contextBase = {
@@ -688,6 +712,7 @@ export function createRun(opts: CreateRunOptions) {
 
 		state.wordDirty = false
 		preserveMultForWord = false
+		state.targetOrdinal += 1
 		updateTypingStats()
 
 		if (state.score >= state.quota) {
@@ -699,6 +724,17 @@ export function createRun(opts: CreateRunOptions) {
 		state.upcomingWords.push(getBuildBiasedWord())
 		state.caretIndex = 0
 		state.mult = persistentMult()
+	}
+
+	function releaseOverdrive() {
+		if (
+			state.screen !== "stage"
+			|| state.zone <= 2
+			|| state.overdriveCharge < OVERDRIVE_CHARGE_MAX
+			|| state.wordDirty
+			|| state.caretIndex !== state.currentWord.length
+		) return
+		submitWord("overdrive")
 	}
 
 	function feedChar(character: string) {
@@ -1026,6 +1062,7 @@ export function createRun(opts: CreateRunOptions) {
 				focusPaused: Boolean(save.state.focusPaused ?? false),
 				threatBand: save.state.threatBand ?? threatBandForZone(savedZone),
 				overdriveCharge: Number(save.state.overdriveCharge ?? 0),
+				targetOrdinal: Number(save.state.targetOrdinal ?? 0),
 				totalTokensEarned: Number(save.state.totalTokensEarned ?? 0),
 				keycaps: [...save.state.keycaps],
 				macros: [...save.state.macros],
@@ -1056,6 +1093,8 @@ export function createRun(opts: CreateRunOptions) {
 		start,
 		skipWarmup,
 		feedChar,
+		releaseOverdrive,
+		previewItemTriggers,
 		backspace,
 		advance,
 		continueToNextStage,

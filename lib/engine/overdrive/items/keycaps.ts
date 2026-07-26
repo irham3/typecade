@@ -27,6 +27,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Word starts with W, A, S, or D",
 		rarity: "common",
 		basePrice: 4,
+		previewWord: ({ word }) => /^[wasd]/i.test(word),
 		beforeWordScore: (ctx) => {
 			if (ctx.clean && /^[wasd]/i.test(ctx.word)) {
 				addBase(ctx, "wasd", 10, "WASD")
@@ -41,6 +42,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Every vowel in a clean word",
 		rarity: "common",
 		basePrice: 3,
+		previewWord: ({ word }) => /[aeiou]/i.test(word),
 		beforeWordScore: (ctx) => {
 			if (!ctx.clean) return
 			const vowels = ctx.word.match(/[aeiou]/gi)?.length ?? 0
@@ -55,6 +57,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Clean word has at least 8 letters",
 		rarity: "common",
 		basePrice: 4,
+		previewWord: ({ word }) => word.replace(/[^\p{L}]/gu, "").length >= 8,
 		beforeWordScore: (ctx) => {
 			if (ctx.clean && ctx.word.replace(/[^\p{L}]/gu, "").length >= 8) {
 				ctx.baseMultiplier *= 2
@@ -71,6 +74,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Clean word during the first 10 seconds",
 		rarity: "common",
 		basePrice: 4,
+		previewWord: ({ elapsedMs }) => elapsedMs <= 10_000,
 		beforeWordScore: (ctx) => {
 			if (ctx.clean && ctx.elapsedMs <= 10_000) {
 				ctx.multAdd += 2
@@ -87,6 +91,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "First clean word after a typo",
 		rarity: "common",
 		basePrice: 3,
+		previewWord: ({ stageData }) => stageData.armed === true,
 		onTypo: (ctx) => {
 			ctx.stageData.armed = true
 		},
@@ -107,6 +112,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Every 25 clean words across the run",
 		rarity: "common",
 		basePrice: 4,
+		previewWord: ({ runData }) => (Number(runData.correctWords ?? 0) + 1) % 25 === 0,
 		afterWordScore: (ctx) => {
 			if (!ctx.clean) return
 			const count = Number(ctx.runData.correctWords ?? 0) + 1
@@ -125,6 +131,10 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Clean word uses only A/S/D/F/G/H/J/K/L",
 		rarity: "common",
 		basePrice: 4,
+		previewWord: ({ word }) => {
+			const letters = word.replace(/[^\p{L}]/gu, "")
+			return letters.length > 0 && /^[asdfghjkl]+$/i.test(letters)
+		},
 		beforeWordScore: (ctx) => {
 			const letters = ctx.word.replace(/[^\p{L}]/gu, "")
 			if (ctx.clean && letters.length > 0 && /^[asdfghjkl]+$/i.test(letters)) {
@@ -140,6 +150,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Every punctuation mark in a clean word",
 		rarity: "common",
 		basePrice: 3,
+		previewWord: ({ word }) => /[.,!?;:]/.test(word),
 		beforeWordScore: (ctx) => {
 			if (!ctx.clean) return
 			const marks = ctx.word.match(/[.,!?;:]/g)?.length ?? 0
@@ -177,6 +188,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Clean streak reaches 15, 30, 45…",
 		rarity: "uncommon",
 		basePrice: 6,
+		previewWord: ({ combo }) => combo > 0 && combo % 15 === 0,
 		beforeWordScore: (ctx) => {
 			let bonus = Number(ctx.stageData.bonus ?? 0)
 			if (ctx.clean && ctx.combo > 0 && ctx.combo % 15 === 0) {
@@ -196,6 +208,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Clean word contains a repeated letter",
 		rarity: "uncommon",
 		basePrice: 5,
+		previewWord: ({ word }) => /(.)\1/i.test(word),
 		beforeWordScore: (ctx) => {
 			if (ctx.clean && /(.)\1/i.test(ctx.word)) {
 				ctx.multAdd += 4
@@ -251,6 +264,7 @@ export const KEYCAPS: Record<string, KeycapDef> = {
 		trigger: "Every clean word while accuracy stays at least 95%",
 		rarity: "rare",
 		basePrice: 8,
+		previewWord: () => true,
 		beforeWordScore: (ctx) => {
 			if (!ctx.clean) return
 			ctx.multMultiplier *= 3

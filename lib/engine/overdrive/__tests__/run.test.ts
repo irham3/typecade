@@ -7,6 +7,7 @@ import {
 	STAGE_DURATION_MS,
 } from "../constants"
 import { createRun } from "../run"
+import type { RunSnapshot } from "../types"
 
 const words = ["signal", "vector", "system", "kernel", "packet", "cipher"]
 
@@ -22,6 +23,19 @@ function clearCurrentStage(api: ReturnType<typeof createRun>) {
 		guard += 1
 	}
 	expect(guard).toBeLessThan(2_000)
+}
+
+function typeLetters(api: ReturnType<typeof createRun>) {
+	for (const character of api.snapshot().currentWord) api.feedChar(character)
+}
+
+function patchRunState(
+	api: ReturnType<typeof createRun>,
+	patch: Partial<RunSnapshot>,
+) {
+	const saved = JSON.parse(api.exportState()) as { state: RunSnapshot }
+	Object.assign(saved.state, patch)
+	expect(api.loadState(JSON.stringify(saved))).toBe(true)
 }
 
 describe("run state machine", () => {
@@ -226,6 +240,80 @@ describe("run state machine", () => {
 		expect(api.snapshot().overdriveCharge).toBe(0)
 		expect(releasedScore).toBeGreaterThan(0)
 		expect(releases).toBe(1)
+	})
+
+	it("releases full Overdrive automatically in Zone 2", () => {
+		const api = createRun({
+			seed: "protected-overdrive",
+			words: ["ace"],
+			startingZone: 2,
+		})
+		api.start()
+		patchRunState(api, { overdriveCharge: OVERDRIVE_CHARGE_MAX })
+
+		typeCurrentWord(api)
+
+		expect(api.snapshot().overdriveCharge).toBe(0)
+	})
+
+	it("holds full Overdrive on Space from Zone 3", () => {
+		const api = createRun({
+			seed: "manual-overdrive",
+			words: ["signal"],
+			startingZone: 3,
+		})
+		api.start()
+		patchRunState(api, { overdriveCharge: OVERDRIVE_CHARGE_MAX })
+		typeLetters(api)
+
+		api.feedChar(" ")
+
+		expect(api.snapshot().overdriveCharge).toBe(OVERDRIVE_CHARGE_MAX)
+	})
+
+	it("releases full Overdrive on Enter from Zone 3", () => {
+		const api = createRun({
+			seed: "manual-release",
+			words: ["signal"],
+			startingZone: 3,
+		})
+		api.start()
+		patchRunState(api, { overdriveCharge: OVERDRIVE_CHARGE_MAX })
+		typeLetters(api)
+
+		api.releaseOverdrive()
+
+		expect(api.snapshot().overdriveCharge).toBe(0)
+	})
+
+	it("does not release Overdrive before the current word is complete", () => {
+		const api = createRun({
+			seed: "early-release",
+			words: ["signal"],
+			startingZone: 3,
+		})
+		api.start()
+		patchRunState(api, { overdriveCharge: OVERDRIVE_CHARGE_MAX })
+		api.feedChar(api.snapshot().currentWord[0])
+
+		api.releaseOverdrive()
+
+		expect(api.snapshot()).toMatchObject({
+			overdriveCharge: OVERDRIVE_CHARGE_MAX,
+			caretIndex: 1,
+			score: 0,
+		})
+	})
+
+	it("persists the target ordinal", () => {
+		const api = createRun({ seed: "target-order", words: ["a", "s"] })
+		api.start()
+		api.feedChar(api.snapshot().currentWord)
+		expect(api.snapshot().targetOrdinal).toBe(1)
+
+		const restored = createRun({ seed: "target-order", words: ["a", "s"] })
+		expect(restored.loadState(api.exportState())).toBe(true)
+		expect(restored.snapshot().targetOrdinal).toBe(1)
 	})
 
 	it("moves through result, shop, and the next stage without double-counting score", () => {

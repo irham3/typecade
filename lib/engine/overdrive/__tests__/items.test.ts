@@ -61,6 +61,55 @@ describe("MVP item system", () => {
 		expect(api.snapshot().score).toBe(expectedScore)
 	})
 
+	it.each([
+		["wasd", "signal"],
+		["vowel_magnet", "audio"],
+		["longshot", "abcdefgh"],
+		["sprinter", "signal"],
+		["home_row", "sad"],
+		["punctuator", "word!"],
+		["double_tap", "letter"],
+		["glass_keycap", "signal"],
+	] as const)("%s previews its clean current-word trigger", (itemId, word) => {
+		const api = createRun({
+			seed: `preview-${itemId}`,
+			words: [word],
+			startingKeycaps: [itemId],
+		})
+		api.start()
+
+		expect(api.previewItemTriggers()).toContain(itemId)
+	})
+
+	it("does not preview typo-only or stage-end items on a clean word", () => {
+		const api = createRun({
+			seed: "preview-exclusions",
+			words: ["signal"],
+			startingKeycaps: ["combo_battery", "snowball", "interest_bank", "vampire"],
+		})
+		api.start()
+
+		expect(api.previewItemTriggers()).toEqual([])
+	})
+
+	it("previews without emitting a proc or mutating run state", () => {
+		const api = createRun({
+			seed: "preview-purity",
+			words: ["signal"],
+			startingKeycaps: ["wasd"],
+		})
+		let procs = 0
+		api.events.on("item_triggered", () => {
+			procs += 1
+		})
+		api.start()
+		const before = api.exportState()
+
+		expect(api.previewItemTriggers()).toEqual(["wasd"])
+		expect(api.exportState()).toBe(before)
+		expect(procs).toBe(0)
+	})
+
 	it("emits the resolved score factors used by presentation feedback", () => {
 		const api = createRun({
 			seed: "score-equation",

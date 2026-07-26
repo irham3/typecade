@@ -67,6 +67,14 @@ export type WordResolvedContext = WordScoreContext & {
 	scoreGain: number
 }
 
+export type WordPreviewContext = {
+	word: string
+	elapsedMs: number
+	combo: number
+	stageData: Readonly<RuntimeData>
+	runData: Readonly<RuntimeData>
+}
+
 export type StageEndContext = BaseItemContext & {
 	cleared: boolean
 	accuracy: number
@@ -76,6 +84,7 @@ export type StageEndContext = BaseItemContext & {
 
 export interface KeycapDef extends ShopItem {
 	type: "keycap"
+	previewWord?: (ctx: WordPreviewContext) => boolean
 	onStageStart?: (ctx: StageStartContext) => void
 	onTypo?: (ctx: TypoContext) => void
 	beforeWordScore?: (ctx: WordScoreContext) => void
