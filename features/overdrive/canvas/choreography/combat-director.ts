@@ -152,8 +152,6 @@ export class CombatDirector {
 	private state: SceneState
 	private width = 0
 	private height = 0
-	private wardenOffsetX = 0
-	private wardenTravel: Travel | null = null
 	private overdriveMs = 0
 	private returnDelayMs = 0
 	private pressureBeat = 0
@@ -233,7 +231,7 @@ export class CombatDirector {
 		this.warden.baseScale = wardenPixels / this.warden.rig.getVisualSize().height
 		this.warden.rig.root.scale.set(this.warden.baseScale)
 		this.warden.root.position.set(
-			width * wardenAnchor.x + this.wardenOffsetX,
+			width * wardenAnchor.x,
 			height * wardenAnchor.y,
 		)
 		this.warden.label.position.set(0, -wardenPixels / 2 - 24)
