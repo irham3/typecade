@@ -7,6 +7,7 @@ import type {
 	ItemContribution,
 	StageType,
 } from "@/lib/engine/overdrive"
+import { sfx } from "@/features/overdrive/fx/sfx"
 import type { OverdrivePresentationEvent } from "../../presentation/events"
 import type { LoadedRigAssets } from "../assets/combat-assets"
 import { CombatEffects } from "../effects/combat-effects"
