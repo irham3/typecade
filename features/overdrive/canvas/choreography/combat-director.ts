@@ -364,7 +364,21 @@ export class CombatDirector {
 			1,
 			0.5,
 		)
-		this.effects.spawnSmear(muzzle, position, target.accent)
+		
+		if (event.verb === "cannon-burst") {
+			this.effects.emitCannonBurst(muzzle, position, event.combo)
+		} else if (event.verb === "rail-step") {
+			this.effects.emitRailStep(position, 1, event.combo)
+		} else if (event.verb === "tether-pull") {
+			this.effects.emitTether(muzzle, position, event.combo)
+		} else if (event.verb === "breach-slide") {
+			this.effects.emitBreachSlide(position, 1, event.combo)
+		} else if (event.verb === "recoil-vault") {
+			this.effects.emitRecoilVault(muzzle, position, event.combo)
+		} else if (event.verb === "crossfire-pivot") {
+			this.effects.emitCrossfirePivot(muzzle, position, event.combo)
+		}
+		
 		this.pendingContacts.push({
 			position,
 			target,
@@ -402,11 +416,14 @@ export class CombatDirector {
 				1,
 				0.5,
 			)
-			this.effects.spawnSmear(
-				muzzle,
-				targetPosition,
-				event.overdriveReleased ? V.green : target.accent,
-			)
+			if (event.verb === "execution") {
+				this.effects.emitExecution(targetPosition, this.state.stage, true, event.combo)
+			} else if (event.overdriveReleased) {
+				this.effects.emitCannonBurst(muzzle, targetPosition, event.combo)
+			} else {
+				this.effects.emitCannonBurst(muzzle, targetPosition, event.combo)
+			}
+			
 			this.pendingContacts.push({
 				position: targetPosition,
 				target,

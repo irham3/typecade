@@ -89,6 +89,35 @@ export class CombatEffects {
 		})
 	}
 
+	emitCannonBurst(from: Point, to: Point, combo: number): void {
+		this.spawnSmear(from, to, V.text)
+		this.spawnContact(to, V.text, false)
+	}
+
+	emitRailStep(origin: Point, direction: -1 | 1, combo: number): void {
+		// placeholder for rail step
+	}
+
+	emitTether(from: Point, to: Point, combo: number): void {
+		// placeholder
+	}
+
+	emitBreachSlide(origin: Point, direction: -1 | 1, combo: number): void {
+		// placeholder
+	}
+
+	emitRecoilVault(origin: Point, landing: Point, combo: number): void {
+		// placeholder
+	}
+
+	emitCrossfirePivot(origin: Point, target: Point, combo: number): void {
+		// placeholder
+	}
+
+	emitExecution(target: Point, family: StageType, clean: boolean, combo: number): void {
+		this.spawnDefeat(target, family)
+	}
+
 	spawnDefeat(position: Point, stage: StageType) {
 		const tone = stageAccent(stage)
 		for (let index = 0; index < EFFECTS.defeatFragments; index += 1) {
