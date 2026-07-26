@@ -22,90 +22,147 @@ export const V = {
 } as const
 
 export const SCENE = {
-	compactWidth: 640,
+	compactWidth: 720,
+
 	wardenAnchor: {
-		desktop: { x: 0.22, y: 0.52 },
-		compact: { x: 0.28, y: 0.55 },
+		desktop: { x: 0.235, y: 0.62 },
+		compact: { x: 0.25, y: 0.59 },
 	},
+
 	targetAnchor: {
-		desktop: { x: 0.73, y: 0.48 },
-		compact: { x: 0.72, y: 0.46 },
+		desktop: { x: 0.705, y: 0.60 },
+		compact: { x: 0.69, y: 0.575 },
 	},
+
 	targetLanes: {
-		desktop: { high: 0.42, mid: 0.48, low: 0.54 },
-		compact: { high: 0.40, mid: 0.46, low: 0.52 },
-	},
-	targetStaging: {
 		desktop: {
-			upcomingOffsetX: 0.09,
-			distantOffsetX: 0.15,
-			upcomingScale: 0.72,
-			distantScale: 0.52,
-			upcomingAlpha: 0.54,
-			distantAlpha: 0.30,
+			high: 0.565,
+			mid: 0.60,
+			low: 0.635,
 		},
 		compact: {
-			upcomingOffsetX: 0.08,
-			distantOffsetX: 0.14,
-			upcomingScale: 0.68,
-			distantScale: 0.48,
-			upcomingAlpha: 0.48,
-			distantAlpha: 0.26,
+			high: 0.545,
+			mid: 0.575,
+			low: 0.605,
 		},
 	},
-	wordAnchor: { x: 0.54, y: 0.66 },
+
+	targetStaging: {
+		desktop: {
+			upcomingOffsetX: 0.135,
+			distantOffsetX: 0.235,
+			upcomingScale: 0.55,
+			distantScale: 0.34,
+			upcomingAlpha: 0.34,
+			distantAlpha: 0.16,
+		},
+		compact: {
+			upcomingOffsetX: 0.16,
+			distantOffsetX: 0.27,
+			upcomingScale: 0.46,
+			distantScale: 0.28,
+			upcomingAlpha: 0.25,
+			distantAlpha: 0.10,
+		},
+	},
+
+	wordAnchor: {
+		x: 0.5,
+		y: 0.765,
+	},
+
 	wardenHeight: {
-		desktop: { ratio: 0.42, max: 400 },
-		compact: { ratio: 0.26, max: 216 },
+		desktop: {
+			ratio: 0.295,
+			max: 276,
+		},
+		compact: {
+			ratio: 0.205,
+			max: 160,
+		},
 	},
+
 	targetHeight: {
-		desktop: { ratio: 0.38, max: 360 },
-		compact: { ratio: 0.25, max: 200 },
+		desktop: {
+			ratio: 0.255,
+			max: 238,
+		},
+		compact: {
+			ratio: 0.175,
+			max: 140,
+		},
 	},
-	targetEntry: { desktop: 80, compact: 48 },
-	foregroundHeight: { desktop: 0.12, compact: 0.1 },
+
+	targetEntry: {
+		desktop: 72,
+		compact: 44,
+	},
+
+	foregroundHeight: {
+		desktop: 0.115,
+		compact: 0.09,
+	},
+
 	attackPath: {
-		desktop: { startX: 0.32, endX: 0.65, y: 0.5 },
-		compact: { startX: 0.3, endX: 0.63, y: 0.5 },
+		desktop: {
+			startX: 0.32,
+			endX: 0.655,
+			y: 0.525,
+		},
+		compact: {
+			startX: 0.30,
+			endX: 0.635,
+			y: 0.515,
+		},
 	},
+
 	wardenTravel: {
-		midField: 0.06,
-		contact: 0.18,
+		midField: 0.05,
+		contact: 0.14,
 	},
+
 	signalNode: {
-		desktopRadius: 8,
-		compactRadius: 6,
-		fontSize: 12,
-		minGap: 8,
+		desktopRadius: 7,
+		compactRadius: 5,
+		fontSize: 11,
+		minGap: 7,
 	},
-	rescueCalloutY: 0.34,
+
+	rescueCalloutY: 0.35,
+
 	overdriveColumn: {
 		y: 0.14,
 		height: 0.68,
 	},
+
 	aegisShield: {
 		anchorX: 0.08,
 		frontX: 0.05,
 		backX: -0.02,
-		topY: 0.3,
-		upperY: 0.4,
-		centerY: 0.5,
+		topY: 0.30,
+		upperY: 0.40,
+		centerY: 0.50,
 		lowerY: 0.66,
 		bottomY: 0.72,
 	},
+
 	rail: {
-		desktopMaxWidth: 640,
+		desktopMaxWidth: 620,
 		desktopGutter: 96,
-		compactGutter: 32,
-		height: 120,
+		compactGutter: 24,
+		height: 108,
 		radius: 8,
-		activeFont: { desktop: 48, compact: 32 },
+		activeFont: {
+			desktop: 42,
+			compact: 30,
+		},
 		caretWidth: 3,
-		previewFont: 16,
+		previewFont: 14,
 	},
-	integrityWidth: 128,
-	integrityHeight: 8,
-	integrityRadius: 4,
+
+	integrityWidth: 112,
+	integrityHeight: 7,
+	integrityRadius: 3.5,
 } as const
 
 export const MOTION = {

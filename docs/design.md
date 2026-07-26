@@ -101,6 +101,86 @@ Two fonts, no more:
 
 # 4. Layout and Spacing
 
+- Character rendering style: premium stylized 3D source renders converted into modular 2D rigs, hard-surface cel shading, restrained material texture, graphic shadow shapes, and no photorealistic detail. Character art uses one orthographic side-facing three-quarter camera so attack direction remains obvious.
+- Environment rendering style: cyber-industrial signal trench with layered relay towers, keyboard-plate architecture, cables, and controlled haze. It uses the same hard-surface painted language and contains no readable text.
+- No cartoon proportions, cute faces, human protagonists, generic spaceships, mascots, clip art, emoji, photorealism, visual references to copyrighted characters, or unrelated asset packs.
+- Generated assets must be original, stored under `public/overdrive/art/`, use versioned filenames, and include their prompt/source in `CREDITS.md`. Editable rig sheets use flat chroma-key backgrounds removed locally before packing.
+- Item art uses one custom filled SVG family with a 24×24 viewBox, consistent optical weight, and no rarity color baked into the icon.
+
+| Allowed | Not allowed |
+| --- | --- |
+| Thin glow on the active word and quota bar | Glow on labels, panel borders, static text |
+| Particles on accepted characters and word completion | Bright ambient particles that compete with the active target |
+| Scanline overlay during Glitch stages only | Permanent scanlines on every screen |
+| One accent color per function (see tokens) | Multi-color gradients, lens flares, heavy bloom |
+| Pixel font for the wordmark and screen titles | Pixel font for body text or HUD numbers |
+| Slow low-contrast parallax, cable drift, and haze | High-contrast decorative loops or motion near the active word |
+
+# 2. Design Tokens: Color
+
+```css
+:root {
+  /* surface */
+  --bg-0: #0A0E14;    /* gameplay canvas */
+  --bg-1: #111623;    /* panel, card */
+  --bg-2: #1A2030;    /* raised, hover, track */
+  --border: #232B3D;  /* all 1px borders */
+
+  /* text */
+  --text-hi: #E8ECF4;  /* primary text, typed letters */
+  --text-mid: #9AA3B5; /* secondary text, labels */
+  --text-dim: #788296; /* upcoming words; passes 4.5:1 on gameplay surfaces */
+
+  /* accent, one color = one meaning */
+  --green:  #3BF562;  /* active word, quota fill, success, primary CTA */
+  --pink:   #FF4D9D;  /* combo */
+  --violet: #9D6BFF;  /* mult, floating score popups */
+  --yellow: #FFC93B;  /* score, tokens */
+  --red:    #FF3B3B;  /* typo, glitch, danger */
+  --cyan:   #35D6E8;  /* info, macros */
+}
+```
+
+Usage rules:
+
+- One color, one meaning. Combo is always pink, mult is always violet, money is always yellow. No exceptions on any screen, including the share card.
+- Accents only for text, icons, borders, and bar fills. Never as a large background area.
+- Gameplay background is always plain `--bg-0`. Texture or noise capped at 0.03 opacity.
+
+## Rarity colors
+
+Used only on keycap slot borders, rarity badges, and shop prices.
+
+| Rarity | Hex | Note |
+| --- | --- | --- |
+| Common | #8A93A6 | gray |
+| Uncommon | #3BF562 | green |
+| Rare | #9D6BFF | violet |
+| Legendary | #FFC93B | gold |
+| Macro | #35D6E8 | cyan, a type rather than a rarity |
+
+Rarity is never color-only: always border + text label ("RARE") in tooltips and the shop.
+
+# 3. Typography
+
+Two fonts, no more:
+
+- **JetBrains Mono** (400, 700): all gameplay text, numbers, UI, body. Fallback: IBM Plex Mono, monospace.
+- **Press Start 2P**: wordmark, screen titles (SHOP, RUN OVER), and zone names only. Max 1 occurrence per screen.
+
+| Role | Size | Weight | Note |
+| --- | --- | --- | --- |
+| Active word | 48px | 700 | `--green`, typed letters brighter than the rest of the word |
+| Stream words (upcoming rows) | 28px | 400 | `--text-dim` |
+| Timer and score | 32px | 700 | tabular-nums required, digits must not shift width |
+| Combo/mult/base numbers | 24px | 700 |  |
+| HUD labels (COMBO, MULT, BASE, SCORE) | 14px | 700 | uppercase, letter-spacing 0.08em, `--text-mid` |
+| Body, tooltips, item descriptions | 16px / 1.5 | 400 |  |
+| Smallest text (footer, credits) | 14px | 400 | absolute floor, no text below 14px |
+| Screen titles (Press Start 2P) | 24px | 400 |  |
+
+# 4. Layout and Spacing
+
 - Spacing scale: 4, 8, 12, 16, 24, 32, 48. Values outside the scale are banned.
 - Radius: 8px everywhere, 6px for bars. No pills except rarity badges.
 - Borders: 1px `--border`. Elevation via borders, not shadows. Shadows are banned in gameplay.
@@ -109,24 +189,26 @@ Two fonts, no more:
 
 ## Gameplay canvas composition tokens
 
-| Token | Desktop (width >=640px) | Compact (width <640px) |
+Runtime screenshot acceptance overrides obsolete token values. Character visual height is measured from trimmed visible bounds, not atlas dimensions.
+
+| Token | Desktop (width >=720px) | Compact (width <720px) |
 | --- | --- | --- |
-| Warden anchor | x 22%, y 52% | x 28%, y 55% |
-| Target anchor | x 73%, y 48% | x 72%, y 46% |
-| Target lane y: high / mid / low | 42% / 48% / 54% | 40% / 46% / 52% |
-| Upcoming target x offset | 9% | 8% |
-| Distant target x offset | 15% | 14% |
-| Upcoming target scale / alpha | 72% / 0.54 | 68% / 0.48 |
-| Distant reinforcement scale / alpha | 52% / 0.30 | 48% / 0.26 |
-| Warden visual height | 42% of canvas, max 400px | 26% of canvas, max 216px |
-| Target visual height | 38% of canvas, max 360px | 25% of canvas, max 200px |
-| Active word anchor | x 54%, y 66% | x 54%, y 66% |
-| Target entry distance | 48px | 32px |
+| Warden anchor | x 23.5%, y 62% | x 25%, y 59% |
+| Target anchor | x 70.5%, y 60% | x 69%, y 57.5% |
+| Target lane y: high / mid / low | 56.5% / 60% / 63.5% | 54.5% / 57.5% / 60.5% |
+| Upcoming target x offset | 13.5% | 16% |
+| Distant target x offset | 23.5% | 27% |
+| Upcoming target scale / alpha | 55% / 0.34 | 46% / 0.25 |
+| Distant reinforcement scale / alpha | 34% / 0.16 | 28% / 0.10 |
+| Warden visual height | 29.5% of canvas, max 276px | 20.5% of canvas, max 160px |
+| Target visual height | 25.5% of canvas, max 238px | 17.5% of canvas, max 140px |
+| Active word anchor | x 50%, y 76.5% | x 50%, y 76.5% |
+| Target entry distance | 72px | 44px |
 | Projectile travel | Warden muzzle to target core | same |
-| Foreground cover height | 16% | 14% |
-| Attack path | x 24%-68%, y 42%-56% | x 20%-66%, y 44%-55% |
-| Warden mid-field / contact travel | 32% / 58% of Warden-to-target gap | same |
-| Letter-node spacing | distribute current word across attack path | same, minimum visual gap 8px |
+| Foreground cover height | 11.5% | 9% |
+| Attack path | x 32%-65.5%, y 52.5% | x 30%-63.5%, y 51.5% |
+| Warden mid-field / contact travel | 5% / 14% of Warden-to-target gap | same |
+| Letter-node spacing | distribute current word across attack path | same, minimum visual gap 7px |
 
 The active word is not attached to the target sprite. It sits on a high-contrast command rail between the combatants so character animation cannot move the caret.
 
