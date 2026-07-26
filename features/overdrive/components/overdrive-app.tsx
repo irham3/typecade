@@ -9,7 +9,6 @@ import { Gameplay } from "./gameplay"
 import { Menu } from "./menu"
 import { RunOver } from "./run-over"
 import { Shop } from "./shop"
-import { StageResult } from "./stage-result"
 import { StandardClear } from "./standard-clear"
 
 export function OverdriveApp() {
@@ -58,8 +57,7 @@ export function OverdriveApp() {
 		<div className="relative h-dvh w-full min-w-0 overflow-hidden">
 			<AnimatePresence mode="wait" initial={false}>
 				{screen === "menu" && <Menu key="menu" />}
-				{screen === "stage" && <Gameplay key="stage" />}
-				{screen === "stageResult" && <StageResult key="stage-result" />}
+				{(screen === "stage" || screen === "stageResult") && <Gameplay key="stage" />}
 				{screen === "shop" && <Shop key="shop" />}
 				{screen === "standardClear" && <StandardClear key="standard-clear" />}
 				{screen === "runOver" && <RunOver key="run-over" />}

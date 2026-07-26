@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow"
 import { useGame } from "../store"
 import { Hud } from "./hud"
 import { GameplayLayer } from "./gameplay-layer"
+import { StageClearRibbon } from "./stage-clear-ribbon"
 
 function ReadyGate() {
 	const state = useGame(useShallow((snapshot) => ({
@@ -54,6 +55,7 @@ export function Gameplay() {
 			<GameplayLayer />
 			<Hud />
 			<ReadyGate />
+			<StageClearRibbon />
 		</main>
 	)
 }
