@@ -246,7 +246,7 @@ export class EnvironmentDirector {
 	}
 
 	private positionLayers() {
-		const { layout, width, height } = this
+		const { layout, height } = this
 
 		// Far layer — pinned to top, centered
 		const farSprite = this.layerSprites.far

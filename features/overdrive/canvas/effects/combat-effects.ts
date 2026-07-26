@@ -93,32 +93,32 @@ export class CombatEffects {
 		})
 	}
 
-	emitCannonBurst(from: Point, to: Point, combo: number): void {
+	emitCannonBurst(from: Point, to: Point, _combo: number): void {
 		this.spawnSmear(from, to, V.text)
 		this.spawnContact(to, V.text, false)
 	}
 
-	emitRailStep(origin: Point, direction: -1 | 1, combo: number): void {
+	emitRailStep(_origin: Point, _direction: -1 | 1, _combo: number): void {
 		// placeholder for rail step
 	}
 
-	emitTether(from: Point, to: Point, combo: number): void {
+	emitTether(_from: Point, _to: Point, _combo: number): void {
 		// placeholder
 	}
 
-	emitBreachSlide(origin: Point, direction: -1 | 1, combo: number): void {
+	emitBreachSlide(_origin: Point, _direction: -1 | 1, _combo: number): void {
 		// placeholder
 	}
 
-	emitRecoilVault(origin: Point, landing: Point, combo: number): void {
+	emitRecoilVault(_origin: Point, _landing: Point, _combo: number): void {
 		// placeholder
 	}
 
-	emitCrossfirePivot(origin: Point, target: Point, combo: number): void {
+	emitCrossfirePivot(_origin: Point, _target: Point, _combo: number): void {
 		// placeholder
 	}
 
-	emitExecution(target: Point, family: StageType, clean: boolean, combo: number): void {
+	emitExecution(target: Point, family: StageType, _clean: boolean, _combo: number): void {
 		this.spawnDefeat(target, family)
 	}
 

@@ -36,25 +36,6 @@ const stageColor = {
 	glitch: "text-acc-red",
 } as const
 
-function Metric({
-	label,
-	value,
-	color = "text-text-hi",
-	align = "left",
-}: {
-	label: string
-	value: string
-	color?: string
-	align?: "left" | "right"
-}) {
-	return (
-		<div className={align === "right" ? "text-right" : ""}>
-			<div className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">{label}</div>
-			<div className={`mt-1 text-2xl font-bold tabular-nums ${color}`}>{value}</div>
-		</div>
-	)
-}
-
 export function Hud() {
 	const state = useGame(useShallow((snapshot) => ({
 		zone: snapshot.zone,
@@ -106,7 +87,7 @@ export function Hud() {
 	const glitch = state.activeGlitch ? GLITCHES[state.activeGlitch] : null
 	const quotaRatio = state.quota <= 0 ? 0 : state.score / state.quota
 	const scoreRemaining = Math.max(0, state.quota - state.score)
-	const comboProgress = state.combo % 10
+	const _comboProgress = state.combo % 10
 
 	return (
 		<div className="pointer-events-none absolute inset-0 z-20 flex select-none flex-col p-3 text-text-hi sm:p-6">

@@ -1,9 +1,7 @@
 import {
 	Container,
 	Graphics,
-	Sprite,
 	Text,
-	Texture,
 } from "pixi.js"
 import type { StageType } from "@/lib/engine/overdrive"
 
@@ -191,13 +189,7 @@ export type CommandRailArt = {
 	charge: Graphics
 }
 
-type Mote = {
-	node: Graphics
-	baseX: number
-	baseY: number
-	speed: number
-	phase: number
-}
+
 
 
 

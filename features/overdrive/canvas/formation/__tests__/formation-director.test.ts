@@ -1,4 +1,3 @@
-import { Container } from "pixi.js"
 import { describe, expect, it } from "vitest"
 import { FormationDirector, type FormationState } from "../formation-director"
 import type { LoadedRigAssets } from "../../assets/combat-assets"
@@ -124,7 +123,7 @@ describe("FormationDirector", () => {
 		const state = makeState({ targetOrdinal: 0, stage: "warmup", zone: 1 })
 		const director = new FormationDirector(state, assets)
 		
-		const initialVariant = director.getActiveTargets().get(0)!.variant
+		const _initialVariant = director.getActiveTargets().get(0)!.variant
 		
 		// Sync with different stage to regenerate schedule
 		director.sync(makeState({ targetOrdinal: 0, stage: "rush", zone: 1 }))

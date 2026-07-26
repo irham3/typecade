@@ -7,7 +7,6 @@ import type {
 	ItemContribution,
 	StageType,
 } from "@/lib/engine/overdrive"
-import { sfx } from "@/features/overdrive/fx/sfx"
 import type { OverdrivePresentationEvent } from "../../presentation/events"
 import type { LoadedRigAssets } from "../assets/combat-assets"
 import { CombatEffects } from "../effects/combat-effects"
@@ -17,16 +16,11 @@ import {
 } from "../effects/item-presentation"
 import { RigInstance } from "../rig/rig-instance"
 import {
-	EFFECTS,
-	MOTION,
 	SCENE,
 	V,
 	drawTargetIntegrity,
-	stageAccent,
-	targetClassName,
 } from "../visual-assets"
 import type { SceneState } from "../combat-scene"
-import { targetLane } from "./target-lanes"
 import { FormationDirector, type FormationState, type FormationTarget } from "../formation/formation-director"
 import { computeFormationLayout } from "../formation/formation-layout"
 
@@ -79,7 +73,6 @@ type QueuedItemEffect = {
 }
 
 const WHITE_TINT = 0xffffff
-const INITIAL_ENEMY_INSTANCES = 6
 
 const ITEM_EFFECT_PRIORITY: Record<ItemContribution["kind"], number> = {
 	protection: 0,
@@ -229,16 +222,9 @@ export class CombatDirector {
 		const wardenHeight = compact
 			? SCENE.wardenHeight.compact
 			: SCENE.wardenHeight.desktop
-		const targetHeight = compact
-			? SCENE.targetHeight.compact
-			: SCENE.targetHeight.desktop
 		const wardenPixels = Math.min(
 			height * wardenHeight.ratio,
 			wardenHeight.max,
-		)
-		const targetPixels = Math.min(
-			height * targetHeight.ratio,
-			targetHeight.max,
 		)
 
 		this.warden.baseScale = wardenPixels / this.warden.rig.getVisualSize().height
