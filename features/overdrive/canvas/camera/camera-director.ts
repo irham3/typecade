@@ -164,7 +164,6 @@ export class CameraDirector {
 	}
 
 	setFocus(x: number, y: number, zoom = 1) {
-		if (this.state.focusPaused) return
 		const duration = 600
 		this.transition = {
 			fromX: this.combatPose.x,
@@ -220,7 +219,6 @@ export class CameraDirector {
 	}
 
 	update(deltaMs: number) {
-		if (this.state.focusPaused) return
 		const delta = Math.max(0, Math.min(deltaMs, 50))
 
 		// Update combat transition.

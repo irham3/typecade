@@ -137,25 +137,7 @@ describe("CameraDirector", () => {
 		expect(root.scale.x).toBe(1)
 	})
 
-	it("freezes camera travel during focus pause", () => {
-		const root = new Container()
-		const camera = new CameraDirector(root, makeState())
-		camera.resize(1000, 600)
-		
-		camera.setFocus(100, 0)
-		advanceTime(camera, 100)
-		const pauseX = root.x
-		
-		camera.sync(makeState({ focusPaused: true }))
-		advanceTime(camera, 100)
-		
-		expect(root.x).toBe(pauseX) // Travel frozen
-		
-		camera.sync(makeState({ focusPaused: false }))
-		advanceTime(camera, 100)
-		expect(root.x).toBeGreaterThan(pauseX) // Resumes
-	})
-	
+
 	it("processes presentation events correctly", () => {
 		const root = new Container()
 		const camera = new CameraDirector(root, makeState())
