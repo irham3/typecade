@@ -2,10 +2,12 @@
 import { useEffect, useRef } from "react"
 import { Application } from "pixi.js"
 import { CombatScene, type SceneState } from "./combat-scene"
+import { loadCombatTextures, V } from "./visual-assets"
 import { getLatestPresentationEventId, type OverdrivePresentationEvent } from "../presentation/events"
 
 export type GameplayCanvasProps = SceneState & {
   events: readonly OverdrivePresentationEvent[]
+  onReady?: () => void
   onInitializationError?: (error: Error) => void
 }
 
@@ -99,7 +101,7 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
         await appInstance.init({
           width: size.width,
           height: size.height,
-          background: 0x0a0e14,
+          background: V.bg,
           antialias: true,
           autoDensity: true,
           resolution: Math.min(window.devicePixelRatio || 1, 2),
@@ -115,12 +117,19 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
         host.replaceChildren(app.canvas)
         Object.assign(app.canvas.style, { width: "100%", height: "100%", display: "block" })
 
-        const scene = new CombatScene(app, latestRef.current)
+        const textures = await loadCombatTextures()
+        if (cancelled) {
+          appInstance.destroy(true)
+          return
+        }
+
+        const scene = new CombatScene(app, latestRef.current, textures)
         sceneRef.current = scene
 
         // Flush any events missed during async init
         scene.sync(latestRef.current)
         consumePendingEvents(scene, latestRef.current.events, lastConsumedEventIdRef, hostRef)
+        latestRef.current.onReady?.()
 
         const resize = () => {
           const rect = host.getBoundingClientRect()
@@ -184,6 +193,12 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
       data-current-word={props.currentWord}
       data-caret-index={String(props.caretIndex)}
       data-score={String(props.score)}
+      data-time-left-ms={String(Math.round(props.timeLeftMs))}
+      data-overdrive-charge={String(props.overdriveCharge)}
+      data-aegis-active={String(props.aegisActive)}
+      data-aegis-rescues={String(props.aegisRescues)}
+      data-focus-paused={String(props.focusPaused)}
+      data-zone={String(props.zone)}
       data-stage={props.stage}
       data-event-id="0"
       className="absolute inset-0 h-full w-full min-h-0 min-w-0 overflow-hidden bg-bg-0"

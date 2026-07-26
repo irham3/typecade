@@ -1,4 +1,11 @@
-import { Container, Graphics, Text } from "pixi.js"
+import {
+	Assets,
+	Container,
+	Graphics,
+	Sprite,
+	Text,
+	Texture,
+} from "pixi.js"
 import type { StageType } from "@/lib/engine/overdrive"
 
 export const V = {
@@ -17,21 +24,250 @@ export const V = {
 	cyan: 0x35d6e8,
 } as const
 
-export type KeystoneArt = {
+export const SCENE = {
+	compactWidth: 640,
+	wardenAnchor: {
+		desktop: { x: 0.22, y: 0.52 },
+		compact: { x: 0.28, y: 0.55 },
+	},
+	targetAnchor: {
+		desktop: { x: 0.73, y: 0.48 },
+		compact: { x: 0.72, y: 0.46 },
+	},
+	wordAnchor: { x: 0.54, y: 0.66 },
+	wardenHeight: {
+		desktop: { ratio: 0.42, max: 400 },
+		compact: { ratio: 0.26, max: 216 },
+	},
+	targetHeight: {
+		desktop: { ratio: 0.38, max: 360 },
+		compact: { ratio: 0.25, max: 200 },
+	},
+	targetEntry: { desktop: 48, compact: 32 },
+	foregroundHeight: { desktop: 0.16, compact: 0.14 },
+	attackPath: {
+		desktop: { startX: 0.28, endX: 0.67, y: 0.45 },
+		compact: { startX: 0.22, endX: 0.65, y: 0.46 },
+	},
+	signalNode: {
+		desktopRadius: 8,
+		compactRadius: 6,
+		fontSize: 12,
+		minGap: 8,
+	},
+	rescueCalloutY: 0.34,
+	overdriveColumn: {
+		y: 0.14,
+		height: 0.68,
+	},
+	aegisShield: {
+		anchorX: 0.08,
+		frontX: 0.05,
+		backX: -0.02,
+		topY: 0.3,
+		upperY: 0.4,
+		centerY: 0.5,
+		lowerY: 0.66,
+		bottomY: 0.72,
+	},
+	rail: {
+		desktopMaxWidth: 640,
+		desktopGutter: 96,
+		compactGutter: 32,
+		height: 120,
+		radius: 8,
+		activeFont: { desktop: 48, compact: 32 },
+		caretWidth: 3,
+		previewFont: 16,
+	},
+	integrityWidth: 128,
+	integrityHeight: 8,
+	integrityRadius: 4,
+} as const
+
+export const MOTION = {
+	wardenLoopMs: 900,
+	wardenBobPx: 2,
+	wardenRotation: 0,
+	targetLoopMs: 800,
+	targetBobPx: 2,
+	bossBobPx: 2,
+	targetRotation: 0,
+	poseCrossfadeMs: 100,
+	attackAnticipationMs: 35,
+	attackTravelMs: 85,
+	attackRecoveryMs: 60,
+	attackMs: 180,
+	attackAdvancePx: 8,
+	attackRotation: 0,
+	attackPathRatio: 0.58,
+	attackArcRatio: 0.1,
+	hitMs: 90,
+	hitRecoilPx: 8,
+	hitRotation: 0,
+	defeatMs: 300,
+	defeatScale: 0.82,
+	entryMs: 180,
+	entryScale: 0.92,
+	equationMs: 700,
+	typoMs: 120,
+	stageShakeMs: 150,
+	hitstopMs: 50,
+	overdriveMs: 320,
+	overdriveShakeMs: 150,
+	overdriveContactRatio: 0.78,
+	overdriveOutwardRatio: 0.58,
+	overdriveColumnStartRatio: 0.28,
+	overdriveColumnEndRatio: 0.82,
+	overdriveColumnMaxAlpha: 0.32,
+	enemyAttackMs: 360,
+	enemyAttackPoseRatio: 0.36,
+	aegisRescueMs: 600,
+	aegisPoseRatio: 0.35,
+	aegisImpactFrequency: 1.8,
+	aegisShieldStartAlpha: 0.18,
+	aegisShieldFadeAlpha: 0.12,
+	pressureIntervalMs: {
+		warmup: 9_000,
+		rush: 7_000,
+		glitch: 6_000,
+	},
+	parallaxPx: 8,
+	moteCount: 24,
+	moteSize: 2,
+	moteMaxAlpha: 0.12,
+	moteMaxSpeed: 12,
+} as const
+
+export type WardenPose =
+	| "ready-low"
+	| "ready-high"
+	| "anticipation"
+	| "strike"
+	| "dash"
+	| "recover"
+	| "block"
+	| "overdrive"
+
+export type EnemyPose =
+	| "idle-a"
+	| "idle-b"
+	| "anticipation"
+	| "attack"
+	| "special"
+	| "hit"
+	| "recover"
+	| "defeat"
+
+const WARDEN_POSES: readonly WardenPose[] = [
+	"ready-low",
+	"ready-high",
+	"anticipation",
+	"strike",
+	"dash",
+	"recover",
+	"block",
+	"overdrive",
+]
+
+const ENEMY_POSES: readonly EnemyPose[] = [
+	"idle-a",
+	"idle-b",
+	"anticipation",
+	"attack",
+	"special",
+	"hit",
+	"recover",
+	"defeat",
+]
+
+function posePath(character: "warden" | "packet" | "needle" | "null", pose: string) {
+	return `/overdrive/art/poses/${character}/${pose}.png`
+}
+
+type WardenPoseTextures = Record<WardenPose, Texture>
+type EnemyPoseTextures = Record<EnemyPose, Texture>
+
+export type CombatTextures = {
+	arena: Texture
+	warden: WardenPoseTextures
+	warmup: EnemyPoseTextures
+	rush: EnemyPoseTextures
+	glitch: EnemyPoseTextures
+}
+
+async function loadPoseTextures<T extends string>(
+	character: "warden" | "packet" | "needle" | "null",
+	poses: readonly T[],
+): Promise<Record<T, Texture>> {
+	const textures = await Promise.all(
+		poses.map((pose) => Assets.load<Texture>(posePath(character, pose))),
+	)
+	return Object.fromEntries(
+		poses.map((pose, index) => [pose, textures[index]]),
+	) as Record<T, Texture>
+}
+
+export async function loadCombatTextures(): Promise<CombatTextures> {
+	const [arena, warden, warmup, rush, glitch] = await Promise.all([
+		Assets.load<Texture>("/overdrive/art/signal-trench-arena-v2.png"),
+		loadPoseTextures("warden", WARDEN_POSES),
+		loadPoseTextures("packet", ENEMY_POSES),
+		loadPoseTextures("needle", ENEMY_POSES),
+		loadPoseTextures("null", ENEMY_POSES),
+	])
+	return { arena, warden, warmup, rush, glitch }
+}
+
+export type WardenArt = {
 	root: Container
-	emitter: Graphics
+	body: Container
+	sprite: Sprite
+	poses: WardenPoseTextures
+	pose: WardenPose
+	muzzle: Graphics
 	core: Graphics
 	integrity: Graphics
+	label: Text
 }
 
 export type TargetArt = {
 	root: Container
 	body: Container
+	sprite: Sprite
+	poses: EnemyPoseTextures
+	pose: EnemyPose
 	hitLayer: Graphics
+	integrity: Graphics
+	label: Text
+	accent: number
+	className: string
+}
+
+export type CommandRailArt = {
+	root: Container
+	panel: Graphics
 	wordLayer: Container
 	caret: Graphics
-	progress: Graphics
-	accent: number
+	status: Text
+	previews: Text
+	equation: Text
+	charge: Graphics
+}
+
+type Mote = {
+	node: Graphics
+	baseX: number
+	baseY: number
+	speed: number
+	phase: number
+}
+
+export type BackgroundArt = {
+	root: Container
+	blackout: Graphics
+	redraw: (width: number, height: number, stage: StageType) => void
+	tick: (elapsedMs: number, reducedMotion: boolean) => void
 }
 
 export function stageAccent(stage: StageType) {
@@ -40,165 +276,324 @@ export function stageAccent(stage: StageType) {
 	return V.green
 }
 
-export function createKeystone(): KeystoneArt {
-	const root = new Container()
-	const bracket = new Graphics()
-		.moveTo(-54, -54)
-		.lineTo(-20, -54)
-		.lineTo(-20, -42)
-		.lineTo(-40, -42)
-		.lineTo(-40, 42)
-		.lineTo(-20, 42)
-		.lineTo(-20, 54)
-		.lineTo(-54, 54)
-		.closePath()
-		.fill({ color: V.panel2 })
-		.stroke({ color: V.cyan, width: 2 })
-		.moveTo(54, -54)
-		.lineTo(20, -54)
-		.lineTo(20, -42)
-		.lineTo(40, -42)
-		.lineTo(40, 42)
-		.lineTo(20, 42)
-		.lineTo(20, 54)
-		.lineTo(54, 54)
-		.closePath()
-		.fill({ color: V.panel2 })
-		.stroke({ color: V.cyan, width: 2 })
+export function targetClassName(stage: StageType) {
+	if (stage === "rush") return "NEEDLE WRAITH"
+	if (stage === "glitch") return "NULL CROWN"
+	return "PACKET STALKER"
+}
 
-	const matrix = new Graphics()
-	for (let row = 0; row < 4; row += 1) {
-		for (let column = 0; column < 3; column += 1) {
-			const active = row === 1 && column === 1
-			matrix
-				.roundRect(-15 + column * 11, -21 + row * 11, 8, 8, 1)
-				.fill({ color: active ? V.cyan : V.line })
-		}
+export function createBackground(texture: Texture): BackgroundArt {
+	const root = new Container()
+	const image = new Sprite(texture)
+	const darkWash = new Graphics()
+	const stageWash = new Graphics()
+	const motesLayer = new Container()
+	const haze = new Graphics()
+	const foreground = new Graphics()
+	const glitchScan = new Graphics()
+	const blackout = new Graphics()
+	const motes: Mote[] = []
+	let width = 0
+	let height = 0
+
+	image.anchor.set(0.5)
+	image.alpha = 0.72
+	root.addChild(
+		image,
+		darkWash,
+		stageWash,
+		motesLayer,
+		haze,
+		foreground,
+		glitchScan,
+		blackout,
+	)
+
+	for (let index = 0; index < MOTION.moteCount; index += 1) {
+		const node = new Graphics()
+			.circle(0, 0, MOTION.moteSize)
+			.fill({
+				color: index % 5 === 0 ? V.green : V.cyan,
+				alpha: MOTION.moteMaxAlpha * (0.35 + (index % 4) * 0.2),
+			})
+		motesLayer.addChild(node)
+		motes.push({
+			node,
+			baseX: ((index * 47 + 23) % 101) / 100,
+			baseY: ((index * 71 + 17) % 97) / 100,
+			speed: 4 + (index % 5) * 2,
+			phase: index * 0.61,
+		})
 	}
 
-	const core = new Graphics()
-		.moveTo(0, -18)
-		.lineTo(16, 0)
-		.lineTo(0, 18)
-		.lineTo(-16, 0)
-		.closePath()
-		.fill({ color: V.cyan, alpha: 0.14 })
-		.stroke({ color: V.cyan, width: 2 })
-		.rect(-3, -3, 6, 6)
-		.fill({ color: V.text })
+	return {
+		root,
+		blackout,
+		redraw(nextWidth, nextHeight, stage) {
+			width = nextWidth
+			height = nextHeight
+			const coverScale = Math.max(
+				width / texture.width,
+				height / texture.height,
+			) * 1.04
+			image.scale.set(coverScale)
+			image.position.set(width / 2, height / 2)
 
-	const emitter = new Graphics()
-		.moveTo(48, -8)
-		.lineTo(72, 0)
-		.lineTo(48, 8)
-		.closePath()
-		.fill({ color: V.cyan })
+			darkWash
+				.clear()
+				.rect(0, 0, width, height)
+				.fill({ color: V.bg, alpha: 0.3 })
 
-	const integrity = new Graphics()
-	integrity.y = 72
-	root.addChild(bracket, matrix, core, emitter, integrity)
-	return { root, emitter, core, integrity }
+			stageWash
+				.clear()
+				.rect(0, 0, width, height)
+				.fill({
+					color: stageAccent(stage),
+					alpha: stage === "glitch" ? 0.055 : 0.025,
+				})
+
+			const compact = width < SCENE.compactWidth
+			const coverHeight = height * (
+				compact
+					? SCENE.foregroundHeight.compact
+					: SCENE.foregroundHeight.desktop
+			)
+			foreground
+				.clear()
+				.rect(0, height - coverHeight, width, coverHeight)
+				.fill({ color: V.bg, alpha: 0.76 })
+				.moveTo(0, height - coverHeight)
+				.lineTo(width, height - coverHeight)
+				.stroke({ color: V.cyan, width: 1, alpha: 0.18 })
+
+			haze
+				.clear()
+				.ellipse(width * 0.52, height * 0.48, width * 0.4, height * 0.12)
+				.fill({ color: V.cyan, alpha: 0.025 })
+				.ellipse(width * 0.42, height * 0.62, width * 0.34, height * 0.08)
+				.fill({ color: V.green, alpha: 0.018 })
+
+			glitchScan.clear()
+			if (stage === "glitch") {
+				for (let y = 96; y < height - 96; y += 12) {
+					glitchScan
+						.rect(24, y, Math.max(0, width - 48), 1)
+						.fill({ color: V.red, alpha: 0.035 })
+				}
+			}
+
+			for (const mote of motes) {
+				mote.node.position.set(mote.baseX * width, mote.baseY * height)
+			}
+		},
+		tick(elapsedMs, reducedMotion) {
+			if (reducedMotion) {
+				image.position.set(width / 2, height / 2)
+				haze.position.set(0, 0)
+				return
+			}
+			const phase = elapsedMs / 8_000
+			image.position.set(
+				width / 2 + Math.sin(phase) * MOTION.parallaxPx,
+				height / 2 + Math.cos(phase * 0.73) * MOTION.parallaxPx * 0.5,
+			)
+			haze.position.set(
+				Math.sin(phase * 1.3) * MOTION.parallaxPx,
+				Math.cos(phase) * MOTION.parallaxPx * 0.25,
+			)
+			for (const mote of motes) {
+				const travel = (elapsedMs / 1_000) * Math.min(mote.speed, MOTION.moteMaxSpeed)
+				mote.node.y = (mote.baseY * height - travel + height) % Math.max(1, height)
+				mote.node.x = mote.baseX * width + Math.sin(phase + mote.phase) * MOTION.parallaxPx
+			}
+		},
+	}
 }
 
-function packetShard(accent: number) {
-	return new Graphics()
-		.moveTo(0, -42)
-		.lineTo(34, -10)
-		.lineTo(16, 0)
-		.lineTo(34, 12)
-		.lineTo(0, 42)
-		.lineTo(-12, 16)
-		.lineTo(-34, 8)
-		.lineTo(-16, -2)
-		.lineTo(-34, -14)
-		.closePath()
-		.fill({ color: V.panel2 })
-		.stroke({ color: accent, width: 2 })
-		.moveTo(0, -30)
-		.lineTo(0, 30)
-		.moveTo(-20, -10)
-		.lineTo(18, 12)
-		.stroke({ color: accent, width: 2, alpha: 0.45 })
-}
-
-function needleSignal(accent: number) {
-	return new Graphics()
-		.moveTo(-58, -9)
-		.lineTo(20, -9)
-		.lineTo(52, 0)
-		.lineTo(20, 9)
-		.lineTo(-58, 9)
-		.lineTo(-38, 0)
-		.closePath()
-		.fill({ color: V.panel2 })
-		.stroke({ color: accent, width: 2 })
-		.moveTo(-30, -24)
-		.lineTo(4, -24)
-		.lineTo(18, -13)
-		.moveTo(-30, 24)
-		.lineTo(4, 24)
-		.lineTo(18, 13)
-		.stroke({ color: accent, width: 2, alpha: 0.5 })
-		.rect(-48, -3, 48, 6)
-		.fill({ color: accent, alpha: 0.3 })
-}
-
-function nullCrown(accent: number) {
-	return new Graphics()
-		.moveTo(-52, 28)
-		.lineTo(-44, -24)
-		.lineTo(-20, -8)
-		.lineTo(0, -46)
-		.lineTo(20, -8)
-		.lineTo(44, -24)
-		.lineTo(52, 28)
-		.lineTo(22, 40)
-		.lineTo(-22, 40)
-		.closePath()
-		.fill({ color: V.panel2 })
-		.stroke({ color: accent, width: 3 })
-		.moveTo(-30, 20)
-		.lineTo(-10, 8)
-		.lineTo(0, 24)
-		.lineTo(12, 8)
-		.lineTo(32, 20)
-		.stroke({ color: V.violet, width: 2 })
-		.rect(-8, 25, 16, 6)
-		.fill({ color: accent })
-}
-
-export function createTarget(stage: StageType): TargetArt {
+export function createWarden(poses: WardenPoseTextures): WardenArt {
 	const root = new Container()
 	const body = new Container()
-	const accent = stageAccent(stage)
-	const silhouette = stage === "warmup"
-		? packetShard(accent)
-		: stage === "rush"
-			? needleSignal(accent)
-			: nullCrown(accent)
-	const hitLayer = new Graphics().circle(0, 0, 60).fill({ color: V.text })
-	hitLayer.alpha = 0
-	body.y = -88
-	body.addChild(silhouette, hitLayer)
+	const shadow = new Graphics()
+		.ellipse(0, 16, 96, 18)
+		.fill({ color: V.bg, alpha: 0.62 })
+	const sprite = new Sprite(poses["ready-low"])
+	const core = new Graphics()
+		.circle(0, 0, 14)
+		.stroke({ color: V.green, width: 2, alpha: 0.7 })
+	const muzzle = new Graphics()
+	const integrity = new Graphics()
+	const label = new Text({
+		text: "KEYSTONE WARDEN",
+		style: {
+			fill: V.cyan,
+			fontFamily: "JetBrains Mono",
+			fontSize: 14,
+			fontWeight: "700",
+			letterSpacing: 1,
+		},
+	})
 
-	const wordLayer = new Container()
-	const caret = new Graphics()
-	const progress = new Graphics()
-	progress.y = -36
-	wordLayer.addChild(caret)
-	root.addChild(body, progress, wordLayer)
-	return { root, body, hitLayer, wordLayer, caret, progress, accent }
+	sprite.anchor.set(0.5)
+	core.position.set(-sprite.texture.width * 0.045, -sprite.texture.height * 0.06)
+	muzzle.position.set(sprite.texture.width * 0.45, -sprite.texture.height * 0.08)
+	label.anchor.set(0.5)
+	root.addChild(shadow, body, integrity, label)
+	body.addChild(sprite, core, muzzle)
+	return {
+		root,
+		body,
+		sprite,
+		poses,
+		pose: "ready-low",
+		muzzle,
+		core,
+		integrity,
+		label,
+	}
 }
 
-export function drawActiveWord(
-	target: TargetArt,
+export function createTarget(stage: StageType, textures: CombatTextures): TargetArt {
+	const root = new Container()
+	const body = new Container()
+	const poses = textures[stage]
+	const sprite = new Sprite(poses["idle-a"])
+	const accent = stageAccent(stage)
+	const className = targetClassName(stage)
+	const shadow = new Graphics()
+		.ellipse(0, 12, 88, 16)
+		.fill({ color: V.bg, alpha: 0.58 })
+	const hitLayer = new Graphics()
+		.circle(0, 0, 72)
+		.fill({ color: V.text, alpha: 0.7 })
+	const integrity = new Graphics()
+	const label = new Text({
+		text: className,
+		style: {
+			fill: accent,
+			fontFamily: "JetBrains Mono",
+			fontSize: 14,
+			fontWeight: "700",
+			letterSpacing: 1,
+		},
+	})
+
+	sprite.anchor.set(0.5)
+	hitLayer.alpha = 0
+	label.anchor.set(0.5)
+	body.addChild(shadow, sprite, hitLayer)
+	root.addChild(body, integrity, label)
+	return {
+		root,
+		body,
+		sprite,
+		poses,
+		pose: "idle-a",
+		hitLayer,
+		integrity,
+		label,
+		accent,
+		className,
+	}
+}
+
+export function createCommandRail(): CommandRailArt {
+	const root = new Container()
+	const panel = new Graphics()
+	const wordLayer = new Container()
+	const caret = new Graphics()
+	const status = new Text({
+		text: "",
+		style: {
+			fill: V.mid,
+			fontFamily: "JetBrains Mono",
+			fontSize: 14,
+			fontWeight: "700",
+			letterSpacing: 1,
+		},
+	})
+	const previews = new Text({
+		text: "",
+		style: {
+			fill: V.dim,
+			fontFamily: "JetBrains Mono",
+			fontSize: SCENE.rail.previewFont,
+		},
+	})
+	const equation = new Text({
+		text: "",
+		style: {
+			fill: V.yellow,
+			fontFamily: "JetBrains Mono",
+			fontSize: 14,
+			fontWeight: "700",
+		},
+	})
+	const charge = new Graphics()
+
+	status.anchor.set(0.5)
+	previews.anchor.set(0.5)
+	equation.anchor.set(0.5)
+	root.addChild(panel, charge, wordLayer, status, previews, equation)
+	return { root, panel, wordLayer, caret, status, previews, equation, charge }
+}
+
+export function drawCommandRail(
+	rail: CommandRailArt,
 	word: string,
 	caretIndex: number,
 	dirty: boolean,
+	upcomingWords: readonly string[],
+	overdriveCharge: number,
+	aegisRecoveryAvailable: boolean,
+	inputPrompt: string,
+	width: number,
+	compact: boolean,
 ) {
-	for (const child of target.wordLayer.removeChildren()) child.destroy()
-	target.caret = new Graphics()
+	const railWidth = compact
+		? Math.max(0, width - SCENE.rail.compactGutter)
+		: Math.min(
+			SCENE.rail.desktopMaxWidth,
+			Math.max(0, width - SCENE.rail.desktopGutter),
+		)
+	rail.panel
+		.clear()
+		.roundRect(
+			-railWidth / 2,
+			-SCENE.rail.height / 2,
+			railWidth,
+			SCENE.rail.height,
+			SCENE.rail.radius,
+		)
+		.fill({ color: V.bg, alpha: 0.88 })
+		.stroke({
+			color: dirty ? V.red : V.line,
+			width: 1,
+			alpha: dirty ? 0.72 : 0.92,
+		})
+	const chargeRatio = Math.max(0, Math.min(1, overdriveCharge / 100))
+	rail.charge
+		.clear()
+		.roundRect(
+			-railWidth / 2 + 8,
+			SCENE.rail.height / 2 - 7,
+			Math.max(0, railWidth - 16),
+			3,
+			1.5,
+		)
+		.fill({ color: V.panel2 })
+		.roundRect(
+			-railWidth / 2 + 8,
+			SCENE.rail.height / 2 - 7,
+			Math.max(0, railWidth - 16) * chargeRatio,
+			3,
+			1.5,
+		)
+		.fill({ color: chargeRatio >= 1 ? V.yellow : V.cyan })
 
+	for (const child of rail.wordLayer.removeChildren()) child.destroy()
+	const fontSize = compact
+		? SCENE.rail.activeFont.compact
+		: SCENE.rail.activeFont.desktop
 	const characters: Text[] = []
 	let totalWidth = 0
 	for (const character of word) {
@@ -207,7 +602,7 @@ export function drawActiveWord(
 			style: {
 				fill: V.green,
 				fontFamily: "JetBrains Mono",
-				fontSize: 48,
+				fontSize,
 				fontWeight: "700",
 			},
 		})
@@ -217,68 +612,84 @@ export function drawActiveWord(
 
 	let cursor = -totalWidth / 2
 	let caretX = cursor
-	characters.forEach((text, index) => {
+	for (const [index, text] of characters.entries()) {
 		text.x = cursor
-		text.y = -24
+		text.y = -fontSize / 2 - 20
 		text.style.fill = dirty
 			? V.red
 			: index < caretIndex
 				? V.text
 				: V.green
-		target.wordLayer.addChild(text)
+		rail.wordLayer.addChild(text)
 		if (index === caretIndex) caretX = cursor
 		cursor += text.width
-	})
+	}
 	if (caretIndex >= characters.length) caretX = cursor
 
-	target.caret
-		.rect(caretX, -22, 3, 48)
+	rail.caret = new Graphics()
+		.rect(
+			caretX,
+			-fontSize / 2 - 18,
+			SCENE.rail.caretWidth,
+			fontSize,
+		)
 		.fill({ color: dirty ? V.red : V.green })
-	target.wordLayer.addChild(target.caret)
-
+	rail.wordLayer.addChild(rail.caret)
 	if (dirty) {
-		target.wordLayer
-			.addChild(
-				new Graphics()
-					.rect(-totalWidth / 2, 30, totalWidth, 2)
-					.fill({ color: V.red }),
-			)
+		rail.wordLayer.addChild(
+			new Graphics()
+				.rect(-totalWidth / 2, fontSize / 2 - 14, totalWidth, 2)
+				.fill({ color: V.red }),
+		)
 	}
+
+	rail.status.text = dirty
+		? aegisRecoveryAvailable
+			? "AEGIS RECOVERY — BASE ONLY"
+			: "CORRUPTED — 0 SCORE"
+		: caretIndex >= word.length
+			? overdriveCharge >= 100
+				? "SPACE — OVERDRIVE"
+				: "SPACE — EXECUTE"
+			: inputPrompt
+	rail.status.style.fill = dirty
+		? aegisRecoveryAvailable ? V.cyan : V.red
+		: overdriveCharge >= 100
+			? V.yellow
+			: caretIndex >= word.length
+				? V.green
+				: V.mid
+	rail.status.position.set(0, 16)
+	rail.previews.text = upcomingWords.slice(0, 2).join("   /   ")
+	rail.previews.position.set(0, 44)
 }
 
-export function createBackground() {
-	const root = new Container()
-	const guides = new Graphics()
-	const glitchScan = new Graphics()
-	const blackout = new Graphics()
-	root.addChild(guides, glitchScan, blackout)
-
-	return {
-		root,
-		guides,
-		glitchScan,
-		blackout,
-		redraw(width: number, height: number, glitch: boolean) {
-			guides
-				.clear()
-				.moveTo(24, height / 2)
-				.lineTo(width - 24, height / 2)
-				.stroke({ color: V.line, width: 1, alpha: 0.75 })
-				.moveTo(width / 2, 96)
-				.lineTo(width / 2, height - 96)
-				.stroke({ color: V.line, width: 1, alpha: 0.35 })
-				.rect(24, 96, Math.max(0, width - 48), Math.max(0, height - 192))
-				.stroke({ color: V.line, width: 1, alpha: 0.45 })
-
-			glitchScan.clear()
-			if (glitch) {
-				for (let y = 100; y < height - 96; y += 12) {
-					glitchScan.rect(24, y, Math.max(0, width - 48), 1).fill({
-						color: V.red,
-						alpha: 0.035,
-					})
-				}
-			}
-		},
+export function drawTargetIntegrity(
+	target: TargetArt,
+	wordLength: number,
+	caretIndex: number,
+	dirty: boolean,
+) {
+	const count = Math.max(1, wordLength)
+	const gap = 2
+	const segmentWidth = (SCENE.integrityWidth - gap * (count - 1)) / count
+	target.integrity.clear()
+	for (let index = 0; index < count; index += 1) {
+		target.integrity
+			.roundRect(
+				-SCENE.integrityWidth / 2 + index * (segmentWidth + gap),
+				0,
+				segmentWidth,
+				SCENE.integrityHeight,
+				SCENE.integrityRadius,
+			)
+			.fill({
+				color: index < caretIndex
+					? V.line
+					: dirty
+						? V.red
+						: target.accent,
+				alpha: index < caretIndex ? 0.45 : 0.9,
+			})
 	}
 }
