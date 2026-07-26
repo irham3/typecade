@@ -56,6 +56,7 @@ export type CombatSceneAssets = {
 
 export class CombatScene {
 	readonly app: Application
+	readonly host: HTMLDivElement
 	readonly stage = new Container()
 	// cameraRoot receives camera transforms. overlay stays fixed.
 	private readonly cameraRoot = new Container()
@@ -83,10 +84,12 @@ export class CombatScene {
 
 	constructor(
 		app: Application,
+		host: HTMLDivElement,
 		initial: SceneState,
 		assets: CombatSceneAssets,
 	) {
 		this.app = app
+		this.host = host
 		this.state = initial
 
 		this.environment = new EnvironmentDirector(assets.environment, {
@@ -347,6 +350,12 @@ export class CombatScene {
 		this.director.update(delta)
 		this.updateRailMotion(delta)
 		this.updateStageFeedback(delta)
+		
+		this.host.dataset.encounterBeat = this.environment.currentBeat
+		this.host.dataset.attackVerb = this.director.lastVerb || "none"
+		this.host.dataset.activeVariant = this.director.activeVariant || "none"
+		this.host.dataset.visibleSilhouettes = String(this.director.visibleCount)
+		this.host.dataset.liveEffects = String(this.director.liveEffectsCount)
 	}
 
 	private updateRailMotion(delta: number) {

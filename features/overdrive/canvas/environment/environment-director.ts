@@ -146,6 +146,7 @@ export class EnvironmentDirector {
 		scale: 1,
 	}
 	private beat: EncounterBeat = "ingress"
+	public get currentBeat() { return this.beat }
 
 	constructor(
 		assets: LoadedEnvironmentAssets,

@@ -169,6 +169,15 @@ export class CombatDirector {
 	private lastDirty = false
 	private timeMs = 0
 	private lastInputMs = 0
+	
+	public lastVerb = ""
+	public activeVariant = ""
+	public get visibleCount() {
+		return this.formation.getActiveTargets().size + 1 // Warden + enemies
+	}
+	public get liveEffectsCount() {
+		return this.effects.liveCount
+	}
 
 	constructor(
 		initial: SceneState,
@@ -365,6 +374,9 @@ export class CombatDirector {
 			0.5,
 		)
 		
+		this.lastVerb = event.verb
+		if (event.variantId) this.activeVariant = event.variantId
+		
 		if (event.verb === "cannon-burst") {
 			this.effects.emitCannonBurst(muzzle, position, event.combo)
 		} else if (event.verb === "rail-step") {
@@ -416,6 +428,10 @@ export class CombatDirector {
 				1,
 				0.5,
 			)
+			
+			this.lastVerb = event.verb
+			if (event.variantId) this.activeVariant = event.variantId
+			
 			if (event.verb === "execution") {
 				this.effects.emitExecution(targetPosition, this.state.stage, true, event.combo)
 			} else if (event.overdriveReleased) {

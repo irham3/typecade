@@ -130,7 +130,7 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
         host.dataset.environmentId = assets.environment.definition.id
         host.dataset.environmentFallback = String(assets.environment.fallback)
 
-        const scene = new CombatScene(app, latestRef.current, assets)
+        const scene = new CombatScene(app, host, latestRef.current, assets)
         sceneRef.current = scene
 
         scene.sync(latestRef.current)

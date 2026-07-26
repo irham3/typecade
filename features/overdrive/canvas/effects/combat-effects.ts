@@ -36,6 +36,10 @@ export class CombatEffects {
 	private serial = 0
 	private width = 0
 	private height = 0
+	
+	public get liveCount() {
+		return this.live.length
+	}
 
 	resize(width: number, height: number) {
 		this.width = width
