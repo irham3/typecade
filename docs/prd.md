@@ -46,12 +46,13 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 
 | ID | Requirement | Prio |
 | --- | --- | --- |
-| R-1 | Run state machine: Zone (1-8) x Stage (Warm-up/Rush/Glitch), then Shop, then next; game over on failed quota | P0 |
-| R-2 | Scoring engine: `(chars + Base bonus) x Mult`, combo +1 Mult per 10 words, dirty word scores zero, typo reset resolves on submission, stage clears immediately when Quota is met (per GDD §2) | P0 |
-| R-3 | Quota curve configurable from a single constants file (values from the spreadsheet simulation) | P0 |
-| R-4 | Per-stage timer + stage results (score, accuracy, time left) | P0 |
+| R-1 | Run state machine: Zone (1-8) x Stage (Warm-up/Rush/Glitch), then Shop, then next; Zone 1 escalates from one-letter targets to two-letter signals to three-letter words and auto-executes completed signals; Zone 2 teaches Space execution with short words; standard Zones 1-2 use Focus Pause plus visible Aegis timeout rescues and must be completable by validated 1/5/10/12/13 WPM profiles; Zone 3+ ends on failed quota | P0 |
+| R-2 | Scoring engine: `(chars + Base bonus) x Mult x final multipliers`, combo +1 Mult per 10 words, Zone 1 rejects typos without corrupting the signal, corrected dirty words in Zone 2 receive Aegis Recovery Base x1, Zone 3+ dirty words score zero, typo reset resolves on submission, and stage clears immediately when Quota is met; accepted characters charge Overdrive +3, non-ignored typo drains 15, and a clean submission at 100 charge applies x2 final score then resets charge | P0 |
+| R-3 | Quota curve and 75/70/65-second stage clocks configurable from a single constants file (values from deterministic simulation) | P0 |
+| R-4 | Per-stage timer + Focus Pause after 4 seconds of inactivity in standard Zones 1-2 + Aegis rescue state + stage results (score, accuracy, time left, rescues) | P0 |
 | R-5 | Endless mode after Zone 8 (quota x1.8^n) | P0 |
 | R-6 | Run state persisted to localStorage (refresh does not kill the run) | P1 |
+| R-7 | Difficulty bands are visible and deterministic: Zones 1-2 Protected, 3-4 Pressure, 5-6 Overclocked, 7-8 Lethal. Measured WPM must not invisibly change score or Quota | P0 |
 
 ## EPIC 2: Items and Shop
 
@@ -75,7 +76,7 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 
 | ID | Requirement | Prio |
 | --- | --- | --- |
-| J-1 | Render the custom **Signal Siege** presentation on a PixiJS canvas: Keystone, Packet Shard/Needle Signal/Null Crown glyphs, active text, particles, screen shake, hitstop, and item-proc acknowledgement | P0 |
+| J-1 | Render the custom **Signal Siege — character combat** presentation on a PixiJS canvas: Keystone Warden, Packet Stalker/Needle Wraith/Null Crown character classes, authored pose frames, named animation states, cross-field letter-node attacks, enemy pressure attacks, Aegis block, Overdrive release, layered arena, active text command rail, particles, restrained screen response, hitstop, and item-proc acknowledgement. A single transformed raster master does not pass acceptance | P0 |
 | J-2 | Audio: keystroke clicks (3 switch variants), quota riser, glitch sting; Web Audio, lazy-loaded | P1 |
 | J-3 | Reduced-motion setting (accessibility + low-end devices) | P1 |
 
@@ -174,7 +175,7 @@ Branch mapping (per the trunk-based + flag strategy): `refactor/engine-core`, `c
 <aside>
 🎨
 
-**Principle: 90% of assets are code, not files.** The cyber-minimalist look (glow, particles, neon lines, monospace text) is drawn directly with PixiJS graphics + glow filters and CSS: more consistent, smaller bundle, and reactive to gameplay (particle color follows rarity, intensity follows combo). Asset files are only needed for: item icons (~20), fonts, SFX, and enemy shapes (if the ZType direction wins).
+**Principle: character identity comes from a small coherent original art set; gameplay response stays code-driven.** Raster files are limited to one arena master, one Keystone Warden master, and the three MVP enemy class masters. PixiJS owns motion, projectiles, particles, hit flashes, integrity segmentation, and distortion so every effect remains reactive to typing. UI icons stay vector.
 
 </aside>
 
@@ -183,8 +184,9 @@ Branch mapping (per the trunk-based + flag strategy): `refactor/engine-core`, `c
 | Fonts | Google Fonts: JetBrains Mono / IBM Plex Mono (gameplay); Press Start 2P / VT323 (pixel-arcade accents) | OFL |
 | Item icons (Keycap/Macro) | **Game-icons.net** (~4,000 game-specific icons) | CC-BY (credit required) |
 | Non-game UI icons | Lucide / Phosphor Icons | MIT |
-| Sprites, UI packs, particle packs | **Kenney.nl** (the gold standard of free game assets); OpenGameArt (CC0 filter) | CC0 |
-| AI-generated assets | Notion AI / Google AI Studio / Recraft (free tiers); local Stable Diffusion + pixel-art LoRA with a GPU. **Consistency trick**: generate one sprite sheet per batch with a single style prompt (never one-by-one), then pixel post-process: downscale + lock to a limited palette (LibreSprite / Pixelorama, free) | Check provider ToS |
+| Character pose sheets and arena masters | Original project-owned generation using one shared art bible and palette; locally remove chroma key for cutouts; pose sheets maintain identity, scale, pivot, and ground line; store prompts and generated source paths in `CREDITS.md` | Provider terms recorded in credits |
+| Backup sprites or UI packs | **Kenney.nl** or OpenGameArt using CC0 assets only; use only if they match the art bible and are substantially edited into the project language | CC0 |
+| AI-generated assets | Generate the arena separately, then coherent pose sheets with the same medium, palette, camera, and material prompt. Never mix unrelated generations. At least six Warden poses and four poses per enemy must appear in runtime gameplay; code transforms alone are insufficient | Provider terms recorded in credits |
 | SFX (hit, coin, glitch sting) | Self-generated via **jsfxr / ChipTone / BFXR** (browser tools, output fully yours); Freesound (CC0 filter); Kenney audio | Own / CC0 |
 | Switch sounds (3 variants) | Record your own mechanical keyboard (linear/tactile/clicky): free and authentic | Own |
 | Music (post-MVP) | Pixabay Music; incompetech | Royalty-free / CC-BY |

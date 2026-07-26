@@ -37,34 +37,88 @@
 
 # 2. Core Loop & Score Formula
 
-## Loop per stage (60 seconds default)
+## Loop per stage (75 / 70 / 65 second ceiling)
 
 1. Words flow on screen (a stream, like the regular typing mode).
-2. Every **word finished without a typo** scores: `(character count + Base bonus) x current Mult`.
-3. **Combo**: every 10 consecutive words without a typo grants **Mult +1**. A typo resets Mult to 1 (unless an item changes this rule).
-4. Hit the **Quota** before time runs out: the stage clears immediately, remaining time becomes a Token bonus, then the player enters the **Shop**.
-5. Fail the quota: the **run ends**, results screen + share card.
+2. Every accepted character makes the Keystone Warden perform a readable action and adds 3 charge to the **Overdrive meter**. A typo removes 15 charge, to a minimum of zero.
+3. Every **word finished without a typo** scores: `(character count + Base bonus) x current Mult`. If Overdrive is full, the clean submission becomes an Overdrive Strike, applies a final score multiplier of x2, and empties the meter.
+4. **Combo**: every 10 consecutive words without a typo grants **Mult +1**. A typo resets Mult to 1 (unless an item changes this rule).
+5. Hit the **Quota** before time runs out: the stage clears immediately, remaining time becomes a Token bonus, then the player enters the **Shop**.
+6. In Zones 1-2, **Aegis Protocol** prevents timeout from ending the run. The Warden visibly blocks the lethal attack, the timer receives 30 seconds, and the stage continues. A rescued stage awards no time bonus. From Zone 3 onward, an unmet quota ends the run unless an item prevents it.
+
+## Literal beginner route
+
+`Beginner` means a hunt-and-peck player at 1-13 WPM, not a 40 WPM typist. The validation set explicitly includes 1, 5, 10, 12, and 13 WPM.
+
+- Zone 1 Warm-up uses single home-row and high-frequency letters. Each submitted letter is a complete target.
+- Zone 1 Rush uses two-letter signals. Zone 1 Glitch uses three-letter words.
+- Zone 1 auto-executes as soon as its final character is accepted. `Space to execute` is introduced in Zone 2, after the player has learned targeting and correction.
+- A wrong key in Zone 1 is rejected, shown in accuracy, and drains Overdrive, but it does not corrupt the signal or break Combo. The player simply finds the correct key and continues.
+- Zone 2 introduces normal correction and Combo breaks, but a corrected dirty word receives **Aegis Recovery**: `(character count + Base bonus) x1`, ignoring Mult and final multipliers. From Zone 3 onward, dirty words return to the canonical zero-score rule.
+- Zone 1 Glitch is a choreography-only training boss with no mechanical Glitch. The five MVP Glitches enter the pool in Zone 2; Sudden Death does not enter the pool until Zone 3.
+- Zone 2 uses short 3-5 letter words. Zone 3 begins the full word pool and the normal roguelite pressure curve.
+- Standard Zones 1-2 use **Focus Pause**. After 4 seconds with no printable input, the stage clock pauses automatically and the HUD reads `FOCUS PAUSE · TYPE WHEN READY`. The next printable input resumes the clock and is processed normally.
+- Focus Pause does not pause WPM or run-duration measurement. It protects decision/search time without falsifying typing speed.
+- Backspace and Macro keys count as intent and resume the clock, but only printable correct characters charge Overdrive.
+- Focus Pause is disabled from Zone 3 onward and never exists in Endless mode.
+- The first-run route teaches by escalation: `1 KEY → 2-KEY SIGNAL → 3-LETTER WORD → SHORT WORD → FULL POOL`. It never opens with an unexplained full word under a lethal timer.
+
+Stage clocks are intentionally asymmetric:
+
+| Stage | Initial time | Combat purpose |
+| --- | ---: | --- |
+| Warm-up | 75 seconds | Read the build, establish rhythm, and charge the first Overdrive safely |
+| Rush | 70 seconds | Higher target cadence and less recovery time |
+| Glitch | 65 seconds | Boss pressure plus the active Glitch |
+
+The timer is a clear ceiling, not a promise that every stage lasts that long. Reaching Quota clears immediately. Outside the intentionally compressed Zone 1 tutorial, an effective early stage should normally resolve in 25-55 seconds. Skilled players may clear a tutorial stage in seconds and continue immediately into the full run; the game never pads a cleared Quota to a fixed one-minute duration.
 
 ## Canonical scoring lifecycle
 
 - Typing accuracy is measured per attempted character. A corrected typo still marks the current word dirty.
-- A dirty word awards zero score. Its Mult reset is resolved when that word is submitted.
+- From Zone 3 onward, a dirty word awards zero score. Zone 2 uses the explicit Aegis Recovery Base-only exception above, while Zone 1 rejects wrong keys without dirtying its training signals. Any applicable Mult reset is resolved when the word is submitted.
 - Combo, the natural Mult earned from Combo, stage-only item bonuses, stage score, accuracy, and WPM reset at every stage start.
 - Run-persistent item bonuses, Tokens, inventory, and total run score do not reset between stages.
 - The word that reaches Combo 10/20/30 receives the newly increased Mult.
 - Apply Base bonuses, Base multipliers, additive Mult, Mult multipliers, and final score multipliers in that order; floor the final per-word score to an integer.
 - `stage score` is compared with the current stage Quota. `run score` is the sum of every completed and failed stage score.
 - A stage clears on the first submitted word that meets or exceeds Quota. The player never waits for the timer after earning a clear.
+- Overdrive charge is run-persistent. It gains exactly 3 per accepted character, loses 15 on a non-ignored typo, caps at 100, and is consumed only by a clean submitted word at full charge.
+- The Overdrive Strike is a final score multiplier and therefore resolves after Base and Mult item effects. It is part of the shared ruleset, not an item proc.
+- An Aegis rescue is available only in standard Zones 1-2. It adds 30 seconds, increments the visible rescue count, and permanently sets that stage's time bonus to zero. It never changes score, Quota, word order, shop RNG, or leaderboard rules.
+- Focus Pause becomes active after exactly 4,000ms with no input in a protected stage. The stage timer stops, while `runDurationMs`, stage WPM time, telemetry duration, and wall-clock playtime continue.
+
+## Moment-to-moment experience contract
+
+The scoring rules stay deep, but the first interaction must be obvious without reading a manual.
+
+- A new stage opens in a **ready gate**. The stage timer does not move until the first printable key. That key is processed as normal input, so the gate adds no click and no lost keystroke.
+- The active word and caret are always the highest-contrast elements. Zone 1 labels the exact input contract (`FIND 1 KEY`, `TYPE 2 KEYS`, or `TYPE 3 LETTERS`) and auto-executes. From Zone 2 onward, once every letter is entered, the rail changes to **SPACE — EXECUTE** or **SPACE — OVERDRIVE** when fully charged. Space submits the word and triggers the finishing strike.
+- Each accepted character advances the Warden through a deterministic attack chain: launch, cross-field dash, strike, recoil, and recover. The corresponding enemy letter-node breaks on impact. The Warden must change pose and position; firing from one fixed anchor for an entire word is not acceptable.
+- Resolution ends the encounter: a clean word destroys the target and awards score; a dirty Zone 2 word receives Aegis Recovery; a dirty Zone 3+ word awards zero and breaks Mult according to the canonical rules.
+- A corrected dirty word remains visibly marked **AEGIS RECOVERY — BASE ONLY** in Zone 2 or **CORRUPTED — 0 SCORE** in Zone 3+. This makes the consequence honest before submission instead of surprising the player afterward.
+- First-run coaching is embedded in the command rail without pausing play: Zone 1 uses `FIND 1 KEY — AUTO-FIRES`, `TYPE 2 KEYS — AUTO-FIRES`, and `TYPE 3 LETTERS — AUTO-FIRES`; Zone 2 introduces `TYPE THE WORD — SPACE EXECUTES`; then the Combo rail teaches `10 CLEAN WORDS = +1 MULT`. A Zone 2 typo changes the outcome copy to `AEGIS RECOVERY — BASE ONLY`; Zone 3+ uses `CORRECT IT, THEN EXECUTE — THIS WORD SCORES 0`.
+- Combo is displayed as both the total clean streak and progress to the next natural Mult: `7 / 10 TO MULT`. When it reaches 10, the meter empties only after the Mult increase is visibly acknowledged.
+- A clean submission shows one compact equation for 700ms: `6 BASE × 2 MULT = +12`. Item bonuses are folded into Base or Mult and the triggering item acknowledges beside the equation.
+- Target entry and defeat animation never lock input. The next word becomes typeable immediately; visual transitions catch up independently within 180ms.
+- At 75% Quota the arena enters **OVERRUN**: the quota rail, target cadence, and audio riser intensify without changing rules. At 90% Quota the HUD shows the approximate score still needed, not a vague warning.
+- Aegis protection is explained before Zone 1 starts and remains visible as `AEGIS ACTIVE · ZONES 1-2`. A rescue uses a full character block animation and `+30S`, never a silent timer reset.
+- Focus Pause is communicated as a calm cyan state, not a failure. Enemy attack anticipation cancels, the Warden enters `ready-high`, and the arena continues low-motion ambience so the game still feels alive.
+- Difficulty is communicated by named threat bands rather than hidden adaptation: Zones 1-2 `PROTECTED`, Zones 3-4 `PRESSURE`, Zones 5-6 `OVERCLOCKED`, and Zones 7-8 `LETHAL`. Player WPM never secretly changes Quota or scoring.
+- Stage Result answers three questions in order: `Did I clear?`, `Why did I score that much?`, and `What should I improve or buy?`. Shop answers: `What does this trigger?`, `Does it fit my current run?`, and `What challenge comes next?`
+
+The intended rhythm is: **read → strike → reposition → execute → charge → burst → choose**. Any animation, panel, or explanation that delays this rhythm is a defect.
 
 ## Baseline number calibration
 
 Model players from actual per-character accuracy, not a flat percentage applied after scoring. For a five-character word, 96% character accuracy produces only an 81.5% chance of a clean word before corrections. The simulator must reproduce dirty words, broken streaks, and item triggers.
 
-- 60-second stage at 60 WPM = approximately 60 standardized words / 300 attempted characters.
-- Natural maximum at perfect accuracy is Mult 7 by the end of the stage.
+- A 75-second Warm-up at 60 WPM contains approximately 375 attempted characters before early clear.
+- Natural maximum at perfect accuracy depends on early clear; the simulator models the actual word lengths, dirty-word probability, and Overdrive cadence.
 - Zone 1 must be survivable without owning an item; later zones progressively require a coherent build.
 - From Zone 3-4 onward, quotas **force** the player to own Mult items. Exactly like Balatro: base alone is never enough.
-- The quota table below remains a tuning table until the deterministic simulator and external playtest gates in §10 pass.
+- Zones 1-2 are onboarding through play, not a disguised speed test. A beginner can always finish them through Aegis rescues, while faster play earns time Tokens and reaches shops sooner.
+- The quota table below is calibrated against `scripts/simulate-overdrive.mjs` and remains subject to external playtest gates in §10.
 
 ## Why typos must be expensive
 
@@ -82,25 +136,25 @@ Without a typo penalty this game becomes "spam the keyboard". Default rule: a ty
 
 Beat Zone 8 for the **win**, which unlocks **ENDLESS MODE** (infinity): quotas keep rising exponentially until the run dies. The endless score is what feeds the main leaderboard.
 
-## Quota curve (draft v0.1, to be tuned)
+## Quota curve (ruleset v0.2)
 
 | Zone | Warm-up | Rush | Glitch |
 | --- | --- | --- | --- |
-| 1 | 300 | 450 | 600 |
-| 2 | 800 | 1,200 | 1,600 |
-| 3 | 2,000 | 3,000 | 4,000 |
-| 4 | 5,000 | 7,500 | 10,000 |
-| 5 | 11,000 | 16,500 | 22,000 |
-| 6 | 20,000 | 30,000 | 40,000 |
-| 7 | 35,000 | 52,000 | 70,000 |
-| 8 | 50,000 | 75,000 | 100,000 |
+| 1 | 5 | 8 | 12 |
+| 2 | 8 | 12 | 18 |
+| 3 | 60 | 90 | 130 |
+| 4 | 180 | 260 | 380 |
+| 5 | 500 | 700 | 1,000 |
+| 6 | 1,200 | 1,800 | 2,500 |
+| 7 | 3,000 | 4,500 | 6,000 |
+| 8 | 7,000 | 9,000 | 12,000 |
 
 Endless: Zone 8 quota x 1.8^n per subsequent zone.
 
 <aside>
 ⚠️
 
-These numbers are structured placeholders. **They must be simulated in a spreadsheet first** (see §10) before implementation.
+These values are the first implementation curve. They are validated by the deterministic simulation harness and must still pass external beginner, 40-50 WPM, 60 WPM, and 90 WPM playtests before release.
 
 </aside>
 
@@ -257,15 +311,18 @@ The word pool must be **tagged**: length, letters used, contains double letters,
 
 # 10. Balancing Framework
 
-Before coding gameplay: **simulate in a spreadsheet**.
+Before changing gameplay numbers: run the deterministic simulation harness and record the result alongside the ruleset change.
 
-1. Player models: 40 / 60 / 90 WPM with 92% / 96% / 98% accuracy.
+1. Player models: 1 / 5 / 10 / 12 / 13 / 20 / 40 / 60 / 90 WPM with representative per-character accuracy and inter-key pauses.
 2. Simulate per-stage scores for each profile, with 0-3 scaling items.
 3. Balance targets:
+    - 1-13 WPM beginner: can stop indefinitely to locate a key, completes the staged Zone 1 letter-to-word route, always completes Zones 1-2 through Focus Pause plus visible Aegis rescues, and reaches at least six shops/decisions before a speed-based run end is possible.
+    - 40-50 WPM player: clears Zone 1 without rescue in a representative majority of runs and reaches Zone 3-5 with understandable build choices.
     - 60 WPM player + a decent build: reaches Zone 6-8 (wins sometimes).
     - 90 WPM player **without** a build: stuck at Zone 4-5. (This is what enforces *build > raw speed*.)
     - 40 WPM player + an economy/defensive build: Zone 4-5, still feels like progress.
-4. Main tuning knobs: quota curve, combo rate (+1 per 10 words), item prices.
+4. Main tuning knobs: quota curve, stage clock by type, combo rate (+1 per 10 words), Overdrive gain/loss, and item prices.
+5. Never use invisible per-player Quota scaling. Fairness assistance must be deterministic, visible, and identical for every player in the same Zone.
 
 ---
 
@@ -280,12 +337,21 @@ Before coding gameplay: **simulate in a spreadsheet**.
 
 # 12. Presentation & Juice
 
-- **Render gameplay on a canvas (PixiJS)**, not DOM/Framer Motion: particles + screen shake + 60fps on low-end devices (the majority of ID users).
-- **Presentation direction is locked: Signal Siege.** The player operates a precision keyboard core against abstract corrupted glyph entities. Do not use cartoon ships, faces, mascots, stock sci-fi sprites, or decorative starfields. Warm-up uses packet shards, Rush uses needle signals, and Glitch uses a fractured key-crown boss silhouette.
-- Every word clear: the score number pops from the active glyph and resolves toward the score HUD. Mult up: flash + 50ms hitstop. Glass shatters: 0.3s slow-mo.
+- **Render gameplay on a canvas (PixiJS)**, not DOM/Framer Motion: layered character animation, pose changes, cross-field movement, projectiles, particles, hit reactions, and camera response at 60fps on low-end devices.
+- **Presentation direction is locked: Signal Siege — character combat.** The player operates the **Keystone Warden**, a compact mechanical sentinel built from key-switch, keycap, and keyboard-plate geometry. It has a readable head, torso, typing cannon, and braced combat pose without becoming a cute mascot or a human character.
+- Every target is a short combat encounter tied to one word. Its letters become destructible signal-nodes arranged along a readable attack path. Each accepted character moves the Warden to the next node and breaks it. The final accepted character enters an execution pose; a clean submission destroys the target, while a dirty submission makes it phase out with no score. The next target enters immediately so typing never waits for animation.
+- Warm-up fields **Packet Stalkers**, small corrupted relay creatures; Rush fields **Needle Wraiths**, fast signal hunters; Glitch fields the **Null Crown**, a large fractured boss construct. Their silhouette, locomotion, anticipation, hit reaction, defeat, and entry motion must be readable without labels.
+- Original raster character and environment art is allowed and preferred when it creates a stronger silhouette than code-native geometry. Assets must be project-owned or commercial-safe, stored locally, versioned, documented in `CREDITS.md`, and composited with code-driven effects. Stock sci-fi sprites, clip art, emoji, photorealism, generic spaceships, and unrelated asset packs remain banned.
+- The arena is a layered cyber-industrial signal trench rather than an empty grid. Low-contrast parallax, distant machinery, cable motion, and haze may move continuously to establish depth; gameplay accents remain brighter than the world.
+- Every word clear: the score number pops from the defeated target and resolves toward the score HUD. Mult up: flash + 50ms hitstop. Glass shatters: 0.3s slow-mo.
+- At least six authored Warden poses and four poses per enemy class are required for MVP gameplay: ready, anticipation, attack/travel, recoil or recover, hit/block, and defeat or ultimate where applicable. A single raster master moved, rotated, or squashed in code does not satisfy character animation.
+- Character sprites may use short crossfades only between compatible poses. Attacks require stepped or interpolated travel through the arena, animation smears, and contact frames. Ambient bobbing never counts as a gameplay animation.
+- Full Overdrive changes the command rail, Warden silhouette, audio layer, and attack choreography before it changes score. The release crosses the arena, creates a full-height impact column, and returns control within 320ms.
+- Every enemy periodically telegraphs an attack based on the remaining stage time. These attacks create pressure and authored block/dodge reactions but do not introduce a second health system in MVP. The lethal timeout attack is the only attack that resolves the stage outcome.
+- Aegis rescue requires a distinct Warden block pose, an enemy attack pose, a shield break or deflection effect, a `+30S` callout, and a changed arena state. It must feel like surviving an attack, not like the timer silently jumping.
 - Every equipped item must visibly acknowledge a proc without competing with the active word. A stage breakdown attributes score and protection to the build so the player can learn why it worked.
-- Audio: a click per keystroke (sound options: linear/tactile/clicky, keyboard switch theming), a riser when approaching the quota, a sting when a Glitch appears.
-- The aesthetic stays **Cyber-Minimalism**: arcade does not mean tacky; think Balatro: maximalist systems, disciplined visuals.
+- Audio: a click per keystroke (sound options: linear/tactile/clicky, keyboard switch theming), a shot layer on accepted characters, an impact layer on word completion, a riser when approaching the quota, and a sting when a Glitch appears.
+- The aesthetic is **Kinetic Cyber-Brutalism**: disciplined dark surfaces, bold asymmetric silhouettes, readable typography, and short high-impact motion. It must feel like a combat game controlled by typing, never like a dashboard with decorative sprites.
 
 ---
 
@@ -303,6 +369,9 @@ Before coding gameplay: **simulate in a spreadsheet**.
 - 8 Zones x 3 stages, simple endless mode after the win
 - **15 Keycaps**: WASD, Vowel Magnet, Longshot, Sprinter, Second Wind, Copper Key, Home Row, Punctuator, Combo Battery, Overclock, Double Tap, Snowball, Interest Bank, Glass Keycap, Vampire
 - **4 Macros**: Escape, Time Freeze, Quota Slash, Insurance
+- Core Overdrive meter and Overdrive Strike (3 charge per accepted character, -15 on typo, x2 final score on the next clean submission at 100)
+- Literal beginner route (letters → two-letter signals → three-letter words → short words)
+- Focus Pause and Aegis Protocol beginner protection in standard Zones 1-2
 - No Firmware
 - **5 Glitches** (No Backspace, Sudden Death, Invisible Ink, Blackout, Inflation)
 - Basic shop + reroll, economy per §4
@@ -314,7 +383,7 @@ Before coding gameplay: **simulate in a spreadsheet**.
 
 **Suggested work order:**
 
-1. Spreadsheet simulation (1-2 days): validate the curve
+1. Deterministic simulation: validate the curve against 1/5/10/12/13/20/40/60/90 WPM profiles
 2. Core loop prototype with no visuals (stage + quota + combo + 5 hardcoded items), self-playtest: *is it fun?*
 3. Shop + economy
 4. Juice pass (canvas, particles, audio)
@@ -333,9 +402,15 @@ Before coding gameplay: **simulate in a spreadsheet**.
 | Identity conflict with the serious typing test | The arcade mode becomes the main face; the typing test stays as "Practice" |
 | Leaderboard anti-cheat | Record keystroke timing per run, detect inhuman intervals; daily seed verified server-side |
 
+**Resolved rules:**
+
+- The MVP uses 75 / 70 / 65 second initial clocks for Warm-up / Rush / Glitch and immediate clear when Quota is reached.
+- Standard Zones 1-2 use visible Aegis rescues. Endless mode never uses Aegis.
+- Standard Zones 1-2 automatically Focus Pause after 4 seconds without input. Zone 3+ and Endless never pause automatically.
+- Quota and score rules never change invisibly based on measured WPM.
+
 **Open questions:**
 
-- The MVP uses a fixed 60-second maximum and immediate clear when Quota is reached.
 - The MVP uses continuous word flow. Quote/sentence mode is post-MVP.
 - Mode name: "Overdrive"? "Arcade Run"? "Endless"? (placeholder: OVERDRIVE)
 - Monetization later: cosmetics? supporter tier? (do not think about it before retention exists)

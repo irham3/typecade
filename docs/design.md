@@ -6,32 +6,35 @@
 
 # 1. Art Direction
 
-References: Balatro (item and shop feel), Monkeytype (clean typing screen), ZType (enemy drama), CRT arcade cabinets.
+References: Balatro (item and shop feel), Hades (character staging and hit readability), Into the Breach (compact tactical silhouettes), ZType (enemy drama), CRT arcade cabinets.
 
 Five rules, in priority order:
 
-1. 90% of the screen is dark and neutral. Neon is reserved for whatever matters right now.
-2. One light source per moment: the active word. Nothing else competes with it.
-3. Every visual effect has a gameplay trigger. No decorative animation running on its own.
+1. 80% of the screen is dark and neutral. Neon is reserved for the active word, combat impact, quota, and build procs.
+2. One dominant light source per moment: the active target. Environmental light remains at least two contrast steps below it.
+3. Character motion communicates state: ready, attack, recoil, danger, defeat, or transition. Low-contrast world motion may establish depth but never becomes the focal point.
 4. Max 1 glow layer per element. A second glow gets deleted.
-5. When in doubt, delete.
+5. Preserve silhouette and readability before adding detail.
 
-## Original asset language: Signal Siege
+## Original asset language: Signal Siege — character combat
 
-- The visual identity is built from custom code-native **Typecade Glyphs**: key matrices, brackets, split stems, scan marks, and corrupted letterforms.
-- The player object is the **Keystone**, a precision keyboard core. It is a machine/sigil, not a character.
-- Warm-up targets are **Packet Shards**, Rush targets are **Needle Signals**, and Glitch targets are a **Null Crown**. Each silhouette must remain recognizable at 64px.
-- No cartoon faces, generic spaceships, mascots, clip-art, emoji, photorealism, or unrelated AI-generated sprites.
-- The gameplay canvas stays plain and quiet. Structural guide lines may appear at low opacity, but stars, ambient particles, permanent scanlines, and autonomous background animation are banned.
+- The visual identity combines original raster character/environment art with custom code-native **Typecade Glyphs**: key matrices, brackets, split stems, scan marks, and corrupted letterforms.
+- The player is the **Keystone Warden**: a non-human mechanical sentinel with key-switch armor, an oversized keycap shoulder, a readable visor slit, and a forearm typing cannon. Its silhouette is broad, grounded, and angled toward the target.
+- Warm-up targets are **Packet Stalkers**, Rush targets are **Needle Wraiths**, and Glitch targets are the **Null Crown**. Each class has a distinct silhouette and remains recognizable at 96px.
+- Character rendering style: hand-painted 2.5D game illustration, hard-surface cel shading, restrained material texture, graphic shadow shapes, and no photorealistic detail. Character art uses a side-facing three-quarter view so attack direction remains obvious.
+- Environment rendering style: cyber-industrial signal trench with layered relay towers, keyboard-plate architecture, cables, and controlled haze. It uses the same hard-surface painted language and contains no readable text.
+- No cartoon proportions, cute faces, human protagonists, generic spaceships, mascots, clip art, emoji, photorealism, visual references to copyrighted characters, or unrelated asset packs.
+- Generated assets must be original, stored under `public/overdrive/art/`, use versioned filenames, and include their prompt/source in `CREDITS.md`. A flat chroma-key background must be removed locally for character cutouts.
 - Item art uses one custom filled SVG family with a 24×24 viewBox, consistent optical weight, and no rarity color baked into the icon.
 
 | Allowed | Not allowed |
 | --- | --- |
 | Thin glow on the active word and quota bar | Glow on labels, panel borders, static text |
-| Particles on word completion | Ambient particles / always-alive backgrounds |
+| Particles on accepted characters and word completion | Bright ambient particles that compete with the active target |
 | Scanline overlay during Glitch stages only | Permanent scanlines on every screen |
 | One accent color per function (see tokens) | Multi-color gradients, lens flares, heavy bloom |
 | Pixel font for the wordmark and screen titles | Pixel font for body text or HUD numbers |
+| Slow low-contrast parallax, cable drift, and haze | High-contrast decorative loops or motion near the active word |
 
 # 2. Design Tokens: Color
 
@@ -104,6 +107,34 @@ Two fonts, no more:
 - Non-game content width (leaderboard, settings): max 720px, centered.
 - Gameplay: full viewport, any aspect ratio, HUD elements pinned to the edges with 24px padding.
 
+## Gameplay canvas composition tokens
+
+| Token | Desktop (width >=640px) | Compact (width <640px) |
+| --- | --- | --- |
+| Warden anchor | x 22%, y 52% | x 28%, y 55% |
+| Target anchor | x 73%, y 48% | x 72%, y 46% |
+| Warden visual height | 42% of canvas, max 400px | 26% of canvas, max 216px |
+| Target visual height | 38% of canvas, max 360px | 25% of canvas, max 200px |
+| Active word anchor | x 54%, y 66% | x 54%, y 66% |
+| Target entry distance | 48px | 32px |
+| Projectile travel | Warden muzzle to target core | same |
+| Foreground cover height | 16% | 14% |
+| Attack path | x 24%-68%, y 42%-56% | x 20%-66%, y 44%-55% |
+| Letter-node spacing | distribute current word across attack path | same, minimum visual gap 8px |
+
+The active word is not attached to the target sprite. It sits on a high-contrast command rail between the combatants so character animation cannot move the caret.
+
+Combat-effect geometry is also tokenized: the Aegis callout sits at y 34%; its shield spans y 30%-72% from an x 8% Warden offset with a 5% forward edge and 2% back edge. The Overdrive impact column spans y 14%-82%. Overdrive reaches 78% of the Warden-to-target gap, travels outward for 58% of its 320ms lifecycle, and returns during the remaining 42%.
+
+## Raster asset delivery
+
+- Arena master: 16:9 landscape PNG, minimum 1536×1024 source, center-safe for 4:3 and mobile crops, no text or characters.
+- Warden and enemy pose sheets: PNG with transparent background after local chroma-key removal, consistent subject scale and ground line, minimum 768px subject height per source pose, at least 12% clear padding on every side.
+- Character edges must remain crisp at 0.5 scale and contain no chroma-key remnants.
+- Warden delivery requires at least: `ready-low`, `ready-high`, `anticipation`, `strike`, `dash`, `recover`, `block-hurt`, and `overdrive`. Each enemy requires at least: `idle-a`, `idle-b`, `attack`, `hit`, and `defeat`.
+- Every pose keeps the same identity, material language, light direction, perspective, and pivot markers. Runtime crops pose sheets into texture frames and selects them through a named state machine.
+- Runtime may add transform, squash, recoil, attached code-native smear/muzzle/impact layers, and deterministic distortion around authored pose changes. Reusing one pose for ready, attack, hit, and block is a release blocker.
+
 # 5. Screen Specs
 
 ## 5.1 Gameplay HUD
@@ -127,7 +158,9 @@ Two fonts, no more:
 | --- | --- | --- |
 | Top bar | top, h 64 | wordmark left, zone-stage in `--cyan`, timer centered 32px, tokens right in `--yellow` |
 | Quota bar | below top bar | h 12, track `--bg-2`, fill `--green`, glow blur 8px opacity 0.35, numbers on the right |
-| Word stream | visual focal point | Current target label above the active word; active word 48px; four upcoming words remain secondary and never overlap HUD |
+| Aegis / threat band | directly below the Zone label | 12px uppercase. Zones 1-2: `AEGIS ACTIVE · PROTECTED`; later zones show `PRESSURE`, `OVERCLOCKED`, or `LETHAL` |
+| Focus Pause | replaces `TIME` label after 4 seconds of protected-stage inactivity | timer digits remain visible in `--cyan`; label reads `FOCUS PAUSE · TYPE WHEN READY`. No modal, countdown, or dimmed command rail |
+| Word stream | visual focal point | Active word sits in a centered command rail at 48px. Two upcoming words appear below it. Characters and effects never move the caret or overlap the rail |
 | Caret | inside active word | 3px vertical line, letter height, `--green`, 1s blink when idle, solid while typing |
 | Left column | left, vertically centered | COMBO (label + pink number), MULT (label + violet number), gap 24 |
 | Right column | right, vertically centered | BASE (`--text-hi` number), SCORE (`--yellow` number), gap 24 |
@@ -136,7 +169,43 @@ Two fonts, no more:
 
 Responsive exception at widths below 640px: the wordmark collapses to the Typecade mark, Zone and Stage stack on two lines, Keycap and Macro slots render at 48x48, and the build rows stack vertically. The 64x64 slot size remains mandatory from 640px upward. No gameplay control or active Macro may be hidden.
 
-Score popup: "+312" 20px `--violet`, spawns at the active word, travels 24px toward the score HUD while fading, 300ms, max 3 popups alive at once.
+Ready gate:
+
+- Full-canvas scrim `--bg-0` at 0.48 opacity; the combatants remain visible.
+- Center copy above the command rail: stage label in 14px `--cyan`, `TYPE TO ENGAGE` in 24px JetBrains Mono 700, and `THE TIMER STARTS WITH YOUR FIRST KEY` in 14px `--text-mid`.
+- No countdown and no confirmation button. The first printable key removes the gate in 150ms and is forwarded to the engine.
+- On a resumed run, copy changes to `PRESS ANY KEY TO RESUME`.
+- Zone 1 first-run subcopy reads `ONE KEY AT A TIME · AUTO-EXECUTE · FOCUS PAUSE ACTIVE`. The first target is one letter, not a full word.
+- Zone 1 command-rail coaching progresses by stage: `FIND 1 KEY · AUTO-FIRES`, `TYPE 2 KEYS · AUTO-FIRES`, then `TYPE 3 LETTERS · AUTO-FIRES`. Zone 2 uses `TYPE THE WORD · SPACE EXECUTES` until the word is complete.
+
+Command rail:
+
+- Width: min(640px, calc(100vw - 96px)); compact width: calc(100vw - 32px).
+- `--bg-0` at 0.88 opacity, 1px `--border`, 8px radius, 16px vertical and 24px horizontal padding.
+- Active word stays 48px on desktop and 32px compact. When all letters are entered, a 14px `--green` label reads `SPACE — EXECUTE`.
+- Dirty state adds a 14px `--red` label: `CORRUPTED — 0 SCORE`. Color, underline, and copy all communicate the error.
+- In protected Zone 2 only, dirty state uses a cyan/red split label: `AEGIS RECOVERY — BASE ONLY`. The wrong character stays red, but the outcome is not falsely labeled zero.
+- A 4px Overdrive charge rail runs along the command rail's bottom edge. At 100 it changes from `--cyan` to `--yellow`, the outline pulses once, and the execute label changes to `SPACE — OVERDRIVE`.
+- Two upcoming words appear at 16px below the rail, separated by 12px. They never use the active accent.
+
+Combat readability:
+
+- The current word's remaining characters also appear as small signal-nodes along the attack path. These are secondary targets, never a replacement for the command rail text.
+- A node breaks on its corresponding accepted character. Entered nodes stay dim and fractured; remaining nodes use `--cyan` at no more than 70% of the command rail contrast.
+- The Warden travels between three authored screen-space lanes during a word: home, mid-field, and contact. It returns home only after submission or a dirty reset.
+- During Focus Pause, the Warden holds `ready-high`, enemy attack animation returns to idle, signal-nodes remain visible, the cyan timer label changes, and low-motion arena ambience continues. Do not cover the word or show a pause dialog.
+- Enemy attack anticipation is at least 240ms and uses pose, directional line, and color. Ambient motion may never resemble attack anticipation.
+- All combat motion stays behind the command rail and outside the caret exclusion zone.
+
+Combo rail:
+
+- Under COMBO, render a segmented 10-step meter using 4px-high segments and an adjacent `N / 10 TO MULT` label at 14px.
+- Filled segments are `--pink`; empty segments use `--bg-2`. The meter does not animate width; each segment changes color instantly.
+- On natural Mult increase, the Mult number scales per Motion Spec and the label briefly reads `MULT UP`.
+
+Score popup: "+312" 20px `--violet`, spawns at the defeated target, travels 24px toward the score HUD while fading, 300ms, max 3 popups alive at once.
+
+Resolved-word equation: 14px `--text-hi`, centered above the command rail for 700ms. Base is `--text-hi`, multiplication and Mult are `--violet`, final gain is `--yellow`. Only the latest equation is visible.
 
 Item proc feedback:
 
@@ -152,6 +221,9 @@ Item proc feedback:
 - Row below the grid: REROLL button (ghost, price in the label) left, LEAVE SHOP (primary) right.
 - Active build panel (5 Keycap slots + 2 Macro slots) docked to the bottom, always visible; clicking an item shows tooltip + SELL button.
 - Unaffordable items: opacity 0.4, price turns `--red`.
+- Every offer includes one 14px trigger label (`ON VOWEL`, `ON CLEAN STREAK`, `ON TYPO`, `ECONOMY`, or `MANUAL MACRO`) derived from its canonical effect. This label explains activation but never changes item copy.
+- The header previews the next Stage label and Quota. The leave action reads `ENTER [STAGE] — QUOTA [VALUE]`.
+- When the player can afford nothing, the shop explicitly recommends saving for Interest instead of presenting a dead end.
 
 ## 5.3 Run Over
 
@@ -163,6 +235,8 @@ Vertical order, centered, max 480px:
 4. Tokens earned row: "+35" `--yellow`.
 5. Final build: keycap icon row, 48px.
 6. Buttons: NEW RUN (primary) on top, SHARE SCORE (ghost) second, MAIN MENU (text/ghost) last, gap 12. Starting a new free run takes one click and less than 2 seconds.
+
+If a local personal best exists for the same mode and language, show either `NEW PERSONAL BEST` or `N TO BEAT YOUR BEST` directly below Final score. This is compact replay motivation, not a modal.
 
 ## 5.4 Main Menu
 
@@ -197,9 +271,18 @@ Budget: transform and opacity animations only (GPU). No width/height/layout anim
 
 | Event | Effect | Duration | Easing |
 | --- | --- | --- | --- |
+| Warden ready loop | alternate `ready-low` / `ready-high`, 2px grounding shift, visor pulse 0.7-1 opacity | 900ms per pose | step-end with 100ms crossfade |
+| Target locomotion | alternate `idle-a` / `idle-b`; target-specific limb or cloak silhouette changes | 700-900ms per pose | step-end with 80ms crossfade |
 | Correct letter | letter shifts from `--text-dim` to bright, no transition | 0ms | instant |
+| Accepted character attack | pose `anticipation` for 35ms, then `strike` or `dash`; travel to the next letter-node with a smear and contact spark | 35ms + 85ms + 60ms recovery | cubic-out |
+| Character hit | target changes to `hit`, moves 8px away, and flashes a white silhouette | 90ms | ease-out |
 | Wrong letter | letter flashes `--red`  • underline, active word shakes 4px horizontally | 120ms / 80ms | linear |
-| Word complete | score popup rises 24px + fades, 10 particles from the word position | 300ms | ease-out |
+| Word complete | Warden enters `recover`; target enters `defeat`, exits 48px and dissolves, score popup rises 24px, 18 fragments | 300ms | ease-out |
+| Overdrive ready | Warden enters `ready-high`, arena rim pulse, command rail charge lock, one rising audio cue | 260ms | ease-out |
+| Overdrive release | `overdrive` pose crosses 78% of the Warden-to-target gap; its 58% outward / 42% return travel creates a y 14%-82% impact column, target `defeat`, and a snap-return behind an afterimage | 320ms | cubic-out |
+| Enemy pressure attack | enemy `attack` anticipation, directional line, Warden `block-hurt`, contact ring; no camera shake | 240ms + 120ms | ease-in / ease-out |
+| Aegis rescue | lethal enemy attack, Warden `block-hurt`, shield plane fractures, `+30S` callout, cyan recovery wave | 600ms | ease-out |
+| Next target | enters from target side by 48px, alpha 0 to 1, scale 0.92 to 1 | 180ms | ease-out-back |
 | Mult up | MULT number scales 1.0 to 1.2 and back | 150ms | ease-out-back |
 | Quota update | bar fill tweens to the new value | 200ms | ease-out |
 | Quota reached | bar flashes 2 pulses | 400ms | linear |
@@ -209,7 +292,9 @@ Budget: transform and opacity animations only (GPU). No width/height/layout anim
 | Shop / menu transition | fade + 8px slide | 150ms | ease-out |
 | Run over | score count-up | 800ms | ease-out |
 
-Screen shake only on stage clear. KERNEL PANIC may add it in v2; it is outside the locked MVP. Never shake on typos or every word.
+Screen shake only on stage clear and Overdrive release, maximum 6px and 3px respectively. KERNEL PANIC may add it in v2; it is outside the locked MVP. Never shake on typos or ordinary words.
+
+Runtime ambient limits: maximum 24 low-contrast motes, each 2px, alpha <=0.12, speed <=12px/s. Parallax layers move no more than 8px from origin. Ambient animation freezes under reduced motion.
 
 ## Combo escalation
 
