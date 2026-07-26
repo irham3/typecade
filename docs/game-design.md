@@ -41,7 +41,7 @@
 
 1. Words flow on screen (a stream, like the regular typing mode).
 2. Every accepted character makes the Keystone Warden perform a readable action and adds 3 charge to the **Overdrive meter**. A typo removes 15 charge, to a minimum of zero.
-3. Every **word finished without a typo** scores: `(character count + Base bonus) x current Mult`. If Overdrive is full, the clean submission becomes an Overdrive Strike, applies a final score multiplier of x2, and empties the meter.
+3. Every **word finished without a typo** scores: `(character count + Base bonus) x current Mult`. Zones 1-2 automatically turn a clean submission at full Overdrive into an Overdrive Strike. Zone 3 and later hold charge at 100 until the player submits a completed clean word with Enter. The Strike applies a final score multiplier of x2 and empties the meter.
 4. **Combo**: every 10 consecutive words without a typo grants **Mult +1**. A typo resets Mult to 1 (unless an item changes this rule).
 5. Hit the **Quota** before time runs out: the stage clears immediately, remaining time becomes a Token bonus, then the player enters the **Shop**.
 6. In Zones 1-2, **Aegis Protocol** prevents timeout from ending the run. The Warden visibly blocks the lethal attack, the timer receives 30 seconds, and the stage continues. A rescued stage awards no time bonus. From Zone 3 onward, an unmet quota ends the run unless an item prevents it.
@@ -83,7 +83,7 @@ The timer is a clear ceiling, not a promise that every stage lasts that long. Re
 - Apply Base bonuses, Base multipliers, additive Mult, Mult multipliers, and final score multipliers in that order; floor the final per-word score to an integer.
 - `stage score` is compared with the current stage Quota. `run score` is the sum of every completed and failed stage score.
 - A stage clears on the first submitted word that meets or exceeds Quota. The player never waits for the timer after earning a clear.
-- Overdrive charge is run-persistent. It gains exactly 3 per accepted character, loses 15 on a non-ignored typo, caps at 100, and is consumed only by a clean submitted word at full charge.
+- Overdrive charge is run-persistent. It gains exactly 3 per accepted character, loses 15 on a non-ignored typo, and caps at 100. Zones 1-2 consume full charge on the next clean submission. Zone 3 and later keep full charge when Space submits; Enter consumes it only when the current word is complete and clean. Enter does nothing before completion, and dirty submissions never consume charge.
 - The Overdrive Strike is a final score multiplier and therefore resolves after Base and Mult item effects. It is part of the shared ruleset, not an item proc.
 - An Aegis rescue is available only in standard Zones 1-2. It adds 30 seconds, increments the visible rescue count, and permanently sets that stage's time bonus to zero. It never changes score, Quota, word order, shop RNG, or leaderboard rules.
 - Focus Pause becomes active after exactly 4,000ms with no input in a protected stage. The stage timer stops, while `runDurationMs`, stage WPM time, telemetry duration, and wall-clock playtime continue.
@@ -93,7 +93,7 @@ The timer is a clear ceiling, not a promise that every stage lasts that long. Re
 The scoring rules stay deep, but the first interaction must be obvious without reading a manual.
 
 - A new stage opens in a **ready gate**. The stage timer does not move until the first printable key. That key is processed as normal input, so the gate adds no click and no lost keystroke.
-- The active word and caret are always the highest-contrast elements. Zone 1 labels the exact input contract (`FIND 1 KEY`, `TYPE 2 KEYS`, or `TYPE 3 LETTERS`) and auto-executes. From Zone 2 onward, once every letter is entered, the rail changes to **SPACE — EXECUTE** or **SPACE — OVERDRIVE** when fully charged. Space submits the word and triggers the finishing strike.
+- The active word and caret are always the highest-contrast elements. Zone 1 labels the exact input contract (`FIND 1 KEY`, `TYPE 2 KEYS`, or `TYPE 3 LETTERS`) and auto-executes. Zone 2 changes the completed rail to **SPACE — EXECUTE** or **SPACE — OVERDRIVE** at full charge. Zone 3 and later show **SPACE — EXECUTE** and **ENTER — OVERDRIVE** together at full charge.
 - Each accepted character advances the Warden through a deterministic attack chain: launch, cross-field dash, strike, recoil, and recover. The corresponding enemy letter-node breaks on impact. The Warden must change pose and position; firing from one fixed anchor for an entire word is not acceptable.
 - Resolution ends the encounter: a clean word destroys the target and awards score; a dirty Zone 2 word receives Aegis Recovery; a dirty Zone 3+ word awards zero and breaks Mult according to the canonical rules.
 - A corrected dirty word remains visibly marked **AEGIS RECOVERY — BASE ONLY** in Zone 2 or **CORRUPTED — 0 SCORE** in Zone 3+. This makes the consequence honest before submission instead of surprising the player afterward.
@@ -105,7 +105,8 @@ The scoring rules stay deep, but the first interaction must be obvious without r
 - Aegis protection is explained before Zone 1 starts and remains visible as `AEGIS ACTIVE · ZONES 1-2`. A rescue uses a full character block animation and `+30S`, never a silent timer reset.
 - Focus Pause is communicated as a calm cyan state, not a failure. Enemy attack anticipation cancels, the Warden enters `ready-high`, and the arena continues low-motion ambience so the game still feels alive.
 - Difficulty is communicated by named threat bands rather than hidden adaptation: Zones 1-2 `PROTECTED`, Zones 3-4 `PRESSURE`, Zones 5-6 `OVERCLOCKED`, and Zones 7-8 `LETHAL`. Player WPM never secretly changes Quota or scoring.
-- Stage Result answers three questions in order: `Did I clear?`, `Why did I score that much?`, and `What should I improve or buy?`. Shop answers: `What does this trigger?`, `Does it fit my current run?`, and `What challenge comes next?`
+- Stage clear keeps the arena mounted. A compact result ribbon shows score, Token payout, accuracy, and the strongest item contribution for 900ms. Enter skips the remaining ribbon time. The shop then opens without a required click or scroll.
+- The one-viewport Shop shows exact effects, trigger conditions, active build, next Quota, and the previous stage's strongest contribution. Keys 1, 2, and 3 buy offers, R rerolls, Tab navigates, and Enter deploys.
 
 The intended rhythm is: **read → strike → reposition → execute → charge → burst → choose**. Any animation, panel, or explanation that delays this rhythm is a defect.
 
@@ -344,8 +345,9 @@ Before changing gameplay numbers: run the deterministic simulation harness and r
 - Original raster character and environment art is allowed and preferred when it creates a stronger silhouette than code-native geometry. Assets must be project-owned or commercial-safe, stored locally, versioned, documented in `CREDITS.md`, and composited with code-driven effects. Stock sci-fi sprites, clip art, emoji, photorealism, generic spaceships, and unrelated asset packs remain banned.
 - The arena is a layered cyber-industrial signal trench rather than an empty grid. Low-contrast parallax, distant machinery, cable motion, and haze may move continuously to establish depth; gameplay accents remain brighter than the world.
 - Every word clear: the score number pops from the defeated target and resolves toward the score HUD. Mult up: flash + 50ms hitstop. Glass shatters: 0.3s slow-mo.
-- At least six authored Warden poses and four poses per enemy class are required for MVP gameplay: ready, anticipation, attack/travel, recoil or recover, hit/block, and defeat or ultimate where applicable. A single raster master moved, rotated, or squashed in code does not satisfy character animation.
-- Character sprites may use short crossfades only between compatible poses. Attacks require stepped or interpolated travel through the arena, animation smears, and contact frames. Ambient bobbing never counts as a gameplay animation.
+- The Warden uses an articulated 2D rig with `idle`, `ready`, `chain-1`, `chain-2`, `chain-3`, `dash`, `execute`, `block`, `hurt`, `recover`, and `overdrive` clips. Each enemy uses `locomotion`, `idle`, `anticipation`, `attack`, `hit`, `defeat`, and `special`. The runtime interpolates authored key poses at the renderer frame rate.
+- Full-body raster swapping, a single transformed master, and ambient bobbing do not satisfy character animation. Attacks require grounded anticipation, articulated travel, contact frames, recoil, follow-through, and recovery.
+- The arena shows one active enemy plus two low-contrast upcoming enemies. Only the active enemy owns signal nodes or attack telegraphs. Target lanes follow a persisted deterministic choreography table.
 - Full Overdrive changes the command rail, Warden silhouette, audio layer, and attack choreography before it changes score. The release crosses the arena, creates a full-height impact column, and returns control within 320ms.
 - Every enemy periodically telegraphs an attack based on the remaining stage time. These attacks create pressure and authored block/dodge reactions but do not introduce a second health system in MVP. The lethal timeout attack is the only attack that resolves the stage outcome.
 - Aegis rescue requires a distinct Warden block pose, an enemy attack pose, a shield break or deflection effect, a `+30S` callout, and a changed arena state. It must feel like surviving an attack, not like the timer silently jumping.
@@ -369,7 +371,7 @@ Before changing gameplay numbers: run the deterministic simulation harness and r
 - 8 Zones x 3 stages, simple endless mode after the win
 - **15 Keycaps**: WASD, Vowel Magnet, Longshot, Sprinter, Second Wind, Copper Key, Home Row, Punctuator, Combo Battery, Overclock, Double Tap, Snowball, Interest Bank, Glass Keycap, Vampire
 - **4 Macros**: Escape, Time Freeze, Quota Slash, Insurance
-- Core Overdrive meter and Overdrive Strike (3 charge per accepted character, -15 on typo, x2 final score on the next clean submission at 100)
+- Core Overdrive meter and Overdrive Strike (3 charge per accepted character, -15 on typo, x2 final score; Zones 1-2 release automatically, Zone 3+ releases with Enter)
 - Literal beginner route (letters → two-letter signals → three-letter words → short words)
 - Focus Pause and Aegis Protocol beginner protection in standard Zones 1-2
 - No Firmware
@@ -408,6 +410,8 @@ Before changing gameplay numbers: run the deterministic simulation harness and r
 - Standard Zones 1-2 use visible Aegis rescues. Endless mode never uses Aegis.
 - Standard Zones 1-2 automatically Focus Pause after 4 seconds without input. Zone 3+ and Endless never pause automatically.
 - Quota and score rules never change invisibly based on measured WPM.
+- Zones 1-2 automatically release full Overdrive on the next clean submission. Zone 3 and later hold charge at 100; Space submits without consuming it and Enter releases it on a completed clean word.
+- A stage clear shows a 900ms result ribbon over the mounted arena, then opens the one-viewport Shop. Enter skips the ribbon.
 
 **Open questions:**
 

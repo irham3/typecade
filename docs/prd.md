@@ -46,8 +46,8 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 
 | ID | Requirement | Prio |
 | --- | --- | --- |
-| R-1 | Run state machine: Zone (1-8) x Stage (Warm-up/Rush/Glitch), then Shop, then next; Zone 1 escalates from one-letter targets to two-letter signals to three-letter words and auto-executes completed signals; Zone 2 teaches Space execution with short words; standard Zones 1-2 use Focus Pause plus visible Aegis timeout rescues and must be completable by validated 1/5/10/12/13 WPM profiles; Zone 3+ ends on failed quota | P0 |
-| R-2 | Scoring engine: `(chars + Base bonus) x Mult x final multipliers`, combo +1 Mult per 10 words, Zone 1 rejects typos without corrupting the signal, corrected dirty words in Zone 2 receive Aegis Recovery Base x1, Zone 3+ dirty words score zero, typo reset resolves on submission, and stage clears immediately when Quota is met; accepted characters charge Overdrive +3, non-ignored typo drains 15, and a clean submission at 100 charge applies x2 final score then resets charge | P0 |
+| R-1 | Run state machine: Zone (1-8) x Stage (Warm-up/Rush/Glitch), then Shop, then next; Zone 1 escalates from one-letter targets to two-letter signals to three-letter words and auto-executes completed signals; Zone 2 teaches Space execution with short words; standard Zones 1-2 use Focus Pause plus visible Aegis timeout rescues and must be completable by validated 1/5/10/12/13 WPM profiles; Zone 3+ ends on failed quota; a clear keeps the arena mounted, shows a 900ms result ribbon, and opens the Shop without a required click or scroll | P0 |
+| R-2 | Scoring engine: `(chars + Base bonus) x Mult x final multipliers`, combo +1 Mult per 10 words, Zone 1 rejects typos without corrupting the signal, corrected dirty words in Zone 2 receive Aegis Recovery Base x1, Zone 3+ dirty words score zero, typo reset resolves on submission, and stage clears immediately when Quota is met; accepted characters charge Overdrive +3 and non-ignored typos drain 15; Zones 1-2 automatically apply x2 on the next clean submission at 100 charge, while Zone 3+ holds charge until Enter submits a completed clean word | P0 |
 | R-3 | Quota curve and 75/70/65-second stage clocks configurable from a single constants file (values from deterministic simulation) | P0 |
 | R-4 | Per-stage timer + Focus Pause after 4 seconds of inactivity in standard Zones 1-2 + Aegis rescue state + stage results (score, accuracy, time left, rescues) | P0 |
 | R-5 | Endless mode after Zone 8 (quota x1.8^n) | P0 |
@@ -61,7 +61,7 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 | I-1 | Event-driven item system: Keycaps subscribe to engine events (word_complete, typo, stage_start, etc.); adding items requires no engine changes | P0 |
 | I-2 | Exact 15 MVP Keycaps + 4 Macros from the canonical manifest in GDD §13 | P0 |
 | I-3 | Shop: 2 Keycap slots + 1 Macro, reroll, sell items, Token economy + interest (GDD §4) | P0 |
-| I-4 | Keycap slot UI (max 5) + effect tooltips | P0 |
+| I-4 | Keycap slot UI (max 5), effect tooltips, item-specific proc acknowledgement, and a one-viewport Shop controlled by 1/2/3, R, Tab, and Enter | P0 |
 | I-5 | Remaining 12 Keycaps + Firmware | P2 |
 
 ## EPIC 3: Glitches
@@ -76,7 +76,7 @@ Priority: **P0** = MVP blocker, **P1** = launch week, **P2** = post-launch.
 
 | ID | Requirement | Prio |
 | --- | --- | --- |
-| J-1 | Render the custom **Signal Siege — character combat** presentation on a PixiJS canvas: Keystone Warden, Packet Stalker/Needle Wraith/Null Crown character classes, authored pose frames, named animation states, cross-field letter-node attacks, enemy pressure attacks, Aegis block, Overdrive release, layered arena, active text command rail, particles, restrained screen response, hitstop, and item-proc acknowledgement. A single transformed raster master does not pass acceptance | P0 |
+| J-1 | Render the custom **Signal Siege — character combat** presentation on a PixiJS canvas: articulated 2D rigs for the Keystone Warden and Packet Stalker/Needle Wraith/Null Crown, named animation clips, continuous contact motion, one active plus two upcoming targets, cross-field letter-node attacks, enemy pressure attacks, Aegis block, Overdrive release, layered arena, active text command rail, particles, restrained screen response, hitstop, and item-specific proc acknowledgement. Full-body raster swapping and a single transformed master do not pass acceptance | P0 |
 | J-2 | Audio: keystroke clicks (3 switch variants), quota riser, glitch sting; Web Audio, lazy-loaded | P1 |
 | J-3 | Reduced-motion setting (accessibility + low-end devices) | P1 |
 
