@@ -236,7 +236,7 @@ export class CombatDirector {
 		)
 		this.warden.label.position.set(0, -wardenPixels / 2 - 24)
 		this.warden.integrity.position.set(0, -wardenPixels / 2)
-		this.warden.shadow.y = wardenPixels * 0.42
+		this.warden.shadow.y = 0
 
 		const layout = computeFormationLayout(width, height)
 		this.formation.resize(width, height, layout)

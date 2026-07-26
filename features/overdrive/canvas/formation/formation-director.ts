@@ -421,11 +421,9 @@ export class FormationDirector {
 		slot.integrity.position.set(0, -visualHeight * 0.52)
 		slot.label.position.set(0, -visualHeight * 0.52 - 24 / slot.layoutScale)
 		
-		// Compensate shadow and reflection to stay on deck
-		const deckY = this.layout.deckY
-		const dy = deckY - slot.layoutY
-		slot.shadow.y = dy / slot.layoutScale
-		slot.reflection.y = dy / slot.layoutScale
+		// Shadow is at feet
+		slot.shadow.y = 0
+		slot.reflection.y = 0
 		
 		this.updateShadow(slot)
 	}
