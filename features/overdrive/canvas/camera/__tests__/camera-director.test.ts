@@ -181,4 +181,28 @@ describe("CameraDirector", () => {
 		camera.resize(1200, 800)
 		expect(root.x).toBeCloseTo(preResizeX)
 	})
+
+	it("exposes pure world travel and applies pan/zoom limits", () => {
+		const root = new Container()
+		const camera = new CameraDirector(root, makeState())
+		camera.resize(1000, 600)
+		
+		camera.focusBeat("relay-breach")
+		advanceTime(camera, 1200)
+		
+		const travel1 = camera.getWorldTravel()
+		expect(travel1.x).toBe(-24)
+		expect(travel1.zoom).toBeCloseTo(1.018)
+		
+		camera.focusBeat("extraction")
+		advanceTime(camera, 600)
+		camera.addImpulse("overdrive")
+		advanceTime(camera, 50)
+		
+		const travel2 = camera.getWorldTravel()
+		expect(travel2.x).toBeGreaterThan(-24)
+		expect(travel2.x).toBeLessThanOrEqual(24)
+		
+		expect(root.x).not.toBe(travel2.x) // Root has shake applied
+	})
 })

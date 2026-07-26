@@ -349,7 +349,8 @@ export class CombatScene {
 			return
 		}
 		this.camera.update(delta)
-		this.environment.setCameraTravel(this.cameraRoot.x, this.cameraRoot.scale.x)
+		const travel = this.camera.getWorldTravel()
+		this.environment.setCameraTravel(travel.x, travel.zoom)
 		this.environment.update(delta)
 		this.director.update(delta)
 		this.updateRailMotion(delta)

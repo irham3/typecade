@@ -131,10 +131,12 @@ export class CameraDirector {
 	focusBeat(beat: string) {
 		if (this.state.reducedMotion) return
 		
-		const toX = beat === "relay-breach" || beat === "signal-run" ? -this.width * 0.1 :
-			beat === "extraction" ? this.width * 0.1 : 0
+		const limitX = 24
+		const toX = beat === "relay-breach" || beat === "signal-run" ? -limitX :
+			beat === "extraction" ? limitX : 0
 			
-		const toZoom = beat === "relay-breach" || beat === "signal-run" ? 1.05 : 1
+		const limitZoom = 1.018
+		const toZoom = beat === "relay-breach" || beat === "signal-run" ? limitZoom : 1
 		
 		this.transition = {
 			fromX: this.combatPose.x,
@@ -266,6 +268,14 @@ export class CameraDirector {
 		}
 
 		this.apply()
+	}
+
+	getWorldTravel() {
+		return {
+			x: this.basePose.x + this.combatPose.x,
+			y: this.basePose.y + this.combatPose.y,
+			zoom: this.basePose.zoom + this.combatPose.zoom - 1,
+		}
 	}
 
 	private computeFrame(): CameraFrame {
