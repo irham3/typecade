@@ -2,6 +2,8 @@ import type {
   ItemContribution,
   StageType,
 } from "@/lib/engine/overdrive"
+import type { AttackVerb, EncounterBeat } from "../canvas/choreography/expedition-selectors"
+import type { FormationVariantId } from "@/lib/engine/overdrive/types"
 
 export type OverdrivePresentationEvent =
   | {
@@ -13,6 +15,10 @@ export type OverdrivePresentationEvent =
       targetOrdinal: number
       combo: number
       charge: number
+      beat: EncounterBeat
+      verb: AttackVerb
+      variantId: FormationVariantId | null
+      triggeredItemIds: string[]
     }
   | { id: number; type: "rejected-character"; character: string }
   | {
@@ -31,6 +37,10 @@ export type OverdrivePresentationEvent =
       appliedItemIds: string[];
       targetOrdinal: number;
       combo: number
+      beat: EncounterBeat
+      verb: AttackVerb
+      variantId: FormationVariantId | null
+      triggeredItemIds: string[]
     }
   | { id: number; type: "mult-increased"; mult: number }
   | { id: number; type: "stage-entered"; stage: StageType }

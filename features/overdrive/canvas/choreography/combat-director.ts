@@ -167,6 +167,8 @@ export class CombatDirector {
 	private lastWord = ""
 	private lastCaretIndex = -1
 	private lastDirty = false
+	private timeMs = 0
+	private lastInputMs = 0
 
 	constructor(
 		initial: SceneState,
@@ -326,12 +328,12 @@ export class CombatDirector {
 
 	update(deltaMs: number) {
 		const delta = Math.max(0, Math.min(deltaMs, 50))
+		this.timeMs += delta
 		const wardenFrame = this.warden.rig.update(delta)
 		
 		this.formation.update(delta)
 
 		if (wardenFrame.contactEdge) this.resolveNextContact()
-		this.updateWardenTravel(delta)
 		this.updateHits(delta)
 		this.updatePressure(delta)
 		this.updateAegis(delta)
@@ -356,9 +358,6 @@ export class CombatDirector {
 	) {
 		const target = this.slotForOrdinal(event.targetOrdinal)
 		if (!target) return
-		const chain = (
-			["chain-1", "chain-2", "chain-3"] as const
-		)[event.index % 3]
 		const position = this.signalNodePosition(event.index, event.word.length)
 		const muzzle = this.warden.rig.getPartGlobalPosition(
 			"cannon_barrel",
@@ -373,7 +372,9 @@ export class CombatDirector {
 			finisher: false,
 		})
 		if (this.pendingContacts.length > 2) this.pendingContacts.shift()
-		this.warden.rig.play(chain, { queueContact: true })
+		const delta = this.timeMs - this.lastInputMs
+		this.lastInputMs = this.timeMs
+		this.warden.rig.play(event.verb, { force: delta <= 140, queueContact: true })
 		this.returnDelayMs = 0
 	}
 
@@ -393,8 +394,8 @@ export class CombatDirector {
 					this.pendingContacts.splice(index, 1)
 				}
 			}
-			const clip = event.overdriveReleased ? "overdrive" : "execute"
-			this.warden.rig.play(clip, { force: true })
+			this.lastInputMs = this.timeMs
+			this.warden.rig.play(event.verb, { force: true })
 			const targetPosition = this.targetCorePosition(target)
 			const muzzle = this.warden.rig.getPartGlobalPosition(
 				"cannon_barrel",
@@ -429,96 +430,6 @@ export class CombatDirector {
 
 	private slotForOrdinal(ordinal: number) {
 		return this.formation.getActiveTargets().get(ordinal)
-	}
-
-	private startCharacterTravel(
-		index: number,
-		wordLength: number,
-		target: FormationTarget,
-	) {
-		const gap = target.root.x - (
-			this.width * (
-				this.width < SCENE.compactWidth
-					? SCENE.wardenAnchor.compact.x
-					: SCENE.wardenAnchor.desktop.x
-			)
-		)
-		const progress = wordLength <= 1
-			? 1
-			: Math.max(0, Math.min(1, index / (wordLength - 1)))
-		const ratio = SCENE.wardenTravel.midField
-			+ (
-				SCENE.wardenTravel.contact - SCENE.wardenTravel.midField
-			) * progress
-		this.wardenTravel = {
-			elapsedMs: 0,
-			durationMs: MOTION.attackMs,
-			fromX: this.wardenOffsetX,
-			toX: gap * ratio,
-			arcHeight: this.height * MOTION.attackArcRatio,
-		}
-	}
-
-	private updateWardenTravel(deltaMs: number) {
-		if (this.overdriveMs > 0) {
-			this.overdriveMs = Math.max(0, this.overdriveMs - deltaMs)
-			const progress = 1 - this.overdriveMs / MOTION.overdriveMs
-			const target = this.slotForOrdinal(this.state.targetOrdinal)
-			const targetX = target?.root.x ?? this.width * SCENE.targetAnchor.desktop.x
-			const anchorX = this.width * (
-				this.width < SCENE.compactWidth
-					? SCENE.wardenAnchor.compact.x
-					: SCENE.wardenAnchor.desktop.x
-			)
-			const contactX = (targetX - anchorX) * MOTION.overdriveContactRatio
-			const returnRatio = 1 - MOTION.overdriveOutwardRatio
-			const outward = progress < MOTION.overdriveOutwardRatio
-				? progress / MOTION.overdriveOutwardRatio
-				: 1 - (
-					progress - MOTION.overdriveOutwardRatio
-				) / returnRatio
-			this.wardenOffsetX = contactX * (
-				1 - (1 - Math.max(0, outward)) ** 3
-			)
-			this.wardenTravel = null
-		} else if (this.wardenTravel) {
-			this.wardenTravel.elapsedMs = Math.min(
-				this.wardenTravel.durationMs,
-				this.wardenTravel.elapsedMs + deltaMs,
-			)
-			const progress = this.wardenTravel.elapsedMs
-				/ this.wardenTravel.durationMs
-			const eased = 1 - (1 - progress) ** 3
-			this.wardenOffsetX = this.wardenTravel.fromX
-				+ (
-					this.wardenTravel.toX - this.wardenTravel.fromX
-				) * eased
-			this.warden.rig.root.y = -Math.sin(progress * Math.PI)
-				* this.wardenTravel.arcHeight
-			if (progress >= 1) {
-				this.warden.rig.root.y = 0
-				this.wardenTravel = null
-			}
-		} else if (this.returnDelayMs > 0) {
-			this.returnDelayMs = Math.max(0, this.returnDelayMs - deltaMs)
-			if (this.returnDelayMs === 0 && this.wardenOffsetX !== 0) {
-				this.warden.rig.play("recover", { force: true })
-				this.wardenTravel = {
-					elapsedMs: 0,
-					durationMs: MOTION.entryMs,
-					fromX: this.wardenOffsetX,
-					toX: 0,
-					arcHeight: 0,
-				}
-			}
-		}
-		const anchor = this.width < SCENE.compactWidth
-			? SCENE.wardenAnchor.compact
-			: SCENE.wardenAnchor.desktop
-		this.warden.root.position.set(
-			this.width * anchor.x + this.wardenOffsetX,
-			this.height * anchor.y,
-		)
 	}
 
 	private updateHits(deltaMs: number) {

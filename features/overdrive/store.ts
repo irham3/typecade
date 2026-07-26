@@ -16,6 +16,8 @@ import {
 } from "@/lib/telemetry"
 import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { emitPresentationEvent } from "./presentation/events"
+import { selectAttackVerb, selectEncounterBeat, selectFormationVariant } from "./canvas/choreography/expedition-selectors"
+import { targetLane } from "./canvas/choreography/target-lanes"
 
 export const OVERDRIVE_SAVE_KEY = "typecade_overdrive_save"
 export const OVERDRIVE_BRIEFING_KEY = "typecade_overdrive_briefing_seen"
@@ -124,6 +126,20 @@ export const useGame = create<GameStore>((set, get) => {
 				appliedItemIds: payload.appliedItemIds,
 				targetOrdinal: api.snapshot().targetOrdinal,
 				combo: payload.combo,
+				beat: selectEncounterBeat(api.snapshot().score, api.snapshot().quota),
+				verb: selectAttackVerb(
+					payload.word,
+					payload.word.length - 1,
+					targetLane(api.snapshot().targetOrdinal),
+					payload.combo,
+					payload.overdriveReleased,
+					payload.appliedItemIds
+				),
+				variantId: selectFormationVariant(
+					api.snapshot().formationSchedule,
+					api.snapshot().targetOrdinal
+				),
+				triggeredItemIds: payload.appliedItemIds,
 			})
 			const snapshot = api.snapshot()
 			if (get().coachingEnabled && snapshot.totalCleanWords >= 3 && typeof window !== "undefined") {
@@ -141,6 +157,20 @@ export const useGame = create<GameStore>((set, get) => {
 				targetOrdinal: api.snapshot().targetOrdinal,
 				combo: api.snapshot().combo,
 				charge,
+				beat: selectEncounterBeat(api.snapshot().score, api.snapshot().quota),
+				verb: selectAttackVerb(
+					api.snapshot().currentWord,
+					Math.max(0, caretIndex - 1),
+					targetLane(api.snapshot().targetOrdinal),
+					api.snapshot().combo,
+					api.snapshot().overdriveCharge >= 100,
+					[]
+				),
+				variantId: selectFormationVariant(
+					api.snapshot().formationSchedule,
+					api.snapshot().targetOrdinal
+				),
+				triggeredItemIds: [],
 			})
 			sync()
 		})
