@@ -16,6 +16,8 @@ import {
 } from "../effects/item-presentation"
 import { RigInstance } from "../rig/rig-instance"
 import {
+	EFFECTS,
+	MOTION,
 	SCENE,
 	V,
 	drawTargetIntegrity,
