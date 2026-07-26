@@ -21,11 +21,11 @@ export function StandardClear() {
 				<div className="w-full max-w-2xl text-center">
 					<p className="text-sm font-bold uppercase tracking-[0.08em] text-acc-yellow">STANDARD RUN COMPLETE</p>
 					<h1 className="mt-4 font-pixel text-3xl leading-tight text-acc-green sm:text-4xl">
-						SYSTEM OVERRIDDEN
+						STANDARD CLEAR
 					</h1>
 					<p className="mx-auto mt-6 max-w-xl text-base leading-6 text-text-mid">
-						The eight-zone signal is yours. Secure the clear, or carry this exact build into
-						Endless where every new zone multiplies the quota by 1.8.
+						Finish with this score, or continue with the same build in Endless.
+						Each new zone multiplies the quota by 1.8.
 					</p>
 
 					<div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -45,7 +45,7 @@ export function StandardClear() {
 
 					<div className="mt-8 flex flex-col gap-3 sm:flex-row">
 						<GhostButton onClick={() => state.api?.finishStandardRun()} className="h-14 flex-1">
-							SECURE SCORE
+							FINISH RUN
 						</GhostButton>
 						<PrimaryButton onClick={() => state.api?.enterEndless()} className="h-14 flex-1">
 							ENTER ENDLESS

@@ -5,6 +5,7 @@ for (const viewport of [
 	{ name: "laptop", width: 1_366, height: 768 },
 	{ name: "tablet", width: 820, height: 1_180 },
 	{ name: "mobile", width: 390, height: 844 },
+	{ name: "wide", width: 1_920, height: 1_080 },
 ]) {
 	test(`gameplay fits the ${viewport.name} viewport`, async ({ page }) => {
 		await page.setViewportSize({ width: viewport.width, height: viewport.height })

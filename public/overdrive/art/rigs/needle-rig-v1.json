@@ -1,6 +1,6 @@
 {
   "frames": {
-    "chest_core": {
+    "needle/chest_core": {
       "frame": {
         "x": 4,
         "y": 4,
@@ -24,7 +24,7 @@
         "y": 0.502127659574468
       }
     },
-    "head": {
+    "needle/head": {
       "frame": {
         "x": 216,
         "y": 4,
@@ -48,7 +48,7 @@
         "y": 0.502127659574468
       }
     },
-    "neck_segment": {
+    "needle/neck_segment": {
       "frame": {
         "x": 398,
         "y": 4,
@@ -72,7 +72,7 @@
         "y": 0.49777777777777776
       }
     },
-    "spine_front": {
+    "needle/spine_front": {
       "frame": {
         "x": 550,
         "y": 4,
@@ -96,7 +96,7 @@
         "y": 0.5022026431718062
       }
     },
-    "spine_rear": {
+    "needle/spine_rear": {
       "frame": {
         "x": 731,
         "y": 4,
@@ -120,7 +120,7 @@
         "y": 0.5
       }
     },
-    "near_blade_upper_arm": {
+    "needle/near_blade_upper_arm": {
       "frame": {
         "x": 896,
         "y": 4,
@@ -144,7 +144,7 @@
         "y": 0.1885245901639344
       }
     },
-    "near_blade_forearm": {
+    "needle/near_blade_forearm": {
       "frame": {
         "x": 1144,
         "y": 4,
@@ -168,7 +168,7 @@
         "y": 0.17154811715481172
       }
     },
-    "far_blade_upper_arm": {
+    "needle/far_blade_upper_arm": {
       "frame": {
         "x": 1428,
         "y": 4,
@@ -192,7 +192,7 @@
         "y": 0.18930041152263374
       }
     },
-    "far_blade_forearm": {
+    "needle/far_blade_forearm": {
       "frame": {
         "x": 1625,
         "y": 4,
@@ -216,7 +216,7 @@
         "y": 0.17061611374407584
       }
     },
-    "near_fin": {
+    "needle/near_fin": {
       "frame": {
         "x": 4,
         "y": 252,
@@ -240,7 +240,7 @@
         "y": 0.7098445595854922
       }
     },
-    "far_fin": {
+    "needle/far_fin": {
       "frame": {
         "x": 259,
         "y": 252,
@@ -264,7 +264,7 @@
         "y": 0.7105263157894737
       }
     },
-    "tail_segment_one": {
+    "needle/tail_segment_one": {
       "frame": {
         "x": 500,
         "y": 252,
@@ -288,7 +288,7 @@
         "y": 0.5
       }
     },
-    "tail_segment_two": {
+    "needle/tail_segment_two": {
       "frame": {
         "x": 592,
         "y": 252,
@@ -312,7 +312,7 @@
         "y": 0.4980544747081712
       }
     },
-    "tail_tip": {
+    "needle/tail_tip": {
       "frame": {
         "x": 663,
         "y": 252,
@@ -438,6 +438,7 @@
       },
       "clips": [
         "locomotion",
+        "idle",
         "anticipation",
         "attack",
         "hit",

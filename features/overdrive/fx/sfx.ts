@@ -1,3 +1,5 @@
+import type { ItemContribution } from "@/lib/engine/overdrive"
+
 let ctx: AudioContext | null = null
 let masterGain: GainNode | null = null
 let compressor: DynamicsCompressorNode | null = null
@@ -6,6 +8,41 @@ let muted = false
 let unlocked = false
 let noiseState = 0x6d2b79f5
 let keyVariationIndex = 0
+
+const ITEM_AUDIO = {
+  wasd: { frequency: 420, wave: "square" },
+  vowel_magnet: { frequency: 510, wave: "sine" },
+  longshot: { frequency: 680, wave: "triangle" },
+  sprinter: { frequency: 760, wave: "square" },
+  second_wind: { frequency: 560, wave: "triangle" },
+  copper_key: { frequency: 920, wave: "sine" },
+  home_row: { frequency: 390, wave: "square" },
+  punctuator: { frequency: 840, wave: "triangle" },
+  combo_battery: { frequency: 310, wave: "sine" },
+  overclock: { frequency: 640, wave: "sawtooth" },
+  double_tap: { frequency: 720, wave: "square" },
+  snowball: { frequency: 600, wave: "sine" },
+  interest_bank: { frequency: 880, wave: "triangle" },
+  glass_keycap: { frequency: 1_020, wave: "sine" },
+  vampire: { frequency: 230, wave: "sawtooth" },
+  escape: { frequency: 460, wave: "square" },
+  time_freeze: { frequency: 540, wave: "sine" },
+  quota_slash: { frequency: 350, wave: "sawtooth" },
+  insurance: { frequency: 330, wave: "triangle" },
+} as const satisfies Record<string, {
+  frequency: number
+  wave: OscillatorType
+}>
+
+const ITEM_KIND_INTERVAL: Record<ItemContribution["kind"], number> = {
+  protection: 120,
+  time: -80,
+  quota: -120,
+  mult: 180,
+  base: 90,
+  score: 240,
+  token: 300,
+}
 
 function nextNoiseSample() {
   noiseState ^= noiseState << 13
@@ -93,6 +130,13 @@ export const sfx = {
   },
   mult(mult: number) { 
     ;[0, 1, 2].forEach(i => tone(620 + mult * 45 + i * 110, "triangle", 130, 0.13, undefined, i * 0.055)) 
+  },
+  item(itemId: string, kind: ItemContribution["kind"]) {
+    const cue = ITEM_AUDIO[itemId as keyof typeof ITEM_AUDIO]
+    if (!cue) return
+    const interval = ITEM_KIND_INTERVAL[kind]
+    tone(cue.frequency, cue.wave, 120, 0.08, Math.max(48, cue.frequency + interval))
+    if (kind === "protection" || kind === "quota") noise(70, 0.025, 0.04)
   },
   stageClear() { 
     ;[523, 659, 784, 1047].forEach((f, i) => tone(f, "square", 150, 0.14, undefined, i * 0.09)) 

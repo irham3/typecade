@@ -9,6 +9,8 @@ export type OverdrivePresentationEvent =
       type: "accepted-character"
       character: string
       index: number
+      word: string
+      targetOrdinal: number
       combo: number
       charge: number
     }
@@ -27,6 +29,7 @@ export type OverdrivePresentationEvent =
       aegisRecovery: boolean;
       autoExecuted: boolean;
       appliedItemIds: string[];
+      targetOrdinal: number;
       combo: number
     }
   | { id: number; type: "mult-increased"; mult: number }

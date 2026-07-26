@@ -3,7 +3,6 @@ export const STAGE_DURATION_BY_TYPE = {
 	rush: 70_000,
 	glitch: 65_000,
 } as const
-// Backwards-compatible alias for callers that need the initial Warm-up clock.
 export const STAGE_DURATION_MS = STAGE_DURATION_BY_TYPE.warmup
 export const AEGIS_PROTECTED_ZONE_MAX = 2
 export const AEGIS_RESCUE_MS = 30_000
@@ -12,10 +11,9 @@ export const OVERDRIVE_CHARGE_MAX = 100
 export const OVERDRIVE_CHARGE_PER_CHARACTER = 3
 export const OVERDRIVE_TYPO_DRAIN = 15
 export const OVERDRIVE_SCORE_MULTIPLIER = 2
-export const WORDS_PER_MULT = 10        // +1 Mult per 10 clean words
-export const ENDLESS_QUOTA_FACTOR = 1.8 // quota x1.8^n after Zone 8
+export const WORDS_PER_MULT = 10
+export const ENDLESS_QUOTA_FACTOR = 1.8
 
-// Copy this table 1:1 from docs/game-design.md §3.
 export const QUOTA: Record<number, { warmup: number; rush: number; glitch: number }> = {
 	1: { warmup: 5, rush: 8, glitch: 12 },
 	2: { warmup: 8, rush: 12, glitch: 18 },
@@ -27,7 +25,6 @@ export const QUOTA: Record<number, { warmup: number; rush: number; glitch: numbe
 	8: { warmup: 7000, rush: 9000, glitch: 12000 },
 }
 
-// Economy, from docs/game-design.md §4:
 export const CLEAR_REWARD = { warmup: 3, rush: 4, glitch: 5 } as const
 export const TIME_BONUS_PER_10S = 1
 export const INTEREST_PER_5_TOKENS = 1

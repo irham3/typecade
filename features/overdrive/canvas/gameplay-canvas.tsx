@@ -2,7 +2,8 @@
 import { useEffect, useRef } from "react"
 import { Application } from "pixi.js"
 import { CombatScene, type SceneState } from "./combat-scene"
-import { loadCombatTextures, V } from "./visual-assets"
+import { loadCombatRigAssets } from "./assets/combat-assets"
+import { V } from "./visual-assets"
 import { getLatestPresentationEventId, type OverdrivePresentationEvent } from "../presentation/events"
 
 export type GameplayCanvasProps = SceneState & {
@@ -75,7 +76,6 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
     latestRef.current = props
   }, [props])
 
-  // 1. Mount/unmount effect: create observer, app, and scene once.
   useEffect(() => {
     let cancelled = false
     let sizeObserver: ResizeObserver | null = null
@@ -117,16 +117,20 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
         host.replaceChildren(app.canvas)
         Object.assign(app.canvas.style, { width: "100%", height: "100%", display: "block" })
 
-        const textures = await loadCombatTextures()
+        const assets = await loadCombatRigAssets(latestRef.current.stage)
         if (cancelled) {
           appInstance.destroy(true)
           return
         }
+        host.dataset.wardenRig = assets.warden.definition.id
+        host.dataset.enemyRig = assets.enemy.definition.id
+        host.dataset.rigFallback = String(
+          assets.warden.fallback || assets.enemy.fallback,
+        )
 
-        const scene = new CombatScene(app, latestRef.current, textures)
+        const scene = new CombatScene(app, latestRef.current, assets)
         sceneRef.current = scene
 
-        // Flush any events missed during async init
         scene.sync(latestRef.current)
         consumePendingEvents(scene, latestRef.current.events, lastConsumedEventIdRef, hostRef)
         latestRef.current.onReady?.()
@@ -170,7 +174,6 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
     }
   }, [])
 
-  // 2. Persistent-state effect
   useEffect(() => {
     const scene = sceneRef.current
     if (scene) {
@@ -178,7 +181,6 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
     }
   }, [props])
 
-  // 3. Event effect
   useEffect(() => {
     if (sceneRef.current) {
       consumePendingEvents(sceneRef.current, props.events, lastConsumedEventIdRef, hostRef)
@@ -193,8 +195,10 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
       data-current-word={props.currentWord}
       data-caret-index={String(props.caretIndex)}
       data-score={String(props.score)}
+      data-quota={String(props.quota)}
       data-time-left-ms={String(Math.round(props.timeLeftMs))}
       data-overdrive-charge={String(props.overdriveCharge)}
+      data-target-ordinal={String(props.targetOrdinal)}
       data-aegis-active={String(props.aegisActive)}
       data-aegis-rescues={String(props.aegisRescues)}
       data-focus-paused={String(props.focusPaused)}

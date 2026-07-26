@@ -1,6 +1,6 @@
 {
   "frames": {
-    "torso": {
+    "warden/torso": {
       "frame": {
         "x": 4,
         "y": 4,
@@ -24,7 +24,7 @@
         "y": 0.5
       }
     },
-    "pelvis": {
+    "warden/pelvis": {
       "frame": {
         "x": 300,
         "y": 4,
@@ -48,7 +48,7 @@
         "y": 0.5
       }
     },
-    "head": {
+    "warden/head": {
       "frame": {
         "x": 559,
         "y": 4,
@@ -72,7 +72,7 @@
         "y": 0.49740932642487046
       }
     },
-    "visor": {
+    "warden/visor": {
       "frame": {
         "x": 742,
         "y": 4,
@@ -96,7 +96,7 @@
         "y": 0.49122807017543857
       }
     },
-    "near_shoulder": {
+    "warden/near_shoulder": {
       "frame": {
         "x": 905,
         "y": 4,
@@ -120,7 +120,7 @@
         "y": 0.19157088122605365
       }
     },
-    "far_shoulder": {
+    "warden/far_shoulder": {
       "frame": {
         "x": 1105,
         "y": 4,
@@ -144,7 +144,7 @@
         "y": 0.18846153846153846
       }
     },
-    "near_upper_arm": {
+    "warden/near_upper_arm": {
       "frame": {
         "x": 1303,
         "y": 4,
@@ -168,7 +168,7 @@
         "y": 0.18875502008032127
       }
     },
-    "far_upper_arm": {
+    "warden/far_upper_arm": {
       "frame": {
         "x": 1471,
         "y": 4,
@@ -192,7 +192,7 @@
         "y": 0.19183673469387755
       }
     },
-    "near_forearm": {
+    "warden/near_forearm": {
       "frame": {
         "x": 1630,
         "y": 4,
@@ -216,7 +216,7 @@
         "y": 0.17316017316017315
       }
     },
-    "far_forearm": {
+    "warden/far_forearm": {
       "frame": {
         "x": 1830,
         "y": 4,
@@ -240,7 +240,7 @@
         "y": 0.1712962962962963
       }
     },
-    "cannon_barrel": {
+    "warden/cannon_barrel": {
       "frame": {
         "x": 4,
         "y": 298,
@@ -264,7 +264,7 @@
         "y": 0.5024630541871922
       }
     },
-    "cannon_core": {
+    "warden/cannon_core": {
       "frame": {
         "x": 337,
         "y": 298,
@@ -288,7 +288,7 @@
         "y": 0.5066666666666667
       }
     },
-    "near_thigh": {
+    "warden/near_thigh": {
       "frame": {
         "x": 516,
         "y": 298,
@@ -312,7 +312,7 @@
         "y": 0.192
       }
     },
-    "far_thigh": {
+    "warden/far_thigh": {
       "frame": {
         "x": 662,
         "y": 298,
@@ -336,7 +336,7 @@
         "y": 0.1902834008097166
       }
     },
-    "near_shin": {
+    "warden/near_shin": {
       "frame": {
         "x": 804,
         "y": 298,
@@ -360,7 +360,7 @@
         "y": 0.16996047430830039
       }
     },
-    "far_shin": {
+    "warden/far_shin": {
       "frame": {
         "x": 954,
         "y": 298,
@@ -384,7 +384,7 @@
         "y": 0.1721311475409836
       }
     },
-    "near_foot": {
+    "warden/near_foot": {
       "frame": {
         "x": 1090,
         "y": 298,
@@ -408,7 +408,7 @@
         "y": 0.5182481751824818
       }
     },
-    "far_foot": {
+    "warden/far_foot": {
       "frame": {
         "x": 1261,
         "y": 298,

@@ -8,19 +8,18 @@ export type StagePresentationCopy = {
 
 export const STAGE_COPY = {
   warmup: {
-
     label: "WARM-UP",
-    instruction: "Build Mult. Mistakes reset it.",
+    instruction: "Clean words raise Mult.",
     accent: "green",
   },
   rush: {
     label: "RUSH",
-    instruction: "Keep the chain alive.",
+    instruction: "Keep the clean-word streak.",
     accent: "pink",
   },
   glitch: {
     label: "GLITCH",
-    instruction: "Survive the corrupted pattern.",
+    instruction: "Glitch rules are active.",
     accent: "red",
   },
 } satisfies Record<StageType, StagePresentationCopy>

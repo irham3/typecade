@@ -49,9 +49,9 @@ const requiredClips = {
 		"idle", "ready", "chain-1", "chain-2", "chain-3", "dash",
 		"execute", "block", "hurt", "recover", "overdrive",
 	],
-	packet: ["locomotion", "anticipation", "attack", "hit", "defeat", "special"],
-	needle: ["locomotion", "anticipation", "attack", "hit", "defeat", "special"],
-	null: ["locomotion", "anticipation", "attack", "hit", "defeat", "special"],
+	packet: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
+	needle: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
+	null: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
 }
 
 function readUint24LE(buffer, offset) {
@@ -136,7 +136,7 @@ async function validateRig(rigId) {
 	}
 
 	for (const partId of requiredParts[rigId]) {
-		const frame = atlas.frames?.[partId]?.frame
+		const frame = atlas.frames?.[`${rigId}/${partId}`]?.frame
 		const pivot = atlas.meta?.rig?.parts?.[partId]?.pivot
 		if (!frame) throw new Error(`${rigId} is missing frame ${partId}`)
 		if (!pivot) throw new Error(`${rigId} is missing pivot ${partId}`)

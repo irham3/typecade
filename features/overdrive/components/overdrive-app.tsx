@@ -72,7 +72,7 @@ export function OverdriveApp() {
 				>
 					<div className="w-full max-w-sm rounded-lg border border-line bg-bg-1 p-6">
 						<h2 id="pause-title" className="font-pixel text-2xl text-text-hi">PAUSED</h2>
-						<p className="mt-4 text-sm text-text-mid">Your timer is frozen. The signal can wait.</p>
+						<p className="mt-4 text-sm text-text-mid">The stage clock is stopped.</p>
 						<div className="mt-6 flex flex-col gap-3">
 							<button className="overdrive-primary" onClick={() => setPaused(false)}>
 								RESUME

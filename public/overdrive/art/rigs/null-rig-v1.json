@@ -1,6 +1,6 @@
 {
   "frames": {
-    "void_core": {
+    "null/void_core": {
       "frame": {
         "x": 4,
         "y": 4,
@@ -24,7 +24,7 @@
         "y": 0.5
       }
     },
-    "crown_center": {
+    "null/crown_center": {
       "frame": {
         "x": 264,
         "y": 4,
@@ -48,7 +48,7 @@
         "y": 0.4983388704318937
       }
     },
-    "crown_near_plate": {
+    "null/crown_near_plate": {
       "frame": {
         "x": 492,
         "y": 4,
@@ -72,7 +72,7 @@
         "y": 0.7133333333333334
       }
     },
-    "crown_far_plate": {
+    "null/crown_far_plate": {
       "frame": {
         "x": 672,
         "y": 4,
@@ -96,7 +96,7 @@
         "y": 0.7138157894736842
       }
     },
-    "near_shoulder": {
+    "null/near_shoulder": {
       "frame": {
         "x": 868,
         "y": 4,
@@ -120,7 +120,7 @@
         "y": 0.19298245614035087
       }
     },
-    "far_shoulder": {
+    "null/far_shoulder": {
       "frame": {
         "x": 1072,
         "y": 4,
@@ -144,7 +144,7 @@
         "y": 0.19004524886877827
       }
     },
-    "near_upper_arm": {
+    "null/near_upper_arm": {
       "frame": {
         "x": 1285,
         "y": 4,
@@ -168,7 +168,7 @@
         "y": 0.1902834008097166
       }
     },
-    "far_upper_arm": {
+    "null/far_upper_arm": {
       "frame": {
         "x": 1480,
         "y": 4,
@@ -192,7 +192,7 @@
         "y": 0.18907563025210083
       }
     },
-    "near_forearm": {
+    "null/near_forearm": {
       "frame": {
         "x": 1674,
         "y": 4,
@@ -216,7 +216,7 @@
         "y": 0.1735159817351598
       }
     },
-    "far_forearm": {
+    "null/far_forearm": {
       "frame": {
         "x": 4,
         "y": 312,
@@ -240,7 +240,7 @@
         "y": 0.1735159817351598
       }
     },
-    "near_hand": {
+    "null/near_hand": {
       "frame": {
         "x": 203,
         "y": 312,
@@ -264,7 +264,7 @@
         "y": 0.5
       }
     },
-    "far_hand": {
+    "null/far_hand": {
       "frame": {
         "x": 420,
         "y": 312,
@@ -288,7 +288,7 @@
         "y": 0.5
       }
     },
-    "cloak_segment_one": {
+    "null/cloak_segment_one": {
       "frame": {
         "x": 651,
         "y": 312,
@@ -312,7 +312,7 @@
         "y": 0.17131474103585656
       }
     },
-    "cloak_segment_two": {
+    "null/cloak_segment_two": {
       "frame": {
         "x": 815,
         "y": 312,
@@ -336,7 +336,7 @@
         "y": 0.1717557251908397
       }
     },
-    "cloak_segment_three": {
+    "null/cloak_segment_three": {
       "frame": {
         "x": 992,
         "y": 312,
@@ -360,7 +360,7 @@
         "y": 0.1685823754789272
       }
     },
-    "lower_core": {
+    "null/lower_core": {
       "frame": {
         "x": 1149,
         "y": 312,
@@ -498,6 +498,7 @@
       },
       "clips": [
         "locomotion",
+        "idle",
         "anticipation",
         "attack",
         "hit",

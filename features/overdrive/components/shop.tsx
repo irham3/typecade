@@ -363,7 +363,7 @@ export function Shop() {
 						aria-keyshortcuts="Enter"
 						className="overdrive-primary h-12 w-full md:w-auto"
 					>
-						ENTER — DEPLOY TO {STAGE_COPY[nextPosition.stage].label} · QUOTA {formatNumber(nextQuota)}
+						ENTER · NEXT: {STAGE_COPY[nextPosition.stage].label} · QUOTA {formatNumber(nextQuota)}
 					</button>
 				</footer>
 			</main>

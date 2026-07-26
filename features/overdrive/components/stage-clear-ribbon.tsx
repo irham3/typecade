@@ -61,7 +61,7 @@ export function StageClearRibbon() {
 		>
 			<div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
 				<div>
-					<div className="text-xs font-bold uppercase tracking-[0.08em] text-acc-green">Stage clear</div>
+					<div className="text-xs font-bold uppercase tracking-[0.08em] text-acc-green">Clear</div>
 					<strong className="mt-1 block text-xl tabular-nums text-acc-yellow">{formatNumber(state.score)}</strong>
 				</div>
 				<div>

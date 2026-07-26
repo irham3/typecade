@@ -122,6 +122,7 @@ export const useGame = create<GameStore>((set, get) => {
 				aegisRecovery: payload.aegisRecovery,
 				autoExecuted: payload.autoExecuted,
 				appliedItemIds: payload.appliedItemIds,
+				targetOrdinal: api.snapshot().targetOrdinal,
 				combo: payload.combo,
 			})
 			const snapshot = api.snapshot()
@@ -136,6 +137,8 @@ export const useGame = create<GameStore>((set, get) => {
 				type: "accepted-character",
 				character,
 				index: Math.max(0, caretIndex - 1),
+				word: api.snapshot().currentWord,
+				targetOrdinal: api.snapshot().targetOrdinal,
 				combo: api.snapshot().combo,
 				charge,
 			})

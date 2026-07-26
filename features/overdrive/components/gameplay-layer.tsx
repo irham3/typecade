@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useShallow } from "zustand/react/shallow"
+import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { GameplayCanvas } from "../canvas/gameplay-canvas"
 import { usePresentationEvents } from "../presentation/use-presentation-events"
 import { useSettings } from "../settings/store"
@@ -14,6 +15,10 @@ function ProcFeedback() {
 	)
 	if (!latest) return null
 
+	const itemName = latest.type === "item-triggered"
+		? KEYCAPS[latest.itemId]?.name ?? latest.label
+		: MACROS[latest.itemId]?.name ?? latest.itemId
+
 	return (
 		<div
 			key={latest.id}
@@ -21,8 +26,8 @@ function ProcFeedback() {
 			aria-live="polite"
 		>
 			{latest.type === "item-triggered"
-				? `${latest.label} · ${latest.contribution.label}`
-				: latest.result}
+				? `${itemName} · ${latest.contribution.label}`
+				: `${itemName} · ${latest.result}`}
 		</div>
 	)
 }
@@ -49,6 +54,7 @@ export function GameplayLayer() {
 		focusPaused: snapshot.focusPaused,
 		threatBand: snapshot.threatBand,
 		overdriveCharge: snapshot.overdriveCharge,
+		targetOrdinal: snapshot.targetOrdinal,
 		zone: snapshot.zone,
 		stage: snapshot.stage,
 		activeGlitch: snapshot.activeGlitch,
@@ -62,9 +68,9 @@ export function GameplayLayer() {
 		return (
 			<div className="absolute inset-0 z-50 flex items-center justify-center bg-bg-0 p-6 text-text-hi">
 				<div className="overdrive-panel w-full max-w-md p-6">
-					<h2 className="font-pixel text-xl text-acc-red">RENDER LINK FAILED</h2>
+					<h2 className="font-pixel text-xl text-acc-red">ARENA FAILED TO LOAD</h2>
 					<p className="mt-4 text-sm leading-6 text-text-mid">
-						The gameplay renderer could not start. Your run state is still safe.
+						The run is paused. Reload the arena or return to the menu.
 					</p>
 					<div className="mt-6 flex flex-col gap-3 sm:flex-row">
 						<button
@@ -90,7 +96,7 @@ export function GameplayLayer() {
 		<>
 			{!canvasReady && (
 				<div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-bg-0 text-sm font-bold uppercase tracking-[0.08em] text-acc-cyan">
-					SYNCING COMBAT LINK
+					LOADING ARENA
 				</div>
 			)}
 			<GameplayCanvas
@@ -112,6 +118,7 @@ export function GameplayLayer() {
 				focusPaused={state.focusPaused}
 				threatBand={state.threatBand}
 				overdriveCharge={state.overdriveCharge}
+				targetOrdinal={state.targetOrdinal}
 				zone={state.zone}
 				stage={state.stage}
 				activeGlitch={state.activeGlitch}

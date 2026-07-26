@@ -43,7 +43,7 @@ export class RigInstance {
 			const container = new Container()
 			const sprite = new Sprite(texture)
 			container.label = `${definition.id}:${part.id}`
-			container.pivot.set(part.pivot.x, part.pivot.y)
+			sprite.position.set(-part.pivot.x, -part.pivot.y)
 			container.zIndex = part.zIndex
 			container.sortableChildren = true
 			container.addChild(sprite)
@@ -90,6 +90,27 @@ export class RigInstance {
 
 	setAlpha(alpha: number) {
 		this.root.alpha = alpha
+	}
+
+	getVisualSize() {
+		const bounds = this.root.getLocalBounds()
+		return {
+			width: Math.max(1, bounds.width),
+			height: Math.max(1, bounds.height),
+		}
+	}
+
+	getPartGlobalPosition(
+		partId: string,
+		horizontal = 0.5,
+		vertical = 0.5,
+	) {
+		const part = this.parts.get(partId)
+		if (!part) return this.root.getGlobalPosition()
+		return part.sprite.toGlobal({
+			x: part.sprite.texture.width * horizontal,
+			y: part.sprite.texture.height * vertical,
+		})
 	}
 
 	destroy() {

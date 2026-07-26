@@ -1,5 +1,4 @@
 import {
-	Assets,
 	Container,
 	Graphics,
 	Sprite,
@@ -34,6 +33,28 @@ export const SCENE = {
 		desktop: { x: 0.73, y: 0.48 },
 		compact: { x: 0.72, y: 0.46 },
 	},
+	targetLanes: {
+		desktop: { high: 0.42, mid: 0.48, low: 0.54 },
+		compact: { high: 0.4, mid: 0.46, low: 0.52 },
+	},
+	targetStaging: {
+		desktop: {
+			upcomingOffsetX: 0.09,
+			distantOffsetX: 0.15,
+			upcomingScale: 0.72,
+			distantScale: 0.52,
+			upcomingAlpha: 0.32,
+			distantAlpha: 0.16,
+		},
+		compact: {
+			upcomingOffsetX: 0.08,
+			distantOffsetX: 0.14,
+			upcomingScale: 0.68,
+			distantScale: 0.48,
+			upcomingAlpha: 0.28,
+			distantAlpha: 0.14,
+		},
+	},
 	wordAnchor: { x: 0.54, y: 0.66 },
 	wardenHeight: {
 		desktop: { ratio: 0.42, max: 400 },
@@ -48,6 +69,10 @@ export const SCENE = {
 	attackPath: {
 		desktop: { startX: 0.28, endX: 0.67, y: 0.45 },
 		compact: { startX: 0.22, endX: 0.65, y: 0.46 },
+	},
+	wardenTravel: {
+		midField: 0.32,
+		contact: 0.58,
 	},
 	signalNode: {
 		desktopRadius: 8,
@@ -121,7 +146,8 @@ export const MOTION = {
 	overdriveColumnEndRatio: 0.82,
 	overdriveColumnMaxAlpha: 0.32,
 	enemyAttackMs: 360,
-	enemyAttackPoseRatio: 0.36,
+	enemyAnticipationMs: 240,
+	enemyStrikeMs: 120,
 	aegisRescueMs: 600,
 	aegisPoseRatio: 0.35,
 	aegisImpactFrequency: 1.8,
@@ -139,110 +165,20 @@ export const MOTION = {
 	moteMaxSpeed: 12,
 } as const
 
-export type WardenPose =
-	| "ready-low"
-	| "ready-high"
-	| "anticipation"
-	| "strike"
-	| "dash"
-	| "recover"
-	| "block"
-	| "overdrive"
-
-export type EnemyPose =
-	| "idle-a"
-	| "idle-b"
-	| "anticipation"
-	| "attack"
-	| "special"
-	| "hit"
-	| "recover"
-	| "defeat"
-
-const WARDEN_POSES: readonly WardenPose[] = [
-	"ready-low",
-	"ready-high",
-	"anticipation",
-	"strike",
-	"dash",
-	"recover",
-	"block",
-	"overdrive",
-]
-
-const ENEMY_POSES: readonly EnemyPose[] = [
-	"idle-a",
-	"idle-b",
-	"anticipation",
-	"attack",
-	"special",
-	"hit",
-	"recover",
-	"defeat",
-]
-
-function posePath(character: "warden" | "packet" | "needle" | "null", pose: string) {
-	return `/overdrive/art/poses/${character}/${pose}.png`
-}
-
-type WardenPoseTextures = Record<WardenPose, Texture>
-type EnemyPoseTextures = Record<EnemyPose, Texture>
-
-export type CombatTextures = {
-	arena: Texture
-	warden: WardenPoseTextures
-	warmup: EnemyPoseTextures
-	rush: EnemyPoseTextures
-	glitch: EnemyPoseTextures
-}
-
-async function loadPoseTextures<T extends string>(
-	character: "warden" | "packet" | "needle" | "null",
-	poses: readonly T[],
-): Promise<Record<T, Texture>> {
-	const textures = await Promise.all(
-		poses.map((pose) => Assets.load<Texture>(posePath(character, pose))),
-	)
-	return Object.fromEntries(
-		poses.map((pose, index) => [pose, textures[index]]),
-	) as Record<T, Texture>
-}
-
-export async function loadCombatTextures(): Promise<CombatTextures> {
-	const [arena, warden, warmup, rush, glitch] = await Promise.all([
-		Assets.load<Texture>("/overdrive/art/signal-trench-arena-v2.png"),
-		loadPoseTextures("warden", WARDEN_POSES),
-		loadPoseTextures("packet", ENEMY_POSES),
-		loadPoseTextures("needle", ENEMY_POSES),
-		loadPoseTextures("null", ENEMY_POSES),
-	])
-	return { arena, warden, warmup, rush, glitch }
-}
-
-export type WardenArt = {
-	root: Container
-	body: Container
-	sprite: Sprite
-	poses: WardenPoseTextures
-	pose: WardenPose
-	muzzle: Graphics
-	core: Graphics
-	integrity: Graphics
-	label: Text
-}
-
-export type TargetArt = {
-	root: Container
-	body: Container
-	sprite: Sprite
-	poses: EnemyPoseTextures
-	pose: EnemyPose
-	hitLayer: Graphics
-	integrity: Graphics
-	label: Text
-	accent: number
-	className: string
-}
+export const EFFECTS = {
+	liveCap: 200,
+	letterBoltMs: 110,
+	contactRadius: 28,
+	contactStroke: 2,
+	finisherRadius: 52,
+	finisherStroke: 4,
+	smearWidth: 8,
+	defeatFragments: 18,
+	fragmentWidth: 9,
+	fragmentHeight: 4,
+	scorePopupTravel: 24,
+	scorePopupCap: 3,
+} as const
 
 export type CommandRailArt = {
 	root: Container
@@ -410,92 +346,6 @@ export function createBackground(texture: Texture): BackgroundArt {
 	}
 }
 
-export function createWarden(poses: WardenPoseTextures): WardenArt {
-	const root = new Container()
-	const body = new Container()
-	const shadow = new Graphics()
-		.ellipse(0, 16, 96, 18)
-		.fill({ color: V.bg, alpha: 0.62 })
-	const sprite = new Sprite(poses["ready-low"])
-	const core = new Graphics()
-		.circle(0, 0, 14)
-		.stroke({ color: V.green, width: 2, alpha: 0.7 })
-	const muzzle = new Graphics()
-	const integrity = new Graphics()
-	const label = new Text({
-		text: "KEYSTONE WARDEN",
-		style: {
-			fill: V.cyan,
-			fontFamily: "JetBrains Mono",
-			fontSize: 14,
-			fontWeight: "700",
-			letterSpacing: 1,
-		},
-	})
-
-	sprite.anchor.set(0.5)
-	core.position.set(-sprite.texture.width * 0.045, -sprite.texture.height * 0.06)
-	muzzle.position.set(sprite.texture.width * 0.45, -sprite.texture.height * 0.08)
-	label.anchor.set(0.5)
-	root.addChild(shadow, body, integrity, label)
-	body.addChild(sprite, core, muzzle)
-	return {
-		root,
-		body,
-		sprite,
-		poses,
-		pose: "ready-low",
-		muzzle,
-		core,
-		integrity,
-		label,
-	}
-}
-
-export function createTarget(stage: StageType, textures: CombatTextures): TargetArt {
-	const root = new Container()
-	const body = new Container()
-	const poses = textures[stage]
-	const sprite = new Sprite(poses["idle-a"])
-	const accent = stageAccent(stage)
-	const className = targetClassName(stage)
-	const shadow = new Graphics()
-		.ellipse(0, 12, 88, 16)
-		.fill({ color: V.bg, alpha: 0.58 })
-	const hitLayer = new Graphics()
-		.circle(0, 0, 72)
-		.fill({ color: V.text, alpha: 0.7 })
-	const integrity = new Graphics()
-	const label = new Text({
-		text: className,
-		style: {
-			fill: accent,
-			fontFamily: "JetBrains Mono",
-			fontSize: 14,
-			fontWeight: "700",
-			letterSpacing: 1,
-		},
-	})
-
-	sprite.anchor.set(0.5)
-	hitLayer.alpha = 0
-	label.anchor.set(0.5)
-	body.addChild(shadow, sprite, hitLayer)
-	root.addChild(body, integrity, label)
-	return {
-		root,
-		body,
-		sprite,
-		poses,
-		pose: "idle-a",
-		hitLayer,
-		integrity,
-		label,
-		accent,
-		className,
-	}
-}
-
 export function createCommandRail(): CommandRailArt {
 	const root = new Container()
 	const panel = new Graphics()
@@ -548,6 +398,7 @@ export function drawCommandRail(
 	inputPrompt: string,
 	width: number,
 	compact: boolean,
+	zone: number,
 ) {
 	const railWidth = compact
 		? Math.max(0, width - SCENE.rail.compactGutter)
@@ -649,7 +500,9 @@ export function drawCommandRail(
 			: "CORRUPTED — 0 SCORE"
 		: caretIndex >= word.length
 			? overdriveCharge >= 100
-				? "SPACE — OVERDRIVE"
+				? zone <= 2
+					? "SPACE — OVERDRIVE"
+					: "SPACE: EXECUTE · ENTER: OVERDRIVE"
 				: "SPACE — EXECUTE"
 			: inputPrompt
 	rail.status.style.fill = dirty
@@ -665,7 +518,10 @@ export function drawCommandRail(
 }
 
 export function drawTargetIntegrity(
-	target: TargetArt,
+	target: {
+		integrity: Graphics
+		accent: number
+	},
 	wordLength: number,
 	caretIndex: number,
 	dirty: boolean,

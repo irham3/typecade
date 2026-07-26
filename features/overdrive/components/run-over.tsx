@@ -52,12 +52,14 @@ export function RunOver() {
 	useEffect(() => {
 		const key = `typecade_overdrive_best_${state.mode}_${state.language.toLowerCase()}`
 		const previous = Number(window.localStorage.getItem(key) ?? 0)
+		const status = finalScore > previous
+			? "new"
+			: Math.max(1, previous - finalScore + 1)
 		if (finalScore > previous) {
 			window.localStorage.setItem(key, String(finalScore))
-			setBestStatus("new")
-			return
 		}
-		setBestStatus(Math.max(1, previous - finalScore + 1))
+		const timeout = window.setTimeout(() => setBestStatus(status), 0)
+		return () => window.clearTimeout(timeout)
 	}, [finalScore, state.language, state.mode])
 
 	const share = async () => {
@@ -162,7 +164,7 @@ export function RunOver() {
 			<main className="h-full overflow-y-auto bg-bg-0 px-6 text-text-hi">
 				<div className="mx-auto w-full max-w-lg py-12 text-center">
 					<p className={`font-pixel text-2xl ${state.win ? "text-acc-green" : "text-acc-red"}`}>
-						{state.win ? "SYSTEM OVERRIDDEN" : "RUN OVER"}
+						{state.win ? "RUN COMPLETE" : "RUN OVER"}
 					</p>
 					<div className="mt-6 text-6xl font-bold tabular-nums text-acc-yellow">
 						{formatNumber(finalScore)}

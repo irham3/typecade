@@ -76,7 +76,7 @@ export function Menu() {
 						<div className="relative z-10 flex items-center gap-4 text-acc-green">
 							<TypecadeMark className="h-12 w-12 shrink-0" />
 							<div className="h-px flex-1 bg-line" />
-							<span className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">SIGNAL SIEGE // 08</span>
+							<span className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">SIGNAL SIEGE · 08</span>
 						</div>
 
 						<div className="relative z-10 mt-8">
@@ -88,8 +88,8 @@ export function Menu() {
 							</h1>
 							<p className="mt-3 font-pixel text-xl text-acc-green">OVERDRIVE</p>
 							<p className="mt-5 max-w-xl text-base leading-6 text-text-mid">
-								Type to fire. Execute clean words. Stack Keycaps into a broken build.
-								Breach every quota before the signal collapses.
+								Type to attack. Clean words score. Keycaps change how each word pays.
+								Clear the quota to reach the next shop.
 							</p>
 						</div>
 

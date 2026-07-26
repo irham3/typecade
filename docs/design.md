@@ -113,6 +113,11 @@ Two fonts, no more:
 | --- | --- | --- |
 | Warden anchor | x 22%, y 52% | x 28%, y 55% |
 | Target anchor | x 73%, y 48% | x 72%, y 46% |
+| Target lane y: high / mid / low | 42% / 48% / 54% | 40% / 46% / 52% |
+| Upcoming target x offset | 9% | 8% |
+| Distant target x offset | 15% | 14% |
+| Upcoming target scale / alpha | 72% / 0.32 | 68% / 0.28 |
+| Distant target scale / alpha | 52% / 0.16 | 48% / 0.14 |
 | Warden visual height | 42% of canvas, max 400px | 26% of canvas, max 216px |
 | Target visual height | 38% of canvas, max 360px | 25% of canvas, max 200px |
 | Active word anchor | x 54%, y 66% | x 54%, y 66% |
@@ -120,11 +125,12 @@ Two fonts, no more:
 | Projectile travel | Warden muzzle to target core | same |
 | Foreground cover height | 16% | 14% |
 | Attack path | x 24%-68%, y 42%-56% | x 20%-66%, y 44%-55% |
+| Warden mid-field / contact travel | 32% / 58% of Warden-to-target gap | same |
 | Letter-node spacing | distribute current word across attack path | same, minimum visual gap 8px |
 
 The active word is not attached to the target sprite. It sits on a high-contrast command rail between the combatants so character animation cannot move the caret.
 
-Combat-effect geometry is also tokenized: the Aegis callout sits at y 34%; its shield spans y 30%-72% from an x 8% Warden offset with a 5% forward edge and 2% back edge. The Overdrive impact column spans y 14%-82%. Overdrive reaches 78% of the Warden-to-target gap, travels outward for 58% of its 320ms lifecycle, and returns during the remaining 42%.
+Combat-effect geometry is also tokenized: the Aegis callout sits at y 34%; its shield spans y 30%-72% from an x 8% Warden offset with a 5% forward edge and 2% back edge. The Overdrive impact column spans y 14%-82%. Overdrive reaches 78% of the Warden-to-target gap, travels outward for 58% of its 320ms lifecycle, and returns during the remaining 42%. An ordinary contact ring has a 28px radius and 2px stroke; a finishing contact uses a 52px radius and 4px stroke. Attack smears are 8px wide. A defeat emits exactly 18 fragments, each inside a 9x4px silhouette. Letter bolts reach contact in 110ms. Effects share one 200-object live cap.
 
 ## Rig asset delivery
 
@@ -215,6 +221,7 @@ Item proc feedback:
 
 - The triggering Keycap slot flashes its rarity border once for 150ms. No additional glow layer.
 - At most one 14px proc label is visible near the active word, for example `WASD +10 BASE`.
+- Each combat-side item shape fits a 48x48px footprint, uses a 2px stroke, and clears within 450ms. Simultaneous identical shapes merge into one restarted effect.
 - Protection effects use a small shield-break mark next to Mult; they never interrupt typing.
 - The stage-clear ribbon shows the strongest item contribution. The Shop retains the previous stage's strongest contribution.
 

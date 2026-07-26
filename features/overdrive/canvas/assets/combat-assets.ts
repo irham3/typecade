@@ -84,7 +84,8 @@ function validateAtlas(data: unknown, rigId: CombatRigId): RigAtlasData {
 	}
 
 	for (const partId of RIG_PART_IDS[rigId]) {
-		const frame = atlas.frames[partId]?.frame
+		const frameId = `${rigId}/${partId}`
+		const frame = atlas.frames[frameId]?.frame
 		const pivot = atlas.meta.rig.parts?.[partId]?.pivot
 		if (!frame || !pivot) throw new Error(`Atlas ${rigId} is missing ${partId}`)
 		if (
@@ -125,7 +126,7 @@ async function loadRig(rigId: CombatRigId): Promise<LoadedRigAssets> {
 	const sheet = await Assets.load<Spritesheet>(definition.atlasUrl)
 	const textures: Record<string, Texture> = {}
 	for (const partId of RIG_PART_IDS[rigId]) {
-		const texture = sheet.textures[partId]
+		const texture = sheet.textures[`${rigId}/${partId}`]
 		if (!texture) throw new Error(`Spritesheet ${rigId} is missing ${partId}`)
 		textures[partId] = texture
 	}

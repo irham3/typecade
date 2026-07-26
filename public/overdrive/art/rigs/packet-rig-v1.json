@@ -1,6 +1,6 @@
 {
   "frames": {
-    "core_torso": {
+    "packet/core_torso": {
       "frame": {
         "x": 4,
         "y": 4,
@@ -24,7 +24,7 @@
         "y": 0.5
       }
     },
-    "head": {
+    "packet/head": {
       "frame": {
         "x": 329,
         "y": 4,
@@ -48,7 +48,7 @@
         "y": 0.5017421602787456
       }
     },
-    "jaw": {
+    "packet/jaw": {
       "frame": {
         "x": 558,
         "y": 4,
@@ -72,7 +72,7 @@
         "y": 0.5
       }
     },
-    "near_front_upper_leg": {
+    "packet/near_front_upper_leg": {
       "frame": {
         "x": 781,
         "y": 4,
@@ -96,7 +96,7 @@
         "y": 0.1895910780669145
       }
     },
-    "near_front_lower_leg": {
+    "packet/near_front_lower_leg": {
       "frame": {
         "x": 966,
         "y": 4,
@@ -120,7 +120,7 @@
         "y": 0.16981132075471697
       }
     },
-    "far_front_upper_leg": {
+    "packet/far_front_upper_leg": {
       "frame": {
         "x": 1223,
         "y": 4,
@@ -144,7 +144,7 @@
         "y": 0.192
       }
     },
-    "far_front_lower_leg": {
+    "packet/far_front_lower_leg": {
       "frame": {
         "x": 1391,
         "y": 4,
@@ -168,7 +168,7 @@
         "y": 0.1717557251908397
       }
     },
-    "near_rear_upper_leg": {
+    "packet/near_rear_upper_leg": {
       "frame": {
         "x": 1653,
         "y": 4,
@@ -192,7 +192,7 @@
         "y": 0.19047619047619047
       }
     },
-    "near_rear_lower_leg": {
+    "packet/near_rear_lower_leg": {
       "frame": {
         "x": 1824,
         "y": 4,
@@ -216,7 +216,7 @@
         "y": 0.16974169741697417
       }
     },
-    "far_rear_upper_leg": {
+    "packet/far_rear_upper_leg": {
       "frame": {
         "x": 4,
         "y": 295,
@@ -240,7 +240,7 @@
         "y": 0.1885245901639344
       }
     },
-    "far_rear_lower_leg": {
+    "packet/far_rear_lower_leg": {
       "frame": {
         "x": 159,
         "y": 295,
@@ -264,7 +264,7 @@
         "y": 0.16917293233082706
       }
     },
-    "tail_base": {
+    "packet/tail_base": {
       "frame": {
         "x": 323,
         "y": 295,
@@ -288,7 +288,7 @@
         "y": 0.4970414201183432
       }
     },
-    "tail_tip": {
+    "packet/tail_tip": {
       "frame": {
         "x": 576,
         "y": 295,
@@ -312,7 +312,7 @@
         "y": 0.4975609756097561
       }
     },
-    "near_back_plate": {
+    "packet/near_back_plate": {
       "frame": {
         "x": 801,
         "y": 295,
@@ -336,7 +336,7 @@
         "y": 0.7136563876651982
       }
     },
-    "far_back_plate": {
+    "packet/far_back_plate": {
       "frame": {
         "x": 1021,
         "y": 295,
@@ -468,6 +468,7 @@
       },
       "clips": [
         "locomotion",
+        "idle",
         "anticipation",
         "attack",
         "hit",

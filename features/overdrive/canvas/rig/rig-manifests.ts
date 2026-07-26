@@ -77,9 +77,9 @@ export const RIG_REQUIRED_CLIPS: Record<CombatRigId, readonly AnimationClipName[
 		"recover",
 		"overdrive",
 	],
-	packet: ["locomotion", "anticipation", "attack", "hit", "defeat", "special"],
-	needle: ["locomotion", "anticipation", "attack", "hit", "defeat", "special"],
-	null: ["locomotion", "anticipation", "attack", "hit", "defeat", "special"],
+	packet: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
+	needle: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
+	null: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
 }
 
 export const RIG_PART_IDS: Record<CombatRigId, readonly string[]> = {
@@ -174,7 +174,7 @@ const wardenParts: readonly RigPartDefinition[] = [
 	part("near_upper_arm", 58, 14, 14, "near_shoulder"),
 	part("near_forearm", 58, 42, 15, "near_upper_arm"),
 	part("cannon_barrel", 68, 0, 16, "near_forearm"),
-	part("cannon_core", 22, 2, 17, "near_forearm"),
+	part("cannon_core", 250, 0, 17, "cannon_barrel"),
 ]
 
 const wardenClips = clipRecord([
@@ -347,6 +347,23 @@ const packetParts: readonly RigPartDefinition[] = [
 ]
 
 const packetClips = clipRecord([
+	clip("idle", 1_200, true, 0, [
+		track("core_torso", [
+			{ atMs: 0, y: 0 },
+			{ atMs: 600, y: -2 },
+			{ atMs: 1_200, y: 0 },
+		]),
+		track("head", [
+			{ atMs: 0, rotation: -0.03 },
+			{ atMs: 600, rotation: 0.04 },
+			{ atMs: 1_200, rotation: -0.03 },
+		]),
+		track("jaw", [
+			{ atMs: 0, rotation: 0 },
+			{ atMs: 600, rotation: 0.05 },
+			{ atMs: 1_200, rotation: 0 },
+		]),
+	]),
 	clip("locomotion", 800, true, 0, [
 		track("core_torso", [
 			{ atMs: 0, y: 0, rotation: -0.02 },
@@ -434,6 +451,23 @@ const needleParts: readonly RigPartDefinition[] = [
 ]
 
 const needleClips = clipRecord([
+	clip("idle", 1_200, true, 0, [
+		track("chest_core", [
+			{ atMs: 0, y: 0 },
+			{ atMs: 600, y: -3 },
+			{ atMs: 1_200, y: 0 },
+		]),
+		track("spine_rear", [
+			{ atMs: 0, rotation: -0.04 },
+			{ atMs: 600, rotation: 0.06 },
+			{ atMs: 1_200, rotation: -0.04 },
+		]),
+		track("near_fin", [
+			{ atMs: 0, rotation: -0.08 },
+			{ atMs: 600, rotation: 0.04 },
+			{ atMs: 1_200, rotation: -0.08 },
+		]),
+	]),
 	clip("locomotion", 1_000, true, 0, [
 		track("chest_core", [
 			{ atMs: 0, y: 0, rotation: -0.02 },
@@ -523,6 +557,23 @@ const nullParts: readonly RigPartDefinition[] = [
 ]
 
 const nullClips = clipRecord([
+	clip("idle", 1_200, true, 0, [
+		track("void_core", [
+			{ atMs: 0, y: 0 },
+			{ atMs: 600, y: -2 },
+			{ atMs: 1_200, y: 0 },
+		]),
+		track("crown_near_plate", [
+			{ atMs: 0, rotation: -0.04 },
+			{ atMs: 600, rotation: 0.05 },
+			{ atMs: 1_200, rotation: -0.04 },
+		]),
+		track("crown_far_plate", [
+			{ atMs: 0, rotation: 0.05 },
+			{ atMs: 600, rotation: -0.04 },
+			{ atMs: 1_200, rotation: 0.05 },
+		]),
+	]),
 	clip("locomotion", 1_200, true, 0, [
 		track("void_core", [
 			{ atMs: 0, y: 0 },

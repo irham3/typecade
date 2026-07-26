@@ -17,7 +17,7 @@ test("starts a playable Pixi run without browser errors", async ({ page }) => {
 	await page.getByRole("button", { name: "PLAY", exact: true }).click()
 
 	await expect(page.getByTestId("pixi-gameplay").locator("canvas")).toHaveCount(1)
-	await expect(page.getByText("Z1 · WARM-UP")).toBeVisible()
+	await expect(page.getByText("Z1 · WARM-UP", { exact: true })).toBeVisible()
 	await expect(page.getByText("KEYCAP BUILD")).toBeVisible()
 	expect(errors).toEqual([])
 })

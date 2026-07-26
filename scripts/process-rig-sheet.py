@@ -111,9 +111,9 @@ RIG_CLIPS = {
         "recover",
         "overdrive",
     ),
-    "packet": ("locomotion", "anticipation", "attack", "hit", "defeat", "special"),
-    "needle": ("locomotion", "anticipation", "attack", "hit", "defeat", "special"),
-    "null": ("locomotion", "anticipation", "attack", "hit", "defeat", "special"),
+    "packet": ("locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"),
+    "needle": ("locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"),
+    "null": ("locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"),
 }
 
 
@@ -419,7 +419,7 @@ def write_outputs(
     for part in packed:
         atlas.alpha_composite(part.image, (part.x, part.y))
         width, height = part.image.size
-        frames[part.name] = {
+        frames[f"{rig_id}/{part.name}"] = {
             "frame": {"x": part.x, "y": part.y, "w": width, "h": height},
             "rotated": False,
             "trimmed": False,

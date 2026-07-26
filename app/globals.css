@@ -471,7 +471,7 @@ body::before {
   z-index: 1;
   pointer-events: none;
   opacity: 0.018;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http:%2F%2Fwww.w3.org%2F2000%2Fsvg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 128px 128px;
 }
@@ -803,7 +803,7 @@ body:has([data-overdrive-root]) > div:not([hidden]) {
 }
 
 .overdrive-proc {
-  animation: overdrive-proc 900ms ease-out forwards;
+  animation: overdrive-proc 450ms ease-out forwards;
 }
 
 @keyframes overdrive-slot-proc {

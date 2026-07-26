@@ -86,7 +86,22 @@ export function Hud() {
 		setSoundMuted: settings.setSoundMuted,
 	})))
 	const events = usePresentationEvents()
-	const latestItem = [...events].reverse().find((event) => event.type === "item-triggered")
+	const wordBoundaries = events
+		.map((event, index) => event.type === "word-completed" ? index : -1)
+		.filter((index) => index >= 0)
+	const latestBoundary = wordBoundaries.at(-1)
+	const previousBoundary = wordBoundaries.at(-2) ?? -1
+	const batch = latestBoundary === undefined
+		? events.slice(-8)
+		: events.slice(previousBoundary + 1, latestBoundary + 1)
+	const triggeredItems = new Map(
+		batch
+			.filter((event) => event.type === "item-triggered")
+			.map((event) => [event.itemId, event.id]),
+	)
+	const latestMacro = [...events].reverse().find(
+		(event) => event.type === "macro-used",
+	)
 	const stageCopy = STAGE_COPY[state.stage]
 	const glitch = state.activeGlitch ? GLITCHES[state.activeGlitch] : null
 	const quotaRatio = state.quota <= 0 ? 0 : state.score / state.quota
@@ -256,11 +271,12 @@ export function Hud() {
 								/>
 							)
 							const definition = KEYCAPS[id]
-							const triggered = latestItem?.type === "item-triggered" && latestItem.itemId === id
+							const triggerId = triggeredItems.get(id)
+							const triggered = triggerId !== undefined
 							const armed = state.armedItemIds.includes(id)
 							return (
 								<KeycapSlot
-									key={`${id}-${triggered ? latestItem.id : 0}`}
+									key={`${id}-${triggerId ?? 0}`}
 									rarity={definition.rarity}
 									className={`h-11 w-11 sm:h-16 sm:w-16 ${triggered ? "overdrive-slot-proc" : ""} ${armed ? "overdrive-slot-armed" : ""}`}
 									data-armed={armed || undefined}
@@ -296,14 +312,21 @@ export function Hud() {
 								/>
 							)
 							const definition = MACROS[id]
+							const triggered = latestMacro?.type === "macro-used"
+								&& latestMacro.itemId === id
 							return (
 								<button
-									key={id}
+									key={`${id}-${triggered ? latestMacro.id : 0}`}
 									className="relative"
 									onClick={() => state.api?.triggerMacro(index)}
 									aria-label={`Use ${definition.name}, keyboard shortcut ${index + 1}`}
 								>
-									<KeycapSlot rarity="macro" className="h-11 w-11 sm:h-16 sm:w-16">
+									<KeycapSlot
+										rarity="macro"
+										className={`h-11 w-11 sm:h-16 sm:w-16 ${
+											triggered ? "overdrive-slot-proc" : ""
+										}`}
+									>
 										<ItemGlyph id={id} type="macro" className="h-7 w-7 sm:h-8 sm:w-8" />
 									</KeycapSlot>
 									<span className="absolute left-1 top-1 text-sm font-bold text-acc-cyan">{index + 1}</span>
