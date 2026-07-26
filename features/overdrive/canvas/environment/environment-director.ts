@@ -6,7 +6,7 @@ import {
 import type { StageType } from "@/lib/engine/overdrive"
 import type { OverdrivePresentationEvent } from "../../presentation/events"
 import type { EncounterBeat } from "../choreography/expedition-selectors"
-import { V } from "../visual-assets"
+import { V, SCENE } from "../visual-assets"
 import type { LoadedEnvironmentAssets } from "./environment-assets"
 import type {
 	EnvironmentLayerRole,
@@ -23,12 +23,12 @@ export type EnvironmentState = {
 
 // Parallax ratios from design.md. These are presentation ratios, not gameplay.
 const PARALLAX: Record<EnvironmentLayerRole, number> = {
-	far: 0.12,
-	machinery: 0.28,
-	midground: 0.48,
-	deck: 0.72,
-	foreground: 1,
-	atmosphere: 0.18,
+	far: 0,
+	machinery: 0.2,
+	midground: 0.6,
+	deck: 1,
+	foreground: 1.2,
+	atmosphere: 0,
 }
 
 // Maximum cable sway per layer in pixels.
@@ -242,7 +242,7 @@ export class EnvironmentDirector {
 	resize(width: number, height: number) {
 		this.width = width
 		this.height = height
-		this.compact = width < 640
+		this.compact = width < SCENE.compactWidth
 		this.layout = computeLayout(this.assets, width, height)
 		this.positionLayers()
 		this.redrawAtmosphere()
@@ -261,35 +261,30 @@ export class EnvironmentDirector {
 		// Far layer — pinned to top, centered
 		const farSprite = this.layerSprites.far
 		if (farSprite) {
-			farSprite.scale.set(layout.scale)
 			this.setLayerBasePosition("far", 0, layout.horizonY)
 		}
 
 		// Machinery — above horizon
 		const machinerySprite = this.layerSprites.machinery
 		if (machinerySprite) {
-			machinerySprite.scale.set(layout.scale)
 			this.setLayerBasePosition("machinery", 0, layout.horizonY)
 		}
 
 		// Midground — around horizon
 		const midgroundSprite = this.layerSprites.midground
 		if (midgroundSprite) {
-			midgroundSprite.scale.set(layout.scale)
 			this.setLayerBasePosition("midground", 0, layout.horizonY + height * 0.08)
 		}
 
 		// Deck — stable combat footing
 		const deckSprite = this.layerSprites.deck
 		if (deckSprite) {
-			deckSprite.scale.set(layout.scale)
 			this.setLayerBasePosition("deck", 0, layout.deckY)
 		}
 
 		// Foreground — below actor feet but above deck
 		const foregroundSprite = this.layerSprites.foreground
 		if (foregroundSprite) {
-			foregroundSprite.scale.set(layout.scale)
 			this.setLayerBasePosition("foreground", 0, layout.foregroundY + height * 0.12)
 			foregroundSprite.alpha = this.compact ? 0.72 : 1
 		}
@@ -297,8 +292,7 @@ export class EnvironmentDirector {
 		// Atmosphere — across visible world
 		const atmosphereSprite = this.layerSprites.atmosphere
 		if (atmosphereSprite) {
-			atmosphereSprite.scale.set(layout.scale * 1.5)
-			atmosphereSprite.position.set(0, height * 0.8)
+			this.setLayerBasePosition("atmosphere", 0, height * 0.8)
 			atmosphereSprite.alpha = 0.42
 		}
 
@@ -422,24 +416,22 @@ export class EnvironmentDirector {
 			const base = this.layerBasePositions[role]
 			if (!base) continue
 			
+			let scaleMultiplier = 1
+			if (role === "far" || role === "machinery") scaleMultiplier = 0.95
+			if (role === "midground") scaleMultiplier = 0.98
+			if (role === "atmosphere") scaleMultiplier = 1.5
+			
+			const baseScale = this.layout.scale * scaleMultiplier
+			
 			if (this.state.reducedMotion) {
 				sprite.position.set(base.x, base.y)
+				sprite.scale.set(baseScale)
 				continue
 			}
 			
+			sprite.scale.set(baseScale * this.cameraZoom)
 			const ratio = PARALLAX[role] ?? 1
 			sprite.position.set(base.x - this.cameraX * ratio, base.y)
-		}
-
-		const far = this.layerSprites.far
-		const farBase = this.layerBasePositions.far
-		
-		if (far && farBase && !this.state.reducedMotion) {
-			const phase = this.elapsedMs / 12_000
-			far.position.set(
-				farBase.x - this.cameraX * (PARALLAX.far ?? 1) + Math.sin(phase) * 4,
-				farBase.y + Math.cos(phase * 0.7) * 1.5,
-			)
 		}
 	}
 
