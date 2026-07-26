@@ -1,0 +1,574 @@
+{
+  "frames": {
+    "torso": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 292,
+        "h": 290
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 292,
+        "h": 290
+      },
+      "sourceSize": {
+        "w": 292,
+        "h": 290
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "pelvis": {
+      "frame": {
+        "x": 300,
+        "y": 4,
+        "w": 255,
+        "h": 212
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 255,
+        "h": 212
+      },
+      "sourceSize": {
+        "w": 255,
+        "h": 212
+      },
+      "anchor": {
+        "x": 0.5019607843137255,
+        "y": 0.5
+      }
+    },
+    "head": {
+      "frame": {
+        "x": 559,
+        "y": 4,
+        "w": 179,
+        "h": 193
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 179,
+        "h": 193
+      },
+      "sourceSize": {
+        "w": 179,
+        "h": 193
+      },
+      "anchor": {
+        "x": 0.5027932960893855,
+        "y": 0.49740932642487046
+      }
+    },
+    "visor": {
+      "frame": {
+        "x": 742,
+        "y": 4,
+        "w": 159,
+        "h": 57
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 159,
+        "h": 57
+      },
+      "sourceSize": {
+        "w": 159,
+        "h": 57
+      },
+      "anchor": {
+        "x": 0.5031446540880503,
+        "y": 0.49122807017543857
+      }
+    },
+    "near_shoulder": {
+      "frame": {
+        "x": 905,
+        "y": 4,
+        "w": 196,
+        "h": 261
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 196,
+        "h": 261
+      },
+      "sourceSize": {
+        "w": 196,
+        "h": 261
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.19157088122605365
+      }
+    },
+    "far_shoulder": {
+      "frame": {
+        "x": 1105,
+        "y": 4,
+        "w": 194,
+        "h": 260
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 194,
+        "h": 260
+      },
+      "sourceSize": {
+        "w": 194,
+        "h": 260
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.18846153846153846
+      }
+    },
+    "near_upper_arm": {
+      "frame": {
+        "x": 1303,
+        "y": 4,
+        "w": 164,
+        "h": 249
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 164,
+        "h": 249
+      },
+      "sourceSize": {
+        "w": 164,
+        "h": 249
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.18875502008032127
+      }
+    },
+    "far_upper_arm": {
+      "frame": {
+        "x": 1471,
+        "y": 4,
+        "w": 155,
+        "h": 245
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 155,
+        "h": 245
+      },
+      "sourceSize": {
+        "w": 155,
+        "h": 245
+      },
+      "anchor": {
+        "x": 0.5032258064516129,
+        "y": 0.19183673469387755
+      }
+    },
+    "near_forearm": {
+      "frame": {
+        "x": 1630,
+        "y": 4,
+        "w": 196,
+        "h": 231
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 196,
+        "h": 231
+      },
+      "sourceSize": {
+        "w": 196,
+        "h": 231
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.17316017316017315
+      }
+    },
+    "far_forearm": {
+      "frame": {
+        "x": 1830,
+        "y": 4,
+        "w": 193,
+        "h": 216
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 193,
+        "h": 216
+      },
+      "sourceSize": {
+        "w": 193,
+        "h": 216
+      },
+      "anchor": {
+        "x": 0.49740932642487046,
+        "y": 0.1712962962962963
+      }
+    },
+    "cannon_barrel": {
+      "frame": {
+        "x": 4,
+        "y": 298,
+        "w": 329,
+        "h": 203
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 329,
+        "h": 203
+      },
+      "sourceSize": {
+        "w": 329,
+        "h": 203
+      },
+      "anchor": {
+        "x": 0.1884498480243161,
+        "y": 0.5024630541871922
+      }
+    },
+    "cannon_core": {
+      "frame": {
+        "x": 337,
+        "y": 298,
+        "w": 175,
+        "h": 75
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 175,
+        "h": 75
+      },
+      "sourceSize": {
+        "w": 175,
+        "h": 75
+      },
+      "anchor": {
+        "x": 0.5028571428571429,
+        "y": 0.5066666666666667
+      }
+    },
+    "near_thigh": {
+      "frame": {
+        "x": 516,
+        "y": 298,
+        "w": 142,
+        "h": 250
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 142,
+        "h": 250
+      },
+      "sourceSize": {
+        "w": 142,
+        "h": 250
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.192
+      }
+    },
+    "far_thigh": {
+      "frame": {
+        "x": 662,
+        "y": 298,
+        "w": 138,
+        "h": 247
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 138,
+        "h": 247
+      },
+      "sourceSize": {
+        "w": 138,
+        "h": 247
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.1902834008097166
+      }
+    },
+    "near_shin": {
+      "frame": {
+        "x": 804,
+        "y": 298,
+        "w": 146,
+        "h": 253
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 146,
+        "h": 253
+      },
+      "sourceSize": {
+        "w": 146,
+        "h": 253
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.16996047430830039
+      }
+    },
+    "far_shin": {
+      "frame": {
+        "x": 954,
+        "y": 298,
+        "w": 132,
+        "h": 244
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 132,
+        "h": 244
+      },
+      "sourceSize": {
+        "w": 132,
+        "h": 244
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.1721311475409836
+      }
+    },
+    "near_foot": {
+      "frame": {
+        "x": 1090,
+        "y": 298,
+        "w": 167,
+        "h": 137
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 167,
+        "h": 137
+      },
+      "sourceSize": {
+        "w": 167,
+        "h": 137
+      },
+      "anchor": {
+        "x": 0.25149700598802394,
+        "y": 0.5182481751824818
+      }
+    },
+    "far_foot": {
+      "frame": {
+        "x": 1261,
+        "y": 298,
+        "w": 168,
+        "h": 138
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 168,
+        "h": 138
+      },
+      "sourceSize": {
+        "w": 168,
+        "h": 138
+      },
+      "anchor": {
+        "x": 0.25,
+        "y": 0.5217391304347826
+      }
+    }
+  },
+  "meta": {
+    "app": "Typecade rig pipeline",
+    "version": "1.0",
+    "image": "warden-rig-v1.webp",
+    "format": "RGBA8888",
+    "size": {
+      "w": 2048,
+      "h": 2048
+    },
+    "scale": "1",
+    "rig": {
+      "id": "warden",
+      "source": "public/overdrive/art/source/warden-rig-v1-source.png",
+      "parts": {
+        "torso": {
+          "pivot": {
+            "x": 146,
+            "y": 145
+          }
+        },
+        "pelvis": {
+          "pivot": {
+            "x": 128,
+            "y": 106
+          }
+        },
+        "head": {
+          "pivot": {
+            "x": 90,
+            "y": 96
+          }
+        },
+        "visor": {
+          "pivot": {
+            "x": 80,
+            "y": 28
+          }
+        },
+        "near_shoulder": {
+          "pivot": {
+            "x": 98,
+            "y": 50
+          }
+        },
+        "far_shoulder": {
+          "pivot": {
+            "x": 97,
+            "y": 49
+          }
+        },
+        "near_upper_arm": {
+          "pivot": {
+            "x": 82,
+            "y": 47
+          }
+        },
+        "far_upper_arm": {
+          "pivot": {
+            "x": 78,
+            "y": 47
+          }
+        },
+        "near_forearm": {
+          "pivot": {
+            "x": 98,
+            "y": 40
+          }
+        },
+        "far_forearm": {
+          "pivot": {
+            "x": 96,
+            "y": 37
+          }
+        },
+        "cannon_barrel": {
+          "pivot": {
+            "x": 62,
+            "y": 102
+          }
+        },
+        "cannon_core": {
+          "pivot": {
+            "x": 88,
+            "y": 38
+          }
+        },
+        "near_thigh": {
+          "pivot": {
+            "x": 71,
+            "y": 48
+          }
+        },
+        "far_thigh": {
+          "pivot": {
+            "x": 69,
+            "y": 47
+          }
+        },
+        "near_shin": {
+          "pivot": {
+            "x": 73,
+            "y": 43
+          }
+        },
+        "far_shin": {
+          "pivot": {
+            "x": 66,
+            "y": 42
+          }
+        },
+        "near_foot": {
+          "pivot": {
+            "x": 42,
+            "y": 71
+          }
+        },
+        "far_foot": {
+          "pivot": {
+            "x": 42,
+            "y": 72
+          }
+        }
+      },
+      "clips": [
+        "idle",
+        "ready",
+        "chain-1",
+        "chain-2",
+        "chain-3",
+        "dash",
+        "execute",
+        "block",
+        "hurt",
+        "recover",
+        "overdrive"
+      ]
+    }
+  }
+}

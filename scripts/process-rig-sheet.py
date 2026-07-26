@@ -10,7 +10,7 @@ from math import ceil
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 ATLAS_SIZE = 2048
@@ -126,46 +126,115 @@ class PackedPart:
     y: int
 
 
+@dataclass(frozen=True)
+class SourceComponent:
+    label: int
+    size: int
+    bounds: tuple[int, int, int, int]
+    center: tuple[float, float]
+
+
 def remove_magenta(source: Image.Image) -> Image.Image:
     rgba = np.asarray(source.convert("RGBA"), dtype=np.float32)
     rgb = rgba[:, :, :3]
-    source_alpha = rgba[:, :, 3] / 255.0
-    red = rgb[:, :, 0]
-    green = rgb[:, :, 1]
-    blue = rgb[:, :, 2]
-    dominance = np.minimum(red, blue) - green
-    balance = np.abs(red - blue)
-    key_strength = dominance - balance * 1.5
-    alpha = np.clip((132.0 - key_strength) / 64.0, 0.0, 1.0)
-    alpha *= source_alpha
-    alpha[alpha < 0.16] = 0.0
+    height, width, _ = rgba.shape
+    band = max(1, min(width, height, 6))
+    border = np.concatenate(
+        (
+            rgb[:band].reshape(-1, 3),
+            rgb[-band:].reshape(-1, 3),
+            rgb[:, :band].reshape(-1, 3),
+            rgb[:, -band:].reshape(-1, 3),
+        ),
+        axis=0,
+    )
+    key = np.median(border, axis=0)
+    distance = np.max(np.abs(rgb - key[None, None, :]), axis=2)
+    key_max = float(np.max(key))
+    spill_channels = [
+        index
+        for index, value in enumerate(key)
+        if value >= key_max - 16 and value >= 128
+    ]
+    non_spill = [
+        index
+        for index in range(3)
+        if index not in spill_channels
+    ]
+    key_strength = np.min(rgb[:, :, spill_channels], axis=2)
+    non_key_strength = np.max(rgb[:, :, non_spill], axis=2)
+    dominance = key_strength - non_key_strength
+    key_like = (distance <= 96) | (dominance >= 16)
+    candidate_image = Image.fromarray(
+        (key_like.astype(np.uint8) * 255),
+        "L",
+    ).copy()
+    for seed in (
+        (0, 0),
+        (width - 1, 0),
+        (0, height - 1),
+        (width - 1, height - 1),
+    ):
+        ImageDraw.floodfill(candidate_image, seed, 128, thresh=0)
+    background = np.asarray(candidate_image) == 128
 
-    safe_alpha = np.maximum(alpha, 1.0 / 255.0)
-    recovered = (
-        rgb - np.array([255.0, 0.0, 255.0])[None, None, :] * (1.0 - alpha[:, :, None])
-    ) / safe_alpha[:, :, None]
-    recovered = np.clip(recovered, 0.0, 255.0)
-    recovered[alpha <= 0.01] = 0.0
+    denominator = np.maximum(1.0, key_max - non_key_strength)
+    dominance_alpha = 1.0 - np.minimum(
+        1.0,
+        np.maximum(0.0, dominance) / denominator,
+    )
+    near_background = np.zeros(background.shape, dtype=bool)
+    near_background[1:, :] |= background[:-1, :]
+    near_background[:-1, :] |= background[1:, :]
+    near_background[:, 1:] |= background[:, :-1]
+    near_background[:, :-1] |= background[:, 1:]
+    edge = near_background & ~background & (dominance > 0)
+
+    alpha = rgba[:, :, 3] / 255.0
+    alpha[background] = 0.0
+    alpha[edge] = np.minimum(alpha[edge], dominance_alpha[edge])
+    alpha[alpha <= 8 / 255] = 0.0
+
+    recovered = rgb.copy()
+    cap = np.maximum(0.0, non_key_strength - 1.0)
+    for channel in spill_channels:
+        recovered[:, :, channel] = np.where(
+            edge,
+            np.minimum(recovered[:, :, channel], cap),
+            recovered[:, :, channel],
+        )
+    recovered[alpha == 0] = 0
     output = np.dstack((recovered, alpha[:, :, None] * 255.0))
     return Image.fromarray(output.astype(np.uint8), "RGBA")
 
 
-def remove_small_components(source: Image.Image) -> Image.Image:
-    rgba = np.asarray(source.convert("RGBA")).copy()
-    mask = rgba[:, :, 3] >= 32
+def find_components(source: Image.Image) -> tuple[np.ndarray, list[SourceComponent]]:
+    mask = np.asarray(source.convert("RGBA"))[:, :, 3] >= 32
     height, width = mask.shape
-    visited = np.zeros_like(mask, dtype=bool)
-    components: list[list[tuple[int, int]]] = []
+    labels = np.zeros(mask.shape, dtype=np.int32)
+    components: list[SourceComponent] = []
+    next_label = 0
 
-    for start_y, start_x in zip(*np.nonzero(mask & ~visited), strict=False):
-        if visited[start_y, start_x]:
+    for start_y, start_x in zip(*np.nonzero(mask), strict=False):
+        if labels[start_y, start_x] != 0:
             continue
+        next_label += 1
         queue = deque([(start_y, start_x)])
-        visited[start_y, start_x] = True
-        component: list[tuple[int, int]] = []
+        labels[start_y, start_x] = next_label
+        size = 0
+        minimum_x = maximum_x = start_x
+        minimum_y = maximum_y = start_y
+        total_x = 0
+        total_y = 0
         while queue:
             y, x = queue.popleft()
-            component.append((y, x))
+            size += 1
+            total_x += x
+            total_y += y
+            minimum_x = min(minimum_x, x)
+            maximum_x = max(maximum_x, x)
+            minimum_y = min(minimum_y, y)
+            maximum_y = max(maximum_y, y)
             for offset_y in (-1, 0, 1):
                 for offset_x in (-1, 0, 1):
                     if offset_x == 0 and offset_y == 0:
@@ -176,36 +245,23 @@ def remove_small_components(source: Image.Image) -> Image.Image:
                         0 <= next_y < height
                         and 0 <= next_x < width
                         and mask[next_y, next_x]
-                        and not visited[next_y, next_x]
+                        and labels[next_y, next_x] == 0
                     ):
-                        visited[next_y, next_x] = True
+                        labels[next_y, next_x] = next_label
                         queue.append((next_y, next_x))
-        components.append(component)
+        components.append(SourceComponent(
+            label=next_label,
+            size=size,
+            bounds=(
+                minimum_x,
+                minimum_y,
+                maximum_x + 1,
+                maximum_y + 1,
+            ),
+            center=(total_x / size, total_y / size),
+        ))
 
-    if not components:
-        return Image.fromarray(rgba, "RGBA")
-
-    largest = max(map(len, components))
-    minimum_size = max(48, round(largest * 0.004))
-    keep = np.zeros_like(mask, dtype=bool)
-    for component in components:
-        if len(component) < minimum_size:
-            continue
-        ys, xs = zip(*component, strict=False)
-        keep[np.asarray(ys), np.asarray(xs)] = True
-    rgba[~keep] = 0
-    return Image.fromarray(rgba, "RGBA")
-
-
-def touches_edge(source: Image.Image) -> bool:
-    alpha = np.asarray(source.getchannel("A"))
-    visible = alpha >= 32
-    return bool(
-        visible[:2, :].any()
-        or visible[-2:, :].any()
-        or visible[:, :2].any()
-        or visible[:, -2:].any()
-    )
+    return labels, components
 
 
 def pivot_factor(part_name: str) -> tuple[float, float]:
@@ -261,25 +317,52 @@ def extract_parts(source: Image.Image, rig_id: str) -> list[tuple[str, Image.Ima
     keyed = remove_magenta(source)
     cell_width = int(keyed.width / columns)
     cell_height = int(keyed.height / rows)
-    extracted: list[tuple[str, Image.Image, tuple[int, int]]] = []
+    labels, components = find_components(keyed)
+    if not components:
+        raise ValueError(f"No visible components found for {rig_id}")
+    largest = max(component.size for component in components)
+    minimum_size = max(48, round(largest * 0.004))
+    material = [
+        component
+        for component in components
+        if component.size >= minimum_size
+    ]
+    grouped: list[list[SourceComponent]] = [[] for _ in parts]
 
-    for index, name in enumerate(parts):
-        row, column = divmod(index, columns)
-        cell = keyed.crop(
-            (
-                column * cell_width,
-                row * cell_height,
-                (column + 1) * cell_width,
-                (row + 1) * cell_height,
-            )
-        )
-        if touches_edge(cell):
-            raise ValueError(f"{name} touches its source cell edge")
-        cleaned = remove_small_components(cell)
-        bounds = cleaned.getchannel("A").getbbox()
-        if bounds is None:
+    for component in material:
+        center_x, center_y = component.center
+        column = min(columns - 1, max(0, int(center_x / cell_width)))
+        row = min(rows - 1, max(0, int(center_y / cell_height)))
+        index = row * columns + column
+        if index >= len(parts):
+            raise ValueError(f"Unexpected component in empty cell {row + 1},{column + 1}")
+        grouped[index].append(component)
+
+    rgba = np.asarray(keyed.convert("RGBA"))
+    extracted: list[tuple[str, Image.Image, tuple[int, int]]] = []
+    for name, part_components in zip(parts, grouped, strict=True):
+        if not part_components:
             raise ValueError(f"Missing visible part {name}")
-        trimmed = cleaned.crop(bounds)
+        minimum_x = min(component.bounds[0] for component in part_components)
+        minimum_y = min(component.bounds[1] for component in part_components)
+        maximum_x = max(component.bounds[2] for component in part_components)
+        maximum_y = max(component.bounds[3] for component in part_components)
+        if (
+            minimum_x <= 0
+            or minimum_y <= 0
+            or maximum_x >= keyed.width
+            or maximum_y >= keyed.height
+        ):
+            raise ValueError(f"{name} touches the source sheet edge")
+        selected_labels = np.asarray(
+            [component.label for component in part_components],
+            dtype=np.int32,
+        )
+        label_crop = labels[minimum_y:maximum_y, minimum_x:maximum_x]
+        visible = np.isin(label_crop, selected_labels)
+        part_rgba = rgba[minimum_y:maximum_y, minimum_x:maximum_x].copy()
+        part_rgba[~visible] = 0
+        trimmed = Image.fromarray(part_rgba, "RGBA")
         padded = Image.new(
             "RGBA",
             (trimmed.width + PADDING * 2, trimmed.height + PADDING * 2),

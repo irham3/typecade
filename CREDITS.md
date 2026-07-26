@@ -45,3 +45,24 @@ A massive fractured boss construct forged from shattered keyboard plates, broken
 ### Pose-sheet prompts
 
 Each v4 pose sheet used its corresponding v3 master as an identity reference and retained the shared art bible. The Warden sheet requested eight distinct full-body states: low ready, high ready, anticipation, forward strike, airborne dash, landing recovery, shield block/hurt, and transformed Overdrive lunge. Each enemy sheet requested two materially different idles plus anticipation, attack, special attack, hit reaction, recovery, and defeat. All prompts required consistent scale, ground line, perspective, lighting, and materials across a 4x2 grid on a perfectly flat `#FF00FF` chroma-key background, with no text, borders, scenery, detached particles, or repeated silhouettes.
+
+## Overdrive — Articulated combat rigs v1
+
+The following modular character sheets were generated for this repository on 2026-07-26 with OpenAI's built-in image generation tool. Each generation used the corresponding v3 character master as an identity reference. The generated sheets remain in `public/overdrive/art/source`; the game loads only the processed WebP atlases and JSON pivot data.
+
+| Character | Source generation | Runtime assets |
+| --- | --- | --- |
+| Keystone Warden | `call_OIeCLOjjKFYOnPaMqKPHiqab.png` | `public/overdrive/art/rigs/warden-rig-v1.webp` and `warden-rig-v1.json` |
+| Packet Stalker | `call_gw5sH39XL5xslGeKVVqsnh9y.png` | `public/overdrive/art/rigs/packet-rig-v1.webp` and `packet-rig-v1.json` |
+| Needle Wraith | `call_McXdl1w7hWmgRcy68b22k48k.png` | `public/overdrive/art/rigs/needle-rig-v1.webp` and `needle-rig-v1.json` |
+| Null Crown | `call_KeWRygQ5rIobHxZmMfZOd31o.png` | `public/overdrive/art/rigs/null-rig-v1.webp` and `null-rig-v1.json` |
+
+### Rig-sheet prompt
+
+Premium hand-painted 2.5D modular character art for a polished cyber-industrial arcade typing game. Preserve the supplied character's identity, silhouette language, hard-surface cel shading, restrained metal texture, and signal colors. Show every named body component exactly once, detached and centered in its assigned cell, at a consistent side-view three-quarter perspective and a consistent scale. Use a perfectly flat magenta chroma-key background. No text, labels, borders, scenery, cast shadows, loose particles, duplicate components, full assembled character, logos, watermarks, or references to copyrighted characters.
+
+The Warden sheet used a 6x3 grid with torso, pelvis, head, visor, paired shoulders, paired upper arms, paired forearms, cannon barrel, cannon core, paired thighs, paired shins, and paired feet. The Packet sheet used a 5x3 grid with core torso, head, jaw, four two-segment legs, two tail segments, and paired back plates. The Needle sheet used a 5x3 grid with chest core, head, neck, two spine sections, paired blade arms, paired fins, and three tail sections; the final cell remained empty. The Null sheet used a 4x4 grid with void core, four crown sections, paired shoulders, paired upper arms, paired forearms, paired hands, three cloak sections, and lower core.
+
+### Local rig processing
+
+`scripts/process-rig-sheet.py` samples the chroma color from each sheet border, removes only border-connected key pixels, suppresses edge spill, groups connected components by semantic grid cell, adds four pixels of transparent padding, and packs the parts into a lossless 2048x2048 WebP atlas. The companion JSON records every frame, anchor, pivot, rig ID, and available animation clip.
