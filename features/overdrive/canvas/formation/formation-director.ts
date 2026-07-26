@@ -8,14 +8,14 @@ import type { OverdrivePresentationEvent } from "../../presentation/events"
 import type { LoadedRigAssets } from "../assets/combat-assets"
 import { RigInstance } from "../rig/rig-instance"
 import { selectFormationVariant } from "../choreography/expedition-selectors"
-import { V, stageAccent, targetClassName } from "../visual-assets"
+import { V, stageAccent, targetClassName, SCENE } from "../visual-assets"
 import type { EnvironmentLayout } from "./formation-layout"
 
-// Constants per the prompt specs.
 const SHADOW_ALPHA = {
 	active: 0.15,
 	queued: 0.08,
 	retiring: 0.05,
+	reinforcing: 0.04,
 } as const
 
 export type FormationRole = "active" | "queued" | "retiring" | "reinforcing"
@@ -300,31 +300,29 @@ export class FormationDirector {
 	}
 
 	private getRoleX(role: FormationRole): number {
-		const compact = this.width < 640
+		const compact = this.width < SCENE.compactWidth
+		const anchor = compact ? SCENE.targetAnchor.compact.x : SCENE.targetAnchor.desktop.x
+		const staging = compact ? SCENE.targetStaging.compact : SCENE.targetStaging.desktop
 		
-		if (compact) {
-			if (role === "active") return this.width * 0.70
-			if (role === "queued") return this.width * 0.87
-			if (role === "reinforcing") return this.width * 1.03
-			return this.width * 1.1
-		}
-		
-		if (role === "active") return this.width * 0.70
-		if (role === "queued") return this.width * 0.84
-		if (role === "reinforcing") return this.width * 0.96
+		if (role === "active") return this.width * anchor
+		if (role === "queued") return this.width * (anchor + staging.upcomingOffsetX)
+		if (role === "reinforcing") return this.width * (anchor + staging.distantOffsetX)
 		return this.width * 1.1
 	}
 
 	private getTargetScale(slot: FormationTarget): number {
-		const compact = this.width < 640
+		const compact = this.width < SCENE.compactWidth
+		const heightToken = compact ? SCENE.targetHeight.compact : SCENE.targetHeight.desktop
+		const staging = compact ? SCENE.targetStaging.compact : SCENE.targetStaging.desktop
+
 		const targetPixels = Math.min(
-			this.height * (compact ? 0.18 : 0.26),
-			compact ? 144 : 244,
+			this.height * heightToken.ratio,
+			heightToken.max,
 		)
 		const visualHeight = Math.max(1, slot.rig.getVisualSize().height)
 		const roleMultiplier = slot.role === "active" ? 1 :
-			slot.role === "queued" ? (compact ? 0.5 : 0.62) :
-			slot.role === "reinforcing" ? (compact ? 0.34 : 0.42) :
+			slot.role === "queued" ? staging.upcomingScale :
+			slot.role === "reinforcing" ? staging.distantScale :
 			0.82
 			
 		return (targetPixels / visualHeight) * roleMultiplier
@@ -364,7 +362,13 @@ export class FormationDirector {
 
 	private updateShadow(slot: FormationTarget) {
 		const alpha = SHADOW_ALPHA[slot.role as keyof typeof SHADOW_ALPHA] ?? SHADOW_ALPHA.retiring
+		const compact = this.width < SCENE.compactWidth
+		const staging = compact ? SCENE.targetStaging.compact : SCENE.targetStaging.desktop
 		
+		let fade = 1
+		if (slot.role === "queued") fade = staging.upcomingAlpha
+		if (slot.role === "reinforcing") fade = staging.distantAlpha
+
 		slot.shadow.clear()
 		slot.reflection.clear()
 		
@@ -372,13 +376,13 @@ export class FormationDirector {
 		
 		slot.shadow
 			.ellipse(0, 0, 80, 24)
-			.fill({ color: V.bg, alpha })
+			.fill({ color: V.bg, alpha: alpha * fade })
 			
 		slot.reflection
 			.ellipse(0, 30, 60, 40)
 			.fill({
 				color: V.cyan,
-				alpha: this.state.reducedMotion ? alpha * 0.3 : alpha * 0.5,
+				alpha: this.state.reducedMotion ? alpha * 0.3 * fade : alpha * 0.5 * fade,
 			})
 	}
 
