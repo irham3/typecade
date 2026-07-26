@@ -59,6 +59,13 @@ export function StageResult() {
 	const topImpact = Object.entries(state.stageItemImpact)
 		.sort(([, first], [, second]) => impactWeight(second) - impactWeight(first))
 		.slice(0, 3)
+	const nextRead = state.stageTypos > 0
+		? `${state.stageTypos} typo${state.stageTypos === 1 ? "" : "s"} broke scoring words. Prioritize protection or a recovery trigger before adding more speed.`
+		: topImpact.length === 0
+			? "Your typing carried the clear. Buy a trigger you can activate reliably so the next Quota is not raw-speed only."
+			: state.timeLeftMs <= 20_000
+				? "The clear was close. Add Base or Mult scaling before the next Quota outgrows this build."
+				: "Fast, clean clear. Keep the trigger pattern that worked and spend only when the next offer strengthens it."
 
 	return (
 		<Screen>
@@ -73,6 +80,13 @@ export function StageResult() {
 							{formatTime(state.timeLeftMs)} remained on the clock. Convert the lead into a stronger build.
 						</p>
 					</header>
+
+					<section className="mt-6 border-l-2 border-acc-cyan bg-bg-1 px-4 py-3" aria-labelledby="next-read-title">
+						<h2 id="next-read-title" className="text-sm font-bold uppercase tracking-[0.08em] text-acc-cyan">
+							NEXT READ
+						</h2>
+						<p className="mt-2 text-sm leading-6 text-text-mid">{nextRead}</p>
+					</section>
 
 					<div className="mt-6 grid gap-6 md:grid-cols-2">
 						<section className="overdrive-panel p-6" aria-labelledby="stage-stats-title">

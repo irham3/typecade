@@ -16,11 +16,12 @@ export function OverdriveApp() {
 	const screen = useGame((state) => state.screen)
 	const api = useGame((state) => state.api)
 	const paused = useGame((state) => state.paused)
+	const stageReady = useGame((state) => state.stageReady)
 	const setPaused = useGame((state) => state.setPaused)
 	const quitToMenu = useGame((state) => state.quitToMenu)
 
 	useEffect(() => {
-		if (screen !== "stage" || paused || !api) return
+		if (screen !== "stage" || paused || stageReady || !api) return
 		let last = performance.now()
 		let frame = 0
 		const tick = (now: number) => {
@@ -30,7 +31,7 @@ export function OverdriveApp() {
 		}
 		frame = requestAnimationFrame(tick)
 		return () => cancelAnimationFrame(frame)
-	}, [api, paused, screen])
+	}, [api, paused, screen, stageReady])
 
 	useEffect(() => {
 		const pauseWhenHidden = () => {

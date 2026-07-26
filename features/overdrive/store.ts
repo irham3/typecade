@@ -18,15 +18,19 @@ import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { emitPresentationEvent } from "./presentation/events"
 
 export const OVERDRIVE_SAVE_KEY = "typecade_overdrive_save"
+export const OVERDRIVE_BRIEFING_KEY = "typecade_overdrive_briefing_seen"
 
 type RunApi = ReturnType<typeof createRun>
 
 type GameStore = RunSnapshot & {
 	api?: RunApi
 	paused: boolean
+	stageReady: boolean
+	coachingEnabled: boolean
 	selectedLanguage: WordPoolLanguage
 	resumeAvailable: boolean
 	setPaused: (paused: boolean) => void
+	engageStage: () => void
 	setLanguage: (language: WordPoolLanguage) => void
 	setResumeAvailable: (available: boolean) => void
 	startNormalRun: () => void
@@ -83,13 +87,20 @@ export const useGame = create<GameStore>((set, get) => {
 			const before = api.snapshot()
 			action()
 			const after = api.snapshot()
+			const enteredStage = after.screen === "stage"
+				&& (
+					before.screen !== "stage"
+					|| after.stage !== before.stage
+					|| after.zone !== before.zone
+				)
 			if (
-				after.screen === "stage"
+				enteredStage
 				&& (after.stage !== before.stage || after.zone !== before.zone)
 			) {
 				emitPresentationEvent({ type: "stage-entered", stage: after.stage })
 			}
 			sync()
+			if (enteredStage) set({ stageReady: true })
 		}
 
 		api.events.on("word_complete", (payload) => {
@@ -98,10 +109,42 @@ export const useGame = create<GameStore>((set, get) => {
 				word: payload.word,
 				characterBase: payload.characterBase,
 				itemBaseBonus: payload.itemBaseBonus,
+				effectiveBase: payload.effectiveBase,
 				effectiveMult: payload.effectiveMult,
+				finalMultiplier: payload.finalMultiplier,
 				scoreGain: payload.scoreGain,
+				overdriveReleased: payload.overdriveReleased,
+				aegisRecovery: payload.aegisRecovery,
+				autoExecuted: payload.autoExecuted,
 				appliedItemIds: payload.appliedItemIds,
 				combo: payload.combo,
+			})
+			const snapshot = api.snapshot()
+			if (get().coachingEnabled && snapshot.totalCleanWords >= 3 && typeof window !== "undefined") {
+				window.localStorage.setItem(OVERDRIVE_BRIEFING_KEY, "1")
+				set({ coachingEnabled: false })
+			}
+			sync()
+		})
+		api.events.on("character_accepted", ({ character, caretIndex, charge }) => {
+			emitPresentationEvent({
+				type: "accepted-character",
+				character,
+				index: Math.max(0, caretIndex - 1),
+				combo: api.snapshot().combo,
+				charge,
+			})
+			sync()
+		})
+		api.events.on("overdrive_ready", () => {
+			emitPresentationEvent({ type: "overdrive-ready" })
+			sync()
+		})
+		api.events.on("aegis_rescue", ({ rescueNumber, timeAddedMs }) => {
+			emitPresentationEvent({
+				type: "aegis-rescue",
+				rescueNumber,
+				timeAddedMs,
 			})
 			sync()
 		})
@@ -324,6 +367,9 @@ export const useGame = create<GameStore>((set, get) => {
 			language,
 		}))
 		api.start()
+		const coachingEnabled = typeof window !== "undefined"
+			&& window.localStorage.getItem(OVERDRIVE_BRIEFING_KEY) !== "1"
+		set({ stageReady: true, coachingEnabled })
 		const snapshot = api.snapshot()
 		trackEvent("run_start", {
 			...telemetryContext(snapshot),
@@ -335,10 +381,15 @@ export const useGame = create<GameStore>((set, get) => {
 	return {
 		...initialSnapshot,
 		paused: false,
+		stageReady: false,
+		coachingEnabled: false,
 		selectedLanguage: "EN",
 		resumeAvailable: false,
 		setPaused(paused) {
 			set({ paused })
+		},
+		engageStage() {
+			set({ stageReady: false })
 		},
 		setLanguage(language) {
 			set({ selectedLanguage: language })
@@ -386,8 +437,17 @@ export const useGame = create<GameStore>((set, get) => {
 					language,
 				}))
 				const loaded = api.loadState(saved)
-				if (!loaded) return false
-				set({ selectedLanguage: language, resumeAvailable: false })
+				if (!loaded) {
+					window.localStorage.removeItem(OVERDRIVE_SAVE_KEY)
+					set({ resumeAvailable: false })
+					return false
+				}
+				set({
+					selectedLanguage: language,
+					resumeAvailable: false,
+					stageReady: api.snapshot().screen === "stage",
+					coachingEnabled: false,
+				})
 				return true
 			} catch {
 				return false
@@ -409,7 +469,12 @@ export const useGame = create<GameStore>((set, get) => {
 			const api = get().api
 			if (api) api.quitToMenu()
 			else set({ ...initialSnapshot, screen: "menu" })
-			set({ paused: false, resumeAvailable: false })
+			set({
+				paused: false,
+				stageReady: false,
+				coachingEnabled: false,
+				resumeAvailable: false,
+			})
 		},
 	}
 })

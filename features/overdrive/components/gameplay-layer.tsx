@@ -29,6 +29,7 @@ function ProcFeedback() {
 
 export function GameplayLayer() {
 	const [initializationError, setInitializationError] = useState<Error | null>(null)
+	const [canvasReady, setCanvasReady] = useState(false)
 	const [attempt, setAttempt] = useState(0)
 	const state = useGame(useShallow((snapshot) => ({
 		currentWord: snapshot.currentWord,
@@ -41,6 +42,13 @@ export function GameplayLayer() {
 		mult: snapshot.mult,
 		accuracy: snapshot.accuracy,
 		timeLeftMs: snapshot.timeLeftMs,
+		stageDurationMs: snapshot.stageDurationMs,
+		aegisActive: snapshot.aegisActive,
+		aegisRescues: snapshot.aegisRescues,
+		stageRescued: snapshot.stageRescued,
+		focusPaused: snapshot.focusPaused,
+		threatBand: snapshot.threatBand,
+		overdriveCharge: snapshot.overdriveCharge,
 		zone: snapshot.zone,
 		stage: snapshot.stage,
 		activeGlitch: snapshot.activeGlitch,
@@ -63,6 +71,7 @@ export function GameplayLayer() {
 							className="overdrive-primary flex-1"
 							onClick={() => {
 								setInitializationError(null)
+								setCanvasReady(false)
 								setAttempt((value) => value + 1)
 							}}
 						>
@@ -79,6 +88,11 @@ export function GameplayLayer() {
 
 	return (
 		<>
+			{!canvasReady && (
+				<div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-bg-0 text-sm font-bold uppercase tracking-[0.08em] text-acc-cyan">
+					SYNCING COMBAT LINK
+				</div>
+			)}
 			<GameplayCanvas
 				key={attempt}
 				currentWord={state.currentWord}
@@ -91,12 +105,20 @@ export function GameplayLayer() {
 				mult={state.mult}
 				accuracy={state.accuracy}
 				timeLeftMs={state.timeLeftMs}
+				stageDurationMs={state.stageDurationMs}
+				aegisActive={state.aegisActive}
+				aegisRescues={state.aegisRescues}
+				stageRescued={state.stageRescued}
+				focusPaused={state.focusPaused}
+				threatBand={state.threatBand}
+				overdriveCharge={state.overdriveCharge}
 				zone={state.zone}
 				stage={state.stage}
 				activeGlitch={state.activeGlitch}
 				reducedMotion={settings.reducedMotion ?? false}
 				screenShake={settings.screenShake}
 				events={events}
+				onReady={() => setCanvasReady(true)}
 				onInitializationError={setInitializationError}
 			/>
 			<ProcFeedback />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 import { ItemGlyph, TypecadeMark } from "@/components/overdrive/icons"
 import { GhostButton, PrimaryButton, RARITY_BORDER } from "@/components/overdrive/ui"
@@ -33,12 +33,14 @@ export function RunOver() {
 		totalTokensEarned: snapshot.totalTokensEarned,
 		seed: snapshot.seed,
 		mode: snapshot.mode,
+		language: snapshot.language,
 		keycaps: snapshot.keycaps,
 		macros: snapshot.macros,
 		startNormalRun: snapshot.startNormalRun,
 		quitToMenu: snapshot.quitToMenu,
 	})))
 	const [shareStatus, setShareStatus] = useState<"idle" | "shared" | "error">("idle")
+	const [bestStatus, setBestStatus] = useState<"new" | number | null>(null)
 	const shareCardRef = useRef<HTMLDivElement>(null)
 	const finalScore = state.finalScore ?? state.runScore
 	const seedLabel = state.mode === "daily" ? `SEED ${state.seed.slice(0, 10)}` : "FREE RUN"
@@ -46,6 +48,17 @@ export function RunOver() {
 		...state.keycaps.map((id) => ({ id, type: "keycap" as const })),
 		...state.macros.map((id) => ({ id, type: "macro" as const })),
 	].slice(0, 5)
+
+	useEffect(() => {
+		const key = `typecade_overdrive_best_${state.mode}_${state.language.toLowerCase()}`
+		const previous = Number(window.localStorage.getItem(key) ?? 0)
+		if (finalScore > previous) {
+			window.localStorage.setItem(key, String(finalScore))
+			setBestStatus("new")
+			return
+		}
+		setBestStatus(Math.max(1, previous - finalScore + 1))
+	}, [finalScore, state.language, state.mode])
 
 	const share = async () => {
 		const text = `TYPECADE: OVERDRIVE — ${formatNumber(finalScore)} points, Zone ${state.zone}, ${state.runAccuracy}% accuracy. Seed: ${state.seed}`
@@ -157,6 +170,13 @@ export function RunOver() {
 					<p className="mt-2 text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
 						FINAL SCORE
 					</p>
+					{bestStatus !== null && (
+						<p className={`mt-3 text-sm font-bold uppercase tracking-[0.08em] ${bestStatus === "new" ? "text-acc-green" : "text-acc-cyan"}`}>
+							{bestStatus === "new"
+								? "NEW PERSONAL BEST"
+								: `${formatNumber(bestStatus)} TO BEAT YOUR BEST`}
+						</p>
+					)}
 
 					{state.endless && (
 						<div className="mt-6 grid grid-cols-2 gap-3">

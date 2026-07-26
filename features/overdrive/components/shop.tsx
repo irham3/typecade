@@ -9,12 +9,35 @@ import {
 	RarityBadge,
 } from "@/components/overdrive/ui"
 import { INTEREST_CAP, INTEREST_PER_5_TOKENS } from "@/lib/engine/overdrive/constants"
+import { getStageQuota, nextStagePosition } from "@/lib/engine/overdrive/progression"
 import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import type { ItemRarity } from "@/lib/engine/overdrive/items/registry"
 import { useGame } from "../store"
 import { formatNumber } from "./hud"
 import { Screen } from "./screen"
 import { STAGE_COPY } from "../presentation/stage-copy"
+
+const TRIGGER_LABELS: Record<string, string> = {
+	wasd: "ON W / A / S / D",
+	vowel_magnet: "ON EVERY VOWEL",
+	longshot: "ON 8+ LETTERS",
+	sprinter: "FIRST 10 SECONDS",
+	second_wind: "AFTER A TYPO",
+	copper_key: "EVERY 25 CLEAN WORDS",
+	home_row: "ON HOME-ROW WORDS",
+	punctuator: "ON PUNCTUATION",
+	combo_battery: "FIRST TYPO EACH STAGE",
+	overclock: "EVERY 15-WORD STREAK",
+	double_tap: "ON DOUBLE LETTERS",
+	snowball: "ON PERFECT CLEAR",
+	interest_bank: "ECONOMY",
+	glass_keycap: "ALWAYS ACTIVE · RISK",
+	vampire: "ON TYPO · TIME COST",
+	escape: "MANUAL MACRO · GLITCH",
+	time_freeze: "MANUAL MACRO · TIME",
+	quota_slash: "MANUAL MACRO · QUOTA",
+	insurance: "MANUAL MACRO · DEFENSE",
+}
 
 function OfferCard({
 	id,
@@ -50,6 +73,9 @@ function OfferCard({
 				<RarityBadge rarity={rarity} />
 			</div>
 			<h3 className="mt-4 text-base font-bold text-text-hi">{definition.name}</h3>
+			<p className="mt-2 text-sm font-bold uppercase tracking-[0.08em] text-acc-cyan">
+				{TRIGGER_LABELS[id] ?? "BUILD TRIGGER"}
+			</p>
 			<p className="mt-2 flex-1 text-sm leading-6 text-text-mid">{definition.description}</p>
 			<button
 				onClick={onBuy}
@@ -70,6 +96,7 @@ function OfferCard({
 
 export function Shop() {
 	const state = useGame(useShallow((snapshot) => ({
+		zone: snapshot.zone,
 		stage: snapshot.stage,
 		tokens: snapshot.tokens,
 		keycaps: snapshot.keycaps,
@@ -89,6 +116,15 @@ export function Shop() {
 		: state.stage === "rush"
 			? STAGE_COPY.glitch.label
 			: "NEXT ZONE"
+	const nextPosition = nextStagePosition(state.zone, state.stage)
+	const nextQuota = getStageQuota(nextPosition.zone, nextPosition.stage)
+	const offeredPrices = [
+		...state.shopKeycaps
+			.map((id) => KEYCAPS[id]?.basePrice)
+			.filter((price): price is number => typeof price === "number"),
+		state.shopMacro ? MACROS[state.shopMacro]?.basePrice : undefined,
+	].filter((price): price is number => typeof price === "number")
+	const canAffordOffer = offeredPrices.some((price) => price <= state.tokens)
 
 	return (
 		<Screen>
@@ -97,6 +133,10 @@ export function Shop() {
 					<div>
 						<p className="text-sm font-bold uppercase tracking-[0.08em] text-acc-cyan">REWIRE YOUR BUILD</p>
 						<h1 className="mt-3 font-pixel text-2xl">SHOP</h1>
+						<p className="mt-3 text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
+							NEXT · Z{nextPosition.zone} {STAGE_COPY[nextPosition.stage].label} · QUOTA{" "}
+							<span className="text-acc-yellow">{formatNumber(nextQuota)}</span>
+						</p>
 					</div>
 					<div className="text-right">
 						<div className="text-3xl font-bold tabular-nums text-acc-yellow">{formatNumber(state.tokens)}</div>
@@ -134,6 +174,11 @@ export function Shop() {
 								onBuy={() => state.api?.buyItem("macro", 0)}
 							/>
 						</div>
+						{!canAffordOffer && (
+							<p className="mt-4 border-l-2 border-acc-yellow bg-bg-1 px-3 py-2 text-sm leading-6 text-text-mid">
+								No offer is affordable. Save toward 5 Tokens to begin earning Interest on future clears.
+							</p>
+						)}
 					</section>
 
 					<section className="mt-6 border-t border-line pt-6" aria-labelledby="build-heading">
@@ -189,7 +234,7 @@ export function Shop() {
 
 				<footer className="mx-auto flex w-full max-w-5xl justify-end border-t border-line pt-4">
 					<PrimaryButton onClick={() => state.api?.leaveShop()} className="h-14 w-full sm:w-auto">
-						ENTER {nextStage}
+						ENTER {nextStage} · QUOTA {formatNumber(nextQuota)}
 					</PrimaryButton>
 				</footer>
 			</main>

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 import { GhostButton, PrimaryButton } from "@/components/overdrive/ui"
@@ -54,30 +55,67 @@ export function Menu() {
 
 	return (
 		<Screen>
-			<main className="relative flex min-h-dvh items-start justify-center overflow-y-auto bg-bg-0 px-6 text-text-hi lg:items-center">
-				<div className="grid w-full max-w-5xl items-center gap-12 py-12 lg:grid-cols-[1fr_360px]">
-					<section aria-labelledby="overdrive-title">
-						<div className="flex items-center gap-4 text-acc-green">
-							<TypecadeMark className="h-16 w-16" />
+			<main className="relative min-h-dvh overflow-y-auto bg-bg-0 px-4 text-text-hi sm:px-6">
+				<div className="pointer-events-none fixed inset-0">
+					<Image
+						src="/overdrive/art/signal-trench-arena-v2.png"
+						alt=""
+						fill
+						priority
+						sizes="100vw"
+						className="object-cover object-center opacity-40"
+					/>
+					<div className="absolute inset-0 bg-bg-0/70" />
+				</div>
+
+				<div className="relative mx-auto grid min-h-dvh w-full max-w-6xl items-center gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:py-12">
+					<section
+						className="relative overflow-hidden rounded-lg border border-line bg-bg-0/80 p-6 sm:p-8"
+						aria-labelledby="overdrive-title"
+					>
+						<div className="relative z-10 flex items-center gap-4 text-acc-green">
+							<TypecadeMark className="h-12 w-12 shrink-0" />
 							<div className="h-px flex-1 bg-line" />
-							<span className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">SYSTEM 08</span>
+							<span className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">SIGNAL SIEGE // 08</span>
 						</div>
 
-						<div className="mt-12">
+						<div className="relative z-10 mt-8">
 							<p className="text-sm font-bold uppercase tracking-[0.08em] text-acc-cyan">
-								Typing roguelike
+								Your keyboard is the weapon
 							</p>
 							<h1 id="overdrive-title" className="mt-4 font-pixel text-4xl leading-tight text-text-hi sm:text-5xl">
 								TYPECADE
 							</h1>
 							<p className="mt-3 font-pixel text-xl text-acc-green">OVERDRIVE</p>
-							<p className="mt-6 max-w-xl text-base leading-6 text-text-mid">
-								Type to attack. Craft your Keycap build. Beat quotas that never stop rising.
-								Survive as long as you can.
+							<p className="mt-5 max-w-xl text-base leading-6 text-text-mid">
+								Type to fire. Execute clean words. Stack Keycaps into a broken build.
+								Breach every quota before the signal collapses.
 							</p>
 						</div>
 
-						<div className="mt-12 grid max-w-xl grid-cols-3 border-y border-line py-4">
+						<div className="relative mt-6 h-56 overflow-hidden border-y border-line sm:h-64">
+							<div className="absolute inset-x-0 top-1/2 h-px bg-acc-cyan/30" />
+							<Image
+								src="/overdrive/art/keystone-warden-v3.png"
+								alt="Keystone Warden aiming its typing cannon"
+								width={1432}
+								height={858}
+								priority
+								className="absolute -bottom-3 -left-12 h-52 w-auto object-contain sm:h-64"
+							/>
+							<Image
+								src="/overdrive/art/packet-stalker-v3.png"
+								alt="Packet Stalker preparing to attack"
+								width={1173}
+								height={927}
+								className="absolute bottom-2 -right-8 h-36 w-auto object-contain sm:h-48"
+							/>
+							<div className="absolute bottom-4 left-1/2 -translate-x-1/2 border-l-2 border-acc-green bg-bg-0/90 px-3 py-2 text-center text-sm font-bold uppercase tracking-[0.08em] text-text-hi">
+								TYPE · FIRE · SURVIVE
+							</div>
+						</div>
+
+						<div className="relative z-10 mt-6 grid grid-cols-3 border-y border-line py-4">
 							<div>
 								<strong className="block text-2xl text-acc-yellow">08</strong>
 								<span className="text-sm uppercase tracking-[0.08em] text-text-mid">Zones</span>
@@ -93,7 +131,7 @@ export function Menu() {
 						</div>
 					</section>
 
-					<section className="overdrive-panel p-6" aria-label="Run controls">
+					<section className="overdrive-panel bg-bg-1/95 p-6" aria-label="Run controls">
 						<div className="mb-6 flex items-center justify-between">
 							<span className="text-sm font-bold uppercase tracking-[0.08em] text-text-mid">Word pool</span>
 							<div className="flex rounded-lg border border-line p-1">
@@ -144,7 +182,8 @@ export function Menu() {
 						</div>
 
 						<p className="mt-6 border-t border-line pt-4 text-sm leading-6 text-text-dim">
-							Build Mult every 10 clean words. One typo dirties the word and breaks the chain.
+							New to typing? Start with one key at a time. Stop to search and the clock pauses;
+							short signals, Space execution, and full words arrive one step at a time.
 						</p>
 					</section>
 				</div>

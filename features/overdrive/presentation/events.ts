@@ -4,7 +4,14 @@ import type {
 } from "@/lib/engine/overdrive"
 
 export type OverdrivePresentationEvent =
-  | { id: number; type: "accepted-character"; character: string; index: number; combo: number }
+  | {
+      id: number
+      type: "accepted-character"
+      character: string
+      index: number
+      combo: number
+      charge: number
+    }
   | { id: number; type: "rejected-character"; character: string }
   | {
       id: number;
@@ -12,14 +19,21 @@ export type OverdrivePresentationEvent =
       word: string;
       characterBase: number;
       itemBaseBonus: number;
+      effectiveBase: number;
       effectiveMult: number;
+      finalMultiplier: number;
       scoreGain: number;
+      overdriveReleased: boolean;
+      aegisRecovery: boolean;
+      autoExecuted: boolean;
       appliedItemIds: string[];
       combo: number
     }
   | { id: number; type: "mult-increased"; mult: number }
   | { id: number; type: "stage-entered"; stage: StageType }
   | { id: number; type: "stage-cleared" }
+  | { id: number; type: "overdrive-ready" }
+  | { id: number; type: "aegis-rescue"; rescueNumber: number; timeAddedMs: number }
   | { id: number; type: "run-over" }
   | {
       id: number

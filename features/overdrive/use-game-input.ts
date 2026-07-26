@@ -35,6 +35,7 @@ export function useGameInput(enabled: boolean) {
 				const before = useGame.getState()
 				if (!before.api) return
 				if (before.screen !== "stage") return
+				if (before.stageReady) before.engageStage()
 
 				before.api.feedChar(e.key)
 				const after = useGame.getState()
@@ -42,14 +43,7 @@ export function useGameInput(enabled: boolean) {
 				sfx.unlock()
 				sfx.key()
 
-				if (after.caretIndex > before.caretIndex) {
-					emitPresentationEvent({
-						type: "accepted-character",
-						character: e.key,
-						index: before.caretIndex,
-						combo: after.combo
-					})
-				} else if (e.key === " ") {
+				if (e.key === " ") {
 					// Check if a word was completed by this space
 					// Word complete handled by store.ts syncing engine events
 				} else if (
