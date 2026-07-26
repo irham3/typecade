@@ -335,6 +335,198 @@
         "x": 0.1875,
         "y": 0.5
       }
+    },
+    "needle/mantis_scythe_near": {
+      "frame": {
+        "x": 971,
+        "y": 252,
+        "w": 268,
+        "h": 389
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 268,
+        "h": 389
+      },
+      "sourceSize": {
+        "w": 268,
+        "h": 389
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.4987146529562982
+      }
+    },
+    "needle/mantis_scythe_far": {
+      "frame": {
+        "x": 1243,
+        "y": 252,
+        "w": 273,
+        "h": 394
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 273,
+        "h": 394
+      },
+      "sourceSize": {
+        "w": 273,
+        "h": 394
+      },
+      "anchor": {
+        "x": 0.4981684981684982,
+        "y": 0.5
+      }
+    },
+    "needle/mantis_head_fin": {
+      "frame": {
+        "x": 1520,
+        "y": 252,
+        "w": 234,
+        "h": 298
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 234,
+        "h": 298
+      },
+      "sourceSize": {
+        "w": 234,
+        "h": 298
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.714765100671141
+      }
+    },
+    "needle/mantis_signal_tail": {
+      "frame": {
+        "x": 4,
+        "y": 650,
+        "w": 330,
+        "h": 326
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 330,
+        "h": 326
+      },
+      "sourceSize": {
+        "w": 330,
+        "h": 326
+      },
+      "anchor": {
+        "x": 0.18787878787878787,
+        "y": 0.5
+      }
+    },
+    "needle/courier_spine_relay": {
+      "frame": {
+        "x": 338,
+        "y": 650,
+        "w": 305,
+        "h": 237
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 305,
+        "h": 237
+      },
+      "sourceSize": {
+        "w": 305,
+        "h": 237
+      },
+      "anchor": {
+        "x": 0.18688524590163935,
+        "y": 0.4978902953586498
+      }
+    },
+    "needle/courier_stabilizer": {
+      "frame": {
+        "x": 647,
+        "y": 650,
+        "w": 329,
+        "h": 312
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 329,
+        "h": 312
+      },
+      "sourceSize": {
+        "w": 329,
+        "h": 312
+      },
+      "anchor": {
+        "x": 0.49848024316109424,
+        "y": 0.5
+      }
+    },
+    "needle/courier_fin_near": {
+      "frame": {
+        "x": 980,
+        "y": 650,
+        "w": 345,
+        "h": 301
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 345,
+        "h": 301
+      },
+      "sourceSize": {
+        "w": 345,
+        "h": 301
+      },
+      "anchor": {
+        "x": 0.4985507246376812,
+        "y": 0.7142857142857143
+      }
+    },
+    "needle/courier_fin_far": {
+      "frame": {
+        "x": 1329,
+        "y": 650,
+        "w": 227,
+        "h": 178
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 227,
+        "h": 178
+      },
+      "sourceSize": {
+        "w": 227,
+        "h": 178
+      },
+      "anchor": {
+        "x": 0.5022026431718062,
+        "y": 0.7078651685393258
+      }
     }
   },
   "meta": {
@@ -350,6 +542,7 @@
     "rig": {
       "id": "needle",
       "source": "public/overdrive/art/source/needle-rig-v1-source.png",
+      "variantSource": "public/overdrive/art/source/needle-family-v2-source.png",
       "parts": {
         "chest_core": {
           "pivot": {
@@ -434,6 +627,54 @@
             "x": 57,
             "y": 116
           }
+        },
+        "mantis_scythe_near": {
+          "pivot": {
+            "x": 134,
+            "y": 194
+          }
+        },
+        "mantis_scythe_far": {
+          "pivot": {
+            "x": 136,
+            "y": 197
+          }
+        },
+        "mantis_head_fin": {
+          "pivot": {
+            "x": 117,
+            "y": 213
+          }
+        },
+        "mantis_signal_tail": {
+          "pivot": {
+            "x": 62,
+            "y": 163
+          }
+        },
+        "courier_spine_relay": {
+          "pivot": {
+            "x": 57,
+            "y": 118
+          }
+        },
+        "courier_stabilizer": {
+          "pivot": {
+            "x": 164,
+            "y": 156
+          }
+        },
+        "courier_fin_near": {
+          "pivot": {
+            "x": 172,
+            "y": 215
+          }
+        },
+        "courier_fin_far": {
+          "pivot": {
+            "x": 114,
+            "y": 126
+          }
         }
       },
       "clips": [
@@ -444,7 +685,21 @@
         "hit",
         "defeat",
         "special"
-      ]
+      ],
+      "variants": {
+        "vector-mantis": [
+          "mantis_scythe_near",
+          "mantis_scythe_far",
+          "mantis_head_fin",
+          "mantis_signal_tail"
+        ],
+        "spine-courier": [
+          "courier_spine_relay",
+          "courier_stabilizer",
+          "courier_fin_near",
+          "courier_fin_far"
+        ]
+      }
     }
   }
 }

@@ -359,6 +359,198 @@
         "x": 0.5023255813953489,
         "y": 0.7142857142857143
       }
+    },
+    "packet/cache_sensor_muzzle": {
+      "frame": {
+        "x": 1240,
+        "y": 295,
+        "w": 144,
+        "h": 364
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 144,
+        "h": 364
+      },
+      "sourceSize": {
+        "w": 144,
+        "h": 364
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "packet/cache_ankle_guard": {
+      "frame": {
+        "x": 1388,
+        "y": 295,
+        "w": 262,
+        "h": 373
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 262,
+        "h": 373
+      },
+      "sourceSize": {
+        "w": 262,
+        "h": 373
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.49865951742627346
+      }
+    },
+    "packet/cache_hook_tail": {
+      "frame": {
+        "x": 1654,
+        "y": 295,
+        "w": 325,
+        "h": 244
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 325,
+        "h": 244
+      },
+      "sourceSize": {
+        "w": 325,
+        "h": 244
+      },
+      "anchor": {
+        "x": 0.18769230769230769,
+        "y": 0.5
+      }
+    },
+    "packet/cache_split_relay": {
+      "frame": {
+        "x": 4,
+        "y": 672,
+        "w": 269,
+        "h": 369
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 269,
+        "h": 369
+      },
+      "sourceSize": {
+        "w": 269,
+        "h": 369
+      },
+      "anchor": {
+        "x": 0.49814126394052044,
+        "y": 0.4986449864498645
+      }
+    },
+    "packet/ram_forehead_wedge": {
+      "frame": {
+        "x": 277,
+        "y": 672,
+        "w": 297,
+        "h": 320
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 297,
+        "h": 320
+      },
+      "sourceSize": {
+        "w": 297,
+        "h": 320
+      },
+      "anchor": {
+        "x": 0.4983164983164983,
+        "y": 0.5
+      }
+    },
+    "packet/ram_shoulder_relay": {
+      "frame": {
+        "x": 578,
+        "y": 672,
+        "w": 315,
+        "h": 348
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 315,
+        "h": 348
+      },
+      "sourceSize": {
+        "w": 315,
+        "h": 348
+      },
+      "anchor": {
+        "x": 0.5015873015873016,
+        "y": 0.1867816091954023
+      }
+    },
+    "packet/ram_foreleg_guard": {
+      "frame": {
+        "x": 897,
+        "y": 672,
+        "w": 202,
+        "h": 349
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 202,
+        "h": 349
+      },
+      "sourceSize": {
+        "w": 202,
+        "h": 349
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.498567335243553
+      }
+    },
+    "packet/ram_back_capacitor": {
+      "frame": {
+        "x": 1103,
+        "y": 672,
+        "w": 307,
+        "h": 355
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 307,
+        "h": 355
+      },
+      "sourceSize": {
+        "w": 307,
+        "h": 355
+      },
+      "anchor": {
+        "x": 0.501628664495114,
+        "y": 0.5014084507042254
+      }
     }
   },
   "meta": {
@@ -374,6 +566,7 @@
     "rig": {
       "id": "packet",
       "source": "public/overdrive/art/source/packet-rig-v1-source.png",
+      "variantSource": "public/overdrive/art/source/packet-family-v2-source.png",
       "parts": {
         "core_torso": {
           "pivot": {
@@ -464,6 +657,54 @@
             "x": 108,
             "y": 165
           }
+        },
+        "cache_sensor_muzzle": {
+          "pivot": {
+            "x": 72,
+            "y": 182
+          }
+        },
+        "cache_ankle_guard": {
+          "pivot": {
+            "x": 131,
+            "y": 186
+          }
+        },
+        "cache_hook_tail": {
+          "pivot": {
+            "x": 61,
+            "y": 122
+          }
+        },
+        "cache_split_relay": {
+          "pivot": {
+            "x": 134,
+            "y": 184
+          }
+        },
+        "ram_forehead_wedge": {
+          "pivot": {
+            "x": 148,
+            "y": 160
+          }
+        },
+        "ram_shoulder_relay": {
+          "pivot": {
+            "x": 158,
+            "y": 65
+          }
+        },
+        "ram_foreleg_guard": {
+          "pivot": {
+            "x": 101,
+            "y": 174
+          }
+        },
+        "ram_back_capacitor": {
+          "pivot": {
+            "x": 154,
+            "y": 178
+          }
         }
       },
       "clips": [
@@ -474,7 +715,21 @@
         "hit",
         "defeat",
         "special"
-      ]
+      ],
+      "variants": {
+        "cache-hound": [
+          "cache_sensor_muzzle",
+          "cache_ankle_guard",
+          "cache_hook_tail",
+          "cache_split_relay"
+        ],
+        "relay-ram": [
+          "ram_forehead_wedge",
+          "ram_shoulder_relay",
+          "ram_foreleg_guard",
+          "ram_back_capacitor"
+        ]
+      }
     }
   }
 }

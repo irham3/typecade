@@ -1,0 +1,160 @@
+{
+  "id": "signal-trench-v1",
+  "source": "public/overdrive/art/source/signal-trench-kit-v1-source.png",
+  "layers": [
+    {
+      "role": "far",
+      "src": "/overdrive/art/environment/signal-trench-far-v1.webp",
+      "width": 748,
+      "height": 96,
+      "hasAlpha": true,
+      "alphaCoverage": 1.0,
+      "sourceBounds": {
+        "x": 0,
+        "y": 18,
+        "width": 1536,
+        "height": 194
+      }
+    },
+    {
+      "role": "machinery",
+      "src": "/overdrive/art/environment/signal-trench-machinery-v1.webp",
+      "width": 1496,
+      "height": 141,
+      "hasAlpha": true,
+      "alphaCoverage": 0.5506,
+      "sourceBounds": {
+        "x": 0,
+        "y": 233,
+        "width": 1536,
+        "height": 141
+      }
+    },
+    {
+      "role": "midground",
+      "src": "/overdrive/art/environment/signal-trench-midground-v1.webp",
+      "width": 1496,
+      "height": 151,
+      "hasAlpha": true,
+      "alphaCoverage": 0.8037,
+      "sourceBounds": {
+        "x": 0,
+        "y": 388,
+        "width": 1536,
+        "height": 151
+      }
+    },
+    {
+      "role": "deck",
+      "src": "/overdrive/art/environment/signal-trench-deck-v1.webp",
+      "width": 1489,
+      "height": 129,
+      "hasAlpha": true,
+      "alphaCoverage": 0.7242,
+      "sourceBounds": {
+        "x": 0,
+        "y": 540,
+        "width": 1536,
+        "height": 129
+      }
+    },
+    {
+      "role": "foreground",
+      "src": "/overdrive/art/environment/signal-trench-foreground-v1.webp",
+      "width": 1496,
+      "height": 166,
+      "hasAlpha": true,
+      "alphaCoverage": 0.6854,
+      "sourceBounds": {
+        "x": 0,
+        "y": 681,
+        "width": 1536,
+        "height": 167
+      }
+    },
+    {
+      "role": "atmosphere",
+      "src": "/overdrive/art/environment/signal-trench-atmosphere-v1.webp",
+      "width": 748,
+      "height": 66,
+      "hasAlpha": true,
+      "alphaCoverage": 0.9751,
+      "sourceBounds": {
+        "x": 0,
+        "y": 867,
+        "width": 1536,
+        "height": 133
+      }
+    }
+  ],
+  "points": {
+    "sparks": [
+      {
+        "layer": "machinery",
+        "x": 0.22,
+        "y": 0.68
+      },
+      {
+        "layer": "machinery",
+        "x": 0.63,
+        "y": 0.54
+      },
+      {
+        "layer": "midground",
+        "x": 0.36,
+        "y": 0.42
+      },
+      {
+        "layer": "foreground",
+        "x": 0.78,
+        "y": 0.34
+      }
+    ],
+    "cables": [
+      {
+        "layer": "midground",
+        "x": 0.15,
+        "y": 0.38
+      },
+      {
+        "layer": "midground",
+        "x": 0.72,
+        "y": 0.26
+      },
+      {
+        "layer": "foreground",
+        "x": 0.88,
+        "y": 0.3
+      }
+    ],
+    "gates": [
+      {
+        "layer": "midground",
+        "x": 0.9,
+        "y": 0.58
+      },
+      {
+        "layer": "machinery",
+        "x": 0.52,
+        "y": 0.52
+      }
+    ],
+    "lights": [
+      {
+        "layer": "far",
+        "x": 0.42,
+        "y": 0.38
+      },
+      {
+        "layer": "machinery",
+        "x": 0.68,
+        "y": 0.46
+      },
+      {
+        "layer": "foreground",
+        "x": 0.26,
+        "y": 0.38
+      }
+    ]
+  }
+}

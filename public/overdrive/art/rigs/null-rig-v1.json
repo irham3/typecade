@@ -383,6 +383,198 @@
         "x": 0.4975124378109453,
         "y": 0.5
       }
+    },
+    "null/hand_plate_near": {
+      "frame": {
+        "x": 1354,
+        "y": 312,
+        "w": 336,
+        "h": 376
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 336,
+        "h": 376
+      },
+      "sourceSize": {
+        "w": 336,
+        "h": 376
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.7154255319148937
+      }
+    },
+    "null/hand_plate_far": {
+      "frame": {
+        "x": 1694,
+        "y": 312,
+        "w": 324,
+        "h": 311
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 324,
+        "h": 311
+      },
+      "sourceSize": {
+        "w": 324,
+        "h": 311
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.7138263665594855
+      }
+    },
+    "null/hand_wrist_crown": {
+      "frame": {
+        "x": 4,
+        "y": 692,
+        "w": 169,
+        "h": 400
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 169,
+        "h": 400
+      },
+      "sourceSize": {
+        "w": 169,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.4970414201183432,
+        "y": 0.5
+      }
+    },
+    "null/hand_shoulder_shard": {
+      "frame": {
+        "x": 177,
+        "y": 692,
+        "w": 206,
+        "h": 234
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 206,
+        "h": 234
+      },
+      "sourceSize": {
+        "w": 206,
+        "h": 234
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.19230769230769232
+      }
+    },
+    "null/shard_crown_spear": {
+      "frame": {
+        "x": 387,
+        "y": 692,
+        "w": 219,
+        "h": 434
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 219,
+        "h": 434
+      },
+      "sourceSize": {
+        "w": 219,
+        "h": 434
+      },
+      "anchor": {
+        "x": 0.502283105022831,
+        "y": 0.5
+      }
+    },
+    "null/shard_core_casing": {
+      "frame": {
+        "x": 610,
+        "y": 692,
+        "w": 230,
+        "h": 252
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 230,
+        "h": 252
+      },
+      "sourceSize": {
+        "w": 230,
+        "h": 252
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "null/shard_lower_spear": {
+      "frame": {
+        "x": 844,
+        "y": 692,
+        "w": 208,
+        "h": 457
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 208,
+        "h": 457
+      },
+      "sourceSize": {
+        "w": 208,
+        "h": 457
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.4989059080962801
+      }
+    },
+    "null/shard_orbit_plate": {
+      "frame": {
+        "x": 1056,
+        "y": 692,
+        "w": 220,
+        "h": 437
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 220,
+        "h": 437
+      },
+      "sourceSize": {
+        "w": 220,
+        "h": 437
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.7162471395881007
+      }
     }
   },
   "meta": {
@@ -398,6 +590,7 @@
     "rig": {
       "id": "null",
       "source": "public/overdrive/art/source/null-rig-v1-source.png",
+      "variantSource": "public/overdrive/art/source/null-family-v2-source.png",
       "parts": {
         "void_core": {
           "pivot": {
@@ -494,6 +687,54 @@
             "x": 100,
             "y": 127
           }
+        },
+        "hand_plate_near": {
+          "pivot": {
+            "x": 168,
+            "y": 269
+          }
+        },
+        "hand_plate_far": {
+          "pivot": {
+            "x": 162,
+            "y": 222
+          }
+        },
+        "hand_wrist_crown": {
+          "pivot": {
+            "x": 84,
+            "y": 200
+          }
+        },
+        "hand_shoulder_shard": {
+          "pivot": {
+            "x": 103,
+            "y": 45
+          }
+        },
+        "shard_crown_spear": {
+          "pivot": {
+            "x": 110,
+            "y": 217
+          }
+        },
+        "shard_core_casing": {
+          "pivot": {
+            "x": 115,
+            "y": 126
+          }
+        },
+        "shard_lower_spear": {
+          "pivot": {
+            "x": 104,
+            "y": 228
+          }
+        },
+        "shard_orbit_plate": {
+          "pivot": {
+            "x": 110,
+            "y": 313
+          }
         }
       },
       "clips": [
@@ -504,7 +745,21 @@
         "hit",
         "defeat",
         "special"
-      ]
+      ],
+      "variants": {
+        "crown-hand": [
+          "hand_plate_near",
+          "hand_plate_far",
+          "hand_wrist_crown",
+          "hand_shoulder_shard"
+        ],
+        "void-shard": [
+          "shard_crown_spear",
+          "shard_core_casing",
+          "shard_lower_spear",
+          "shard_orbit_plate"
+        ]
+      }
     }
   }
 }

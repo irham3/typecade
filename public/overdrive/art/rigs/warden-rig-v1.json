@@ -446,6 +446,7 @@
     "rig": {
       "id": "warden",
       "source": "public/overdrive/art/source/warden-rig-v1-source.png",
+      "variantSource": null,
       "parts": {
         "torso": {
           "pivot": {
@@ -559,6 +560,14 @@
       "clips": [
         "idle",
         "ready",
+        "cannon-burst",
+        "rail-step",
+        "tether-pull",
+        "breach-slide",
+        "recoil-vault",
+        "crossfire-pivot",
+        "execution",
+        "overdrive-breach",
         "chain-1",
         "chain-2",
         "chain-3",
@@ -568,7 +577,8 @@
         "hurt",
         "recover",
         "overdrive"
-      ]
+      ],
+      "variants": {}
     }
   }
 }

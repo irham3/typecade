@@ -66,3 +66,26 @@ The Warden sheet used a 6x3 grid with torso, pelvis, head, visor, paired shoulde
 ### Local rig processing
 
 `scripts/process-rig-sheet.py` samples the chroma color from each sheet border, removes only border-connected key pixels, suppresses edge spill, groups connected components by semantic grid cell, adds four pixels of transparent padding, and packs the parts into a lossless 2048x2048 WebP atlas. The companion JSON records every frame, anchor, pivot, rig ID, and available animation clip.
+
+## Overdrive — Signal Expedition art kit v1
+
+The following original source sheets were generated for this repository on 2026-07-26 with OpenAI's built-in image generation tool. Usage is subject to the applicable OpenAI terms. The prompts requested no third-party characters, logos, trademarks, text, or watermarks.
+
+| Source sheet | Generation reference | Runtime output |
+| --- | --- | --- |
+| `public/overdrive/art/source/signal-trench-kit-v1-source.png` | `exec-5f25cccd-bee8-43bf-aa64-4e71f2c594ed.png` | Six WebP layers and `public/overdrive/art/environment/signal-trench-kit-v1.json` |
+| `public/overdrive/art/source/packet-family-v2-source.png` | `exec-e9501f14-95a1-4be4-9bd9-ee8fa962c2bc.png` | Packet variant frames in `public/overdrive/art/rigs/packet-rig-v1.webp` |
+| `public/overdrive/art/source/needle-family-v2-source.png` | `exec-1bf18c96-a0e0-487f-af44-d9b7a1e42b74.png` | Needle variant frames in `public/overdrive/art/rigs/needle-rig-v1.webp` |
+| `public/overdrive/art/source/null-family-v2-source.png` | `exec-ca4c6a08-26be-4c92-9003-17507baceb60.png` | Null variant frames in `public/overdrive/art/rigs/null-rig-v1.webp` |
+
+### Signal Trench kit prompt
+
+Production environment layer sheet for the original cyber-industrial typing arcade Signal Expedition. Premium stylized 3D hard-surface game render converted to polished 2D, with a shared three-quarter camera, blackened steel, worn graphite deck, cyan relay key light, restrained magenta corruption light, and deep navy atmosphere. Six isolated horizontal panels cover far towers and sky, relay machinery, cables and blast doors, the battle deck, foreground gantries and pipes, and atmosphere masks. Flat magenta separation, no characters, text, logos, UI, baked particles, or full-scene wallpaper.
+
+### Enemy-family attachment prompts
+
+Each attachment sheet used its current articulated rig source as an identity reference and retained the same camera, material response, lighting direction, and silhouette language. Packet requested modular Cache Hound sensor, relay, tail, and ankle pieces plus reinforced Relay Ram plates and piston guards. Needle requested Vector Mantis scythes, head fin, and signal tail plus Spine Courier relay, stabilizer, and fins. Null requested Crown Hand plates, wrist crown, and shoulder shard plus Void Shard crown, core casing, lower spear, and orbit plate. All parts were isolated in a 4x2 grid on flat magenta with no full character, floor, cast shadow, text, logo, or watermark.
+
+### Local processing
+
+`scripts/process-environment-kit.py` extracts fixed panel coordinates, removes connected chroma with a one-pixel alpha feather, trims empty padding, halves the far and atmosphere layers, exports visually lossless WebP, and writes authored spark, cable, gate, and light points. `scripts/process-rig-sheet.py` adds the 4x2 family attachment grids to the existing lossless atlases, records exact variant membership, and rejects packed-frame overlap.

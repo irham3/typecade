@@ -101,6 +101,14 @@ RIG_CLIPS = {
     "warden": (
         "idle",
         "ready",
+        "cannon-burst",
+        "rail-step",
+        "tether-pull",
+        "breach-slide",
+        "recoil-vault",
+        "crossfire-pivot",
+        "execution",
+        "overdrive-breach",
         "chain-1",
         "chain-2",
         "chain-3",
@@ -114,6 +122,54 @@ RIG_CLIPS = {
     "packet": ("locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"),
     "needle": ("locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"),
     "null": ("locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"),
+}
+
+VARIANT_PARTS = {
+    "packet": (
+        "cache_sensor_muzzle",
+        "cache_ankle_guard",
+        "cache_hook_tail",
+        "cache_split_relay",
+        "ram_forehead_wedge",
+        "ram_shoulder_relay",
+        "ram_foreleg_guard",
+        "ram_back_capacitor",
+    ),
+    "needle": (
+        "mantis_scythe_near",
+        "mantis_scythe_far",
+        "mantis_head_fin",
+        "mantis_signal_tail",
+        "courier_spine_relay",
+        "courier_stabilizer",
+        "courier_fin_near",
+        "courier_fin_far",
+    ),
+    "null": (
+        "hand_plate_near",
+        "hand_plate_far",
+        "hand_wrist_crown",
+        "hand_shoulder_shard",
+        "shard_crown_spear",
+        "shard_core_casing",
+        "shard_lower_spear",
+        "shard_orbit_plate",
+    ),
+}
+
+VARIANT_ATTACHMENTS = {
+    "packet": {
+        "cache-hound": VARIANT_PARTS["packet"][:4],
+        "relay-ram": VARIANT_PARTS["packet"][4:],
+    },
+    "needle": {
+        "vector-mantis": VARIANT_PARTS["needle"][:4],
+        "spine-courier": VARIANT_PARTS["needle"][4:],
+    },
+    "null": {
+        "crown-hand": VARIANT_PARTS["null"][:4],
+        "void-shard": VARIANT_PARTS["null"][4:],
+    },
 }
 
 
@@ -305,9 +361,14 @@ def pivot_factor(part_name: str) -> tuple[float, float]:
     return 0.5, 0.5
 
 
-def extract_parts(source: Image.Image, rig_id: str) -> list[tuple[str, Image.Image, tuple[int, int]]]:
-    parts = RIG_PARTS[rig_id]
-    columns = RIG_COLUMNS[rig_id]
+def extract_parts(
+    source: Image.Image,
+    rig_id: str,
+    parts: tuple[str, ...] | None = None,
+    columns: int | None = None,
+) -> list[tuple[str, Image.Image, tuple[int, int]]]:
+    parts = parts or RIG_PARTS[rig_id]
+    columns = columns or RIG_COLUMNS[rig_id]
     rows = ceil(len(parts) / columns)
     if source.width % columns or source.height % rows:
         raise ValueError(
@@ -400,6 +461,29 @@ def pack_parts(
         cursor_x += image.width + PADDING
         row_height = max(row_height, image.height)
 
+    for index, current in enumerate(packed):
+        current_bounds = (
+            current.x,
+            current.y,
+            current.x + current.image.width,
+            current.y + current.image.height,
+        )
+        for other in packed[index + 1:]:
+            other_bounds = (
+                other.x,
+                other.y,
+                other.x + other.image.width,
+                other.y + other.image.height,
+            )
+            overlaps = (
+                current_bounds[0] < other_bounds[2]
+                and current_bounds[2] > other_bounds[0]
+                and current_bounds[1] < other_bounds[3]
+                and current_bounds[3] > other_bounds[1]
+            )
+            if overlaps:
+                raise ValueError(f"{current.name} overlaps {other.name} in the atlas")
+
     return packed
 
 
@@ -408,6 +492,7 @@ def write_outputs(
     rig_id: str,
     source_path: Path,
     output_dir: Path,
+    variant_source_path: Path | None,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     image_name = f"{rig_id}-rig-v1.webp"
@@ -449,8 +534,14 @@ def write_outputs(
             "rig": {
                 "id": rig_id,
                 "source": source_path.as_posix(),
+                "variantSource": (
+                    variant_source_path.as_posix()
+                    if variant_source_path is not None
+                    else None
+                ),
                 "parts": rig_parts,
                 "clips": list(RIG_CLIPS[rig_id]),
+                "variants": VARIANT_ATTACHMENTS.get(rig_id, {}),
             },
         },
     }
@@ -467,6 +558,7 @@ def main() -> None:
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--rig", required=True, choices=tuple(RIG_PARTS))
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--variant-source", type=Path)
     args = parser.parse_args()
 
     source = Image.open(args.input).convert("RGBA")
@@ -480,8 +572,37 @@ def main() -> None:
             Image.Resampling.LANCZOS,
         )
     extracted = extract_parts(source, args.rig)
+    if args.variant_source:
+        if args.rig not in VARIANT_PARTS:
+            raise ValueError("Warden does not accept a variant attachment source")
+        variant_source = Image.open(args.variant_source).convert("RGBA")
+        variant_columns = 4
+        variant_rows = 2
+        normalized_variant_size = (
+            round(variant_source.width / variant_columns) * variant_columns,
+            round(variant_source.height / variant_rows) * variant_rows,
+        )
+        if variant_source.size != normalized_variant_size:
+            variant_source = variant_source.resize(
+                normalized_variant_size,
+                Image.Resampling.LANCZOS,
+            )
+        extracted.extend(
+            extract_parts(
+                variant_source,
+                args.rig,
+                VARIANT_PARTS[args.rig],
+                variant_columns,
+            )
+        )
     packed = pack_parts(extracted)
-    write_outputs(packed, args.rig, args.input, args.output_dir)
+    write_outputs(
+        packed,
+        args.rig,
+        args.input,
+        args.output_dir,
+        args.variant_source,
+    )
 
 
 if __name__ == "__main__":

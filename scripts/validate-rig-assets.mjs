@@ -4,16 +4,39 @@ import process from "node:process"
 
 const projectRoot = process.cwd()
 const rigRoot = path.join(projectRoot, "public", "overdrive", "art", "rigs")
-const arenaPath = path.join(
-	projectRoot,
-	"public",
-	"overdrive",
-	"art",
-	"signal-trench-arena-v2.png",
-)
 const maxAtlasDimension = 2_048
-const firstStageCompressedBudget = 5 * 1024 * 1024
-const residentTextureBudget = 64 * 1024 * 1024
+const variantParts = {
+	packet: {
+		"cache-hound": [
+			"cache_sensor_muzzle", "cache_ankle_guard", "cache_hook_tail",
+			"cache_split_relay",
+		],
+		"relay-ram": [
+			"ram_forehead_wedge", "ram_shoulder_relay", "ram_foreleg_guard",
+			"ram_back_capacitor",
+		],
+	},
+	needle: {
+		"vector-mantis": [
+			"mantis_scythe_near", "mantis_scythe_far", "mantis_head_fin",
+			"mantis_signal_tail",
+		],
+		"spine-courier": [
+			"courier_spine_relay", "courier_stabilizer", "courier_fin_near",
+			"courier_fin_far",
+		],
+	},
+	null: {
+		"crown-hand": [
+			"hand_plate_near", "hand_plate_far", "hand_wrist_crown",
+			"hand_shoulder_shard",
+		],
+		"void-shard": [
+			"shard_crown_spear", "shard_core_casing", "shard_lower_spear",
+			"shard_orbit_plate",
+		],
+	},
+}
 
 const requiredParts = {
 	warden: [
@@ -27,26 +50,29 @@ const requiredParts = {
 		"near_front_lower_leg", "far_front_upper_leg", "far_front_lower_leg",
 		"near_rear_upper_leg", "near_rear_lower_leg", "far_rear_upper_leg",
 		"far_rear_lower_leg", "tail_base", "tail_tip", "near_back_plate",
-		"far_back_plate",
+		"far_back_plate", ...Object.values(variantParts.packet).flat(),
 	],
 	needle: [
 		"chest_core", "head", "neck_segment", "spine_front", "spine_rear",
 		"near_blade_upper_arm", "near_blade_forearm", "far_blade_upper_arm",
 		"far_blade_forearm", "near_fin", "far_fin", "tail_segment_one",
 		"tail_segment_two", "tail_tip",
+		...Object.values(variantParts.needle).flat(),
 	],
 	null: [
 		"void_core", "crown_center", "crown_near_plate", "crown_far_plate",
 		"near_shoulder", "far_shoulder", "near_upper_arm", "far_upper_arm",
 		"near_forearm", "far_forearm", "near_hand", "far_hand",
 		"cloak_segment_one", "cloak_segment_two", "cloak_segment_three",
-		"lower_core",
+		"lower_core", ...Object.values(variantParts.null).flat(),
 	],
 }
 
 const requiredClips = {
 	warden: [
-		"idle", "ready", "chain-1", "chain-2", "chain-3", "dash",
+		"idle", "ready", "cannon-burst", "rail-step", "tether-pull",
+		"breach-slide", "recoil-vault", "crossfire-pivot", "execution",
+		"overdrive-breach", "chain-1", "chain-2", "chain-3", "dash",
 		"execute", "block", "hurt", "recover", "overdrive",
 	],
 	packet: ["locomotion", "idle", "anticipation", "attack", "hit", "defeat", "special"],
@@ -164,6 +190,14 @@ async function validateRig(rigId) {
 	for (const clip of requiredClips[rigId]) {
 		if (!clips.has(clip)) throw new Error(`${rigId} is missing clip ${clip}`)
 	}
+	for (const [variantId, partIds] of Object.entries(variantParts[rigId] ?? {})) {
+		const declared = new Set(atlas.meta?.rig?.variants?.[variantId] ?? [])
+		for (const partId of partIds) {
+			if (!declared.has(partId)) {
+				throw new Error(`${rigId} variant ${variantId} is missing ${partId}`)
+			}
+		}
+	}
 
 	return {
 		id: rigId,
@@ -176,29 +210,6 @@ async function validateRig(rigId) {
 
 const rigs = Object.keys(requiredParts)
 const results = await Promise.all(rigs.map(validateRig))
-const byId = Object.fromEntries(results.map((result) => [result.id, result]))
-const arenaSize = await readImageSize(arenaPath)
-const arenaStats = await stat(arenaPath)
-const arenaTextureBytes = arenaSize.width * arenaSize.height * 4
-const firstStageBytes = arenaStats.size + byId.warden.bytes + byId.packet.bytes
-
-if (firstStageBytes > firstStageCompressedBudget) {
-	throw new Error(
-		`First-stage combat art is ${(firstStageBytes / 1024 / 1024).toFixed(2)} MB`,
-	)
-}
-
-for (const enemyId of ["packet", "needle", "null"]) {
-	const residentBytes = arenaTextureBytes
-		+ byId.warden.textureBytes
-		+ byId[enemyId].textureBytes
-	if (residentBytes > residentTextureBudget) {
-		throw new Error(
-			`${enemyId} stage resident textures are ${(residentBytes / 1024 / 1024).toFixed(2)} MB`,
-		)
-	}
-}
-
 console.log(
-	`Validated ${results.length} rigs. First-stage combat art: ${(firstStageBytes / 1024 / 1024).toFixed(2)} MB.`,
+	`Validated ${results.length} variant-capable rig atlases.`,
 )

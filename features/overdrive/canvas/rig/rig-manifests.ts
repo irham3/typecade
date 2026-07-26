@@ -68,6 +68,14 @@ export const RIG_REQUIRED_CLIPS: Record<CombatRigId, readonly AnimationClipName[
 	warden: [
 		"idle",
 		"ready",
+		"cannon-burst",
+		"rail-step",
+		"tether-pull",
+		"breach-slide",
+		"recoil-vault",
+		"crossfire-pivot",
+		"execution",
+		"overdrive-breach",
 		"chain-1",
 		"chain-2",
 		"chain-3",
@@ -120,6 +128,14 @@ export const RIG_PART_IDS: Record<CombatRigId, readonly string[]> = {
 		"tail_tip",
 		"near_back_plate",
 		"far_back_plate",
+		"cache_sensor_muzzle",
+		"cache_ankle_guard",
+		"cache_hook_tail",
+		"cache_split_relay",
+		"ram_forehead_wedge",
+		"ram_shoulder_relay",
+		"ram_foreleg_guard",
+		"ram_back_capacitor",
 	],
 	needle: [
 		"chest_core",
@@ -136,6 +152,14 @@ export const RIG_PART_IDS: Record<CombatRigId, readonly string[]> = {
 		"tail_segment_one",
 		"tail_segment_two",
 		"tail_tip",
+		"mantis_scythe_near",
+		"mantis_scythe_far",
+		"mantis_head_fin",
+		"mantis_signal_tail",
+		"courier_spine_relay",
+		"courier_stabilizer",
+		"courier_fin_near",
+		"courier_fin_far",
 	],
 	null: [
 		"void_core",
@@ -154,6 +178,14 @@ export const RIG_PART_IDS: Record<CombatRigId, readonly string[]> = {
 		"cloak_segment_two",
 		"cloak_segment_three",
 		"lower_core",
+		"hand_plate_near",
+		"hand_plate_far",
+		"hand_wrist_crown",
+		"hand_shoulder_shard",
+		"shard_crown_spear",
+		"shard_core_casing",
+		"shard_lower_spear",
+		"shard_orbit_plate",
 	],
 }
 
@@ -548,6 +580,14 @@ const packetParts: readonly RigPartDefinition[] = [
 	part("near_front_lower_leg", -48, 46, 12, "near_front_upper_leg"),
 	part("near_rear_upper_leg", 42, 30, 11, "core_torso"),
 	part("near_rear_lower_leg", 50, 46, 12, "near_rear_upper_leg"),
+	part("cache_sensor_muzzle", -30, -4, 13, "head"),
+	part("cache_ankle_guard", 0, 18, 13, "near_front_lower_leg"),
+	part("cache_hook_tail", 62, 6, 13, "tail_base"),
+	part("cache_split_relay", 8, -42, 13, "core_torso"),
+	part("ram_forehead_wedge", -24, -14, 13, "head"),
+	part("ram_shoulder_relay", -6, -44, 13, "core_torso"),
+	part("ram_foreleg_guard", -2, 18, 13, "near_front_lower_leg"),
+	part("ram_back_capacitor", 22, -42, 13, "core_torso"),
 ]
 
 const packetClips = clipRecord([
@@ -652,6 +692,14 @@ const needleParts: readonly RigPartDefinition[] = [
 	part("near_fin", 12, -52, 9, "spine_rear"),
 	part("near_blade_upper_arm", -34, 10, 10, "chest_core"),
 	part("near_blade_forearm", -52, 34, 11, "near_blade_upper_arm"),
+	part("mantis_scythe_near", -46, 22, 12, "near_blade_upper_arm"),
+	part("mantis_scythe_far", -42, 20, 3, "far_blade_upper_arm"),
+	part("mantis_head_fin", -2, -24, 12, "head"),
+	part("mantis_signal_tail", 48, 2, 12, "tail_segment_two"),
+	part("courier_spine_relay", 26, -28, 12, "spine_rear"),
+	part("courier_stabilizer", 42, 8, 12, "spine_rear"),
+	part("courier_fin_near", 18, -30, 13, "spine_rear"),
+	part("courier_fin_far", 12, -26, 2, "spine_rear"),
 ]
 
 const needleClips = clipRecord([
@@ -758,6 +806,14 @@ const nullParts: readonly RigPartDefinition[] = [
 	part("near_forearm", 58, 44, 11, "near_upper_arm"),
 	part("near_hand", 66, 52, 12, "near_forearm"),
 	part("cloak_segment_one", 42, 66, 9, "lower_core"),
+	part("hand_plate_near", 38, 16, 13, "near_hand"),
+	part("hand_plate_far", -34, 14, 1, "far_hand"),
+	part("hand_wrist_crown", 42, 22, 13, "near_forearm"),
+	part("hand_shoulder_shard", 18, -24, 13, "near_shoulder"),
+	part("shard_crown_spear", 0, -54, 13, "crown_center"),
+	part("shard_core_casing", 0, 0, 13, "void_core"),
+	part("shard_lower_spear", 0, 54, 13, "lower_core"),
+	part("shard_orbit_plate", 30, -8, 13, "crown_center"),
 ]
 
 const nullClips = clipRecord([
@@ -866,9 +922,60 @@ const nullClips = clipRecord([
 	], 210, 260),
 ])
 
-const packetPartIds = packetParts.map((definition) => definition.id)
-const needlePartIds = needleParts.map((definition) => definition.id)
-const nullPartIds = nullParts.map((definition) => definition.id)
+const packetAttachments = {
+	cacheHound: [
+		"cache_sensor_muzzle",
+		"cache_ankle_guard",
+		"cache_hook_tail",
+		"cache_split_relay",
+	],
+	relayRam: [
+		"ram_forehead_wedge",
+		"ram_shoulder_relay",
+		"ram_foreleg_guard",
+		"ram_back_capacitor",
+	],
+} as const
+const needleAttachments = {
+	vectorMantis: [
+		"mantis_scythe_near",
+		"mantis_scythe_far",
+		"mantis_head_fin",
+		"mantis_signal_tail",
+	],
+	spineCourier: [
+		"courier_spine_relay",
+		"courier_stabilizer",
+		"courier_fin_near",
+		"courier_fin_far",
+	],
+} as const
+const nullAttachments = {
+	crownHand: [
+		"hand_plate_near",
+		"hand_plate_far",
+		"hand_wrist_crown",
+		"hand_shoulder_shard",
+	],
+	voidShard: [
+		"shard_crown_spear",
+		"shard_core_casing",
+		"shard_lower_spear",
+		"shard_orbit_plate",
+	],
+} as const
+
+const attachmentPartIds = new Set<string>([
+	...Object.values(packetAttachments).flat(),
+	...Object.values(needleAttachments).flat(),
+	...Object.values(nullAttachments).flat(),
+])
+const basePartIds = (parts: readonly RigPartDefinition[]) => parts
+	.map((definition) => definition.id)
+	.filter((id) => !attachmentPartIds.has(id))
+const packetPartIds = basePartIds(packetParts)
+const needlePartIds = basePartIds(needleParts)
+const nullPartIds = basePartIds(nullParts)
 
 const packetVariants: readonly RigVariantDefinition[] = [
 	{
@@ -878,23 +985,31 @@ const packetVariants: readonly RigVariantDefinition[] = [
 	},
 	{
 		id: "cache-hound",
-		enabledPartIds: packetPartIds,
+		enabledPartIds: [...packetPartIds, ...packetAttachments.cacheHound],
 		transformOverrides: {
 			head: { scaleX: 0.86, scaleY: 0.9, x: -64 },
 			tail_base: { rotation: -0.16, y: 0 },
 			near_back_plate: { scaleX: 0.82, scaleY: 1.12 },
 			far_back_plate: { scaleX: 0.82, scaleY: 1.12 },
+			cache_sensor_muzzle: { scaleX: 0.28, scaleY: 0.28 },
+			cache_ankle_guard: { scaleX: 0.22, scaleY: 0.22 },
+			cache_hook_tail: { scaleX: 0.25, scaleY: 0.25 },
+			cache_split_relay: { scaleX: 0.3, scaleY: 0.3 },
 		},
 		baseScale: 0.94,
 	},
 	{
 		id: "relay-ram",
-		enabledPartIds: packetPartIds,
+		enabledPartIds: [...packetPartIds, ...packetAttachments.relayRam],
 		transformOverrides: {
 			head: { scaleX: 1.24, scaleY: 1.16, x: -54 },
 			jaw: { scaleX: 1.12, scaleY: 1.08 },
 			near_back_plate: { scaleX: 1.18, scaleY: 1.22, y: -52 },
 			far_back_plate: { scaleX: 1.18, scaleY: 1.22, y: -46 },
+			ram_forehead_wedge: { scaleX: 0.3, scaleY: 0.3 },
+			ram_shoulder_relay: { scaleX: 0.28, scaleY: 0.28 },
+			ram_foreleg_guard: { scaleX: 0.24, scaleY: 0.24 },
+			ram_back_capacitor: { scaleX: 0.27, scaleY: 0.27 },
 		},
 		baseScale: 1.08,
 	},
@@ -908,24 +1023,32 @@ const needleVariants: readonly RigVariantDefinition[] = [
 	},
 	{
 		id: "vector-mantis",
-		enabledPartIds: needlePartIds,
+		enabledPartIds: [...needlePartIds, ...needleAttachments.vectorMantis],
 		transformOverrides: {
 			near_blade_forearm: { scaleX: 1.22, scaleY: 1.08, rotation: -0.18 },
 			far_blade_forearm: { scaleX: 1.22, scaleY: 1.08, rotation: 0.18 },
 			near_fin: { rotation: -0.2, scaleX: 1.14 },
 			far_fin: { rotation: 0.2, scaleX: 1.14 },
+			mantis_scythe_near: { scaleX: 0.26, scaleY: 0.26 },
+			mantis_scythe_far: { scaleX: 0.24, scaleY: 0.24 },
+			mantis_head_fin: { scaleX: 0.28, scaleY: 0.28 },
+			mantis_signal_tail: { scaleX: 0.25, scaleY: 0.25 },
 		},
 		baseScale: 1.02,
 	},
 	{
 		id: "spine-courier",
-		enabledPartIds: needlePartIds,
+		enabledPartIds: [...needlePartIds, ...needleAttachments.spineCourier],
 		transformOverrides: {
 			spine_front: { scaleX: 1.2, scaleY: 1.12 },
 			spine_rear: { scaleX: 1.3, scaleY: 1.16 },
 			tail_segment_one: { scaleX: 1.18 },
 			tail_segment_two: { scaleX: 1.24 },
 			tail_tip: { scaleX: 1.28 },
+			courier_spine_relay: { scaleX: 0.28, scaleY: 0.28 },
+			courier_stabilizer: { scaleX: 0.25, scaleY: 0.25 },
+			courier_fin_near: { scaleX: 0.24, scaleY: 0.24 },
+			courier_fin_far: { scaleX: 0.25, scaleY: 0.25 },
 		},
 		baseScale: 0.96,
 	},
@@ -939,24 +1062,32 @@ const nullVariants: readonly RigVariantDefinition[] = [
 	},
 	{
 		id: "crown-hand",
-		enabledPartIds: nullPartIds,
+		enabledPartIds: [...nullPartIds, ...nullAttachments.crownHand],
 		transformOverrides: {
 			near_hand: { scaleX: 1.28, scaleY: 1.28 },
 			far_hand: { scaleX: 1.28, scaleY: 1.28 },
 			crown_near_plate: { rotation: -0.18, scaleY: 0.9 },
 			crown_far_plate: { rotation: 0.18, scaleY: 0.9 },
+			hand_plate_near: { scaleX: 0.25, scaleY: 0.25 },
+			hand_plate_far: { scaleX: 0.25, scaleY: 0.25 },
+			hand_wrist_crown: { scaleX: 0.22, scaleY: 0.22 },
+			hand_shoulder_shard: { scaleX: 0.25, scaleY: 0.25 },
 		},
 		baseScale: 1.04,
 	},
 	{
 		id: "void-shard",
-		enabledPartIds: nullPartIds,
+		enabledPartIds: [...nullPartIds, ...nullAttachments.voidShard],
 		transformOverrides: {
 			void_core: { scaleX: 0.82, scaleY: 1.14 },
 			crown_center: { scaleX: 0.78, scaleY: 1.34 },
 			crown_near_plate: { rotation: -0.3, scaleY: 1.28 },
 			crown_far_plate: { rotation: 0.3, scaleY: 1.28 },
 			lower_core: { scaleX: 0.74, scaleY: 1.34 },
+			shard_crown_spear: { scaleX: 0.24, scaleY: 0.24 },
+			shard_core_casing: { scaleX: 0.3, scaleY: 0.3 },
+			shard_lower_spear: { scaleX: 0.22, scaleY: 0.22 },
+			shard_orbit_plate: { scaleX: 0.22, scaleY: 0.22 },
 		},
 		baseScale: 0.92,
 	},
