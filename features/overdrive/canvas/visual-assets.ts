@@ -26,53 +26,53 @@ export const V = {
 export const SCENE = {
 	compactWidth: 640,
 	wardenAnchor: {
-		desktop: { x: 0.22, y: 0.52 },
-		compact: { x: 0.28, y: 0.55 },
+		desktop: { x: 0.24, y: 0.61 },
+		compact: { x: 0.26, y: 0.59 },
 	},
 	targetAnchor: {
-		desktop: { x: 0.73, y: 0.48 },
-		compact: { x: 0.72, y: 0.46 },
+		desktop: { x: 0.72, y: 0.59 },
+		compact: { x: 0.7, y: 0.57 },
 	},
 	targetLanes: {
-		desktop: { high: 0.42, mid: 0.48, low: 0.54 },
-		compact: { high: 0.4, mid: 0.46, low: 0.52 },
+		desktop: { high: 0.54, mid: 0.59, low: 0.64 },
+		compact: { high: 0.52, mid: 0.57, low: 0.62 },
 	},
 	targetStaging: {
 		desktop: {
-			upcomingOffsetX: 0.09,
-			distantOffsetX: 0.15,
-			upcomingScale: 0.72,
-			distantScale: 0.52,
-			upcomingAlpha: 0.32,
-			distantAlpha: 0.16,
+			upcomingOffsetX: 0.12,
+			distantOffsetX: 0.2,
+			upcomingScale: 0.62,
+			distantScale: 0.4,
+			upcomingAlpha: 0.28,
+			distantAlpha: 0.1,
 		},
 		compact: {
-			upcomingOffsetX: 0.08,
-			distantOffsetX: 0.14,
-			upcomingScale: 0.68,
-			distantScale: 0.48,
-			upcomingAlpha: 0.28,
-			distantAlpha: 0.14,
+			upcomingOffsetX: 0.14,
+			distantOffsetX: 0.24,
+			upcomingScale: 0.5,
+			distantScale: 0.3,
+			upcomingAlpha: 0.2,
+			distantAlpha: 0.06,
 		},
 	},
-	wordAnchor: { x: 0.54, y: 0.66 },
+	wordAnchor: { x: 0.5, y: 0.74 },
 	wardenHeight: {
-		desktop: { ratio: 0.42, max: 400 },
-		compact: { ratio: 0.26, max: 216 },
+		desktop: { ratio: 0.29, max: 272 },
+		compact: { ratio: 0.2, max: 156 },
 	},
 	targetHeight: {
-		desktop: { ratio: 0.38, max: 360 },
-		compact: { ratio: 0.25, max: 200 },
+		desktop: { ratio: 0.26, max: 244 },
+		compact: { ratio: 0.18, max: 144 },
 	},
-	targetEntry: { desktop: 48, compact: 32 },
-	foregroundHeight: { desktop: 0.16, compact: 0.14 },
+	targetEntry: { desktop: 80, compact: 48 },
+	foregroundHeight: { desktop: 0.12, compact: 0.1 },
 	attackPath: {
-		desktop: { startX: 0.28, endX: 0.67, y: 0.45 },
-		compact: { startX: 0.22, endX: 0.65, y: 0.46 },
+		desktop: { startX: 0.32, endX: 0.65, y: 0.5 },
+		compact: { startX: 0.3, endX: 0.63, y: 0.5 },
 	},
 	wardenTravel: {
-		midField: 0.32,
-		contact: 0.58,
+		midField: 0.06,
+		contact: 0.18,
 	},
 	signalNode: {
 		desktopRadius: 8,
@@ -123,10 +123,10 @@ export const MOTION = {
 	attackTravelMs: 85,
 	attackRecoveryMs: 60,
 	attackMs: 180,
-	attackAdvancePx: 8,
+	attackAdvancePx: 4,
 	attackRotation: 0,
-	attackPathRatio: 0.58,
-	attackArcRatio: 0.1,
+	attackPathRatio: 0.32,
+	attackArcRatio: 0.025,
 	hitMs: 90,
 	hitRecoilPx: 8,
 	hitRotation: 0,
@@ -136,10 +136,10 @@ export const MOTION = {
 	entryScale: 0.92,
 	equationMs: 700,
 	typoMs: 120,
-	stageShakeMs: 150,
+	stageShakeMs: 100,
 	hitstopMs: 50,
 	overdriveMs: 320,
-	overdriveShakeMs: 150,
+	overdriveShakeMs: 120,
 	overdriveContactRatio: 0.78,
 	overdriveOutwardRatio: 0.58,
 	overdriveColumnStartRatio: 0.28,
@@ -233,7 +233,7 @@ export function createBackground(texture: Texture): BackgroundArt {
 	let height = 0
 
 	image.anchor.set(0.5)
-	image.alpha = 0.72
+	image.alpha = 0.46
 	root.addChild(
 		image,
 		darkWash,
@@ -278,7 +278,7 @@ export function createBackground(texture: Texture): BackgroundArt {
 			darkWash
 				.clear()
 				.rect(0, 0, width, height)
-				.fill({ color: V.bg, alpha: 0.3 })
+				.fill({ color: V.bg, alpha: 0.5 })
 
 			stageWash
 				.clear()
