@@ -1,8 +1,5 @@
-import type {
-	EngineEvents,
-	ItemContribution,
-	RunSnapshot,
-} from "../types"
+import type { ItemContribution, RunSnapshot } from "../types"
+import type { EngineEvents } from "../events"
 import type { createEmitter } from "../emitter"
 
 export type ItemType = "keycap" | "macro" | "firmware" | "glitch"

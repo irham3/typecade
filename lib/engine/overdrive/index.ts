@@ -1,5 +1,6 @@
 export * from "./constants"
 export * from "./types"
+export * from "./events"
 export * from "./emitter"
 export * from "./scoring"
 export * from "./run"
