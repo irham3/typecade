@@ -5,7 +5,16 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    exclude: ['node_modules', 'e2e'],
+    exclude: [
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/.open-next/**',
+      '**/.worktrees/**',
+      '**/e2e/**',
+      '**/out/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+    ],
   },
   resolve: {
     alias: {
