@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
-  emitPresentationEvent,
+  emitLegacyPresentationEvent as emitPresentationEvent,
   getPresentationEvents,
+  subscribePresentationEvents,
   resetPresentationEventsForTests,
 } from "../events"
 

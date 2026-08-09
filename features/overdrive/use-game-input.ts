@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useGame } from "@/features/overdrive/store"
 import { sfx } from "@/features/overdrive/fx/sfx"
-import { emitPresentationEvent } from "./presentation/events"
+import { emitLegacyPresentationEvent as emitPresentationEvent } from "./presentation/events"
 
 export function useGameInput(enabled: boolean) {
 	useEffect(() => {

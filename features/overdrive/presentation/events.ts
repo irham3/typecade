@@ -2,6 +2,13 @@ import type {
   ItemContribution,
   StageType,
 } from "@/lib/engine/overdrive"
+import type { PresentationEventEnvelope } from "./scheduler-types"
+
+export type PresentationAdapterContext = {
+  runId: string
+  targetOrdinal: number
+  now: () => number
+}
 
 export type OverdrivePresentationEvent =
   | {
@@ -54,9 +61,30 @@ export type OverdrivePresentationEventInput = PresentationEventInput<OverdrivePr
 const MAX_EVENTS = 96
 let nextId = 1
 let events: OverdrivePresentationEvent[] = []
+let envelopes: PresentationEventEnvelope<OverdrivePresentationEvent>[] = []
 const listeners = new Set<() => void>()
 
 export function emitPresentationEvent(
+  ctx: PresentationAdapterContext,
+  event: OverdrivePresentationEventInput,
+): PresentationEventEnvelope<OverdrivePresentationEvent> {
+  const complete = { ...event, id: nextId++ } as OverdrivePresentationEvent
+  const envelope: PresentationEventEnvelope<OverdrivePresentationEvent> = {
+    sequence: complete.id,
+    runId: ctx.runId,
+    targetOrdinal: ctx.targetOrdinal,
+    emittedAtMs: ctx.now(),
+    event: complete,
+  }
+  
+  events = [...events, complete].slice(-MAX_EVENTS)
+  envelopes = [...envelopes, envelope].slice(-MAX_EVENTS)
+  
+  for (const listener of listeners) listener()
+  return envelope
+}
+
+export function emitLegacyPresentationEvent(
   event: OverdrivePresentationEventInput,
 ): OverdrivePresentationEvent {
   const complete = { ...event, id: nextId++ } as OverdrivePresentationEvent
@@ -67,6 +95,10 @@ export function emitPresentationEvent(
 
 export function getPresentationEvents(): readonly OverdrivePresentationEvent[] {
   return events
+}
+
+export function getPresentationEnvelopes(): readonly PresentationEventEnvelope<OverdrivePresentationEvent>[] {
+  return envelopes
 }
 
 export function getLatestPresentationEventId(): number {
@@ -81,5 +113,6 @@ export function subscribePresentationEvents(listener: () => void): () => void {
 export function resetPresentationEventsForTests(): void {
   nextId = 1
   events = []
+  envelopes = []
   for (const listener of listeners) listener()
 }

@@ -15,7 +15,7 @@ import {
 	type TelemetryContext,
 } from "@/lib/telemetry"
 import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
-import { emitPresentationEvent } from "./presentation/events"
+import { emitLegacyPresentationEvent as emitPresentationEvent } from "./presentation/events"
 
 export const OVERDRIVE_SAVE_KEY = "typecade_overdrive_save"
 export const OVERDRIVE_BRIEFING_KEY = "typecade_overdrive_briefing_seen"
