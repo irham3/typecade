@@ -67,7 +67,6 @@ export class CombatScene {
 	private height = 0
 	private elapsedMs = 0
 	private wordAgeMs = 0
-	private equationMs = 0
 	private lastCaretIndex = -1
 	private lastDirty = false
 	private lastOverdriveCharge = -1
@@ -174,7 +173,6 @@ export class CombatScene {
 			caretIndex: this.state.caretIndex,
 			dirty: this.state.wordDirty,
 			overdriveCharge: this.state.overdriveCharge,
-			equation: null,
 			armedItemIds: [],
 			reducedMotion: this.state.reducedMotion,
 		})
@@ -184,28 +182,12 @@ export class CombatScene {
 		event: Extract<OverdrivePresentationEvent, { type: "word-completed" }>,
 	) {
 		sfx.word(event.combo)
-		const equation = event.aegisRecovery
-			? `AEGIS RECOVERY · ${this.formatMetric(
-				event.effectiveBase,
-			)} BASE = +${this.formatMetric(event.scoreGain)}`
-			: event.scoreGain > 0
-				? `${this.formatMetric(
-					event.effectiveBase,
-				)} BASE × ${this.formatMetric(
-					event.effectiveMult,
-				)} MULT${event.finalMultiplier !== 1
-					? ` × ${this.formatMetric(event.finalMultiplier)} FINAL`
-					: ""
-				} = +${this.formatMetric(event.scoreGain)}`
-				: "CORRUPTED × 0 = +0"
-		this.equationMs = MOTION.equationMs
 		this.wordAgeMs = 0
 		this.rail.render({
 			word: this.state.currentWord,
 			caretIndex: this.state.caretIndex,
 			dirty: this.state.wordDirty,
 			overdriveCharge: this.state.overdriveCharge,
-			equation,
 			armedItemIds: [],
 			reducedMotion: this.state.reducedMotion,
 		})
@@ -275,14 +257,6 @@ export class CombatScene {
 			this.rail.setShake(direction * 4)
 		} else {
 			this.rail.setShake(0)
-		}
-		
-		if (this.equationMs > 0) {
-			this.equationMs = Math.max(0, this.equationMs - delta)
-			this.rail.setEquationAlpha(Math.min(1, this.equationMs / 150))
-			if (this.equationMs === 0) {
-				this.redrawRail()
-			}
 		}
 	}
 

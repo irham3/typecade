@@ -7,7 +7,6 @@ export interface CommandRailState {
   caretIndex: number
   dirty: boolean
   overdriveCharge: number
-  equation: string | null
   armedItemIds: readonly string[]
   reducedMotion: boolean
 }
@@ -97,66 +96,50 @@ export class CommandRail {
     let totalWidth = 0
     const characters: Text[] = []
     
-    if (state.equation) {
-      const text = this.wordPool.allocate(this.wordLayer, state.equation, 0)
-      text.text = state.equation
+    for (const character of state.word) {
+      const text = this.wordPool.allocate(this.wordLayer, character, 0)
+      text.text = character
       text.style.fontSize = fontSize
-      text.style.fill = V.text
-      text.x = 0
+      characters.push(text)
+      totalWidth += text.width
+    }
+
+    let cursor = -totalWidth / 2
+    let caretX = cursor
+    for (const [index, text] of characters.entries()) {
+      text.anchor.set(0)
+      text.x = cursor
       text.y = -fontSize / 2 - 20
-      text.anchor.set(0.5, 0)
-    } else {
-      for (const character of state.word) {
-        const text = this.wordPool.allocate(this.wordLayer, character, 0)
-        text.text = character
-        text.style.fontSize = fontSize
-        characters.push(text)
-        totalWidth += text.width
-      }
+      text.style.fill = state.dirty
+        ? V.red
+        : index < state.caretIndex
+          ? V.text
+          : V.green
+      if (index === state.caretIndex) caretX = cursor
+      cursor += text.width
+    }
+    if (state.caretIndex >= characters.length) caretX = cursor
 
-      let cursor = -totalWidth / 2
-      let caretX = cursor
-      for (const [index, text] of characters.entries()) {
-        text.anchor.set(0)
-        text.x = cursor
-        text.y = -fontSize / 2 - 20
-        text.style.fill = state.dirty
-          ? V.red
-          : index < state.caretIndex
-            ? V.text
-            : V.green
-        if (index === state.caretIndex) caretX = cursor
-        cursor += text.width
-      }
-      if (state.caretIndex >= characters.length) caretX = cursor
-
-      this.caret
-        .clear()
-        .rect(
-          caretX,
-          -fontSize / 2 - 18,
-          SCENE.rail.caretWidth,
-          fontSize,
-        )
-        .fill({ color: state.dirty ? V.red : V.green })
-        
-      this.strike.clear()
-      if (state.dirty) {
-        this.strike
-          .rect(-totalWidth / 2, fontSize / 2 - 14, totalWidth, 2)
-          .fill({ color: V.red })
-      }
+    this.caret
+      .clear()
+      .rect(
+        caretX,
+        -fontSize / 2 - 18,
+        SCENE.rail.caretWidth,
+        fontSize,
+      )
+      .fill({ color: state.dirty ? V.red : V.green })
+      
+    this.strike.clear()
+    if (state.dirty) {
+      this.strike
+        .rect(-totalWidth / 2, fontSize / 2 - 14, totalWidth, 2)
+        .fill({ color: V.red })
     }
 
     this.status.text = state.armedItemIds.join(" ")
     this.status.style.fill = state.dirty ? V.red : V.text
     this.status.y = SCENE.rail.height / 2 + 20
-  }
-
-  setEquationAlpha(alpha: number) {
-    if (this.status.text && this.status.text.includes("BASE")) {
-      this.status.alpha = alpha
-    }
   }
 
   setWordFade(fade: number, caretIndex: number) {
