@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest"
 import { AnimationController } from "../animation-controller"
 import type {
 	AnimationClip,
