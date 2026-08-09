@@ -8,6 +8,7 @@ import {
 import type { StageType, ThreatBand } from "@/lib/engine/overdrive"
 import { sfx } from "@/features/overdrive/fx/sfx"
 import type { OverdrivePresentationEvent } from "../presentation/events"
+import { presentationHealth } from "../presentation/telemetry"
 import type { PresentationEventEnvelope } from "../presentation/scheduler-types"
 import type { LoadedRigAssets } from "./assets/combat-assets"
 import { CombatDirector } from "./choreography/combat-director"
@@ -293,6 +294,7 @@ export class CombatScene {
 
 	private tick = (ticker: Ticker) => {
 		const delta = Math.min(ticker.deltaMS, 50)
+		presentationHealth.recordFrame(ticker.deltaMS)
 		this.resize()
 		this.elapsedMs += delta
 		this.wordAgeMs += delta

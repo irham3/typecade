@@ -15,7 +15,11 @@ import {
 	type TelemetryContext,
 } from "@/lib/telemetry"
 import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
-import { emitLegacyPresentationEvent as emitPresentationEvent } from "./presentation/events"
+import {
+	emitLegacyPresentationEvent,
+	emitPresentationEvent,
+} from "./presentation/events"
+import { presentationHealth } from "./presentation/telemetry"
 
 export const OVERDRIVE_SAVE_KEY = "typecade_overdrive_save"
 export const OVERDRIVE_BRIEFING_KEY = "typecade_overdrive_briefing_seen"
@@ -83,6 +87,7 @@ export const useGame = create<GameStore>((set, get) => {
 	}
 
 	function attach(api: RunApi) {
+		const runId = crypto.randomUUID()
 		const sync = () => set({
 			...api.snapshot(),
 			api,
@@ -102,14 +107,14 @@ export const useGame = create<GameStore>((set, get) => {
 				enteredStage
 				&& (after.stage !== before.stage || after.zone !== before.zone)
 			) {
-				emitPresentationEvent({ type: "stage-entered", stage: after.stage })
+				emitLegacyPresentationEvent({ type: "stage-entered", stage: after.stage })
 			}
 			sync()
 			if (enteredStage) set({ stageReady: true })
 		}
 
 		api.events.on("word_complete", (payload) => {
-			emitPresentationEvent({
+			emitLegacyPresentationEvent({
 				type: "word-completed",
 				word: payload.word,
 				characterBase: payload.characterBase,
@@ -133,35 +138,40 @@ export const useGame = create<GameStore>((set, get) => {
 			sync()
 		})
 		api.events.on("character_accepted", ({ character, caretIndex, charge }) => {
-			emitPresentationEvent({
-				type: "accepted-character",
-				character,
-				index: Math.max(0, caretIndex - 1),
-				word: api.snapshot().currentWord,
-				targetOrdinal: api.snapshot().targetOrdinal,
-				combo: api.snapshot().combo,
-				charge,
-			})
+			emitPresentationEvent(
+				{
+					runId,
+					targetOrdinal: api.snapshot().targetOrdinal,
+					now: () => performance.now(),
+				},
+				{
+					type: "accepted-character",
+					character,
+					index: Math.max(0, caretIndex - 1),
+					word: api.snapshot().currentWord,
+					targetOrdinal: api.snapshot().targetOrdinal,
+					combo: api.snapshot().combo,
+					charge,
+				},
+			)
 			sync()
 		})
 		api.events.on("overdrive_ready", () => {
-			emitPresentationEvent({ type: "overdrive-ready" })
-			sync()
+			emitLegacyPresentationEvent({ type: "overdrive-ready" })
 		})
 		api.events.on("aegis_rescue", ({ rescueNumber, timeAddedMs }) => {
-			emitPresentationEvent({
+			emitLegacyPresentationEvent({
 				type: "aegis-rescue",
 				rescueNumber,
 				timeAddedMs,
 			})
-			sync()
 		})
 		api.events.on("mult_increased", ({ mult }) => {
-			emitPresentationEvent({ type: "mult-increased", mult })
-			sync()
+			emitLegacyPresentationEvent({ type: "mult-increased", mult })
 		})
 		api.events.on("stage_clear", ({ zone, stage, tokensEarned, timeLeftMs }) => {
 			const snapshot = api.snapshot()
+			emitLegacyPresentationEvent({ type: "stage-cleared" })
 			trackEvent("stage_clear", {
 				...telemetryContext(snapshot),
 				zone,
@@ -170,7 +180,10 @@ export const useGame = create<GameStore>((set, get) => {
 				tokensEarned,
 				timeLeftMs,
 			})
-			emitPresentationEvent({ type: "stage-cleared" })
+			trackEvent("presentation_health", {
+				...telemetryContext(snapshot),
+				...presentationHealth.flushStage(stage),
+			})
 			sync()
 		})
 		api.events.on("run_over", ({ win, finalScore, zoneReached }) => {
@@ -191,7 +204,14 @@ export const useGame = create<GameStore>((set, get) => {
 					score: finalScore,
 				})
 			}
-			emitPresentationEvent({ type: "run-over" })
+			const health = presentationHealth.flushStage(snapshot.stage)
+			health.scope = "run"
+			health.stage = "run"
+			trackEvent("presentation_health", {
+				...telemetryContext(snapshot),
+				...health,
+			})
+			emitLegacyPresentationEvent({ type: "run-over" })
 			sync()
 		})
 		api.events.on("item_triggered", ({ itemId, trigger, contribution }) => {
@@ -203,7 +223,7 @@ export const useGame = create<GameStore>((set, get) => {
 				zone: snapshot.zone,
 				stage: snapshot.stage,
 			})
-			emitPresentationEvent({
+			emitLegacyPresentationEvent({
 				type: "item-triggered",
 				itemId,
 				label: trigger,
@@ -220,7 +240,7 @@ export const useGame = create<GameStore>((set, get) => {
 				zone: snapshot.zone,
 				stage: snapshot.stage,
 			})
-			emitPresentationEvent({ type: "macro-used", itemId, result })
+			emitLegacyPresentationEvent({ type: "macro-used", itemId, result })
 			sync()
 		})
 		for (const event of ["typo", "mult_change", "quota_progress", "stage_fail"] as const) {

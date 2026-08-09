@@ -75,6 +75,25 @@ export interface TelemetryEvents {
 		glitchId: string
 		zone: number
 	}
+	presentation_health: TelemetryContext & {
+		scope: "stage" | "run"
+		stage: StageType | "run"
+		sampleCount: number
+		frameP50Ms: number
+		frameP95Ms: number
+		frameP99Ms: number
+		cueLatencyP50Ms: number
+		cueLatencyP95Ms: number
+		cueLatencyP99Ms: number
+		hitLatencyP50Ms: number
+		hitLatencyP95Ms: number
+		hitLatencyP99Ms: number
+		lateCueCount: number
+		lateHitCount: number
+		decorativeDropCount: number
+		peakLiveEffects: number
+		peakUnsettledContacts: number
+	}
 }
 
 export type TelemetryEventName = keyof TelemetryEvents

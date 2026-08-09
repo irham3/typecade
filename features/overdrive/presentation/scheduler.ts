@@ -6,6 +6,7 @@ import type {
   PresentationHealthSnapshot,
   PresentationScheduler,
 } from "./scheduler-types"
+import { presentationHealth } from "./telemetry"
 
 export type SchedulerOptions = {
   runId: string
@@ -98,6 +99,7 @@ export function createPresentationScheduler(opts: SchedulerOptions): Presentatio
     for (const beat of pendingBeats) {
       if (beat.priority === "decorative" && beat.expiresAtMs !== null && nowMs >= beat.expiresAtMs) {
         decorativeDrops += 1
+        presentationHealth.addDecorativeDrops(1)
       } else {
         nextPending.push(beat)
       }
