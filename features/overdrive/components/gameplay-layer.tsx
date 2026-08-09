@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { GameplayCanvas } from "../canvas/gameplay-canvas"
-import { usePresentationEvents } from "../presentation/use-presentation-events"
+import { usePresentationEvents, usePresentationEnvelopes } from "../presentation/use-presentation-events"
 import { useSettings } from "../settings/store"
 import { useGame } from "../store"
 
@@ -62,7 +62,7 @@ export function GameplayLayer() {
 		quitToMenu: snapshot.quitToMenu,
 	})))
 	const settings = useSettings()
-	const events = usePresentationEvents()
+	const envelopes = usePresentationEnvelopes()
 
 	if (initializationError) {
 		return (
@@ -124,7 +124,7 @@ export function GameplayLayer() {
 				activeGlitch={state.activeGlitch}
 				reducedMotion={settings.reducedMotion ?? false}
 				screenShake={settings.screenShake}
-				events={events}
+				events={envelopes}
 				onReady={() => setCanvasReady(true)}
 				onInitializationError={setInitializationError}
 			/>

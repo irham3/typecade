@@ -89,6 +89,16 @@ export function emitLegacyPresentationEvent(
 ): OverdrivePresentationEvent {
   const complete = { ...event, id: nextId++ } as OverdrivePresentationEvent
   events = [...events, complete].slice(-MAX_EVENTS)
+  envelopes = [
+    ...envelopes,
+    {
+      sequence: complete.id,
+      runId: "legacy",
+      targetOrdinal: 0,
+      emittedAtMs: performance.now(),
+      event: complete,
+    },
+  ].slice(-MAX_EVENTS)
   for (const listener of listeners) listener()
   return complete
 }

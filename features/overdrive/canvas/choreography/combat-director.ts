@@ -9,6 +9,8 @@ import type {
 } from "@/lib/engine/overdrive"
 import { sfx } from "@/features/overdrive/fx/sfx"
 import type { OverdrivePresentationEvent } from "../../presentation/events"
+import type { PresentationEventEnvelope, PresentationScheduler } from "../../presentation/scheduler-types"
+import { createPresentationScheduler } from "../../presentation/scheduler"
 import type { LoadedRigAssets } from "../assets/combat-assets"
 import { CombatEffects } from "../effects/combat-effects"
 import {
@@ -16,6 +18,7 @@ import {
 	ItemPresentation,
 } from "../effects/item-presentation"
 import { RigInstance } from "../rig/rig-instance"
+import { ContactLedger } from "./contact-ledger"
 import {
 	EFFECTS,
 	MOTION,
@@ -178,6 +181,8 @@ function createEnemy(
 export class CombatDirector {
 	readonly root = new Container()
 	readonly signalNodes = new Container()
+	readonly scheduler: PresentationScheduler
+	readonly ledger = new ContactLedger({ historyLimit: 120 })
 	private readonly actors = new Container()
 	private readonly effects = new CombatEffects()
 	private readonly itemPresentation = new ItemPresentation()
@@ -224,6 +229,10 @@ export class CombatDirector {
 	) {
 		this.state = initial
 		this.stage = initial.stage
+		this.scheduler = createPresentationScheduler({
+			runId: "legacy",
+			now: () => performance.now(),
+		})
 		this.enemyAssets = assets.enemy
 		this.warden = createWarden(assets.warden)
 		this.rescueCallout.anchor.set(0.5)
@@ -334,9 +343,16 @@ export class CombatDirector {
 		this.redrawWardenIntegrity()
 	}
 
-	handle(event: OverdrivePresentationEvent) {
+	handle(envelope: PresentationEventEnvelope<OverdrivePresentationEvent>) {
+		const event = envelope.event
 		if (event.type === "accepted-character") {
-			this.acceptCharacter(event)
+			this.scheduler.enqueue(envelope)
+			this.ledger.accept({
+				sequence: envelope.sequence,
+				targetOrdinal: envelope.targetOrdinal,
+				characterIndex: event.index,
+				acceptedAtMs: envelope.emittedAtMs,
+			})
 			return
 		}
 		if (event.type === "rejected-character") {
@@ -399,6 +415,39 @@ export class CombatDirector {
 		this.flushItemEffects()
 		this.effects.update(delta)
 		this.itemPresentation.update(delta)
+
+		const now = performance.now()
+		const beats = this.scheduler.drain(now)
+		for (const beat of beats) {
+			if (beat.kind === "contact-cue") {
+				const target = this.slotForOrdinal(beat.targetOrdinal) ?? this.staged[0]
+				if (!target) continue
+				const index = beat.payload.index as number
+				const chain = (
+					["chain-1", "chain-2", "chain-3"] as const
+				)[index % 3]
+				const position = this.signalNodePosition(index, this.state.currentWord.length)
+				const muzzle = this.warden.rig.getPartGlobalPosition("cannon_barrel", 1, 0.5)
+				this.effects.spawnSmear(muzzle, position, target.accent)
+				this.warden.rig.play(chain)
+				this.startCharacterTravel(index, this.state.currentWord.length, target)
+				this.returnDelayMs = 0
+				this.ledger.markCue(beat.sourceSequence, now)
+			} else if (beat.kind === "target-hit") {
+				const target = this.slotForOrdinal(beat.targetOrdinal) ?? this.staged[0]
+				if (!target) continue
+				const index = beat.payload.index as number
+				const position = this.signalNodePosition(index, this.state.currentWord.length)
+				this.pendingContacts.push({
+					position,
+					target,
+					tone: target.accent,
+					finisher: false,
+				})
+				if (this.pendingContacts.length > 2) this.pendingContacts.shift()
+				this.ledger.markHit(beat.sourceSequence, now)
+			}
+		}
 	}
 
 	destroy() {
@@ -417,32 +466,7 @@ export class CombatDirector {
 		this.root.destroy({ children: true })
 	}
 
-	private acceptCharacter(
-		event: Extract<OverdrivePresentationEvent, { type: "accepted-character" }>,
-	) {
-		const target = this.slotForOrdinal(event.targetOrdinal) ?? this.staged[0]
-		if (!target) return
-		const chain = (
-			["chain-1", "chain-2", "chain-3"] as const
-		)[event.index % 3]
-		const position = this.signalNodePosition(event.index, event.word.length)
-		const muzzle = this.warden.rig.getPartGlobalPosition(
-			"cannon_barrel",
-			1,
-			0.5,
-		)
-		this.effects.spawnSmear(muzzle, position, target.accent)
-		this.pendingContacts.push({
-			position,
-			target,
-			tone: target.accent,
-			finisher: false,
-		})
-		if (this.pendingContacts.length > 2) this.pendingContacts.shift()
-		this.warden.rig.play(chain, { queueContact: true })
-		this.startCharacterTravel(event.index, event.word.length, target)
-		this.returnDelayMs = 0
-	}
+
 
 	private completeWord(
 		event: Extract<OverdrivePresentationEvent, { type: "word-completed" }>,

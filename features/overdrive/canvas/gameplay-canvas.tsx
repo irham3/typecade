@@ -5,9 +5,10 @@ import { CombatScene, type SceneState } from "./combat-scene"
 import { loadCombatRigAssets } from "./assets/combat-assets"
 import { V } from "./visual-assets"
 import { getLatestPresentationEventId, type OverdrivePresentationEvent } from "../presentation/events"
+import type { PresentationEventEnvelope } from "../presentation/scheduler-types"
 
 export type GameplayCanvasProps = SceneState & {
-  events: readonly OverdrivePresentationEvent[]
+  events: readonly PresentationEventEnvelope<OverdrivePresentationEvent>[]
   onReady?: () => void
   onInitializationError?: (error: Error) => void
 }
@@ -18,14 +19,14 @@ function toError(value: unknown): Error {
 
 function consumePendingEvents(
   scene: CombatScene,
-  events: readonly OverdrivePresentationEvent[],
+  events: readonly PresentationEventEnvelope<OverdrivePresentationEvent>[],
   lastConsumedRef: React.MutableRefObject<number>,
   hostRef: React.RefObject<HTMLDivElement | null>
 ): void {
-  for (const event of events) {
-    if (event.id > lastConsumedRef.current) {
-      scene.handle(event)
-      lastConsumedRef.current = event.id
+  for (const envelope of events) {
+    if (envelope.sequence > lastConsumedRef.current) {
+      scene.handle(envelope)
+      lastConsumedRef.current = envelope.sequence
     }
   }
   if (hostRef.current) {
