@@ -22,7 +22,7 @@
 
 Typecade combines a typing test with a keyboard-first roguelike called **Overdrive**. Practice keeps the focused speed-and-accuracy test. Overdrive turns each word into an attack, lets players assemble Keycap builds, and raises the quota across an eight-Zone run.
 
-Overdrive remains behind the `NEXT_PUBLIC_OVERDRIVE` feature flag while the team tests balance, performance, and first-run completion.
+Overdrive remains behind the `NEXT_PUBLIC_OVERDRIVE` feature flag while the team tests balance, performance, and first-run completion. Its temporary public route is `/overdrive`; when the flag is enabled, the main navbar also shows an Overdrive link. The route should become the homepage only after the M5 launch gate is met.
 
 ## Overdrive
 
@@ -115,7 +115,7 @@ Start the development server:
 npm run dev
 ```
 
-Open [http://localhost:3000/overdrive](http://localhost:3000/overdrive) for Overdrive or [http://localhost:3000](http://localhost:3000) for Practice.
+Open [http://localhost:3000/overdrive](http://localhost:3000/overdrive) for Overdrive or [http://localhost:3000](http://localhost:3000) for Practice. Until launch, `/overdrive` is the intentional feature-flagged route, not the homepage.
 
 ## Tests
 

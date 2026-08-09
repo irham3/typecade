@@ -27,3 +27,13 @@ test("keeps the existing Practice route available", async ({ page }) => {
 	await page.getByRole("link", { name: "PRACTICE" }).click()
 	await expect(page).toHaveURL(/\/$/)
 })
+
+test("exposes the feature-gated Overdrive route in navigation", async ({ page }) => {
+	await page.goto("/")
+	await expect(page.getByRole("navigation").getByRole("link", { name: "Overdrive" })).toBeVisible()
+
+	await page.setViewportSize({ width: 390, height: 844 })
+	await page.goto("/")
+	await page.getByRole("button", { name: "Open menu" }).click()
+	await expect(page.getByRole("link", { name: "Overdrive" })).toBeVisible()
+})

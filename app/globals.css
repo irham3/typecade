@@ -432,7 +432,7 @@ body {
   background-size: 32px 32px;
 }
 
-/* Aurora disabled for cleaner profressional aesthetic */
+/* Aurora disabled for a cleaner professional aesthetic. */
 .aurora-container, .aurora-bg, .aurora-blob {
   display: none !important;
 }
@@ -528,8 +528,8 @@ body::before {
 
 /* ── Scrollbar ── */
 
-/* ── Optical Alignment Tweaks for Icons ── */
-/* Mendorong sedikit semua SVG lucide ke bawah untuk meratakan middle text */
+/* ── Icon Optical Alignment ── */
+/* Nudge Lucide SVGs down slightly so icons align with adjacent text. */
 button > svg.lucide,
 a > svg.lucide,
 span.flex > svg.lucide,

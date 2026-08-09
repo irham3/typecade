@@ -26,7 +26,7 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5, // Accessibility friendly
+  maximumScale: 5,
 };
 
 export const siteDescription = "Free multiplayer typing test with real-time races, leaderboards, and detailed WPM stats. Challenge friends or race strangers.";
@@ -113,7 +113,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground`}>
+      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-dvh flex flex-col items-center justify-between text-foreground`}>
         <AuthProvider>
           {children}
         </AuthProvider>

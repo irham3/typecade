@@ -42,12 +42,15 @@ export function GlobalSettingsModal() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="system-config-title"
                         className="w-full max-w-lg bg-background/90 glass border border-foreground/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col max-h-[85vh] overflow-y-auto hide-scrollbar relative z-10"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-bold font-mono tracking-tight flex items-center gap-2">
+                                <h2 id="system-config-title" className="text-xl sm:text-2xl font-bold font-mono tracking-tight flex items-center gap-2">
                                     System Config
                                 </h2>
                                 <p className="text-sm text-text-dim mt-1">Configure global audio and visuals.</p>
@@ -56,6 +59,7 @@ export function GlobalSettingsModal() {
                                 variant="ghost"
                                 size="icon"
                                 className="rounded-full hover:bg-foreground/5 hover:text-foreground h-10 w-10 shrink-0"
+                                aria-label="Close system settings"
                                 onClick={() => setGlobalSettingsOpen(false)}
                             >
                                 <X size={20} />
@@ -160,6 +164,8 @@ export function GlobalSettingsModal() {
                                     </div>
                                     <button
                                         onClick={() => setShowAnimations(!showAnimations)}
+                                        aria-label="Toggle background animations"
+                                        aria-pressed={showAnimations}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${showAnimations ? 'bg-accent' : 'bg-foreground/10'}`}
                                     >
                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAnimations ? 'translate-x-6' : 'translate-x-1'}`} />
