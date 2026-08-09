@@ -165,9 +165,12 @@ The Worker reads its entry point, static asset directory, compatibility flags, s
 - [`docs/game-design.md`](./docs/game-design.md) defines gameplay rules, item effects, economy, balance, and MVP scope.
 - [`docs/prd.md`](./docs/prd.md) defines requirement IDs, priorities, architecture, data, and milestones.
 - [`docs/design.md`](./docs/design.md) defines visual tokens, layouts, motion, audio, and accessibility.
+- [`docs/superpowers/specs/2026-08-09-overdrive-combat-competition-progression-design.md`](./docs/superpowers/specs/2026-08-09-overdrive-combat-competition-progression-design.md) records the approved combat-first product direction and post-retention progression gate.
+- [`docs/superpowers/specs/2026-08-09-overdrive-technical-design-document.md`](./docs/superpowers/specs/2026-08-09-overdrive-technical-design-document.md) defines the target module, API, database, replay, security, and rollout architecture.
+- [`docs/superpowers/plans/2026-08-09-overdrive-combat-competition-progression.md`](./docs/superpowers/plans/2026-08-09-overdrive-combat-competition-progression.md) breaks that design into test-first implementation tasks.
 - [`CREDITS.md`](./CREDITS.md) records asset sources and licenses.
 
-Read the three design documents before changing Overdrive. Their values and item names take precedence over code and this README.
+Read the three governing documents before changing Overdrive. Their values and item names take precedence over the supporting design spec, TDD, implementation plan, code, and this README.
 
 ## Bugs and feature requests
 
