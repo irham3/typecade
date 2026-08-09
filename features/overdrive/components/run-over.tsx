@@ -63,7 +63,7 @@ export function RunOver() {
 	}, [finalScore, state.language, state.mode])
 
 	const share = async () => {
-		const text = `TYPECADE: OVERDRIVE — ${formatNumber(finalScore)} points, Zone ${state.zone}, ${state.runAccuracy}% accuracy. Seed: ${state.seed}`
+		const text = `TYPECADE: OVERDRIVE - ${formatNumber(finalScore)} points, Zone ${state.zone}, ${state.runAccuracy}% accuracy. Seed: ${state.seed}`
 		try {
 			if (!shareCardRef.current) throw new Error("Share card is unavailable")
 			const { toPng } = await import("html-to-image")
