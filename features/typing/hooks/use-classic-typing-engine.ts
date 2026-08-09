@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { calculateWpm, calculateAccuracy } from '@/lib/engine/scoring';
 
 export type GameStatus = "idle" | "playing" | "finished";
 
@@ -76,9 +77,9 @@ export function useClassicTypingEngine({ text, duration = 60, mode, isFocused = 
         if (pauseStartRef.current !== null) {
             totalPause += Date.now() - pauseStartRef.current;
         }
-        const timeElapsed = (Date.now() - _startTime - totalPause) / 1000 / 60; // in minutes
+        const elapsedMs = Date.now() - _startTime - totalPause;
 
-        if (timeElapsed <= 0) return { wpm: 0, accuracy: 100 };
+        if (elapsedMs <= 0) return { wpm: 0, accuracy: 100 };
 
         let correctChars = 0;
         let totalCharsTyped = 0;
@@ -98,10 +99,10 @@ export function useClassicTypingEngine({ text, duration = 60, mode, isFocused = 
             if (_currentInput[i] === targetWord[i]) correctChars++;
         }
 
-        const currentWpm = Math.max(0, Math.floor((correctChars / 5) / timeElapsed));
-        const currentAcc = Math.max(0, Math.floor((correctChars / Math.max(1, totalCharsTyped)) * 100));
-
-        return { wpm: currentWpm, accuracy: currentAcc };
+        return {
+            wpm: calculateWpm(correctChars, elapsedMs),
+            accuracy: calculateAccuracy(correctChars, totalCharsTyped),
+        };
     }, []);
 
     const completeTest = useCallback(() => {
