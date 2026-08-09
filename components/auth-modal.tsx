@@ -174,10 +174,14 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="auth-title"
                         className="w-full max-w-md bg-panel-bg border border-border-dim rounded-3xl p-8 shadow-sm relative z-10 max-h-[85vh] overflow-y-auto hide-scrollbar"
                     >
                         <button
                             onClick={onClose}
+                            aria-label="Close authentication dialog"
                             className="absolute top-6 right-6 p-2 rounded-full hover:bg-foreground/10 transition-colors text-text-dim hover:text-foreground"
                         >
                             <X size={20} />
@@ -188,7 +192,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                 <ShieldCheck size={20} />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Access Typecade</h2>
+                                <h2 id="auth-title" className="text-2xl font-display font-bold text-foreground tracking-tight">Access Typecade</h2>
                                 <p className="text-sm text-text-dim">Authenticate to continue.</p>
                             </div>
                         </div>
@@ -236,11 +240,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                                 <form onSubmit={handleEmailAuth} className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Email</label>
+                                        <label htmlFor="auth-email" className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Email</label>
                                         <div className="flex items-center gap-3 bg-panel-bg border border-foreground/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
                                             <Mail size={16} className="text-text-dim" />
                                             <input
+                                                id="auth-email"
                                                 type="email"
+                                                autoComplete="email"
                                                 value={email}
                                                 onChange={(event) => setEmail(event.target.value)}
                                                 placeholder="player@email.com"
@@ -250,11 +256,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Password</label>
+                                        <label htmlFor="auth-password" className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Password</label>
                                         <div className="flex items-center gap-3 bg-panel-bg border border-foreground/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
                                             <Lock size={16} className="text-text-dim" />
                                             <input
+                                                id="auth-password"
                                                 type="password"
+                                                autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
                                                 value={password}
                                                 onChange={(event) => setPassword(event.target.value)}
                                                 placeholder="Enter your password"
@@ -265,11 +273,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                                     {mode === "sign-up" && (
                                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="space-y-2 overflow-hidden">
-                                            <label className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Confirm password</label>
+                                            <label htmlFor="auth-confirm-password" className="text-xs font-bold text-text-dim uppercase tracking-wider pl-1">Confirm password</label>
                                             <div className="flex items-center gap-3 bg-panel-bg border border-foreground/5 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50 rounded-xl px-4 py-3.5 transition-all">
                                                 <Lock size={16} className="text-text-dim" />
                                                 <input
+                                                    id="auth-confirm-password"
                                                     type="password"
+                                                    autoComplete="new-password"
                                                     value={confirmPassword}
                                                     onChange={(event) => setConfirmPassword(event.target.value)}
                                                     placeholder="Re-enter your password"
@@ -292,7 +302,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         )}
 
                         {status.message && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`mt-6 rounded-xl px-4 py-3.5 text-sm font-medium border text-center ${statusStyles}`}>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                role="status"
+                                aria-live="polite"
+                                className={`mt-6 rounded-xl px-4 py-3.5 text-sm font-medium border text-center ${statusStyles}`}
+                            >
                                 {status.message}
                             </motion.div>
                         )}

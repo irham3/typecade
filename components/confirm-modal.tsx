@@ -39,10 +39,15 @@ export function ConfirmModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="confirm-title"
+                        aria-describedby="confirm-message"
                         className="w-full max-w-sm bg-panel-bg border border-foreground/10 rounded-3xl p-6 shadow-2xl relative z-10 glass glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
                     >
                     <button
                         onClick={onCancel}
+                        aria-label="Close confirmation dialog"
                         className="absolute top-4 right-4 p-2 rounded-full hover:bg-foreground/10 transition-colors text-text-dim hover:text-foreground"
                     >
                         <X size={18} />
@@ -53,8 +58,8 @@ export function ConfirmModal({
                             <AlertTriangle size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-display font-bold text-foreground tracking-tight mb-2">{title}</h2>
-                            <p className="text-sm text-text-dim">{message}</p>
+                            <h2 id="confirm-title" className="text-xl font-display font-bold text-foreground tracking-tight mb-2">{title}</h2>
+                            <p id="confirm-message" className="text-sm text-text-dim">{message}</p>
                         </div>
                     </div>
 

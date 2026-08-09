@@ -68,7 +68,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
     if (isLessonPage) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center w-full relative z-0">
+            <div className="min-h-dvh flex flex-col items-center justify-center w-full relative z-0">
                 {showAnimations && (
                     <>
                         <DarkVeil />
@@ -86,7 +86,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-between w-full relative z-0">
+        <div className="min-h-dvh flex flex-col items-center justify-between w-full relative z-0">
             <AudioController />
             {showAnimations && (
                 <>
@@ -98,6 +98,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             {/* Subtle Edge Scanlines & Vignette */}
             <div 
                 className="pointer-events-none fixed inset-0 z-40 opacity-30 select-none"
+                aria-hidden="true"
                 style={{
                     background: "linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.2) 50%)",
                     backgroundSize: "100% 4px",
@@ -107,6 +108,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             />
             <div 
                 className="pointer-events-none fixed inset-0 z-40 select-none"
+                aria-hidden="true"
                 style={{
                     boxShadow: "inset 0 0 120px rgba(0,0,0,0.6)",
                 }}
