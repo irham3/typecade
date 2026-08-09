@@ -86,7 +86,7 @@ export function KeycapSlot({
 			{...props}
 			tabIndex={tooltip ? 0 : undefined}
 			aria-label={ariaLabel}
-			className={`group relative flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 bg-bg-1 text-3xl text-text-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acc-cyan ${empty ? "border-dashed border-line" : RARITY_BORDER[rarity]} ${className}`}
+			className={`group relative flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 bg-bg-1 text-3xl text-text-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acc-cyan ${empty ? "border-dashed border-line" : RARITY_BORDER[rarity]} ${className}`}
 		>
 			{children}
 			{tooltip && (
@@ -110,7 +110,7 @@ export function ItemTooltipContent({
 	price?: number
 }) {
 	return (
-		<div className="flex w-[260px] flex-col gap-2 rounded-lg border border-line bg-bg-2 p-3 text-left">
+		<div className="flex w-65 flex-col gap-2 rounded-lg border border-line bg-bg-2 p-3 text-left">
 			<div className="flex items-start justify-between gap-3">
 				<strong className="text-base text-text-hi">{name}</strong>
 				<RarityBadge rarity={rarity} />
