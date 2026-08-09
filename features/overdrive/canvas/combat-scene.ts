@@ -14,14 +14,13 @@ import type { LoadedRigAssets } from "./assets/combat-assets"
 import { CombatDirector } from "./choreography/combat-director"
 import {
 	createBackground,
-	createCommandRail,
-	drawCommandRail,
 	MOTION,
 	SCENE,
 	V,
 	type BackgroundArt,
-	type CommandRailArt,
 } from "./visual-assets"
+import { CommandRail } from "./command-rail"
+import { SceneFeedback } from "./scene-feedback"
 
 export type SceneState = {
 	currentWord: string
@@ -61,20 +60,14 @@ export class CombatScene {
 	private readonly overlay = new Container()
 	private readonly background: BackgroundArt
 	private readonly director: CombatDirector
-	private readonly rail: CommandRailArt
-	private readonly lowTimeEdge = new Graphics()
-	private readonly typoBars = new Graphics()
+	private readonly rail: CommandRail
+	private readonly feedback: SceneFeedback
 	private state: SceneState
 	private width = 0
 	private height = 0
 	private elapsedMs = 0
 	private wordAgeMs = 0
-	private eventIndex = 0
-	private wordShakeMs = 0
-	private typoBarsMs = 0
 	private equationMs = 0
-	private stageShakeMs = 0
-	private hitstopMs = 0
 	private lastCaretIndex = -1
 	private lastDirty = false
 	private lastOverdriveCharge = -1
@@ -89,17 +82,14 @@ export class CombatScene {
 		this.state = initial
 		this.background = createBackground(assets.arena)
 		this.director = new CombatDirector(initial, assets)
-		this.rail = createCommandRail()
+		this.rail = new CommandRail()
 		this.stage.addChild(
 			this.background.root,
 			this.director.root,
 			this.overlay,
 		)
-		this.overlay.addChild(
-			this.rail.root,
-			this.lowTimeEdge,
-			this.typoBars,
-		)
+		this.overlay.addChild(this.rail.root)
+		this.feedback = new SceneFeedback(this.stage, this.overlay)
 		this.app.stage.addChild(this.stage)
 		this.resize()
 		this.sync(initial)
@@ -114,6 +104,8 @@ export class CombatScene {
 		this.height = height
 		this.background.redraw(width, height, this.state.stage)
 		this.director.resize(width, height)
+		this.rail.resize(width, height)
+		this.feedback.resize(width, height)
 		this.rail.root.position.set(
 			width * SCENE.wordAnchor.x,
 			height * SCENE.wordAnchor.y,
@@ -150,10 +142,6 @@ export class CombatScene {
 			sfx.shot(event.combo)
 			return
 		}
-		if (event.type === "rejected-character") {
-			this.reject()
-			return
-		}
 		if (event.type === "word-completed") {
 			this.completeWord(event)
 			return
@@ -166,82 +154,37 @@ export class CombatScene {
 			if (event.stage === "glitch") sfx.boss()
 			return
 		}
-		if (event.type === "stage-cleared") {
-			sfx.stageClear()
-			this.hitstopMs = this.state.reducedMotion ? 0 : MOTION.hitstopMs
-			this.stageShakeMs = this.state.reducedMotion || !this.state.screenShake
-				? 0
-				: MOTION.stageShakeMs
-			return
-		}
 		if (event.type === "run-over") sfx.runOver()
+		
+		this.feedback.handle(envelope, this.state.reducedMotion, this.state.screenShake)
 	}
 
 	destroy = () => {
 		this.app.ticker.remove(this.tick)
 		this.director.destroy()
+		this.rail.destroy()
+		this.feedback.destroy()
 		if (this.stage.parent) this.stage.parent.removeChild(this.stage)
 		if (!this.stage.destroyed) this.stage.destroy({ children: true })
 	}
 
 	private redrawRail() {
-		const inputPrompt = this.state.zone === 1
-			? this.state.stage === "warmup"
-				? "FIND 1 KEY · AUTO-FIRES"
-				: this.state.stage === "rush"
-					? "TYPE 2 KEYS · AUTO-FIRES"
-					: "TYPE 3 LETTERS · AUTO-FIRES"
-			: this.state.zone === 2
-				? "TYPE THE WORD · SPACE EXECUTES"
-				: "TYPE THE SIGNAL"
-		drawCommandRail(
-			this.rail,
-			this.state.currentWord,
-			this.state.caretIndex,
-			this.state.wordDirty,
-			this.state.upcomingWords,
-			this.state.overdriveCharge,
-			this.state.aegisActive && this.state.zone === 2,
-			inputPrompt,
-			this.width,
-			this.width < SCENE.compactWidth,
-			this.state.zone,
-		)
-	}
-
-	private reject() {
-		sfx.typo()
-		this.wordShakeMs = this.state.reducedMotion ? 0 : MOTION.typoMs
-		this.typoBarsMs = MOTION.typoMs
-		this.typoBars.clear()
-		for (let index = 0; index < 5; index += 1) {
-			const x = (
-				(
-					this.eventIndex * 83
-					+ index * 137
-				) % Math.max(1, this.width - 96)
-			) + 48
-			const y = (
-				(
-					this.eventIndex * 47
-					+ index * 79
-				) % Math.max(1, this.height - 192)
-			) + 96
-			const barWidth = 32 + (
-				(index * 29 + this.eventIndex * 11) % 96
-			)
-			this.typoBars
-				.rect(x, y, barWidth, 2)
-				.fill({ color: V.red, alpha: 0.35 })
-		}
-		this.eventIndex += 1
+		this.rail.render({
+			word: this.state.currentWord,
+			caretIndex: this.state.caretIndex,
+			dirty: this.state.wordDirty,
+			overdriveCharge: this.state.overdriveCharge,
+			equation: null,
+			armedItemIds: [],
+			reducedMotion: this.state.reducedMotion,
+		})
 	}
 
 	private completeWord(
 		event: Extract<OverdrivePresentationEvent, { type: "word-completed" }>,
 	) {
 		sfx.word(event.combo)
-		this.rail.equation.text = event.aegisRecovery
+		const equation = event.aegisRecovery
 			? `AEGIS RECOVERY · ${this.formatMetric(
 				event.effectiveBase,
 			)} BASE = +${this.formatMetric(event.scoreGain)}`
@@ -255,17 +198,17 @@ export class CombatScene {
 					: ""
 				} = +${this.formatMetric(event.scoreGain)}`
 				: "CORRUPTED × 0 = +0"
-		this.rail.equation.style.fill = event.aegisRecovery
-			? V.cyan
-			: event.scoreGain > 0
-				? V.yellow
-				: V.red
-		this.rail.equation.position.set(
-			0,
-			-SCENE.rail.height / 2 - 16,
-		)
 		this.equationMs = MOTION.equationMs
 		this.wordAgeMs = 0
+		this.rail.render({
+			word: this.state.currentWord,
+			caretIndex: this.state.caretIndex,
+			dirty: this.state.wordDirty,
+			overdriveCharge: this.state.overdriveCharge,
+			equation,
+			armedItemIds: [],
+			reducedMotion: this.state.reducedMotion,
+		})
 	}
 
 	private drawBlackout() {
@@ -299,16 +242,18 @@ export class CombatScene {
 		this.elapsedMs += delta
 		this.wordAgeMs += delta
 		this.background.tick(this.elapsedMs, this.state.reducedMotion)
-		if (this.hitstopMs > 0) {
-			this.hitstopMs = Math.max(0, this.hitstopMs - delta)
+		
+		const { hitstopConsumed, wordShakeMs } = this.feedback.update(delta, this.state.timeLeftMs, this.state.score, this.state.quota)
+		
+		if (hitstopConsumed) {
 			return
 		}
+		
 		this.director.update(delta)
-		this.updateRailMotion(delta)
-		this.updateStageFeedback(delta)
+		this.updateRailMotion(delta, wordShakeMs)
 	}
 
-	private updateRailMotion(delta: number) {
+	private updateRailMotion(delta: number, wordShakeMs: number) {
 		if (
 			this.state.activeGlitch === "invisible_ink"
 			&& this.wordAgeMs > 1_000
@@ -317,66 +262,28 @@ export class CombatScene {
 				0.08,
 				1 - (this.wordAgeMs - 1_000) / 300,
 			)
-			for (const child of this.rail.wordLayer.children) {
-				child.alpha = child === this.rail.caret ? 1 : fade
-			}
+			this.rail.setWordFade(fade, this.state.caretIndex)
 		} else {
-			for (const child of this.rail.wordLayer.children) child.alpha = 1
+			this.rail.setWordFade(1, -1)
 		}
-		if (this.wordShakeMs > 0) {
-			this.wordShakeMs = Math.max(0, this.wordShakeMs - delta)
-			const direction = Math.floor(this.wordShakeMs / 20) % 2 === 0
+		
+		const wordShakeConsumed = this.feedback.consumeWordShake(delta)
+		if (wordShakeConsumed > 0) {
+			const direction = Math.floor(wordShakeConsumed / 20) % 2 === 0
 				? 1
 				: -1
-			this.rail.wordLayer.x = direction * 4
+			this.rail.setShake(direction * 4)
 		} else {
-			this.rail.wordLayer.x = 0
+			this.rail.setShake(0)
 		}
+		
 		if (this.equationMs > 0) {
 			this.equationMs = Math.max(0, this.equationMs - delta)
-			this.rail.equation.alpha = Math.min(1, this.equationMs / 150)
-		} else {
-			this.rail.equation.text = ""
+			this.rail.setEquationAlpha(Math.min(1, this.equationMs / 150))
+			if (this.equationMs === 0) {
+				this.redrawRail()
+			}
 		}
-	}
-
-	private updateStageFeedback(delta: number) {
-		if (this.typoBarsMs > 0) {
-			this.typoBarsMs = Math.max(0, this.typoBarsMs - delta)
-			this.typoBars.alpha = this.typoBarsMs / MOTION.typoMs
-		} else {
-			this.typoBars.clear()
-		}
-		if (this.stageShakeMs > 0) {
-			this.stageShakeMs = Math.max(0, this.stageShakeMs - delta)
-			const step = Math.floor(this.stageShakeMs / 20)
-			this.stage.position.set(
-				step % 2 === 0 ? 6 : -6,
-				step % 3 === 0 ? 3 : -3,
-			)
-		} else {
-			this.stage.position.set(0, 0)
-		}
-		const lowTime = this.state.timeLeftMs <= 10_000
-		const lowTimeAlpha = lowTime
-			? 0.08 + (
-				10_000 - this.state.timeLeftMs
-			) / 10_000 * 0.16
-			: 0
-		const quotaRatio = this.state.quota <= 0
-			? 0
-			: Math.min(1, this.state.score / this.state.quota)
-		const overrunAlpha = quotaRatio >= 0.75
-			? (quotaRatio - 0.75) / 0.25 * 0.08
-			: 0
-		this.lowTimeEdge
-			.clear()
-			.rect(0, 0, this.width, this.height)
-			.stroke({
-				color: lowTime ? V.red : V.green,
-				width: 8,
-				alpha: Math.max(lowTimeAlpha, overrunAlpha),
-			})
 	}
 
 	private formatMetric(value: number) {

@@ -78,10 +78,10 @@ const definition: RigDefinition = {
 describe("AnimationController", () => {
 	it("rejects a lower-priority interruption before recovery", () => {
 		const controller = new AnimationController(definition)
-		expect(controller.play("execute")).toBe(true)
+		expect(controller.play("execute").status).toBe("started")
 		controller.update(100)
 
-		expect(controller.play("chain-1")).toBe(false)
+		expect(controller.play("chain-1").status).toBe("blocked")
 		expect(controller.update(0).clip).toBe("execute")
 	})
 
@@ -90,7 +90,7 @@ describe("AnimationController", () => {
 		controller.play("execute")
 		controller.update(240)
 
-		expect(controller.play("chain-1")).toBe(true)
+		expect(controller.play("chain-1").status).toBe("started")
 		expect(controller.update(0).clip).toBe("chain-1")
 	})
 
@@ -102,23 +102,14 @@ describe("AnimationController", () => {
 		expect(frame.localTimeMs).toBe(100)
 	})
 
-	it("keeps at most two pending contacts", () => {
-		const controller = new AnimationController(definition)
-		controller.play("block")
 
-		controller.play("chain-1", { queueContact: true })
-		controller.play("chain-2", { queueContact: true })
-		controller.play("chain-1", { queueContact: true })
-
-		expect(controller.pendingContactCount).toBe(2)
-	})
 
 	it("collapses recovery when fast input arrives", () => {
 		const controller = new AnimationController(definition)
 		controller.play("chain-1")
 		controller.update(100)
 
-		expect(controller.play("chain-2")).toBe(true)
+		expect(controller.play("chain-2").status).toBe("started")
 		const frame = controller.update(0)
 		expect(frame.clip).toBe("chain-2")
 		expect(frame.localTimeMs).toBe(0)

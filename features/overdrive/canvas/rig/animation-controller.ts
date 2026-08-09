@@ -7,8 +7,11 @@ import type {
 	RigTransform,
 } from "./rig-definition"
 
-const MAX_PENDING_CONTACTS = 2
-
+export type ClipPlayResult =
+  | { status: "started"; clip: AnimationClipName }
+  | { status: "blended"; clip: AnimationClipName }
+  | { status: "blocked"; activeClip: AnimationClipName }
+  | { status: "missing"; clip: AnimationClipName }
 function isRecovery(clip: AnimationClip, localTimeMs: number) {
 	return localTimeMs >= (clip.recoveryStartMs ?? clip.durationMs)
 }
@@ -17,7 +20,6 @@ export class AnimationController {
 	private activeClip: AnimationClip
 	private localTimeMs = 0
 	private contactEmitted = false
-	private pendingContacts = 0
 	private readonly baseTransforms: Readonly<Record<string, RigTransform>>
 
 	constructor(private readonly definition: RigDefinition) {
@@ -31,19 +33,14 @@ export class AnimationController {
 		)
 	}
 
-	get pendingContactCount() {
-		return this.pendingContacts
-	}
-
 	play(
 		name: AnimationClipName,
 		options: {
 			force?: boolean
-			queueContact?: boolean
 		} = {},
-	) {
+	): ClipPlayResult {
 		const requested = this.definition.clips[name]
-		if (!requested) return false
+		if (!requested) return { status: "missing", clip: name }
 
 		const accepts = options.force
 			|| this.activeClip.loop
@@ -51,20 +48,13 @@ export class AnimationController {
 			|| isRecovery(this.activeClip, this.localTimeMs)
 
 		if (!accepts) {
-			if (options.queueContact) {
-				this.pendingContacts = Math.min(
-					MAX_PENDING_CONTACTS,
-					this.pendingContacts + 1,
-				)
-			}
-			return false
+			return { status: "blocked", activeClip: this.activeClip.name }
 		}
 
-		if (options.force) this.pendingContacts = 0
 		this.activeClip = requested
 		this.localTimeMs = 0
 		this.contactEmitted = false
-		return true
+		return { status: "started", clip: requested.name }
 	}
 
 	update(deltaMs: number): AnimationFrameState {
@@ -98,10 +88,7 @@ export class AnimationController {
 			completed = rawTime >= clip.durationMs
 		}
 
-		if (!contactEdge && elapsed > 0 && this.pendingContacts > 0) {
-			contactEdge = true
-			this.pendingContacts -= 1
-		}
+
 
 		const frame = this.sampleFrame(clip, this.localTimeMs, contactEdge, completed)
 		if (completed) this.resetToDefault()
@@ -109,7 +96,6 @@ export class AnimationController {
 	}
 
 	clear() {
-		this.pendingContacts = 0
 		this.resetToDefault()
 	}
 

@@ -1,3 +1,5 @@
+import { presentationHealth } from "../../presentation/telemetry"
+
 export type ContactRecord = {
   sequence: number
   targetOrdinal: number
@@ -42,6 +44,7 @@ export class ContactLedger {
       })
       if (this.unsettled.size > this.maxUnsettled) {
         this.maxUnsettled = this.unsettled.size
+        presentationHealth.updatePeakUnsettled(this.maxUnsettled)
       }
     }
   }
@@ -70,8 +73,17 @@ export class ContactLedger {
       const cueLatency = record.cueAtMs - record.acceptedAtMs
       const hitLatency = record.hitAtMs - record.acceptedAtMs
       
-      if (cueLatency > 50) this.lateCueCount++
-      if (hitLatency > 90) this.lateHitCount++
+      presentationHealth.recordCueLatency(cueLatency)
+      presentationHealth.recordHitLatency(hitLatency)
+
+      if (cueLatency > 50) {
+        this.lateCueCount++
+        presentationHealth.addLateCues(1)
+      }
+      if (hitLatency > 90) {
+        this.lateHitCount++
+        presentationHealth.addLateHits(1)
+      }
 
       this.settled.push({ ...record })
       if (this.settled.length > this.historyLimit) {
