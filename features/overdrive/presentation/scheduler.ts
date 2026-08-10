@@ -92,8 +92,6 @@ export function createPresentationScheduler(opts: SchedulerOptions): Presentatio
   }
 
   function drain(nowMs: number): readonly PresentationBeat[] {
-    const active: PresentationBeat[] = []
-    
     // Process drops
     const nextPending: PresentationBeat[] = []
     for (const beat of pendingBeats) {

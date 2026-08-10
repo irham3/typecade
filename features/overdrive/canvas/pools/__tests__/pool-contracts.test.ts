@@ -3,13 +3,12 @@ import { Container } from "pixi.js"
 import { SignalNodePool } from "../signal-node-pool"
 import { TextPool } from "../text-pool"
 import { ScorePopupPool } from "../score-popup-pool"
-import { presentationHealth } from "../../../presentation/telemetry"
 
 describe("Pool Contracts", () => {
   it("reuses signal nodes across caret updates", () => {
     const createNode = vi.fn(() => {
-      const g = new Container()
-      ;(g as Container & { label: string }).label = "signal-node"
+      const g = new Container() as Container & { label?: string }
+      g.label = "signal-node"
       return g
     })
     const pool = new SignalNodePool(createNode)
@@ -31,8 +30,6 @@ describe("Pool Contracts", () => {
     const createNode = vi.fn(() => new Container())
     const pool = new SignalNodePool(createNode)
     pool.render("longword", 0, false)
-    const activeBefore = pool.activeCount
-    
     pool.render("short", 0, false)
     expect(pool.activeCount).toBe(5)
     expect(createNode).toHaveBeenCalledTimes(8) // no new creation

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import type { RunSnapshot } from "@/lib/engine/overdrive"
+import { createPersistedRunWriter } from "./persisted-run-writer"
 import { OVERDRIVE_SAVE_KEY, useGame } from "./store"
 
 const RESUMABLE_SCREENS: RunSnapshot["screen"][] = [
@@ -29,6 +30,12 @@ function hasResumableSave() {
 
 export function usePersistedRun() {
 	useEffect(() => {
+		const writer = createPersistedRunWriter({
+			serialize: () => useGame.getState().api?.exportState() ?? null,
+			save: (serialized) => window.localStorage.setItem(OVERDRIVE_SAVE_KEY, serialized),
+			schedule: (callback, delayMs) => window.setTimeout(callback, delayMs),
+			cancel: (handle) => window.clearTimeout(handle as number),
+		})
 		const updateResumeState = () => {
 			useGame.getState().setResumeAvailable(hasResumableSave())
 		}
@@ -37,21 +44,30 @@ export function usePersistedRun() {
 		const unsubscribe = useGame.subscribe((state, previous) => {
 			if (!state.api || state.screen === "menu") return
 			if (state.screen === "runOver") {
+				writer.flush()
 				window.localStorage.removeItem(OVERDRIVE_SAVE_KEY)
 				if (state.resumeAvailable) state.setResumeAvailable(false)
 				return
 			}
-			if (
-				state.screen === previous.screen
-				&& state.score === previous.score
-				&& state.caretIndex === previous.caretIndex
-				&& state.tokens === previous.tokens
-				&& state.timeLeftMs === previous.timeLeftMs
-			) return
-
-			window.localStorage.setItem(OVERDRIVE_SAVE_KEY, state.api.exportState())
+			const semanticChange = state.screen !== previous.screen
+				|| state.score !== previous.score
+				|| state.caretIndex !== previous.caretIndex
+				|| state.tokens !== previous.tokens
+				|| state.paused !== previous.paused
+			const timerChange = state.timeLeftMs !== previous.timeLeftMs
+			if (!semanticChange && !timerChange) return
+			if (semanticChange) writer.flush()
+			else writer.schedule()
 		})
+		const flushOnPageLifecycle = () => writer.flush()
+		window.addEventListener("visibilitychange", flushOnPageLifecycle)
+		window.addEventListener("pagehide", flushOnPageLifecycle)
 
-		return unsubscribe
+		return () => {
+			unsubscribe()
+			window.removeEventListener("visibilitychange", flushOnPageLifecycle)
+			window.removeEventListener("pagehide", flushOnPageLifecycle)
+			writer.dispose()
+		}
 	}, [])
 }

@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
 /**
  * Singleton Supabase client for the browser.
@@ -43,12 +44,12 @@ function looksLikeJwt(token: string): boolean {
 export const isSupabaseConfigured: boolean =
     looksLikeSupabaseUrl(supabaseUrl) && looksLikeJwt(supabaseAnonKey);
 
-let supabaseClient: SupabaseClient | null = null;
+let supabaseClient: SupabaseClient<Database> | null = null;
 
 export const getSupabaseClient = (): SupabaseClient | null => {
     if (supabaseClient) return supabaseClient;
     if (!isSupabaseConfigured) return null;
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         auth: {
             persistSession: true,
             autoRefreshToken: true,

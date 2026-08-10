@@ -56,4 +56,17 @@ describe('RNG (Mulberry32)', () => {
     // words and shop should NOT match each other
     expect(words1.next()).not.toBe(shop1.next());
   });
+
+  it('round-trips internal state for deterministic continuation', () => {
+    const original = createRng('state-round-trip');
+    original.next();
+    original.next();
+    const savedState = original.exportState();
+
+    const restored = createRng('state-round-trip');
+    restored.importState(savedState);
+
+    expect(restored.next()).toBe(original.next());
+    expect(restored.next()).toBe(original.next());
+  });
 });

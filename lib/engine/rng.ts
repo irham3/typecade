@@ -7,6 +7,10 @@ export interface RNG {
   shuffle: <T>(array: T[]) => T[];
   /** Creates a new independent RNG sequence deterministically branched from this one */
   fork: (label: string) => RNG;
+  /** Exports the current 32-bit generator state for deterministic persistence */
+  exportState: () => number;
+  /** Restores a previously exported 32-bit generator state */
+  importState: (state: number) => void;
 }
 
 /** FNV-1a hash to convert a string seed into a 32-bit integer */
@@ -54,5 +58,16 @@ export function createRng(seed: string): RNG {
     return createRng(`${seed}:${label}:${state}`);
   }
 
-  return { next, pick, shuffle, fork };
+  function exportState() {
+    return state >>> 0;
+  }
+
+  function importState(nextState: number) {
+    if (!Number.isInteger(nextState) || nextState < 0 || nextState > 0xFFFFFFFF) {
+      throw new Error("RNG state must be an unsigned 32-bit integer");
+    }
+    state = nextState | 0;
+  }
+
+  return { next, pick, shuffle, fork, exportState, importState };
 }

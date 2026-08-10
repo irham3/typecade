@@ -20,6 +20,7 @@ import {
 	emitPresentationEvent,
 } from "./presentation/events"
 import { presentationHealth } from "./presentation/telemetry"
+import { isTimerOnlyTransition } from "./store-transition"
 
 export const OVERDRIVE_SAVE_KEY = "typecade_overdrive_save"
 export const OVERDRIVE_BRIEFING_KEY = "typecade_overdrive_briefing_seen"
@@ -93,6 +94,19 @@ export const useGame = create<GameStore>((set, get) => {
 			api,
 			armedItemIds: api.previewItemTriggers(),
 		})
+		const syncTimer = () => {
+			const snapshot = api.snapshot()
+			set({
+				api,
+				focusPaused: snapshot.focusPaused,
+				timeLeftMs: snapshot.timeLeftMs,
+				runDurationMs: snapshot.runDurationMs,
+				accuracy: snapshot.accuracy,
+				runAccuracy: snapshot.runAccuracy,
+				wpm: snapshot.wpm,
+				averageWpm: snapshot.averageWpm,
+			})
+		}
 		const transition = (action: () => void) => {
 			const before = api.snapshot()
 			action()
@@ -280,7 +294,13 @@ export const useGame = create<GameStore>((set, get) => {
 		api.feedChar = (character) => transition(() => raw.feedChar(character))
 		api.releaseOverdrive = () => transition(raw.releaseOverdrive)
 		api.backspace = () => transition(raw.backspace)
-		api.advance = (ms) => transition(() => raw.advance(ms))
+		api.advance = (ms) => {
+			const before = api.snapshot()
+			raw.advance(ms)
+			const after = api.snapshot()
+			if (isTimerOnlyTransition(before, after)) syncTimer()
+			else sync()
+		}
 		api.continueToNextStage = () => {
 			transition(raw.continueToNextStage)
 			const snapshot = api.snapshot()
@@ -486,6 +506,8 @@ export const useGame = create<GameStore>((set, get) => {
 				})
 				return true
 			} catch {
+				window.localStorage.removeItem(OVERDRIVE_SAVE_KEY)
+				set({ resumeAvailable: false })
 				return false
 			}
 		},

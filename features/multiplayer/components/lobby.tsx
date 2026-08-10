@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Shield, Search, ChevronDown, Gamepad2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -76,13 +76,6 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         if (isInitial) setInitialLoading(false);
     };
 
-    // Debounce wrapper so rapid successive triggers coalesce into one fetch.
-    const loadRoomsDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const scheduleLoadRooms = (isInitial = false) => {
-        if (loadRoomsDebouncedRef.current) clearTimeout(loadRoomsDebouncedRef.current);
-        loadRoomsDebouncedRef.current = setTimeout(() => void loadRooms(isInitial), 250);
-    };
-
     useEffect(() => {
         if (!supabaseReady) return;
         // Initial fetch
@@ -103,9 +96,7 @@ export function MultiplayerLobby({ onJoin }: { onJoin: (roomId: string) => void 
         return () => {
             clearInterval(pollInterval);
             document.removeEventListener("visibilitychange", onVisibility);
-            if (loadRoomsDebouncedRef.current) clearTimeout(loadRoomsDebouncedRef.current);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [supabaseReady]);
 
     const resolveDisplayName = async () => {

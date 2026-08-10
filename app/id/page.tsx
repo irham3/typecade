@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HomeClient } from "@/app/client";
+import { HomeClient } from "@/app/(main)/client";
 import { Globe, ArrowRight } from "@/components/icons";
 
 export const metadata: Metadata = {

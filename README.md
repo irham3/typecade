@@ -106,8 +106,16 @@ Supabase-backed screens also read these public variables:
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+# Server-only; never expose this in a NEXT_PUBLIC_ variable.
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_OVERDRIVE_COMPETITIVE=false
+OVERDRIVE_DAILY_SECRET=server-only-daily-secret
 ```
+
+Apply the checked-in SQL migrations in `supabase/migrations/` before enabling
+competitive mode. Keep `NEXT_PUBLIC_OVERDRIVE_COMPETITIVE=false` until the
+server submission and replay verification gates are enabled.
 
 Start the development server:
 

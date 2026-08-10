@@ -14,6 +14,8 @@ export class TextPool<T extends Container> {
   }
 
   allocate(root: Container, text: string, index: number): T {
+    void text
+    void index
     let node: T
     if (this.available.length > 0) {
       node = this.available.pop()!

@@ -1,5 +1,4 @@
 import type { Container } from "pixi.js"
-import { presentationHealth } from "../../presentation/telemetry"
 
 export class SignalNodePool<T extends Container> {
   private active: T[] = []
@@ -15,6 +14,8 @@ export class SignalNodePool<T extends Container> {
   }
 
   render(word: string, caretIndex: number, dirty: boolean) {
+    void caretIndex
+    void dirty
     const required = word.length
     
     // Hide excess nodes

@@ -123,7 +123,12 @@ export function startRun(ctx: RunContext) {
 }
 
 export function skipWarmup(ctx: RunContext) {
-	if (ctx.state.screen !== "stage" || ctx.state.stage !== "warmup") return
+	if (
+		ctx.state.screen !== "stage"
+		|| ctx.state.stage !== "warmup"
+		|| ctx.stageAttemptedChars > 0
+		|| ctx.stageElapsedMs > 0
+	) return
 	ctx.state.tokens += WARMUP_SKIP_REWARD
 	ctx.state.stage = "rush"
 	startStage(ctx)

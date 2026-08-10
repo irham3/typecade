@@ -5,6 +5,8 @@ import { AnimatePresence } from "framer-motion"
 import { useGame } from "@/features/overdrive/store"
 import { useGameInput } from "@/features/overdrive/use-game-input"
 import { usePersistedRun } from "@/features/overdrive/use-persisted-run"
+import { elapsedFrameMs } from "../frame-clock"
+import { isCompetitiveMode } from "../competitive"
 import { Gameplay } from "./gameplay"
 import { Menu } from "./menu"
 import { RunOver } from "./run-over"
@@ -18,13 +20,14 @@ export function OverdriveApp() {
 	const stageReady = useGame((state) => state.stageReady)
 	const setPaused = useGame((state) => state.setPaused)
 	const quitToMenu = useGame((state) => state.quitToMenu)
+	const competitive = isCompetitiveMode(process.env.NEXT_PUBLIC_OVERDRIVE_COMPETITIVE)
 
 	useEffect(() => {
 		if (screen !== "stage" || paused || stageReady || !api) return
 		let last = performance.now()
 		let frame = 0
 		const tick = (now: number) => {
-			api.advance(Math.min(now - last, 250))
+			api.advance(elapsedFrameMs(now, last))
 			last = now
 			frame = requestAnimationFrame(tick)
 		}
@@ -34,24 +37,24 @@ export function OverdriveApp() {
 
 	useEffect(() => {
 		const pauseWhenHidden = () => {
-			if (document.hidden && screen === "stage") setPaused(true)
+			if (document.hidden && screen === "stage" && !competitive) setPaused(true)
 		}
 		document.addEventListener("visibilitychange", pauseWhenHidden)
 		return () => document.removeEventListener("visibilitychange", pauseWhenHidden)
-	}, [screen, setPaused])
+	}, [competitive, screen, setPaused])
 
 	useGameInput(screen === "stage" && !paused)
 	usePersistedRun()
 
 	useEffect(() => {
 		const handlePause = (event: KeyboardEvent) => {
-			if (event.key === "Escape" && screen === "stage") {
+			if (!competitive && event.key === "Escape" && screen === "stage") {
 				setPaused(!paused)
 			}
 		}
 		window.addEventListener("keydown", handlePause)
 		return () => window.removeEventListener("keydown", handlePause)
-	}, [paused, screen, setPaused])
+	}, [competitive, paused, screen, setPaused])
 
 	return (
 		<div className="relative h-dvh w-full min-w-0 overflow-hidden">

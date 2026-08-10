@@ -1,7 +1,6 @@
 import {
 	Application,
 	Container,
-	Graphics,
 	Ticker,
 	type Texture,
 } from "pixi.js"
@@ -14,7 +13,6 @@ import type { LoadedRigAssets } from "./assets/combat-assets"
 import { CombatDirector } from "./choreography/combat-director"
 import {
 	createBackground,
-	MOTION,
 	SCENE,
 	V,
 	type BackgroundArt,
@@ -225,17 +223,17 @@ export class CombatScene {
 		this.wordAgeMs += delta
 		this.background.tick(this.elapsedMs, this.state.reducedMotion)
 		
-		const { hitstopConsumed, wordShakeMs } = this.feedback.update(delta, this.state.timeLeftMs, this.state.score, this.state.quota)
+		const { hitstopConsumed } = this.feedback.update(delta, this.state.timeLeftMs, this.state.score, this.state.quota)
 		
 		if (hitstopConsumed) {
 			return
 		}
 		
 		this.director.update(delta)
-		this.updateRailMotion(delta, wordShakeMs)
+		this.updateRailMotion(delta)
 	}
 
-	private updateRailMotion(delta: number, wordShakeMs: number) {
+	private updateRailMotion(delta: number) {
 		if (
 			this.state.activeGlitch === "invisible_ink"
 			&& this.wordAgeMs > 1_000
@@ -260,9 +258,4 @@ export class CombatScene {
 		}
 	}
 
-	private formatMetric(value: number) {
-		return Number.isInteger(value)
-			? value.toLocaleString("en-US")
-			: value.toLocaleString("en-US", { maximumFractionDigits: 1 })
-	}
 }

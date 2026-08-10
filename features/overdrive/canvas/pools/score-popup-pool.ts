@@ -14,6 +14,7 @@ export class ScorePopupPool<T extends Container> {
   }
 
   allocate(root: Container, text: string): T {
+    void text
     let node: T
     
     // Enforce 3-popup cap by recycling the oldest active popup

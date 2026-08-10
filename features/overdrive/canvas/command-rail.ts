@@ -40,6 +40,7 @@ export class CommandRail {
   }
 
   resize(width: number, height: number) {
+    void height
     this.width = width
     this.compact = width < SCENE.compactWidth
   }

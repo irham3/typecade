@@ -2,7 +2,6 @@ import {
 	Container,
 	Graphics,
 	Sprite,
-	Text,
 	Texture,
 } from "pixi.js"
 import type { StageType } from "@/lib/engine/overdrive"

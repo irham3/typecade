@@ -18,7 +18,7 @@ import {
 import { getStageQuota } from "./progression"
 import { createRng } from "../rng"
 import type { RNG } from "../rng"
-import { KEYCAPS, MACROS } from "./items"
+import { GLITCHES, KEYCAPS, MACROS } from "./items"
 import type { BaseItemContext, RuntimeData } from "./items/registry"
 
 export const MAX_KEYCAPS = 5
@@ -74,6 +74,13 @@ export type RunContext = {
 type SavedRun = {
 	version: number
 	state: RunSnapshot
+	rngState?: {
+		root: number
+		words: number
+		shop: number
+		glitch: number
+	}
+	recentWords?: string[]
 	runItemData: RuntimeData[]
 	stageItemData: RuntimeData[]
 	naturalMult: number
@@ -452,10 +459,84 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
+function isFiniteNumber(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value)
+}
+
+function isRuntimeData(value: unknown): value is RuntimeData {
+	if (!isRecord(value)) return false
+	return Object.values(value).every((entry) => (
+		typeof entry === "boolean"
+		|| typeof entry === "string"
+		|| isFiniteNumber(entry)
+	))
+}
+
+function isRngState(value: unknown): value is NonNullable<SavedRun["rngState"]> {
+	return isRecord(value)
+		&& ["root", "words", "shop", "glitch"].every((key) => {
+			const state = value[key]
+			return isFiniteNumber(state)
+				&& Number.isInteger(state)
+				&& state >= 0
+				&& state <= 0xFFFFFFFF
+		})
+}
+
+function hasKnownIds(
+	value: unknown,
+	registry: Record<string, unknown>,
+	allowEmpty = false,
+): value is string[] {
+	return Array.isArray(value)
+		&& value.every((id) => (
+			typeof id === "string"
+			&& (allowEmpty && id === "" || Boolean(registry[id]))
+		))
+}
+
+function isValidSavedRun(value: unknown): value is SavedRun {
+	if (!isRecord(value) || value.version !== SAVE_VERSION || !isRecord(value.state)) return false
+	const state = value.state
+	const numericStateFields = [
+		"zone", "timeLeftMs", "stageDurationMs", "aegisRescues", "overdriveCharge",
+		"targetOrdinal", "score", "runScore", "standardScore", "endlessScore", "quota",
+		"combo", "maxCombo", "mult", "tokens", "totalTokensEarned", "accuracy",
+		"runAccuracy", "wpm", "averageWpm", "cleanWords", "totalCleanWords", "highestMult",
+		"stageTypos", "totalTypos", "runDurationMs", "caretIndex",
+	]
+	if (numericStateFields.some((field) => !isFiniteNumber(state[field]))) return false
+	if (!isFiniteNumber(state.zone) || !Number.isInteger(state.zone) || state.zone < 1) return false
+	if (!isFiniteNumber(state.caretIndex) || !Number.isInteger(state.caretIndex) || state.caretIndex < 0) return false
+	if (typeof state.seed !== "string" || typeof state.currentWord !== "string") return false
+	if (!hasKnownIds(state.keycaps, KEYCAPS) || !hasKnownIds(state.macros, MACROS)) return false
+	if (!hasKnownIds(state.shopKeycaps, KEYCAPS, true)) return false
+	if (state.shopMacro !== null && (typeof state.shopMacro !== "string" || !MACROS[state.shopMacro])) return false
+	if (state.activeGlitch !== null && (typeof state.activeGlitch !== "string" || !GLITCHES[state.activeGlitch])) return false
+	if (!Array.isArray(state.upcomingWords) || state.upcomingWords.length > 8 || !state.upcomingWords.every((word: unknown) => typeof word === "string")) return false
+	if (state.glitchState !== null && !isRuntimeData(state.glitchState)) return false
+	if (!Array.isArray(value.runItemData) || !value.runItemData.every(isRuntimeData)) return false
+	if (!Array.isArray(value.stageItemData) || !value.stageItemData.every(isRuntimeData)) return false
+	if (value.runItemData.length !== state.keycaps.length || value.stageItemData.length !== state.keycaps.length) return false
+	if (["naturalMult", "stageAttemptedChars", "stageCorrectChars", "runAttemptedChars", "runCorrectChars", "stageElapsedMs", "stageIdleMs"]
+		.some((field) => !isFiniteNumber(value[field]))) return false
+	if (value.recentWords !== undefined && (!Array.isArray(value.recentWords) || value.recentWords.length > 30)) return false
+	if (value.recentWords?.some((word) => typeof word !== "string")) return false
+	if (value.rngState !== undefined && !isRngState(value.rngState)) return false
+	return true
+}
+
 export function exportRunState(ctx: RunContext): string {
 	const save: SavedRun = {
 		version: SAVE_VERSION,
 		state: snapshotRun(ctx),
+		rngState: {
+			root: ctx.rootRng.exportState(),
+			words: ctx.wordsRng.exportState(),
+			shop: ctx.shopRng.exportState(),
+			glitch: ctx.glitchRng.exportState(),
+		},
+		recentWords: [...ctx.recentWords],
 		runItemData: ctx.runItemData,
 		stageItemData: ctx.stageItemData,
 		naturalMult: ctx.scorer.mult,
@@ -474,12 +555,8 @@ export function exportRunState(ctx: RunContext): string {
 export function loadRunState(ctx: RunContext, json: string): boolean {
 	try {
 		const parsed: unknown = JSON.parse(json)
-		if (
-			!isRecord(parsed)
-			|| parsed.version !== SAVE_VERSION
-			|| !isRecord(parsed.state)
-		) return false
-		const save = parsed as unknown as SavedRun
+		if (!isValidSavedRun(parsed)) return false
+		const save = parsed
 		const savedStage = save.state.stage ?? ctx.state.stage
 		const savedZone = Number(save.state.zone ?? ctx.state.zone)
 		const savedEndless = Boolean(save.state.endless)
@@ -505,6 +582,13 @@ export function loadRunState(ctx: RunContext, json: string): boolean {
 		}
 		ctx.runItemData = save.runItemData.map((data) => ({ ...data }))
 		ctx.stageItemData = save.stageItemData.map((data) => ({ ...data }))
+		if (save.rngState) {
+			ctx.rootRng.importState(save.rngState.root)
+			ctx.wordsRng.importState(save.rngState.words)
+			ctx.shopRng.importState(save.rngState.shop)
+			ctx.glitchRng.importState(save.rngState.glitch)
+		}
+		ctx.recentWords = [...(save.recentWords ?? [])]
 		ctx.scorer = createScorer({ combo: ctx.state.combo, mult: save.naturalMult })
 		ctx.stageAttemptedChars = save.stageAttemptedChars
 		ctx.stageCorrectChars = save.stageCorrectChars

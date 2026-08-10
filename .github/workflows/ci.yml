@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [master, staging]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint -- --ignore-pattern test.js
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:worker

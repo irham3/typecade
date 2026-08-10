@@ -340,7 +340,6 @@ describe("run state machine", () => {
 	it("skips Warm-up for one token and starts Rush cleanly", () => {
 		const api = createRun({ seed: "skip", words })
 		api.start()
-		typeCurrentWord(api)
 		api.skipWarmup()
 
 		expect(api.snapshot()).toMatchObject({
@@ -349,6 +348,19 @@ describe("run state machine", () => {
 			tokens: 1,
 			score: 0,
 			combo: 0,
+		})
+	})
+
+	it("does not allow Warm-up skip after input has started", () => {
+		const api = createRun({ seed: "skip-after-input", words })
+		api.start()
+		typeCurrentWord(api)
+		api.skipWarmup()
+
+		expect(api.snapshot()).toMatchObject({
+			screen: "stage",
+			stage: "warmup",
+			tokens: 0,
 		})
 	})
 
@@ -363,5 +375,36 @@ describe("run state machine", () => {
 		expect(restored.loadState(saved)).toBe(true)
 		expect(restored.snapshot()).toEqual(api.snapshot())
 		expect(restored.loadState('{"version":999}')).toBe(false)
+	})
+
+	it("continues identically after restoring seeded RNG streams", () => {
+		const options = {
+			seed: "resume-continuation",
+			words: ["abc", "def", "ghi", "jkl"],
+			startingZone: 7,
+		}
+		const uninterrupted = createRun(options)
+		uninterrupted.start()
+		typeCurrentWord(uninterrupted)
+		const saved = uninterrupted.exportState()
+
+		const restored = createRun(options)
+		expect(restored.loadState(saved)).toBe(true)
+
+		for (let index = 0; index < 24; index += 1) {
+			typeCurrentWord(uninterrupted)
+			typeCurrentWord(restored)
+			expect(restored.snapshot()).toEqual(uninterrupted.snapshot())
+		}
+	})
+
+	it("rejects saves containing unknown item ids", () => {
+		const api = createRun({ seed: "invalid-item-save", words })
+		api.start()
+		const saved = JSON.parse(api.exportState()) as { state: RunSnapshot }
+		saved.state.keycaps = ["not-a-keycap"]
+
+		const restored = createRun({ seed: "invalid-item-save", words })
+		expect(restored.loadState(JSON.stringify(saved))).toBe(false)
 	})
 })
