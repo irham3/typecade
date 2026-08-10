@@ -276,7 +276,7 @@ export function Hud() {
 							const armed = state.armedItemIds.includes(id)
 							return (
 								<KeycapSlot
-									key={`${id}-${triggerId ?? 0}`}
+									key={`keycap-${index}-${id}-${triggerId ?? 0}`}
 									rarity={definition.rarity}
 									className={`h-11 w-11 sm:h-16 sm:w-16 ${triggered ? "overdrive-slot-proc" : ""} ${armed ? "overdrive-slot-armed" : ""}`}
 									data-armed={armed || undefined}
@@ -316,7 +316,7 @@ export function Hud() {
 								&& latestMacro.itemId === id
 							return (
 								<button
-									key={`${id}-${triggered ? latestMacro.id : 0}`}
+									key={`macro-${index}-${id}-${triggered ? latestMacro.id : 0}`}
 									className="relative"
 									onClick={() => state.api?.triggerMacro(index)}
 									aria-label={`Use ${definition.name}, keyboard shortcut ${index + 1}`}
