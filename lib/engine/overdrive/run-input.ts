@@ -6,6 +6,11 @@ import {
 } from "./constants"
 import { GLITCHES, KEYCAPS } from "./items"
 import type {
+	ScoreItemImpact,
+	ScoreResolution,
+	ScoreTraceStep,
+} from "./types"
+import type {
 	TypoContext,
 	WordPreviewContext,
 	WordResolvedContext,
@@ -53,6 +58,139 @@ export function previewItemTriggers(ctx: RunContext): string[] {
 		if (definition.previewWord(context)) triggered.push(id)
 	})
 	return triggered
+}
+
+function scoreItemImpacts(
+	itemIds: readonly string[],
+	baselineScore: number,
+	scoreGain: number,
+	context: {
+		baseBonus: number
+		baseMultiplier: number
+		multAdd: number
+		multMultiplier: number
+		finalMultiplier: number
+	},
+): ScoreItemImpact[] {
+	if (itemIds.length === 0) return []
+	const scoreDelta = Math.max(0, scoreGain - baselineScore)
+	if (scoreDelta <= 0) return []
+	const kind = context.finalMultiplier !== 1
+		? "final"
+		: context.multAdd !== 0 || context.multMultiplier !== 1
+			? "mult"
+			: "base"
+	const share = scoreDelta / itemIds.length
+	return itemIds.map((itemId) => ({ itemId, kind, scoreDelta: share }))
+}
+
+function scoreResolution({
+	word,
+	characterBase,
+	itemBaseBonus,
+	effectiveBase,
+	effectiveMult,
+	finalMultiplier,
+	total,
+	aegisRecovery,
+	overdriveReleased,
+	appliedItemIds,
+	baselineScore,
+	context,
+}: {
+	word: string
+	characterBase: number
+	itemBaseBonus: number
+	effectiveBase: number
+	effectiveMult: number
+	finalMultiplier: number
+	total: number
+	aegisRecovery: boolean
+	overdriveReleased: boolean
+	appliedItemIds: readonly string[]
+	baselineScore: number
+	context: {
+		baseBonus: number
+		baseMultiplier: number
+		multAdd: number
+		multMultiplier: number
+		finalMultiplier: number
+	}
+}): ScoreResolution {
+	const trace: ScoreTraceStep[] = []
+	let cursor = characterBase
+	trace.push({
+		id: "word-base",
+		label: "Word base",
+		source: "word",
+		operation: "add",
+		before: 0,
+		after: cursor,
+	})
+	if (itemBaseBonus !== 0 || context.baseMultiplier !== 1) {
+		const next = effectiveBase
+		trace.push({
+			id: "item-base",
+			label: "Keycap base",
+			source: "item",
+			operation: context.baseMultiplier !== 1 ? "multiply" : "add",
+			before: cursor,
+			after: next,
+		})
+		cursor = next
+	}
+	if (aegisRecovery) {
+		trace.push({
+			id: "aegis-base-only",
+			label: "Aegis recovery",
+			source: "aegis",
+			operation: "floor",
+			before: cursor,
+			after: total,
+		})
+	} else {
+		const multiplied = effectiveBase * effectiveMult
+		trace.push({
+			id: "combo-mult",
+			label: "Combo Mult",
+			source: "combo",
+			operation: "multiply",
+			before: effectiveBase,
+			after: multiplied,
+		})
+		if (finalMultiplier !== 1 || overdriveReleased) {
+			trace.push({
+				id: "final-mult",
+				label: overdriveReleased ? "Overdrive final" : "Final Mult",
+				source: overdriveReleased ? "overdrive" : "item",
+				operation: "multiply",
+				before: multiplied,
+				after: multiplied * finalMultiplier,
+			})
+		}
+		trace.push({
+			id: "score-floor",
+			label: "Score floor",
+			source: "word",
+			operation: "floor",
+			before: effectiveBase * effectiveMult * finalMultiplier,
+			after: total,
+		})
+	}
+
+	return {
+		word,
+		characterBase,
+		itemBaseBonus,
+		effectiveBase,
+		effectiveMult,
+		finalMultiplier,
+		total,
+		aegisRecovery,
+		overdriveReleased,
+		trace,
+		itemImpacts: scoreItemImpacts(appliedItemIds, baselineScore, total, context),
+	}
 }
 
 function submitWord(
@@ -121,6 +259,21 @@ function submitWord(
 
 	recordScoreImpact(ctx, appliedItemIds, Math.max(0, scoreGain - baselineScore))
 	if (releasesOverdrive) ctx.state.overdriveCharge = 0
+	const resolvedScore = scoreResolution({
+		word: ctx.state.currentWord,
+		characterBase: ctx.state.currentWord.length,
+		itemBaseBonus: contextBase.baseBonus,
+		effectiveBase: modifiedBase,
+		effectiveMult: aegisRecovery ? 1 : effectiveMult,
+		finalMultiplier: aegisRecovery ? 1 : contextBase.finalMultiplier,
+		total: scoreGain,
+		aegisRecovery,
+		overdriveReleased: releasesOverdrive,
+		appliedItemIds,
+		baselineScore,
+		context: contextBase,
+	})
+	ctx.state.lastScoreResolution = resolvedScore
 
 	const resolvedBase = {
 		...contextBase,
@@ -146,6 +299,7 @@ function submitWord(
 		autoExecuted: ctx.state.zone === 1,
 		appliedItemIds: [...appliedItemIds],
 		combo: ctx.state.combo,
+		scoreResolution: resolvedScore,
 	})
 	if (releasesOverdrive) {
 		ctx.events.emit("overdrive_released", {

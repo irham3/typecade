@@ -137,6 +137,31 @@ describe("MVP item system", () => {
 		})
 	})
 
+	it("stores the score resolution used by score equation UI", () => {
+		const api = createRun({
+			seed: "score-resolution",
+			words: ["abcdefgh"],
+			startingKeycaps: ["longshot"],
+		})
+		let resolution = null as NonNullable<ReturnType<typeof api.snapshot>["lastScoreResolution"]> | null
+		api.events.on("word_complete", (payload) => {
+			resolution = payload.scoreResolution
+		})
+
+		api.start()
+		typeCurrentWord(api)
+
+		expect(resolution).toMatchObject({
+			word: "abcdefgh",
+			characterBase: 8,
+			effectiveBase: 16,
+			total: 16,
+			itemImpacts: [{ itemId: "longshot", kind: "base", scoreDelta: 8 }],
+		})
+		expect(api.snapshot().lastScoreResolution).toEqual(resolution)
+		expect(api.snapshot().lastScoreResolution?.trace.map((step) => step.id)).toContain("item-base")
+	})
+
 	it("does not leak transient WASD and Sprinter bonuses between words", () => {
 		const wasd = createRun({
 			seed: "wasd-scope",

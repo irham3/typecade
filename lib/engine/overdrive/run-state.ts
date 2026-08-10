@@ -5,6 +5,7 @@ import type {
 	ItemImpact,
 	RunMode,
 	RunSnapshot,
+	ScoreResolution,
 	StageType,
 	ThreatBand,
 	WordPoolLanguage,
@@ -174,6 +175,7 @@ function createInitialSnapshot(
 		glitchState: null,
 		stageItemImpact: {},
 		runItemImpact: {},
+		lastScoreResolution: undefined,
 	}
 }
 
@@ -287,6 +289,7 @@ export function resetRunSnapshot(ctx: RunContext) {
 		glitchState: null,
 		stageItemImpact: {},
 		runItemImpact: {},
+		lastScoreResolution: undefined,
 	}
 }
 
@@ -298,6 +301,15 @@ export function cloneImpactMap(source: Record<string, ItemImpact>): Record<strin
 	return Object.fromEntries(
 		Object.entries(source).map(([id, impact]) => [id, { ...impact }]),
 	)
+}
+
+function cloneScoreResolution(resolution: ScoreResolution | undefined): ScoreResolution | undefined {
+	if (!resolution) return undefined
+	return {
+		...resolution,
+		trace: resolution.trace.map((step) => ({ ...step })),
+		itemImpacts: resolution.itemImpacts.map((impact) => ({ ...impact })),
+	}
 }
 
 export function snapshotRun(ctx: RunContext): RunSnapshot {
@@ -312,6 +324,7 @@ export function snapshotRun(ctx: RunContext): RunSnapshot {
 		stageItemImpact: cloneImpactMap(state.stageItemImpact),
 		runItemImpact: cloneImpactMap(state.runItemImpact),
 		tokenBreakdown: state.tokenBreakdown ? { ...state.tokenBreakdown } : undefined,
+		lastScoreResolution: cloneScoreResolution(state.lastScoreResolution),
 	}
 }
 

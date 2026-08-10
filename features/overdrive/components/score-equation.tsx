@@ -8,7 +8,7 @@ export function ScoreEquation({ resolution }: { resolution?: ScoreResolution }) 
 
 	const equation = resolution.aegisRecovery
 		? `${formatNumber(resolution.effectiveBase)} BASE ONLY = +${formatNumber(resolution.total)}`
-		: `${formatNumber(resolution.effectiveBase)} BASE × ${formatNumber(resolution.effectiveMult)} MULT × ${formatNumber(resolution.finalMultiplier)} FINAL = +${formatNumber(resolution.total)}`
+		: `${formatNumber(resolution.effectiveBase)} BASE x ${formatNumber(resolution.effectiveMult)} MULT x ${formatNumber(resolution.finalMultiplier)} FINAL = +${formatNumber(resolution.total)}`
 
 	return (
 		<details className="min-w-0 text-sm" data-testid="score-equation">
@@ -24,7 +24,7 @@ export function ScoreEquation({ resolution }: { resolution?: ScoreResolution }) 
 				))}
 				{resolution.itemImpacts.length > 0 && (
 					<div className="mt-1 break-words text-acc-cyan">
-						{resolution.itemImpacts.map((impact) => `${impact.itemId} +${formatNumber(impact.scoreDelta)} ${impact.kind}`).join(" · ")}
+						{resolution.itemImpacts.map((impact) => `${impact.itemId} +${formatNumber(impact.scoreDelta)} ${impact.kind}`).join(" / ")}
 					</div>
 				)}
 			</div>

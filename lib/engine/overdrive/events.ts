@@ -1,4 +1,4 @@
-import type { ItemContribution, StageType } from "./types"
+import type { ItemContribution, ScoreResolution, StageType } from "./types"
 
 export type EngineEvents = {
 	word_complete: {
@@ -14,6 +14,7 @@ export type EngineEvents = {
 		autoExecuted: boolean
 		appliedItemIds: string[]
 		combo: number
+		scoreResolution: ScoreResolution
 	}
 	typo: { expected: string; got: string; ignored: boolean }
 	character_accepted: {

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Typecade Board — Global typing test leaderboards";
+export const alt = "Typecade Board - Global typing test leaderboards";
 export const dynamic = "force-static";
 
 const FONT_STACK =
@@ -48,15 +48,16 @@ export default async function Image() {
                             fontWeight: 800,
                         }}
                     >
-                        ★
+                        *
                     </div>
-                    <div style={{ display: "flex",  fontSize: 32, fontWeight: 700 }}>
+                    <div style={{ display: "flex", fontSize: 32, fontWeight: 700 }}>
                         Typecade Board
                     </div>
                 </div>
 
                 <div
-                    style={{ display: "flex", 
+                    style={{
+                        display: "flex",
                         marginTop: 80,
                         fontSize: 76,
                         fontWeight: 800,
@@ -69,7 +70,8 @@ export default async function Image() {
                 </div>
 
                 <div
-                    style={{ display: "flex", 
+                    style={{
+                        display: "flex",
                         marginTop: 28,
                         fontSize: 28,
                         color: "#9CA3AF",
@@ -81,7 +83,6 @@ export default async function Image() {
                     Filter by today, this week, or all-time.
                 </div>
 
-                {/* Mock leaderboard rows */}
                 <div
                     style={{
                         marginTop: "auto",
@@ -92,9 +93,9 @@ export default async function Image() {
                     }}
                 >
                     {[
-                        { rank: 1, name: "thunderkey_", wpm: 184, acc: 99, medal: "🥇" },
-                        { rank: 2, name: "neon_fox_92", wpm: 171, acc: 98, medal: "🥈" },
-                        { rank: 3, name: "byte_rider", wpm: 168, acc: 97, medal: "🥉" },
+                        { rank: 1, name: "thunderkey_", wpm: 184, acc: 99, medal: "1st" },
+                        { rank: 2, name: "neon_fox_92", wpm: 171, acc: 98, medal: "2nd" },
+                        { rank: 3, name: "byte_rider", wpm: 168, acc: 97, medal: "3rd" },
                         { rank: 4, name: "you", wpm: 142, acc: 96, medal: "" },
                     ].map((row) => (
                         <div
@@ -116,22 +117,23 @@ export default async function Image() {
                             }}
                         >
                             <div
-                                style={{ display: "flex", 
+                                style={{
+                                    display: "flex",
                                     fontSize: 28,
                                     fontWeight: 700,
                                     color: "#FBBF24",
                                     width: 90,
                                 }}
                             >
-                                {row.medal} #{row.rank}
+                                {row.medal || "Run"} #{row.rank}
                             </div>
-                            <div style={{ display: "flex",  fontSize: 24, flex: 1, color: "#E5E7EB" }}>
+                            <div style={{ display: "flex", fontSize: 24, flex: 1, color: "#E5E7EB" }}>
                                 {row.name}
                             </div>
-                            <div style={{ display: "flex",  fontSize: 26, fontWeight: 700, color: "#6366F1", width: 100, textAlign: "right" }}>
+                            <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#6366F1", width: 100, textAlign: "right" }}>
                                 {row.wpm} wpm
                             </div>
-                            <div style={{ display: "flex",  fontSize: 22, color: "#9CA3AF", width: 90, textAlign: "right" }}>
+                            <div style={{ display: "flex", fontSize: 22, color: "#9CA3AF", width: 90, textAlign: "right" }}>
                                 {row.acc}%
                             </div>
                         </div>
@@ -139,6 +141,6 @@ export default async function Image() {
                 </div>
             </div>
         ),
-        size
+        size,
     );
 }

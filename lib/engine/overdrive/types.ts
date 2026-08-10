@@ -26,6 +26,39 @@ export type ItemImpact = {
 	protections: number
 }
 
+export type ScoreTraceOperation = "add" | "multiply" | "floor"
+
+export type ScoreTraceSource = "word" | "item" | "combo" | "overdrive" | "aegis"
+
+export type ScoreTraceStep = {
+	id: string
+	label: string
+	source: ScoreTraceSource
+	operation: ScoreTraceOperation
+	before: number
+	after: number
+}
+
+export type ScoreItemImpact = {
+	itemId: string
+	kind: "base" | "mult" | "final"
+	scoreDelta: number
+}
+
+export type ScoreResolution = {
+	word: string
+	characterBase: number
+	itemBaseBonus: number
+	effectiveBase: number
+	effectiveMult: number
+	finalMultiplier: number
+	total: number
+	aegisRecovery: boolean
+	overdriveReleased: boolean
+	trace: ScoreTraceStep[]
+	itemImpacts: ScoreItemImpact[]
+}
+
 export type RunSnapshot = {
 	screen: Screen
 	mode: RunMode
@@ -79,6 +112,7 @@ export type RunSnapshot = {
 	glitchState: Record<string, boolean | number | string> | null
 	stageItemImpact: Record<string, ItemImpact>
 	runItemImpact: Record<string, ItemImpact>
+	lastScoreResolution?: ScoreResolution
 }
 
 export type ItemContribution = {

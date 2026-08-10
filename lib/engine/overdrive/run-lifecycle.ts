@@ -75,6 +75,7 @@ export function startStage(ctx: RunContext) {
 	ctx.state.caretIndex = 0
 	ctx.state.stageItemImpact = {}
 	ctx.state.tokenBreakdown = undefined
+	ctx.state.lastScoreResolution = undefined
 	ctx.state.glitchState = null
 	ctx.state.currentWord = getBuildBiasedWord(ctx)
 	ctx.state.upcomingWords = Array.from({ length: 8 }, () => getBuildBiasedWord(ctx))
