@@ -9,7 +9,7 @@ describe("Pool Contracts", () => {
   it("reuses signal nodes across caret updates", () => {
     const createNode = vi.fn(() => {
       const g = new Container()
-      ;(g as any).label = "signal-node"
+      ;(g as Container & { label: string }).label = "signal-node"
       return g
     })
     const pool = new SignalNodePool(createNode)
