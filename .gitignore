@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -19,10 +21,13 @@
 
 # production
 /build
+/.worktrees/
 
 # misc
 .DS_Store
 *.pem
+__pycache__/
+*.py[cod]
 
 # debug
 npm-debug.log*
@@ -40,4 +45,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/docs/
+# /docs/
+
+# OpenNext & Wrangler
+/.open-next
+/.wrangler
+tsc-errors.txt
+
+# IDEs and Editors
+/.vscode/
+/.idea/
+/.cursor/
+/.ai/
+*.swp
+*.swo

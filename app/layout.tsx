@@ -1,30 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Pixelify_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { LayoutShell } from "./layout-shell";
-import { PlausibleAnalytics } from "@/components/analytics";
 import "./globals.css";
 
-// Display: Space Grotesk — modern, geometric, distinctive without being
-// quirky. Carries brand personality without screaming it.
-const displayFont = Space_Grotesk({
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-display",
+const displayFont = Pixelify_Sans({
+  weight: "400",
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
-// Body / UI: Inter — the boring-correct choice for dense interface text.
 const sansFont = Inter({
-  weight: ["400", "500", "600"],
-  variable: "--font-sans",
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-// Mono: JetBrains Mono — used for the typing area and any numeric readouts.
-// Keep it: the typing surface is the product, the typeface is load-bearing.
 const jetbrainsMono = JetBrains_Mono({
-  weight: ["400", "500", "600"],
-  variable: "--font-mono",
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -35,7 +26,7 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5, // Accessibility friendly
+  maximumScale: 5,
 };
 
 export const siteDescription = "Free multiplayer typing test with real-time races, leaderboards, and detailed WPM stats. Challenge friends or race strangers.";
@@ -50,13 +41,8 @@ export const metadata: Metadata = {
   keywords: ["typing test", "typecade", "typing speed test", "wpm test", "typing game", "touch typing", "keyboard mastery", "multiplayer typing"],
   referrer: "origin-when-cross-origin",
   alternates: {
-      canonical: "/",
-      languages: {
-        en: "https://typecade.com/",
-        "x-default": "https://typecade.com/",
-        id: "https://typecade.com/id",
-      },
-    },
+    canonical: "/",
+  },
   robots: {
     index: true,
     follow: true,
@@ -122,27 +108,14 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID || "1234567890"} />
-        {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
-          <meta
-            name="google-site-verification"
-            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
-          />
-        )}
-        {process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION && (
-          <meta
-            name="msvalidate.01"
-            content={process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION}
-          />
-        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col items-center justify-between text-foreground`}>
-        <PlausibleAnalytics />
+      <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-dvh flex flex-col items-center justify-between text-foreground`}>
         <AuthProvider>
-          <LayoutShell>{children}</LayoutShell>
+          {children}
         </AuthProvider>
       </body>
     </html>

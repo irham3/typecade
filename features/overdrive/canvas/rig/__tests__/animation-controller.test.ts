@@ -1,0 +1,117 @@
+import { describe, expect, it } from "vitest"
+import { AnimationController } from "../animation-controller"
+import type {
+	AnimationClip,
+	RigDefinition,
+	RigTransform,
+} from "../rig-definition"
+
+const transform: RigTransform = {
+	x: 0,
+	y: 0,
+	rotation: 0,
+	scaleX: 1,
+	scaleY: 1,
+	alpha: 1,
+}
+
+const clips: AnimationClip[] = [
+	{
+		name: "idle",
+		durationMs: 1_200,
+		loop: true,
+		priority: 0,
+		tracks: [],
+	},
+	{
+		name: "chain-1",
+		durationMs: 180,
+		loop: false,
+		priority: 1,
+		contactMs: 90,
+		recoveryStartMs: 90,
+		tracks: [],
+	},
+	{
+		name: "chain-2",
+		durationMs: 180,
+		loop: false,
+		priority: 1,
+		contactMs: 90,
+		recoveryStartMs: 90,
+		tracks: [],
+	},
+	{
+		name: "execute",
+		durationMs: 300,
+		loop: false,
+		priority: 3,
+		contactMs: 120,
+		recoveryStartMs: 220,
+		tracks: [],
+	},
+	{
+		name: "block",
+		durationMs: 360,
+		loop: false,
+		priority: 4,
+		contactMs: 120,
+		recoveryStartMs: 280,
+		tracks: [],
+	},
+]
+
+const definition: RigDefinition = {
+	id: "test",
+	atlasUrl: "/test.json",
+	defaultClip: "idle",
+	parts: [{
+		id: "root",
+		texture: "root",
+		pivot: { x: 0, y: 0 },
+		defaultTransform: transform,
+		zIndex: 0,
+	}],
+	clips: Object.fromEntries(clips.map((clip) => [clip.name, clip])),
+}
+
+describe("AnimationController", () => {
+	it("rejects a lower-priority interruption before recovery", () => {
+		const controller = new AnimationController(definition)
+		expect(controller.play("execute").status).toBe("started")
+		controller.update(100)
+
+		expect(controller.play("chain-1").status).toBe("blocked")
+		expect(controller.update(0).clip).toBe("execute")
+	})
+
+	it("accepts a chain interruption during recovery", () => {
+		const controller = new AnimationController(definition)
+		controller.play("execute")
+		controller.update(240)
+
+		expect(controller.play("chain-1").status).toBe("started")
+		expect(controller.update(0).clip).toBe("chain-1")
+	})
+
+	it("loops idle clips", () => {
+		const controller = new AnimationController(definition)
+		const frame = controller.update(1_300)
+
+		expect(frame.clip).toBe("idle")
+		expect(frame.localTimeMs).toBe(100)
+	})
+
+
+
+	it("collapses recovery when fast input arrives", () => {
+		const controller = new AnimationController(definition)
+		controller.play("chain-1")
+		controller.update(100)
+
+		expect(controller.play("chain-2").status).toBe("started")
+		const frame = controller.update(0)
+		expect(frame.clip).toBe("chain-2")
+		expect(frame.localTimeMs).toBe(0)
+	})
+})

@@ -40,6 +40,9 @@ export function ThemeModal() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="appearance-title"
                         className="w-full max-w-lg glass p-6 sm:p-8 rounded-4xl sm:rounded-5xl shadow-2xl relative overflow-hidden z-10 glow-accent max-h-[85vh] overflow-y-auto hide-scrollbar"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -50,7 +53,7 @@ export function ThemeModal() {
                                     <Palette size={20} className="text-accent" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">Appearance</h2>
+                                    <h2 id="appearance-title" className="text-xl sm:text-2xl font-bold font-display tracking-tight text-foreground">Appearance</h2>
                                     <p className="text-xs text-text-dim font-medium">Customize your visual atmosphere</p>
                                 </div>
                             </div>
@@ -58,6 +61,7 @@ export function ThemeModal() {
                                 variant="ghost"
                                 size="icon"
                                 className="rounded-xl w-10 h-10 hover:bg-foreground/10"
+                                aria-label="Close appearance settings"
                                 onClick={() => setThemeModalOpen(false)}
                             >
                                 <X size={20} className="text-text-dim" />
@@ -73,6 +77,8 @@ export function ThemeModal() {
                                         <button
                                             key={t.id}
                                             onClick={() => setTheme(t.id)}
+                                            aria-pressed={theme === t.id}
+                                            aria-label={`Use ${t.label} theme`}
                                             className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-300 group relative overflow-hidden ${theme === t.id
                                                 ? 'border-accent bg-accent/10 ring-2 ring-accent/20 -translate-y-0.5'
                                                 : 'border-foreground/10 bg-foreground/5 hover:border-foreground/20 hover:bg-foreground/8'
@@ -107,6 +113,8 @@ export function ThemeModal() {
                                     </div>
                                     <button
                                         onClick={() => setShowAnimations(!showAnimations)}
+                                        aria-label="Toggle immersive effects"
+                                        aria-pressed={showAnimations}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${showAnimations ? 'bg-accent' : 'bg-white/10'}`}
                                     >
                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showAnimations ? 'translate-x-6' : 'translate-x-1'}`} />
