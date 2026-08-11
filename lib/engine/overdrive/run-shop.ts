@@ -1,20 +1,40 @@
-import { GLITCHES, KEYCAPS, MACROS } from "./items"
-import { MAX_KEYCAPS, MAX_MACROS, type RunContext } from "./run-state"
+import { FIRMWARE, GLITCHES, KEYCAPS, MACROS } from "./items"
+import type { RunContext } from "./run-state"
 
 export type MacroDispatchHooks = {
 	completeStage: () => void
 	registerInputIntent: () => void
 }
 
-function availableKeycapsForRarity(rarity: "common" | "uncommon" | "rare") {
+function availableKeycapsForRarity(
+	rarity: "common" | "uncommon" | "rare" | "legendary",
+	owned: readonly string[],
+) {
+	const unowned = Object.values(KEYCAPS).filter((item) => item.rarity === rarity && !owned.includes(item.id))
+	if (unowned.length > 0) return unowned
 	return Object.values(KEYCAPS).filter((item) => item.rarity === rarity)
 }
 
 function randomKeycap(ctx: RunContext): string {
-	const roll = ctx.shopRng.next() * 98
-	const rarity = roll < 60 ? "common" : roll < 88 ? "uncommon" : "rare"
-	const pool = availableKeycapsForRarity(rarity)
+	const roll = ctx.shopRng.next() * 100
+	const betterOdds = ctx.state.firmware.includes("better_odds")
+	const rarity = ctx.state.zone < 3
+		? (roll < 68 ? "common" : "uncommon")
+		: ctx.state.zone < 5
+			? (roll < (betterOdds ? 46 : 58) ? "common" : roll < (betterOdds ? 76 : 88) ? "uncommon" : "rare")
+			: (roll < (betterOdds ? 42 : 56) ? "common" : roll < (betterOdds ? 70 : 84) ? "uncommon" : roll < (betterOdds ? 96 : 98) ? "rare" : "legendary")
+	const pool = availableKeycapsForRarity(rarity, ctx.state.keycaps)
 	return ctx.shopRng.pick(pool).id
+}
+
+function randomFirmware(ctx: RunContext): string | null {
+	const pool = Object.values(FIRMWARE).filter((item) => !ctx.state.firmware.includes(item.id))
+	if (pool.length === 0) return null
+	return ctx.shopRng.pick(pool).id
+}
+
+function priceFor(ctx: RunContext, basePrice: number): number {
+	return ctx.state.firmware.includes("discount") ? Math.ceil(basePrice * 0.75) : basePrice
 }
 
 export function generateShop(ctx: RunContext) {
@@ -25,30 +45,51 @@ export function generateShop(ctx: RunContext) {
 	}
 	ctx.state.shopKeycaps = [first, second]
 	ctx.state.shopMacro = ctx.shopRng.pick(Object.values(MACROS)).id
+	ctx.state.shopFirmware = randomFirmware(ctx)
 }
 
-export function buyItem(ctx: RunContext, type: "keycap" | "macro", index: number) {
+export function buyItem(ctx: RunContext, type: "keycap" | "macro" | "firmware", index: number) {
 	if (ctx.state.screen !== "shop") return
 	if (type === "keycap") {
 		const id = ctx.state.shopKeycaps[index]
 		const definition = KEYCAPS[id]
-		if (!definition || ctx.state.keycaps.length >= MAX_KEYCAPS || ctx.state.tokens < definition.basePrice) {
+		const price = definition ? priceFor(ctx, definition.basePrice) : 0
+		if (
+			!definition
+			|| ctx.state.keycaps.includes(id)
+			|| ctx.state.keycaps.length >= ctx.state.maxKeycaps
+			|| ctx.state.tokens < price
+		) {
 			return
 		}
-		ctx.state.tokens -= definition.basePrice
+		ctx.state.tokens -= price
 		ctx.state.keycaps.push(id)
 		ctx.runItemData.push({})
 		ctx.stageItemData.push({})
 		ctx.state.shopKeycaps[index] = ""
 		return
 	}
+	if (type === "firmware") {
+		const id = ctx.state.shopFirmware
+		if (!id) return
+		const definition = id ? FIRMWARE[id] : undefined
+		const price = definition ? priceFor(ctx, definition.basePrice) : 0
+		if (!definition || ctx.state.firmware.includes(id) || ctx.state.tokens < price) return
+		ctx.state.tokens -= price
+		ctx.state.firmware.push(id)
+		if (id === "extra_slot") ctx.state.maxKeycaps = Math.min(7, ctx.state.maxKeycaps + 1)
+		if (id === "macro_pocket") ctx.state.maxMacros = ctx.state.maxMacros + 1
+		ctx.state.shopFirmware = null
+		return
+	}
 
 	const id = ctx.state.shopMacro
 	const definition = id ? MACROS[id] : undefined
-	if (!definition || ctx.state.macros.length >= MAX_MACROS || ctx.state.tokens < definition.basePrice) {
+	const price = definition ? priceFor(ctx, definition.basePrice) : 0
+	if (!definition || ctx.state.macros.length >= ctx.state.maxMacros || ctx.state.tokens < price) {
 		return
 	}
-	ctx.state.tokens -= definition.basePrice
+	ctx.state.tokens -= price
 	ctx.state.macros.push(definition.id)
 	ctx.state.shopMacro = null
 }

@@ -196,6 +196,31 @@ function scoreResolution({
 	}
 }
 
+function damageCore(
+	ctx: RunContext,
+	lifecycle: InputLifecycle,
+	reason: "dirty-submission" | "enemy-strike" | "glitch",
+): boolean {
+	if (ctx.state.shieldCharges > 0) {
+		ctx.state.shieldCharges -= 1
+		ctx.events.emit("item_triggered", {
+			itemId: "home_row",
+			trigger: "Shield block",
+			contribution: { kind: "protection", amount: 1, label: "Shield blocked Core damage" },
+		})
+		return false
+	}
+	ctx.state.coreIntegrity = Math.max(0, ctx.state.coreIntegrity - 1)
+	ctx.events.emit("core_damage", {
+		integrity: ctx.state.coreIntegrity,
+		maxIntegrity: ctx.state.maxCoreIntegrity,
+		reason,
+	})
+	if (ctx.state.coreIntegrity > 0) return false
+	lifecycle.failStage("core_breach")
+	return true
+}
+
 function submitWord(
 	ctx: RunContext,
 	lifecycle: InputLifecycle,
@@ -205,9 +230,10 @@ function submitWord(
 	const aegisRecovery = !result.clean
 		&& ctx.state.aegisActive
 		&& ctx.state.zone === 2
-	const releasesOverdrive = result.clean
+	const startsOverdrive = result.clean
 		&& ctx.state.overdriveCharge >= OVERDRIVE_CHARGE_MAX
 		&& (ctx.state.zone <= 2 || mode === "overdrive")
+	const releasesOverdrive = result.clean && (startsOverdrive || ctx.state.overdriveActive)
 	const elapsedMs = ctx.stageElapsedMs
 	const combatActions = actionsForWord({
 		word: ctx.state.currentWord,
@@ -230,11 +256,14 @@ function submitWord(
 		appliedItemIds,
 	}
 
-	forEachKeycap(ctx, (id, _index, base) => {
+	forEachKeycap(ctx, (id, index, base) => {
 		const definition = KEYCAPS[id]
 		if (!definition.beforeWordScore) return
+		const triggerCount = index > 0 && ctx.state.keycaps[index - 1] === "copycat" ? 2 : 1
 		const context: WordScoreContext = { ...base, ...contextBase }
-		definition.beforeWordScore(context)
+		for (let trigger = 0; trigger < triggerCount; trigger += 1) {
+			definition.beforeWordScore(context)
+		}
 		Object.assign(contextBase, {
 			baseBonus: context.baseBonus,
 			baseMultiplier: context.baseMultiplier,
@@ -247,11 +276,18 @@ function submitWord(
 	const effectiveMult = (result.mult + contextBase.multAdd) * contextBase.multMultiplier
 	const modifiedBase = (ctx.state.currentWord.length + contextBase.baseBonus)
 		* contextBase.baseMultiplier
-	const scoreGain = result.clean
+	let scoreGain = result.clean
 		? Math.floor(modifiedBase * effectiveMult * contextBase.finalMultiplier)
 		: aegisRecovery
 			? Math.floor(modifiedBase)
 			: 0
+	if (
+		result.clean
+		&& typeof ctx.state.glitchState?.minScoringWpm === "number"
+		&& ctx.state.wpm < ctx.state.glitchState.minScoringWpm
+	) {
+		scoreGain = 0
+	}
 	const baselineScore = result.clean
 		? Math.floor(ctx.state.currentWord.length * result.mult)
 		: 0
@@ -267,7 +303,18 @@ function submitWord(
 	}
 
 	recordScoreImpact(ctx, appliedItemIds, Math.max(0, scoreGain - baselineScore))
-	if (releasesOverdrive) ctx.state.overdriveCharge = 0
+	if (startsOverdrive) {
+		ctx.state.overdriveCharge = 0
+		ctx.state.overdriveActive = true
+		ctx.state.overdriveExecutionsRemaining = 3
+	}
+	if (releasesOverdrive) {
+		ctx.state.overdriveExecutionsRemaining = Math.max(
+			0,
+			ctx.state.overdriveExecutionsRemaining - 1,
+		)
+		ctx.state.overdriveActive = ctx.state.overdriveExecutionsRemaining > 0
+	}
 	const resolvedScore = scoreResolution({
 		word: ctx.state.currentWord,
 		characterBase: ctx.state.currentWord.length,
@@ -288,11 +335,14 @@ function submitWord(
 		...contextBase,
 		scoreGain,
 	}
-	forEachKeycap(ctx, (id, _index, base) => {
+	forEachKeycap(ctx, (id, index, base) => {
 		const definition = KEYCAPS[id]
 		if (!definition.afterWordScore) return
 		const context: WordResolvedContext = { ...base, ...resolvedBase }
-		definition.afterWordScore(context)
+		const triggerCount = index > 0 && ctx.state.keycaps[index - 1] === "copycat" ? 2 : 1
+		for (let trigger = 0; trigger < triggerCount; trigger += 1) {
+			definition.afterWordScore(context)
+		}
 	})
 
 	ctx.events.emit("word_complete", {
@@ -311,10 +361,11 @@ function submitWord(
 		scoreResolution: resolvedScore,
 		combatActions,
 	})
-	if (releasesOverdrive) {
+	if (startsOverdrive) {
 		ctx.events.emit("overdrive_released", {
 			word: ctx.state.currentWord,
 			scoreGain,
+			executionsRemaining: ctx.state.overdriveExecutionsRemaining,
 		})
 	}
 	if (result.multIncreased) {
@@ -323,9 +374,15 @@ function submitWord(
 	ctx.events.emit("mult_change", { mult: persistentMult(ctx) })
 	ctx.events.emit("quota_progress", { score: ctx.state.score, quota: ctx.state.quota })
 
+	if (!result.clean && ctx.state.zone > 1 && damageCore(ctx, lifecycle, "dirty-submission")) {
+		return
+	}
+
 	ctx.state.wordDirty = false
 	ctx.preserveMultForWord = false
 	ctx.state.targetOrdinal += 1
+	ctx.state.typedBuffer = ""
+	ctx.state.errorPositions = []
 	updateTypingStats(ctx)
 
 	if (ctx.state.score >= ctx.state.quota) {
@@ -337,6 +394,8 @@ function submitWord(
 	ctx.state.upcomingWords.push(getBuildBiasedWord(ctx))
 	normalizeVisiblePrefixes(ctx)
 	ctx.state.caretIndex = 0
+	ctx.state.typedBuffer = ""
+	ctx.state.errorPositions = []
 	ctx.state.mult = persistentMult(ctx)
 }
 
@@ -370,6 +429,7 @@ export function feedChar(ctx: RunContext, lifecycle: InputLifecycle, character: 
 		ctx.runAttemptedChars += 1
 		ctx.runCorrectChars += 1
 		ctx.state.caretIndex += 1
+		ctx.state.typedBuffer += character
 		ctx.state.overdriveCharge = Math.min(
 			OVERDRIVE_CHARGE_MAX,
 			ctx.state.overdriveCharge + OVERDRIVE_CHARGE_PER_CHARACTER,
@@ -400,7 +460,8 @@ export function feedChar(ctx: RunContext, lifecycle: InputLifecycle, character: 
 				character,
 				characterIndex,
 				keycapIds: ctx.state.keycaps,
-				overdrive: ctx.state.overdriveCharge >= OVERDRIVE_CHARGE_MAX,
+				overdrive: ctx.state.overdriveActive,
+				wordDirty: ctx.state.wordDirty,
 			}),
 			charge: ctx.state.overdriveCharge,
 			becameReady,
@@ -429,6 +490,11 @@ export function feedChar(ctx: RunContext, lifecycle: InputLifecycle, character: 
 	const isFirstTypoInWord = !ctx.state.wordDirty
 	const trainingForgiveness = ctx.state.aegisActive && ctx.state.zone === 1
 	if (!trainingForgiveness) ctx.state.wordDirty = true
+	const bufferIndex = ctx.state.typedBuffer.length
+	ctx.state.typedBuffer += character
+	if (!ctx.state.errorPositions.includes(bufferIndex)) {
+		ctx.state.errorPositions = [...ctx.state.errorPositions, bufferIndex]
+	}
 	ctx.state.overdriveCharge = Math.max(0, ctx.state.overdriveCharge - OVERDRIVE_TYPO_DRAIN)
 	ctx.state.stageTypos += 1
 	ctx.state.totalTypos += 1
@@ -468,6 +534,12 @@ export function feedChar(ctx: RunContext, lifecycle: InputLifecycle, character: 
 	}
 
 	updateTypingStats(ctx)
+	ctx.events.emit("character_rejected", {
+		character,
+		expected,
+		bufferIndex,
+		errorPositions: [...ctx.state.errorPositions],
+	})
 	ctx.events.emit("typo", { expected, got: character, ignored: false })
 
 	if (forceFail) lifecycle.failStage("sudden_death")
@@ -482,5 +554,10 @@ export function backspace(ctx: RunContext) {
 	if (ctx.state.activeGlitch === "no_backspace" && ctx.state.glitchState?.cancelled !== true) {
 		return
 	}
-	if (ctx.state.caretIndex > 0) ctx.state.caretIndex -= 1
+	if (ctx.state.typedBuffer.length === 0) return
+	const removedIndex = ctx.state.typedBuffer.length - 1
+	ctx.state.typedBuffer = ctx.state.typedBuffer.slice(0, -1)
+	const removedError = ctx.state.errorPositions.includes(removedIndex)
+	ctx.state.errorPositions = ctx.state.errorPositions.filter((index) => index !== removedIndex)
+	if (!removedError && ctx.state.caretIndex > 0) ctx.state.caretIndex -= 1
 }

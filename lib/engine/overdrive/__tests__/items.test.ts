@@ -20,8 +20,8 @@ function clearCurrentStage(api: ReturnType<typeof createRun>) {
 	expect(guard).toBeLessThan(2_000)
 }
 
-describe("MVP item system", () => {
-	it("ships the exact locked MVP manifest", () => {
+describe("item system", () => {
+	it("ships the expanded GDD Keycap manifest", () => {
 		expect(Object.keys(KEYCAPS)).toEqual([
 			"wasd",
 			"vowel_magnet",
@@ -36,8 +36,20 @@ describe("MVP item system", () => {
 			"double_tap",
 			"snowball",
 			"interest_bank",
+			"turbo_finish",
+			"caps_lock",
 			"glass_keycap",
 			"vampire",
+			"midas",
+			"flow_state",
+			"time_dilation",
+			"mirror",
+			"copycat",
+			"palindrome",
+			"favorite_letter",
+			"command_infinity_key",
+			"the_typewriter",
+			"overdrive_core",
 		])
 		expect(Object.keys(MACROS)).toEqual([
 			"escape",
@@ -54,6 +66,11 @@ describe("MVP item system", () => {
 		["home_row", "sad", 18],
 		["punctuator", "word!", 8],
 		["double_tap", "letter", 30],
+		["palindrome", "level", 25],
+		["favorite_letter", "seed", 8],
+		["caps_lock", "Signal", 12],
+		["mirror", "signal", 6],
+		["the_typewriter", "signal", 11],
 	] as const)("%s applies only its documented word modifier", (itemId, word, expectedScore) => {
 		const api = createRun({ seed: itemId, words: [word], startingKeycaps: [itemId] })
 		api.start()
@@ -301,6 +318,67 @@ describe("MVP item system", () => {
 		typeCurrentWord(api)
 		typeCurrentWord(api)
 		expect(api.snapshot().score).toBe(13)
+	})
+
+	it("Midas pays for rare letters and Flow State doubles Base after 30 clean seconds", () => {
+		const midas = createRun({
+			seed: "midas",
+			words: ["quiz"],
+			startingKeycaps: ["midas"],
+		})
+		midas.start()
+		typeCurrentWord(midas)
+		expect(midas.snapshot().tokens).toBe(2)
+
+		const flow = createRun({
+			seed: "flow",
+			words: ["signal"],
+			startingKeycaps: ["flow_state"],
+		})
+		flow.start()
+		flow.advance(30_000)
+		typeCurrentWord(flow)
+		expect(flow.snapshot().score).toBe(12)
+	})
+
+	it("Time Dilation extends stage time and raises quota", () => {
+		const api = createRun({
+			seed: "time-dilation",
+			words: ["signal"],
+			startingKeycaps: ["time_dilation"],
+		})
+		api.start()
+		expect(api.snapshot()).toMatchObject({
+			stageDurationMs: 90_000,
+			timeLeftMs: 90_000,
+			quota: 66,
+		})
+	})
+
+	it("Copycat triggers the Keycap to its right twice", () => {
+		const api = createRun({
+			seed: "copycat-wasd",
+			words: ["signal"],
+			startingKeycaps: ["copycat", "wasd"],
+		})
+		api.start()
+		typeCurrentWord(api)
+		expect(api.snapshot().score).toBe(26)
+	})
+
+	it("Turbo Finish doubles clear tokens when more than half the timer remains", () => {
+		const api = createRun({
+			seed: "turbo-finish",
+			words: ["a".repeat(100)],
+			startingKeycaps: ["turbo_finish"],
+		})
+		api.start()
+		typeCurrentWord(api)
+		expect(api.snapshot().tokenBreakdown).toMatchObject({
+			clearReward: 6,
+			timeBonus: 14,
+			totalEarned: 20,
+		})
 	})
 
 	it("emits one proc event per item trigger", () => {

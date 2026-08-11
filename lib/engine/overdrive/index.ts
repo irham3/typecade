@@ -1,6 +1,7 @@
 export * from "./constants"
 export * from "./types"
 export * from "./combat-grammar"
+export * from "./combat-targets"
 export * from "./target-selection"
 export * from "./combat-actions"
 export * from "./events"

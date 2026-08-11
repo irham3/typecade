@@ -78,9 +78,15 @@ export function Hud() {
 		aegisActive: snapshot.aegisActive,
 		aegisRescues: snapshot.aegisRescues,
 		stageRescued: snapshot.stageRescued,
+		coreIntegrity: snapshot.coreIntegrity,
+		maxCoreIntegrity: snapshot.maxCoreIntegrity,
+		shieldCharges: snapshot.shieldCharges,
 		focusPaused: snapshot.focusPaused,
 		threatBand: snapshot.threatBand,
 		overdriveCharge: snapshot.overdriveCharge,
+		overdriveActive: snapshot.overdriveActive,
+		overdriveExecutionsRemaining: snapshot.overdriveExecutionsRemaining,
+		targetOrdinal: snapshot.targetOrdinal,
 		armedItemIds: snapshot.armedItemIds,
 		setPaused: snapshot.setPaused,
 		api: snapshot.api,
@@ -101,7 +107,11 @@ export function Hud() {
 	const quotaRatio = state.quota <= 0 ? 0 : state.score / state.quota
 	const scoreRemaining = Math.max(0, state.quota - state.score)
 	const comboProgress = state.combo % 10
-	const targetCues = targetChoiceCues(state.currentWord, state.upcomingWords)
+	const targetCues = targetChoiceCues(state.currentWord, state.upcomingWords, {
+		stage: state.stage,
+		zone: state.zone,
+		targetOrdinal: state.targetOrdinal,
+	})
 
 	return (
 		<div className="pointer-events-none absolute inset-0 z-20 flex select-none flex-col p-3 text-text-hi sm:p-6">
@@ -199,7 +209,7 @@ export function Hud() {
 				<div className="mx-auto mt-3 flex max-w-xl items-center justify-center gap-3 border border-line bg-bg-0/80 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] sm:text-sm">
 					<span className="text-text-mid">TARGET SELECT</span>
 					<span className="text-acc-green">
-						{targetCues.map((cue) => `${cue.prefix}:${cue.base}`).join(" / ")}
+						{targetCues.map((cue) => `${cue.prefix}:${cue.tacticalLabel}`).join(" / ")}
 					</span>
 					<span className="hidden text-text-mid sm:inline">TYPE FIRST LETTER TO SWITCH</span>
 				</div>
@@ -344,13 +354,21 @@ export function Hud() {
 
 			<footer className="mt-3 flex h-8 items-end justify-between text-sm font-bold uppercase tracking-[0.08em] text-text-mid">
 				<span>
+					CORE{" "}
+					<span className={state.coreIntegrity > 1 ? "text-acc-green" : "text-acc-red"}>
+						{state.coreIntegrity}/{state.maxCoreIntegrity}
+					</span>
+					{state.shieldCharges > 0 ? ` · SHIELD ${state.shieldCharges}` : ""}
+					{" · "}
 					<span className={state.accuracy >= 97 ? "text-acc-green" : state.accuracy >= 90 ? "text-acc-yellow" : "text-acc-red"}>
 						{state.accuracy}%
 					</span>{" "}
 					ACCURACY
 				</span>
 				<span className={state.overdriveCharge >= 100 ? "text-acc-yellow" : "text-acc-cyan"}>
-					{state.overdriveCharge >= 100 && state.zone >= 3
+					{state.overdriveActive
+						? `OVERDRIVE ${state.overdriveExecutionsRemaining} EXEC`
+						: state.overdriveCharge >= 100 && state.zone >= 3
 						? "ENTER: OVERDRIVE"
 						: `OVERDRIVE ${state.overdriveCharge}%`}
 				</span>

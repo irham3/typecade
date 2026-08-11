@@ -97,7 +97,7 @@ export function createRun(opts: CreateRunOptions) {
 		leaveShop: () => {
 			leaveShopScreen(ctx)
 		},
-		buyItem: (type: "keycap" | "macro", index: number) => {
+		buyItem: (type: "keycap" | "macro" | "firmware", index: number) => {
 			buyShopItem(ctx, type, index)
 		},
 		sellKeycap: (index: number) => {

@@ -16,6 +16,7 @@ import {
 	forEachKeycap,
 	getBuildBiasedWord,
 	persistentMult,
+	recordImpact,
 	resetRng,
 	resetRunSnapshot,
 	SHOP_REROLL_BASE,
@@ -30,7 +31,7 @@ import {
 	updateTypingStats,
 } from "./run-telemetry-data"
 
-export type StageFailReason = "timeout" | "sudden_death" | "time_penalty"
+export type StageFailReason = "timeout" | "sudden_death" | "time_penalty" | "core_breach"
 
 function resolveItemStageEnd(ctx: RunContext, cleared: boolean) {
 	const remove: number[] = []
@@ -58,6 +59,7 @@ function resolveItemStageEnd(ctx: RunContext, cleared: boolean) {
 export function startStage(ctx: RunContext) {
 	ctx.state.screen = "stage"
 	ctx.state.stageDurationMs = stageDurationMs(ctx.state.stage)
+		+ (ctx.state.firmware.includes("extended_timer") ? 10_000 : 0)
 	ctx.state.timeLeftMs = ctx.state.stageDurationMs
 	ctx.state.aegisActive = !ctx.state.endless && ctx.state.zone <= AEGIS_PROTECTED_ZONE_MAX
 	ctx.state.aegisRescues = 0
@@ -74,6 +76,9 @@ export function startStage(ctx: RunContext) {
 	ctx.state.stageTypos = 0
 	ctx.state.wordDirty = false
 	ctx.state.caretIndex = 0
+	ctx.state.typedBuffer = ""
+	ctx.state.errorPositions = []
+	ctx.state.lastFailReason = undefined
 	ctx.state.stageItemImpact = {}
 	ctx.state.tokenBreakdown = undefined
 	ctx.state.lastScoreResolution = undefined
@@ -98,9 +103,11 @@ export function startStage(ctx: RunContext) {
 	})
 
 	if (ctx.state.stage === "glitch" && ctx.state.zone > 1) {
-		const ids = Object.keys(GLITCHES).filter(
-			(id) => ctx.state.zone >= 3 || id !== "sudden_death",
-		)
+		const ids = ctx.state.zone >= 8
+			? ["kernel_panic"]
+			: Object.keys(GLITCHES).filter(
+				(id) => id !== "kernel_panic" && (ctx.state.zone >= 3 || id !== "sudden_death"),
+			)
 		ctx.state.activeGlitch = ctx.glitchRng.pick(ids)
 		ctx.state.glitchState = {}
 		const glitch = GLITCHES[ctx.state.activeGlitch]
@@ -142,6 +149,10 @@ export function completeStage(ctx: RunContext) {
 	resolveItemStageEnd(ctx, true)
 
 	const tokenMultiplier = Number(ctx.state.glitchState?.tokenMultiplier ?? 1)
+	const turboFinishMultiplier = ctx.state.keycaps.includes("turbo_finish")
+		&& ctx.state.timeLeftMs > ctx.state.stageDurationMs / 2
+		? 2
+		: 1
 	const clearReward = CLEAR_REWARD[ctx.state.stage]
 	const timeBonus = ctx.state.stageRescued
 		? 0
@@ -150,12 +161,20 @@ export function completeStage(ctx: RunContext) {
 		Math.floor(ctx.state.tokens / 5) * INTEREST_PER_5_TOKENS,
 		ctx.stageInterestCap,
 	)
-	const totalEarned = (clearReward + timeBonus + interest) * tokenMultiplier
+	const combinedMultiplier = tokenMultiplier * turboFinishMultiplier
+	const totalEarned = (clearReward + timeBonus + interest) * combinedMultiplier
+	if (turboFinishMultiplier > 1) {
+		recordImpact(ctx, "turbo_finish", {
+			kind: "token",
+			amount: clearReward + timeBonus + interest,
+			label: "Token reward doubled",
+		})
+	}
 
 	ctx.state.tokenBreakdown = {
-		clearReward: clearReward * tokenMultiplier,
-		timeBonus: timeBonus * tokenMultiplier,
-		interest: interest * tokenMultiplier,
+		clearReward: clearReward * combinedMultiplier,
+		timeBonus: timeBonus * combinedMultiplier,
+		interest: interest * combinedMultiplier,
 		totalEarned,
 	}
 	ctx.state.tokens += totalEarned
@@ -197,6 +216,7 @@ export function failStage(ctx: RunContext, reason: StageFailReason) {
 	if (ctx.state.endless) ctx.state.endlessScore += ctx.state.score
 	else ctx.state.standardScore += ctx.state.score
 	ctx.state.finalScore = ctx.state.runScore
+	ctx.state.lastFailReason = reason
 	ctx.events.emit("stage_fail", { zone: ctx.state.zone, stage: ctx.state.stage, reason })
 	ctx.events.emit("run_over", {
 		win: false,
@@ -227,6 +247,10 @@ export function advanceStage(ctx: RunContext, ms: number) {
 
 	const delta = Math.min(timerDelta, ctx.state.timeLeftMs)
 	ctx.state.timeLeftMs = Math.max(0, ctx.state.timeLeftMs - delta)
+	if (typeof ctx.state.glitchState?.scoreDrainPerSecond === "number" && delta > 0) {
+		const drain = Math.floor(delta / 1_000) * ctx.state.glitchState.scoreDrainPerSecond
+		if (drain > 0) ctx.state.score = Math.max(0, ctx.state.score - drain)
+	}
 	updateTypingStats(ctx)
 
 	if (ctx.state.timeLeftMs === 0) {

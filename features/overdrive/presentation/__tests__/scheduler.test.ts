@@ -55,4 +55,13 @@ describe("createPresentationScheduler", () => {
     expect(beats[0].priority).toBe("critical")
     expect(beats[0].kind).toBe("contact-cue")
   })
+
+  it("does not drain future beats before their due time", () => {
+    const scheduler = createPresentationScheduler({ runId: "run-1", now: () => 1_000 })
+    scheduler.enqueue(acceptedEnvelope(1, 0))
+
+    expect(scheduler.drain(1_010).map((beat) => beat.kind)).toEqual(["contact-cue"])
+    expect(scheduler.drain(1_050).map((beat) => beat.kind)).toEqual(["rig-clip"])
+    expect(scheduler.drain(1_090).map((beat) => beat.kind)).toEqual(["target-hit"])
+  })
 })

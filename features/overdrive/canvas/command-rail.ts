@@ -1,4 +1,5 @@
 import { Container, Graphics, Text } from "pixi.js"
+import type { StageType } from "@/lib/engine/overdrive"
 import { SCENE, V } from "./visual-assets"
 import { TextPool } from "./pools/text-pool"
 import { targetChoiceCues } from "./command-rail-model"
@@ -9,6 +10,9 @@ export interface CommandRailState {
   caretIndex: number
   dirty: boolean
   overdriveCharge: number
+  targetOrdinal: number
+  zone: number
+  stage: StageType
   armedItemIds: readonly string[]
   reducedMotion: boolean
 }
@@ -123,10 +127,15 @@ export class CommandRail {
     }
     if (state.caretIndex >= characters.length) caretX = cursor
 
-		const targetCues = targetChoiceCues(state.word, state.upcomingWords)
+		const targetCues = targetChoiceCues(state.word, state.upcomingWords, {
+			stage: state.stage,
+			zone: state.zone,
+			targetOrdinal: state.targetOrdinal,
+		})
 		const queueNodes = targetCues.slice(1).map((cue) => {
 			const text = this.wordPool.allocate(this.queueLayer, "", 0)
-			text.text = `[${cue.prefix}] ${cue.word.toUpperCase()} · ${cue.base} BASE`
+			const status = cue.statuses.length > 0 ? ` · ${cue.statuses.join("/")}` : ""
+			text.text = `[${cue.prefix}] ${cue.word.toUpperCase()} · HP ${cue.hp} · +${cue.reward} · ${cue.tacticalLabel}${status} · ${Math.ceil(cue.threatMs / 1_000)}S`
 			text.style.fontSize = SCENE.rail.previewFont
 			text.style.fill = V.mid
 			text.anchor.set(0, 0.5)
@@ -166,7 +175,7 @@ export class CommandRail {
 
 		const switchKeys = targetCues.slice(1).map((cue) => cue.prefix)
 		const targetInstruction = state.caretIndex === 0 && switchKeys.length > 0
-			? `TYPE ${switchKeys.join(" / ")} TO SWITCH · LONGER WORD = MORE BASE`
+			? `TYPE ${switchKeys.join(" / ")} TO SWITCH · TARGET ROLE MATTERS`
 			: ""
 		const armedInstruction = state.armedItemIds.length > 0
 			? `ARMED · ${state.armedItemIds.join(" · ").toUpperCase()}`

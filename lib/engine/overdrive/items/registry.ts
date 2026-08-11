@@ -89,6 +89,10 @@ export interface KeycapDef extends ShopItem {
 	onStageEnd?: (ctx: StageEndContext) => void
 }
 
+export interface FirmwareDef extends ShopItem {
+	type: "firmware"
+}
+
 export type MacroContext = {
 	events: ReturnType<typeof createEmitter<EngineEvents>>
 	state: RunSnapshot

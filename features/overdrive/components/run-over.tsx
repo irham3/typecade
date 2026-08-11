@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 import { ItemGlyph, TypecadeMark } from "@/components/overdrive/icons"
 import { GhostButton, PrimaryButton, RARITY_BORDER } from "@/components/overdrive/ui"
-import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
+import { FIRMWARE, KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { useGame } from "../store"
 import { formatNumber } from "./hud"
 import { Screen } from "./screen"
@@ -18,6 +18,25 @@ function ResultStat({ label, value }: { label: string; value: string }) {
 		</div>
 	)
 }
+
+const FAIL_DIAGNOSIS = {
+	timeout: {
+		label: "Quota missed",
+		detail: "You ran out of time before meeting the stage quota.",
+	},
+	sudden_death: {
+		label: "Glitch breach",
+		detail: "A lethal Glitch condition ended the run.",
+	},
+	time_penalty: {
+		label: "Time penalty",
+		detail: "A typo penalty drained the remaining clock.",
+	},
+	core_breach: {
+		label: "Core breached",
+		detail: "Dirty submissions broke the Core after shields were gone.",
+	},
+} as const
 
 export function RunOver() {
 	const state = useGame(useShallow((snapshot) => ({
@@ -38,6 +57,8 @@ export function RunOver() {
 		language: snapshot.language,
 		keycaps: snapshot.keycaps,
 		macros: snapshot.macros,
+		firmware: snapshot.firmware,
+		lastFailReason: snapshot.lastFailReason,
 		startNormalRun: snapshot.startNormalRun,
 		quitToMenu: snapshot.quitToMenu,
 	})))
@@ -49,7 +70,9 @@ export function RunOver() {
 	const shareBuild = [
 		...state.keycaps.map((id) => ({ id, type: "keycap" as const })),
 		...state.macros.map((id) => ({ id, type: "macro" as const })),
+		...state.firmware.map((id) => ({ id, type: "firmware" as const })),
 	].slice(0, 5)
+	const failDiagnosis = state.lastFailReason ? FAIL_DIAGNOSIS[state.lastFailReason] : null
 
 	useEffect(() => {
 		const key = `typecade_overdrive_best_${state.mode}_${state.language.toLowerCase()}`
@@ -71,6 +94,7 @@ export function RunOver() {
 			zone: state.zone,
 			keycaps: state.keycaps,
 			macros: state.macros,
+			firmware: state.firmware,
 			highestMult: state.highestMult,
 		})
 		const text = `${sharePayload.text} Accuracy: ${state.runAccuracy}%.`
@@ -150,10 +174,14 @@ export function RunOver() {
 							}
 							const definition = item.type === "keycap"
 								? KEYCAPS[item.id]
-								: MACROS[item.id]
+								: item.type === "macro"
+									? MACROS[item.id]
+									: FIRMWARE[item.id]
 							const rarityBorder = item.type === "keycap"
 								? RARITY_BORDER[definition.rarity]
-								: "border-rarity-macro"
+								: item.type === "macro"
+									? "border-rarity-macro"
+									: "border-rarity-legendary"
 							return (
 								<div
 									key={`${item.id}-${index}`}
@@ -188,6 +216,14 @@ export function RunOver() {
 								? "NEW PERSONAL BEST"
 								: `${formatNumber(bestStatus)} TO BEAT YOUR BEST`}
 						</p>
+					)}
+
+					{!state.win && failDiagnosis && (
+						<section className="overdrive-panel mt-6 border-acc-red/40 p-4 text-left" aria-label="Failure diagnosis">
+							<span className="text-xs font-bold uppercase tracking-[0.08em] text-acc-red">Failure diagnosis</span>
+							<strong className="mt-2 block text-lg text-text-hi">{failDiagnosis.label}</strong>
+							<p className="mt-1 text-sm leading-6 text-text-mid">{failDiagnosis.detail}</p>
+						</section>
 					)}
 
 					{state.endless && (
@@ -243,7 +279,19 @@ export function RunOver() {
 									</div>
 								)
 							})}
-							{state.keycaps.length === 0 && state.macros.length === 0 && (
+							{state.firmware.map((id, index) => {
+								const definition = FIRMWARE[id]
+								return (
+									<div
+										key={`${id}-${index}`}
+										className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-rarity-legendary bg-bg-1 text-2xl text-text-hi"
+										title={definition.name}
+									>
+										<ItemGlyph id={id} type="firmware" className="h-7 w-7" />
+									</div>
+								)
+							})}
+							{state.keycaps.length === 0 && state.macros.length === 0 && state.firmware.length === 0 && (
 								<span className="self-center text-sm text-text-dim">No items equipped</span>
 							)}
 						</div>

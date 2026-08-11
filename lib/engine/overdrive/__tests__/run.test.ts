@@ -73,6 +73,33 @@ describe("run state machine", () => {
 		})
 	})
 
+	it("records rejected characters in the engine buffer and lets Backspace remove them", () => {
+		const api = createRun({ seed: "typed-buffer", words: ["signal"], startingZone: 3 })
+		const rejected: Array<{ character: string; index: number }> = []
+		api.events.on("character_rejected", ({ character, bufferIndex }) => {
+			rejected.push({ character, index: bufferIndex })
+		})
+		api.start()
+		api.feedChar("x")
+
+		expect(api.snapshot()).toMatchObject({
+			typedBuffer: "x",
+			errorPositions: [0],
+			caretIndex: 0,
+			wordDirty: true,
+		})
+		expect(rejected).toEqual([{ character: "x", index: 0 }])
+
+		api.backspace()
+
+		expect(api.snapshot()).toMatchObject({
+			typedBuffer: "",
+			errorPositions: [],
+			caretIndex: 0,
+			wordDirty: true,
+		})
+	})
+
 	it("starts with one-key auto-execute and forgives training-route typos", () => {
 		const api = createRun({ seed: "literal-beginner", words })
 		api.start()
@@ -303,6 +330,61 @@ describe("run state machine", () => {
 			caretIndex: 1,
 			score: 0,
 		})
+	})
+
+	it("damages Core Integrity on dirty Zone 3 submissions and ends at zero", () => {
+		const api = createRun({
+			seed: "core-integrity",
+			words: ["alpha", "bravo", "delta"],
+			startingZone: 3,
+		})
+		const damage: number[] = []
+		api.events.on("core_damage", ({ integrity }) => {
+			damage.push(integrity)
+		})
+		api.start()
+
+		for (let index = 0; index < 3; index += 1) {
+			const wrong = api.snapshot().currentWord[0] === "x" ? "z" : "x"
+			api.feedChar(wrong)
+			typeCurrentWord(api)
+		}
+
+		expect(damage).toEqual([2, 1, 0])
+		expect(api.snapshot()).toMatchObject({
+			screen: "runOver",
+			coreIntegrity: 0,
+		})
+	})
+
+	it("turns a Zone 3 release into a three-clean-execution Overdrive state", () => {
+		const api = createRun({
+			seed: "overdrive-transform",
+			words: ["signal"],
+			startingZone: 3,
+		})
+		const releases: number[] = []
+		api.events.on("overdrive_released", ({ executionsRemaining }) => {
+			releases.push(executionsRemaining)
+		})
+		api.start()
+		patchRunState(api, { overdriveCharge: OVERDRIVE_CHARGE_MAX })
+
+		typeLetters(api)
+		api.releaseOverdrive()
+		expect(api.snapshot()).toMatchObject({
+			overdriveActive: true,
+			overdriveExecutionsRemaining: 2,
+		})
+
+		typeCurrentWord(api)
+		expect(api.snapshot().overdriveExecutionsRemaining).toBe(1)
+		typeCurrentWord(api)
+		expect(api.snapshot()).toMatchObject({
+			overdriveActive: false,
+			overdriveExecutionsRemaining: 0,
+		})
+		expect(releases).toEqual([2])
 	})
 
 	it("persists the target ordinal", () => {

@@ -8,7 +8,7 @@ import {
 	RARITY_BORDER,
 } from "@/components/overdrive/ui"
 import { INTEREST_CAP, INTEREST_PER_5_TOKENS } from "@/lib/engine/overdrive/constants"
-import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
+import { FIRMWARE, KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import type { ItemRarity } from "@/lib/engine/overdrive/items/registry"
 import { getStageQuota, nextStagePosition } from "@/lib/engine/overdrive/progression"
 import { STAGE_COPY } from "../presentation/stage-copy"
@@ -37,13 +37,19 @@ const TRIGGER_LABELS: Record<string, string> = {
 	time_freeze: "MANUAL · TIME",
 	quota_slash: "MANUAL · QUOTA",
 	insurance: "MANUAL · DEFENSE",
+	extra_slot: "RUN UPGRADE",
+	discount: "SHOP ECONOMY",
+	extended_timer: "STAGE TIMER",
+	better_odds: "SHOP ODDS",
+	macro_pocket: "RUN UPGRADE",
 }
 
 type OfferCardProps = {
 	id: string | null
-	type: "keycap" | "macro"
-	shortcut: "1" | "2" | "3"
+	type: "keycap" | "macro" | "firmware"
+	shortcut: "1" | "2" | "3" | "4"
 	tokens: number
+	price: number | null
 	capacityFull: boolean
 	onBuy: () => void
 }
@@ -53,6 +59,7 @@ function OfferCard({
 	type,
 	shortcut,
 	tokens,
+	price,
 	capacityFull,
 	onBuy,
 }: OfferCardProps) {
@@ -64,8 +71,9 @@ function OfferCard({
 		)
 	}
 
-	const definition = type === "keycap" ? KEYCAPS[id] : MACROS[id]
-	const affordable = tokens >= definition.basePrice
+	const definition = type === "keycap" ? KEYCAPS[id] : type === "macro" ? MACROS[id] : FIRMWARE[id]
+	const displayPrice = price ?? definition.basePrice
+	const affordable = tokens >= displayPrice
 	const available = affordable && !capacityFull
 	const rarity = definition.rarity as ItemRarity
 
@@ -94,7 +102,7 @@ function OfferCard({
 					onClick={onBuy}
 					disabled={!available}
 					aria-keyshortcuts={shortcut}
-					aria-label={`Buy ${definition.name} for ${definition.basePrice} tokens`}
+					aria-label={`Buy ${definition.name} for ${displayPrice} tokens`}
 					className={`flex min-h-11 min-w-20 items-center justify-between gap-2 rounded-lg border px-3 text-xs font-bold uppercase tracking-[0.08em] ${
 						available
 							? "border-line bg-bg-2 text-text-hi hover:border-acc-yellow"
@@ -103,7 +111,7 @@ function OfferCard({
 				>
 					<span>{capacityFull ? "FULL" : affordable ? `${shortcut} BUY` : "NEED"}</span>
 					<span className={affordable ? "text-acc-yellow" : "text-acc-red"}>
-						{capacityFull ? "" : affordable ? definition.basePrice : definition.basePrice - tokens}
+						{capacityFull ? "" : affordable ? displayPrice : displayPrice - tokens}
 					</span>
 				</button>
 			</div>
@@ -166,8 +174,12 @@ export function Shop() {
 		stageItemImpact: snapshot.stageItemImpact,
 		keycaps: snapshot.keycaps,
 		macros: snapshot.macros,
+		firmware: snapshot.firmware,
 		shopKeycaps: snapshot.shopKeycaps,
 		shopMacro: snapshot.shopMacro,
+		shopFirmware: snapshot.shopFirmware,
+		maxKeycaps: snapshot.maxKeycaps,
+		maxMacros: snapshot.maxMacros,
 		rerollCost: snapshot.rerollCost,
 		api: snapshot.api,
 	})))
@@ -184,21 +196,33 @@ export function Shop() {
 		[state.stageItemImpact],
 	)
 
-	const buy = useCallback((type: "keycap" | "macro", index: number) => {
-		const id = type === "keycap" ? state.shopKeycaps[index] : state.shopMacro
+	const priceFor = useCallback((basePrice: number) => (
+		state.firmware.includes("discount") ? Math.ceil(basePrice * 0.75) : basePrice
+	), [state.firmware])
+
+	const buy = useCallback((type: "keycap" | "macro" | "firmware", index: number) => {
+		const id = type === "keycap" ? state.shopKeycaps[index] : type === "macro" ? state.shopMacro : state.shopFirmware
 		if (!id || !state.api) return
-		const definition = type === "keycap" ? KEYCAPS[id] : MACROS[id]
-		const capacityFull = type === "keycap" ? state.keycaps.length >= 5 : state.macros.length >= 2
-		if (capacityFull || state.tokens < definition.basePrice) return
+		const definition = type === "keycap" ? KEYCAPS[id] : type === "macro" ? MACROS[id] : FIRMWARE[id]
+		const capacityFull = type === "keycap"
+			? state.keycaps.length >= state.maxKeycaps
+			: type === "macro"
+				? state.macros.length >= state.maxMacros
+				: false
+		if (capacityFull || state.tokens < priceFor(definition.basePrice)) return
 		state.api.buyItem(type, index)
 		setLastPurchase(id)
 	}, [
 		state.api,
 		state.keycaps.length,
 		state.macros.length,
+		state.maxKeycaps,
+		state.maxMacros,
+		state.shopFirmware,
 		state.shopKeycaps,
 		state.shopMacro,
 		state.tokens,
+		priceFor,
 	])
 
 	useEffect(() => {
@@ -219,6 +243,9 @@ export function Shop() {
 			} else if (event.key === "3") {
 				event.preventDefault()
 				buy("macro", 0)
+			} else if (event.key === "4") {
+				event.preventDefault()
+				buy("firmware", 0)
 			} else if (event.key.toLowerCase() === "r") {
 				event.preventDefault()
 				state.api?.rerollShop()
@@ -295,13 +322,14 @@ export function Shop() {
 							R · REROLL {state.rerollCost}
 						</button>
 					</div>
-					<div className="grid min-h-0 flex-1 grid-rows-3 gap-2 md:grid-cols-3 md:grid-rows-1 md:gap-4">
+					<div className="grid min-h-0 flex-1 grid-rows-4 gap-2 md:grid-cols-4 md:grid-rows-1 md:gap-4">
 						<OfferCard
 							id={state.shopKeycaps[0] || null}
 							type="keycap"
 							shortcut="1"
 							tokens={state.tokens}
-							capacityFull={state.keycaps.length >= 5}
+							price={state.shopKeycaps[0] ? priceFor(KEYCAPS[state.shopKeycaps[0]].basePrice) : null}
+							capacityFull={state.keycaps.length >= state.maxKeycaps}
 							onBuy={() => buy("keycap", 0)}
 						/>
 						<OfferCard
@@ -309,7 +337,8 @@ export function Shop() {
 							type="keycap"
 							shortcut="2"
 							tokens={state.tokens}
-							capacityFull={state.keycaps.length >= 5}
+							price={state.shopKeycaps[1] ? priceFor(KEYCAPS[state.shopKeycaps[1]].basePrice) : null}
+							capacityFull={state.keycaps.length >= state.maxKeycaps}
 							onBuy={() => buy("keycap", 1)}
 						/>
 						<OfferCard
@@ -317,8 +346,18 @@ export function Shop() {
 							type="macro"
 							shortcut="3"
 							tokens={state.tokens}
-							capacityFull={state.macros.length >= 2}
+							price={state.shopMacro ? priceFor(MACROS[state.shopMacro].basePrice) : null}
+							capacityFull={state.macros.length >= state.maxMacros}
 							onBuy={() => buy("macro", 0)}
+						/>
+						<OfferCard
+							id={state.shopFirmware}
+							type="firmware"
+							shortcut="4"
+							tokens={state.tokens}
+							price={state.shopFirmware ? priceFor(FIRMWARE[state.shopFirmware].basePrice) : null}
+							capacityFull={false}
+							onBuy={() => buy("firmware", 0)}
 						/>
 					</div>
 				</section>
@@ -329,7 +368,7 @@ export function Shop() {
 						<span className="mt-1 block font-normal tracking-normal text-text-dim">Select a slot to sell</span>
 					</div>
 					<div className="flex min-w-0 gap-1">
-						{Array.from({ length: 5 }, (_, index) => (
+						{Array.from({ length: state.maxKeycaps }, (_, index) => (
 							<BuildSlot
 								key={`keycap-build-${index}`}
 								id={state.keycaps[index]}
@@ -340,7 +379,7 @@ export function Shop() {
 							/>
 						))}
 						<div className="mx-1 h-11 w-px bg-line" aria-hidden="true" />
-						{Array.from({ length: 2 }, (_, index) => (
+						{Array.from({ length: state.maxMacros }, (_, index) => (
 							<BuildSlot
 								key={`macro-build-${index}`}
 								id={state.macros[index]}

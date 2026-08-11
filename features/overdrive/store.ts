@@ -14,7 +14,7 @@ import {
 	trackEvent,
 	type TelemetryContext,
 } from "@/lib/telemetry"
-import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
+import { FIRMWARE, KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import {
 	emitLegacyPresentationEvent,
 	emitPresentationEvent,
@@ -42,6 +42,7 @@ type GameStore = RunSnapshot & {
 	startNormalRun: () => void
 	startPracticeRun: () => void
 	startDailyRun: () => void
+	startChallengeRun: (seed: string, build: readonly string[]) => void
 	resumeRun: () => boolean
 	quitToMenu: () => void
 }
@@ -180,6 +181,20 @@ export const useGame = create<GameStore>((set, get) => {
 					stage,
 					combatVerb,
 					actions,
+				},
+			)
+			sync()
+		})
+		api.events.on("character_rejected", ({ character }) => {
+			emitPresentationEvent(
+				{
+					runId,
+					targetOrdinal: api.snapshot().targetOrdinal,
+					now: () => performance.now(),
+				},
+				{
+					type: "rejected-character",
+					character,
 				},
 			)
 			sync()
@@ -328,6 +343,7 @@ export const useGame = create<GameStore>((set, get) => {
 					zone: snapshot.zone,
 					keycaps: [...snapshot.shopKeycaps],
 					macro: snapshot.shopMacro,
+					firmware: snapshot.shopFirmware,
 					rerollCost: snapshot.rerollCost,
 				})
 			}
@@ -347,9 +363,9 @@ export const useGame = create<GameStore>((set, get) => {
 		}
 		api.buyItem = (type, index) => {
 			const before = api.snapshot()
-			const itemId = type === "keycap" ? before.shopKeycaps[index] : before.shopMacro
+			const itemId = type === "keycap" ? before.shopKeycaps[index] : type === "macro" ? before.shopMacro : before.shopFirmware
 			const price = itemId
-				? (type === "keycap" ? KEYCAPS[itemId] : MACROS[itemId])?.basePrice
+				? (type === "keycap" ? KEYCAPS[itemId] : type === "macro" ? MACROS[itemId] : FIRMWARE[itemId])?.basePrice
 				: undefined
 			transition(() => raw.buyItem(type, index))
 			if (itemId && price !== undefined && api.snapshot().tokens < before.tokens) {
@@ -402,6 +418,7 @@ export const useGame = create<GameStore>((set, get) => {
 					zone: snapshot.zone,
 					keycaps: [...snapshot.shopKeycaps],
 					macro: snapshot.shopMacro,
+					firmware: snapshot.shopFirmware,
 					rerollCost: snapshot.rerollCost,
 				})
 			}
@@ -424,7 +441,7 @@ export const useGame = create<GameStore>((set, get) => {
 		return api
 	}
 
-	function startRun(seed: string, mode: RunMode) {
+	function startRun(seed: string, mode: RunMode, build: readonly string[] = []) {
 		const previous = get()
 		if (previous.screen === "runOver") {
 			trackEvent("run_restart", {
@@ -433,11 +450,17 @@ export const useGame = create<GameStore>((set, get) => {
 			})
 		}
 		const language = get().selectedLanguage
+		const startingKeycaps = build.filter((id) => id in KEYCAPS)
+		const startingMacros = build.filter((id) => id in MACROS)
+		const startingFirmware = build.filter((id) => id in FIRMWARE)
 		const api = attach(createRun({
 			seed,
 			words: wordPool(language),
 			mode,
 			language,
+			startingKeycaps,
+			startingMacros,
+			startingFirmware,
 		}))
 		api.start()
 		const coachingEnabled = typeof window !== "undefined"
@@ -480,6 +503,9 @@ export const useGame = create<GameStore>((set, get) => {
 		startDailyRun() {
 			const language = get().selectedLanguage
 			startRun(dailySeed(language), "daily")
+		},
+		startChallengeRun(seed, build) {
+			startRun(seed, "free", build)
 		},
 		resumeRun() {
 			if (typeof window === "undefined") return false

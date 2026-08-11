@@ -42,7 +42,10 @@ export function createPresentationScheduler(opts: SchedulerOptions): Presentatio
 				combatVerb: event.combatVerb ?? "signal-lock",
 			})
 			for (const beat of output.beats) {
-				const kind = beat.payload.kind === "contact-cue" ? "contact-cue" : "target-hit"
+				const kind =
+					beat.payload.kind === "contact-cue" || beat.payload.kind === "rig-clip" || beat.payload.kind === "target-hit"
+						? beat.payload.kind
+						: "target-hit"
 				pendingBeats.push({
 					beatId: beat.id,
 					sourceSequence: sequence,
@@ -98,25 +101,22 @@ export function createPresentationScheduler(opts: SchedulerOptions): Presentatio
   }
 
   function drain(nowMs: number): readonly PresentationBeat[] {
-    // Process drops
-    const nextPending: PresentationBeat[] = []
+    const readyBeats: PresentationBeat[] = []
+    const futureBeats: PresentationBeat[] = []
     for (const beat of pendingBeats) {
       if (beat.priority === "decorative" && beat.expiresAtMs !== null && nowMs >= beat.expiresAtMs) {
         decorativeDrops += 1
         presentationHealth.addDecorativeDrops(1)
+      } else if (beat.dueAtMs <= nowMs) {
+        readyBeats.push(beat)
       } else {
-        nextPending.push(beat)
+        futureBeats.push(beat)
       }
     }
     
-    pendingBeats = nextPending
-    pendingBeats.sort(compareBeats)
-    
-    // We just return everything pending for now since the test drains everything
-    // In a real loop we'd only return due beats or something, but test expects them all
-    const result = [...pendingBeats]
-    pendingBeats = []
-    return result
+    readyBeats.sort(compareBeats)
+    pendingBeats = futureBeats
+    return readyBeats
   }
 
   function reset(runId: string) {

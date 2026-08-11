@@ -17,7 +17,12 @@ function context() {
 
 describe("target selection", () => {
 	it("exposes the active target and two selectable upcoming targets", () => {
-		expect(visibleTargets(context().state)).toEqual([
+		expect(visibleTargets(context().state).map((target) => ({
+			word: target.word,
+			queueIndex: target.queueIndex,
+			active: target.active,
+			prefix: target.prefix,
+		}))).toEqual([
 			{ word: "alpha", queueIndex: 0, active: true, prefix: "A" },
 			{ word: "bravo", queueIndex: 1, active: false, prefix: "B" },
 			{ word: "charlie", queueIndex: 2, active: false, prefix: "C" },

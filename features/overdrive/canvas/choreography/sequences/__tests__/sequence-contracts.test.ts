@@ -23,7 +23,8 @@ describe("combat sequence contracts", () => {
 			word: "arcade",
 			combatVerb: "chain-strike",
 		})
-		expect(output.beats.map((beat) => beat.dueMs)).toEqual([0, 90])
+		expect(output.beats.map((beat) => beat.dueMs)).toEqual([0, 45, 90])
+		expect(output.beats.map((beat) => beat.payload.kind)).toEqual(["contact-cue", "rig-clip", "target-hit"])
 		expect(output.beats.every((beat) => beat.priority === "critical")).toBe(true)
 	})
 

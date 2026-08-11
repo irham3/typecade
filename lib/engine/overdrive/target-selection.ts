@@ -1,24 +1,14 @@
 import type { RunSnapshot } from "./types"
 import type { RunContext } from "./run-state"
+import type { CombatTarget } from "./combat-targets"
+import { visibleCombatTargets } from "./combat-targets"
 
-export type TargetCandidate = {
-	word: string
-	queueIndex: number
-	active: boolean
-	prefix: string
-}
+export type TargetCandidate = CombatTarget
 
 export function visibleTargets(
-	snapshot: Pick<RunSnapshot, "currentWord" | "upcomingWords">,
+	snapshot: Pick<RunSnapshot, "currentWord" | "upcomingWords" | "stage" | "zone" | "targetOrdinal">,
 ): TargetCandidate[] {
-	return [snapshot.currentWord, ...snapshot.upcomingWords.slice(0, 2)]
-		.filter((word) => word.length > 0)
-		.map((word, queueIndex) => ({
-			word,
-			queueIndex,
-			active: queueIndex === 0,
-			prefix: word[0].toUpperCase(),
-		}))
+	return visibleCombatTargets(snapshot)
 }
 
 export function normalizeVisiblePrefixes(ctx: RunContext) {

@@ -27,6 +27,43 @@ export const GLITCHES: Record<string, GlitchDef> = {
 			if (typos >= 3) ctx.forceFail = true
 		},
 	},
+	scrambler: {
+		id: "scrambler",
+		name: "Scrambler",
+		type: "glitch",
+		description: "Words appear one at a time with a per-word timer",
+		onStageStart: ({ state }) => {
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				perWordTimerMs: 4_000,
+				hideUpcomingWords: true,
+			}
+		},
+	},
+	the_censor: {
+		id: "the_censor",
+		name: "The Censor",
+		type: "glitch",
+		description: "1 random letter per word is censored",
+		onStageStart: ({ state }) => {
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				censorLetters: 1,
+			}
+		},
+	},
+	speed_demon: {
+		id: "speed_demon",
+		name: "Speed Demon",
+		type: "glitch",
+		description: "Quota only counts while live WPM meets the threshold",
+		onStageStart: ({ state }) => {
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				minScoringWpm: 45,
+			}
+		},
+	},
 	blackout: {
 		id: "blackout",
 		name: "Blackout",
@@ -54,6 +91,45 @@ export const GLITCHES: Record<string, GlitchDef> = {
 				...(state.glitchState ?? {}),
 				tokenMultiplier: 1,
 				inflatedQuota: false,
+			}
+		},
+	},
+	drunk_caret: {
+		id: "drunk_caret",
+		name: "Drunk Caret",
+		type: "glitch",
+		description: "Text sways and tilts as a visual pressure modifier",
+		onStageStart: ({ state }) => {
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				drunkCaret: true,
+			}
+		},
+	},
+	the_leech: {
+		id: "the_leech",
+		name: "The Leech",
+		type: "glitch",
+		description: "Score drains over time",
+		onStageStart: ({ state }) => {
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				scoreDrainPerSecond: 2,
+			}
+		},
+	},
+	kernel_panic: {
+		id: "kernel_panic",
+		name: "KERNEL PANIC",
+		type: "glitch",
+		description: "Final Glitch: two Glitches at once plus a full quota",
+		onStageStart: ({ state }) => {
+			state.quota = Math.max(state.quota, state.quota + Math.floor(state.quota * 0.25))
+			state.glitchState = {
+				...(state.glitchState ?? {}),
+				kernelPanic: true,
+				hideUpcomingWords: true,
+				scoreDrainPerSecond: 2,
 			}
 		},
 	},

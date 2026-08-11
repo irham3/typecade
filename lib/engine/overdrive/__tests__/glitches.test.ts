@@ -4,12 +4,13 @@ import { createRun } from "../run"
 import { GLITCHES } from "../items"
 
 const glitchIds = Object.keys(GLITCHES)
+const zoneThreeGlitchIds = glitchIds.filter((id) => id !== "kernel_panic")
 const quotaWord = "a".repeat(300)
 
 function seedFor(glitchId: string) {
 	for (let index = 0; index < 1_000; index += 1) {
 		const seed = `glitch-${index}`
-		const selected = createRng(seed).fork("glitch").pick(glitchIds)
+		const selected = createRng(seed).fork("glitch").pick(zoneThreeGlitchIds)
 		if (selected === glitchId) return seed
 	}
 	throw new Error(`No deterministic seed found for ${glitchId}`)
@@ -42,14 +43,20 @@ function enterGlitch(glitchId: string, macros: string[] = []) {
 	return api
 }
 
-describe("MVP Glitches", () => {
-	it("ships the exact five-effect manifest", () => {
+describe("Glitches", () => {
+	it("ships the full Glitch manifest including KERNEL PANIC", () => {
 		expect(glitchIds).toEqual([
 			"invisible_ink",
 			"no_backspace",
 			"sudden_death",
+			"scrambler",
+			"the_censor",
+			"speed_demon",
 			"blackout",
 			"inflation",
+			"drunk_caret",
+			"the_leech",
+			"kernel_panic",
 		])
 	})
 
@@ -95,6 +102,27 @@ describe("MVP Glitches", () => {
 				cancelled: true,
 				tokenMultiplier: 1,
 				inflatedQuota: false,
+			},
+		})
+	})
+
+	it("KERNEL PANIC is reserved for Zone 8 Glitch stages", () => {
+		const api = createRun({
+			seed: "kernel",
+			words: [quotaWord],
+			startingZone: 8,
+		})
+		api.start()
+		while (api.snapshot().stage !== "glitch") {
+			while (api.snapshot().screen === "stage") typeCurrentWord(api)
+			api.continueToNextStage()
+			api.leaveShop()
+		}
+
+		expect(api.snapshot()).toMatchObject({
+			activeGlitch: "kernel_panic",
+			glitchState: {
+				kernelPanic: true,
 			},
 		})
 	})

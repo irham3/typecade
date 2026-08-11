@@ -31,8 +31,19 @@ export type EngineEvents = {
 		charge: number
 		becameReady: boolean
 	}
+	character_rejected: {
+		character: string
+		expected: string
+		bufferIndex: number
+		errorPositions: number[]
+	}
 	overdrive_ready: { charge: number }
-	overdrive_released: { word: string; scoreGain: number }
+	overdrive_released: { word: string; scoreGain: number; executionsRemaining: number }
+	core_damage: {
+		integrity: number
+		maxIntegrity: number
+		reason: "dirty-submission" | "enemy-strike" | "glitch"
+	}
 	aegis_rescue: {
 		zone: number
 		stage: StageType
@@ -52,7 +63,7 @@ export type EngineEvents = {
 		prefix: string
 	}
 	stage_clear: { zone: number; stage: StageType; tokensEarned: number; timeLeftMs: number }
-	stage_fail: { zone: number; stage: StageType; reason: "timeout" | "sudden_death" | "time_penalty" }
+	stage_fail: { zone: number; stage: StageType; reason: "timeout" | "sudden_death" | "time_penalty" | "core_breach" }
 	run_over: { win: boolean; finalScore: number; zoneReached: number }
 	item_triggered: {
 		itemId: string

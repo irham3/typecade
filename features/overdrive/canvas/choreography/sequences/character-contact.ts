@@ -24,6 +24,15 @@ export function characterContactSequence(context: CharacterContactContext): Sequ
 				payload: { ...payload, kind: "contact-cue" },
 			}),
 			combatBeat(context, {
+				suffix: "rig",
+				dueMs: due + 45,
+				durationMs: 110,
+				priority: "critical",
+				characterIndex: context.characterIndex,
+				reducedMotion: "keep",
+				payload: { ...payload, kind: "rig-clip" },
+			}),
+			combatBeat(context, {
 				suffix: "hit",
 				dueMs: due + 90,
 				durationMs: 120,

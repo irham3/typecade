@@ -19,6 +19,8 @@ import {
 } from "./visual-assets"
 import { CommandRail } from "./command-rail"
 import { SceneFeedback } from "./scene-feedback"
+import { ParticleSystem } from "./fx/particle-system"
+import { DamageNumbersSystem } from "./fx/damage-numbers"
 
 export type SceneState = {
 	currentWord: string
@@ -61,6 +63,8 @@ export class CombatScene {
 	private readonly director: CombatDirector
 	private readonly rail: CommandRail
 	private readonly feedback: SceneFeedback
+	private readonly particles: ParticleSystem
+	private readonly damageNumbers: DamageNumbersSystem
 	private state: SceneState
 	private width = 0
 	private height = 0
@@ -88,6 +92,9 @@ export class CombatScene {
 		)
 		this.overlay.addChild(this.rail.root)
 		this.feedback = new SceneFeedback(this.stage, this.overlay)
+		this.particles = new ParticleSystem()
+		this.damageNumbers = new DamageNumbersSystem()
+		this.stage.addChild(this.particles, this.damageNumbers)
 		this.app.stage.addChild(this.stage)
 		this.resize()
 		this.sync(initial)
@@ -138,6 +145,8 @@ export class CombatScene {
 		this.director.handle(envelope)
 		if (event.type === "accepted-character") {
 			sfx.shot(event.combo)
+			this.particles.emitMuzzleFlash(this.rail.root.x, this.rail.root.y - 20)
+			this.damageNumbers.emit(this.rail.root.x + (Math.random() * 40 - 20), this.rail.root.y - 40, 10 + event.combo, 0xffffff)
 			for (const action of event.actions ?? []) {
 				if (action.kind !== "slash") sfx.action(action.kind, action.overdrive)
 			}
@@ -189,6 +198,7 @@ export class CombatScene {
 			sfx.action(action.kind, action.overdrive)
 		}
 		this.wordAgeMs = 0
+		this.particles.emitExplosion(this.rail.root.x, this.rail.root.y - 40, 0x00e5ff)
 		this.rail.render({
 			word: this.state.currentWord,
 			upcomingWords: this.state.upcomingWords,
@@ -238,6 +248,8 @@ export class CombatScene {
 			return
 		}
 		
+		this.particles.tick(delta)
+		this.damageNumbers.tick(delta)
 		this.director.update(delta)
 		this.updateRailMotion(delta)
 	}

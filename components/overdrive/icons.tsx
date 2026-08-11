@@ -256,16 +256,44 @@ const MACRO_ICONS: Record<string, ComponentType<IconProps>> = {
 	insurance: IconInsurance,
 }
 
-export function getIconFor(id: string, type: "keycap" | "macro") {
-	const icon = type === "keycap" ? KEYCAP_ICONS[id] : MACRO_ICONS[id]
-	if (!icon) throw new Error(`Missing Typecade Glyph for ${type} "${id}"`)
-	return icon
+function IconFirmware(props: IconProps) {
+	return (
+		<StrokeIcon {...props}>
+			<rect x="5" y="5" width="14" height="14" rx="2" />
+			<path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
+		</StrokeIcon>
+	)
 }
 
+const FIRMWARE_ICONS: Record<string, ComponentType<IconProps>> = {
+	extra_slot: IconFirmware,
+	discount: IconFirmware,
+	extended_timer: IconFirmware,
+	better_odds: IconFirmware,
+	macro_pocket: IconFirmware,
+}
+
+function IconPlaceholder(props: IconProps) {
+	return (
+		<StrokeIcon {...props}>
+			<rect x="4" y="4" width="16" height="16" rx="2" />
+			<path d="M8 8h8v8H8z" opacity="0.3" fill="currentColor" stroke="none" />
+		</StrokeIcon>
+	)
+}
+
+export function getIconFor(id: string, type: "keycap" | "macro" | "firmware") {
+	const icon = type === "keycap" ? KEYCAP_ICONS[id] : type === "macro" ? MACRO_ICONS[id] : FIRMWARE_ICONS[id]
+	if (!icon) {
+		console.warn(`Missing Typecade Glyph for ${type} "${id}"`)
+		return IconPlaceholder
+	}
+	return icon
+}
 export function ItemGlyph({
 	id,
 	type,
 	...props
-}: IconProps & { id: string; type: "keycap" | "macro" }) {
+}: IconProps & { id: string; type: "keycap" | "macro" | "firmware" }) {
 	return createElement(getIconFor(id, type), props)
 }

@@ -45,11 +45,12 @@ export interface TelemetryEvents {
 		zone: number
 		keycaps: string[]
 		macro: string | null
+		firmware?: string | null
 		rerollCost: number
 	}
 	shop_buy: TelemetryContext & {
 		itemId: string
-		itemType: "keycap" | "macro"
+		itemType: "keycap" | "macro" | "firmware"
 		price: number
 		zone: number
 	}

@@ -10,20 +10,73 @@ describe("build-driven combat actions", () => {
 		expect(actions("signal", [], 0).map((item) => item.kind)).toEqual(["slash"])
 	})
 
-	it("turns weapon traits into distinct character actions", () => {
-		expect(actions("wasd", ["wasd"], 0).map((item) => item.kind)).toContain("dash")
-		expect(actions("arcade", ["vowel_magnet"], 0).map((item) => item.kind)).toContain("blade")
-		expect(actions("balloon", ["double_tap"], 3).map((item) => item.kind)).toContain("echo")
-		expect(actions("asdf", ["home_row"], 0).map((item) => item.kind)).toContain("shield")
-		expect(actions("go!", ["punctuator"], 2, "!").map((item) => item.kind)).toContain("bomb")
+	it("does not fire item weapons before clean word resolution", () => {
+		expect(actions("wasd", ["wasd"], 0).map((item) => item.kind)).toEqual(["slash"])
+		expect(actions("arcade", ["vowel_magnet"], 0).map((item) => item.kind)).toEqual(["slash"])
+		expect(actions("balloon", ["double_tap"], 3).map((item) => item.kind)).toEqual(["slash"])
+		expect(actions("asdf", ["home_row"], 0).map((item) => item.kind)).toEqual(["slash"])
+		expect(actions("go!", ["punctuator"], 2, "!").map((item) => item.kind)).toEqual(["slash"])
 	})
 
-	it("fires Longshot only at the eighth character", () => {
-		expect(actions("keyboard", ["longshot"], 6).map((item) => item.kind)).toEqual(["slash"])
-		expect(actions("keyboard", ["longshot"], 7).map((item) => item.kind)).toContain("railgun")
+	it("fizzles item weapons on dirty character continuation", () => {
+		const result = actionsForCharacter({
+			word: "keyboard",
+			keycapIds: ["longshot"],
+			characterIndex: 7,
+			character: "d",
+			overdrive: true,
+			wordDirty: true,
+		})
+		expect(result).toEqual([{
+			kind: "slash",
+			targetScope: "active",
+			power: 1,
+			characterIndex: 7,
+			overdrive: true,
+			label: "MISFIRE",
+		}])
 	})
 
-	it("amplifies item scope during Overdrive", () => {
+	it("resolves weapon traits as clean word actions", () => {
+		expect(actionsForWord({
+			word: "wasd",
+			keycapIds: ["wasd"],
+			clean: true,
+			overdriveReleased: false,
+		}).map((item) => item.kind)).toContain("dash")
+		expect(actionsForWord({
+			word: "arcade",
+			keycapIds: ["vowel_magnet"],
+			clean: true,
+			overdriveReleased: false,
+		}).map((item) => item.kind)).toContain("blade")
+		expect(actionsForWord({
+			word: "keyboard",
+			keycapIds: ["longshot"],
+			clean: true,
+			overdriveReleased: false,
+		}).map((item) => item.kind)).toContain("railgun")
+		expect(actionsForWord({
+			word: "balloon",
+			keycapIds: ["double_tap"],
+			clean: true,
+			overdriveReleased: false,
+		}).map((item) => item.kind)).toContain("echo")
+		expect(actionsForWord({
+			word: "asdf",
+			keycapIds: ["home_row"],
+			clean: true,
+			overdriveReleased: false,
+		}).map((item) => item.kind)).toContain("shield")
+		expect(actionsForWord({
+			word: "go!",
+			keycapIds: ["punctuator"],
+			clean: true,
+			overdriveReleased: false,
+		}).map((item) => item.kind)).toContain("bomb")
+	})
+
+	it("amplifies item scope only during Overdrive resolution", () => {
 		const result = actionsForCharacter({
 			word: "arcade",
 			keycapIds: ["vowel_magnet"],
@@ -31,17 +84,24 @@ describe("build-driven combat actions", () => {
 			character: "a",
 			overdrive: true,
 		})
-		const blade = result.find((item) => item.kind === "blade")
-		expect(blade).toMatchObject({ targetScope: "all", power: 2, overdrive: true })
+		expect(result.map((item) => item.kind)).toEqual(["slash"])
+		const resolved = actionsForWord({
+			word: "arcade",
+			keycapIds: ["vowel_magnet"],
+			clean: true,
+			overdriveReleased: true,
+		})
+		const blade = resolved.find((item) => item.kind === "blade")
+		expect(blade).toMatchObject({ targetScope: "all", power: 6, overdrive: true })
 	})
 
-	it("adds word-level Overdrive and Vampire resolution actions", () => {
+	it("adds word-level Overdrive without inventing fake Vampire drain", () => {
 		const result = actionsForWord({
 			word: "signal",
 			keycapIds: ["vampire"],
 			clean: true,
 			overdriveReleased: true,
 		})
-		expect(result.map((item) => item.kind)).toEqual(["overdrive-burst", "drain"])
+		expect(result.map((item) => item.kind)).toEqual(["overdrive-burst"])
 	})
 })

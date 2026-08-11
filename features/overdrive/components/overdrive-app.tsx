@@ -20,7 +20,26 @@ export function OverdriveApp() {
 	const stageReady = useGame((state) => state.stageReady)
 	const setPaused = useGame((state) => state.setPaused)
 	const quitToMenu = useGame((state) => state.quitToMenu)
+	const startChallengeRun = useGame((state) => state.startChallengeRun)
 	const competitive = isCompetitiveMode(process.env.NEXT_PUBLIC_OVERDRIVE_COMPETITIVE)
+
+	useEffect(() => {
+		const searchParams = new URLSearchParams(window.location.search)
+		const encodedSeed = searchParams.get("challenge")
+		if (!encodedSeed) return
+		try {
+			const paddedSeed = encodedSeed.replaceAll("-", "+").replaceAll("_", "/")
+				.padEnd(Math.ceil(encodedSeed.length / 4) * 4, "=")
+			const seed = decodeURIComponent(escape(atob(paddedSeed)))
+			const build = (searchParams.get("build") ?? "")
+				.split(".")
+				.map((itemId) => itemId.trim())
+				.filter(Boolean)
+			startChallengeRun(seed, build)
+		} catch {
+			// Invalid challenge links fall back to the menu.
+		}
+	}, [startChallengeRun])
 
 	useEffect(() => {
 		if (screen !== "stage" || paused || stageReady || !api) return

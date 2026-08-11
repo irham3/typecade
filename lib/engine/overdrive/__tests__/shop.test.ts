@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { createRun } from "../run"
-import { KEYCAPS } from "../items"
+import { FIRMWARE, KEYCAPS } from "../items"
 
 function typeCurrentWord(api: ReturnType<typeof createRun>) {
 	for (const character of api.snapshot().currentWord) api.feedChar(character)
@@ -76,5 +76,77 @@ describe("shop economy", () => {
 		api.start()
 		api.buyItem("keycap", 0)
 		expect(api.snapshot().keycaps).toHaveLength(0)
+	})
+
+	it("does not offer or buy duplicate owned Keycaps while alternatives remain", () => {
+		const api = createRun({
+			seed: "duplicate-guard",
+			words: ["a".repeat(300)],
+			startingTokens: 200,
+			startingKeycaps: ["wasd"],
+		})
+		enterShop(api)
+		expect(api.snapshot().shopKeycaps).not.toContain("wasd")
+
+		const before = api.snapshot().keycaps.length
+		const exportJson = JSON.parse(api.exportState())
+		exportJson.state.shopKeycaps = ["wasd", api.snapshot().shopKeycaps[1]]
+		api.loadState(JSON.stringify(exportJson))
+		api.buyItem("keycap", 0)
+		expect(api.snapshot().keycaps).toHaveLength(before)
+	})
+
+	it("gates Rare and Legendary Keycaps out of early shops", () => {
+		for (let index = 0; index < 24; index += 1) {
+			const api = createRun({
+				seed: `early-shop-${index}`,
+				words: ["a".repeat(300)],
+				startingTokens: 200,
+			})
+			enterShop(api)
+			for (const itemId of api.snapshot().shopKeycaps) {
+				expect(["common", "uncommon"]).toContain(KEYCAPS[itemId].rarity)
+			}
+		}
+	})
+
+	it("offers one Firmware per shop and applies permanent run upgrades", () => {
+		const api = createRun({
+			seed: "firmware",
+			words: ["a".repeat(300)],
+			startingTokens: 200,
+		})
+		enterShop(api)
+		const offeredFirmware = api.snapshot().shopFirmware
+		expect(offeredFirmware === null || Boolean(FIRMWARE[offeredFirmware])).toBe(true)
+
+		const exportJson = JSON.parse(api.exportState())
+		exportJson.state.shopFirmware = "extra_slot"
+		api.loadState(JSON.stringify(exportJson))
+		api.buyItem("firmware", 0)
+		expect(api.snapshot()).toMatchObject({
+			firmware: ["extra_slot"],
+			maxKeycaps: 6,
+			shopFirmware: null,
+		})
+	})
+
+	it("Discount and Macro Pocket Firmware alter shop prices and capacity", () => {
+		const api = createRun({
+			seed: "firmware-discount",
+			words: ["a".repeat(300)],
+			startingTokens: 200,
+			startingFirmware: ["discount", "macro_pocket"],
+		})
+		enterShop(api)
+		const exportJson = JSON.parse(api.exportState())
+		exportJson.state.shopMacro = "time_freeze"
+		api.loadState(JSON.stringify(exportJson))
+		const before = api.snapshot().tokens
+		api.buyItem("macro", 0)
+		expect(api.snapshot()).toMatchObject({
+			tokens: before - 3,
+			maxMacros: 3,
+		})
 	})
 })
