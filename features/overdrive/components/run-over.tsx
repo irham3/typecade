@@ -139,7 +139,7 @@ export function RunOver() {
 			<div
 				ref={shareCardRef}
 				aria-hidden="true"
-				className="pointer-events-none fixed left-0 top-0 -z-10 h-[630px] w-[1200px] bg-bg-0 p-8 text-text-hi"
+				className="pointer-events-none fixed left-0 top-0 -z-10 h-157.5 w-300 bg-bg-0 p-8 text-text-hi"
 			>
 				<div className="flex h-full flex-col border border-line p-8">
 					<header className="flex items-center justify-between">
