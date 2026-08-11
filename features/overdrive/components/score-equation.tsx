@@ -2,6 +2,7 @@
 
 import type { ScoreResolution } from "@/lib/engine/overdrive"
 import { formatNumber } from "./hud"
+import { BuildImpact } from "./build-impact"
 
 export function ScoreEquation({ resolution }: { resolution?: ScoreResolution }) {
 	if (!resolution) return null
@@ -22,11 +23,7 @@ export function ScoreEquation({ resolution }: { resolution?: ScoreResolution }) 
 						<span className="shrink-0 tabular-nums text-text-hi">{formatNumber(step.after)}</span>
 					</div>
 				))}
-				{resolution.itemImpacts.length > 0 && (
-					<div className="mt-1 break-words text-acc-cyan">
-						{resolution.itemImpacts.map((impact) => `${impact.itemId} +${formatNumber(impact.scoreDelta)} ${impact.kind}`).join(" / ")}
-					</div>
-				)}
+				<BuildImpact resolution={resolution} />
 			</div>
 		</details>
 	)

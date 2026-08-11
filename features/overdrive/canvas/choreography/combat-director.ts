@@ -4,6 +4,8 @@ import {
 	Text,
 } from "pixi.js"
 import type {
+	CombatAction,
+	CombatVerb,
 	ItemContribution,
 	StageType,
 } from "@/lib/engine/overdrive"
@@ -18,6 +20,7 @@ import {
 	ItemPresentation,
 } from "../effects/item-presentation"
 import { RigInstance } from "../rig/rig-instance"
+import type { AnimationClipName } from "../rig/rig-definition"
 import { ContactLedger } from "./contact-ledger"
 import {
 	EFFECTS,
@@ -30,6 +33,8 @@ import {
 } from "../visual-assets"
 import type { SceneState } from "../combat-scene"
 import { targetLane } from "./target-lanes"
+import { reactionForVerb } from "../rig/rig-reaction"
+import { selectStagedTarget } from "./target-selection-visual"
 
 type TargetRole = "active" | "upcoming" | "distant" | "retiring" | "available"
 
@@ -178,6 +183,15 @@ function createEnemy(
 	}
 }
 
+function clipForAction(kind: CombatAction["kind"]): AnimationClipName | null {
+	if (kind === "dash") return "dash"
+	if (kind === "shield") return "block"
+	if (kind === "railgun" || kind === "bomb" || kind === "drain") return "special"
+	if (kind === "blade" || kind === "echo") return "attack"
+	if (kind === "overdrive-burst") return "overdrive"
+	return null
+}
+
 export class CombatDirector {
 	readonly root = new Container()
 	readonly signalNodes = new Container()
@@ -322,7 +336,11 @@ export class CombatDirector {
 
 	sync(state: SceneState) {
 		const focusStarted = !this.state.focusPaused && state.focusPaused
+		const targetsChanged = state.currentWord !== this.state.currentWord
+			|| state.upcomingWords.slice(0, 2).join("\u0000")
+				!== this.state.upcomingWords.slice(0, 2).join("\u0000")
 		this.state = state
+		if (targetsChanged) this.layoutStaged(false)
 		if (focusStarted) {
 			this.pressureMs = 0
 			this.pressureLine.clear()
@@ -353,6 +371,15 @@ export class CombatDirector {
 				characterIndex: event.index,
 				acceptedAtMs: envelope.emittedAtMs,
 			})
+			return
+		}
+		if (event.type === "target-selected") {
+			selectStagedTarget(
+				this.staged,
+				event.queueIndex,
+				event.targetOrdinal,
+			)
+			this.layoutStaged(true)
 			return
 		}
 		if (event.type === "rejected-character") {
@@ -423,13 +450,26 @@ export class CombatDirector {
 				const target = this.slotForOrdinal(beat.targetOrdinal) ?? this.staged[0]
 				if (!target) continue
 				const index = beat.payload.index as number
-				const chain = (
-					["chain-1", "chain-2", "chain-3"] as const
-				)[index % 3]
+				const verb = beat.payload.verb as CombatVerb
+				const stage = beat.payload.stage as StageType
+				const combo = Number(beat.payload.combo ?? 0)
+				const reaction = reactionForVerb(verb, stage, combo)
 				const position = this.signalNodePosition(index, this.state.currentWord.length)
 				const muzzle = this.warden.rig.getPartGlobalPosition("cannon_barrel", 1, 0.5)
-				this.effects.spawnSmear(muzzle, position, target.accent)
-				this.warden.rig.play(chain)
+				const actions = beat.actions ?? []
+				if (actions.length === 0) {
+					this.effects.spawnSmear(muzzle, position, target.accent)
+				} else {
+					for (const action of actions) this.renderCombatAction(action, muzzle, position, target)
+				}
+				const actionClip = [...actions]
+					.reverse()
+					.map((action) => clipForAction(action.kind))
+					.find((clip): clip is AnimationClipName => clip !== null)
+				this.warden.rig.play(actionClip ?? reaction.clip, {
+					force: reaction.interruptible,
+					blendMs: reaction.blendMs,
+				})
 				this.startCharacterTravel(index, this.state.currentWord.length, target)
 				this.returnDelayMs = 0
 				this.ledger.markCue(beat.sourceSequence, now)
@@ -473,6 +513,11 @@ export class CombatDirector {
 	) {
 		const target = this.slotForOrdinal(event.targetOrdinal) ?? this.staged[0]
 		if (!target) return
+		const from = this.warden.root.position
+		const to = target.root.position
+		for (const action of event.combatActions ?? []) {
+			this.renderCombatAction(action, from, to, target)
+		}
 		const existingContact = [...this.pendingContacts]
 			.reverse()
 			.find((contact) => contact.target === target)
@@ -507,9 +552,11 @@ export class CombatDirector {
 
 		if (event.overdriveReleased) {
 			this.overdriveMs = MOTION.overdriveMs
-			const from = this.warden.rig.getPartGlobalPosition("torso")
-			const to = this.targetCorePosition(target)
-			this.effects.spawnOverdriveColumn(from, to)
+			if (!(event.combatActions ?? []).some((action) => action.kind === "overdrive-burst")) {
+				const from = this.warden.rig.getPartGlobalPosition("torso")
+				const to = this.targetCorePosition(target)
+				this.effects.spawnOverdriveColumn(from, to)
+			}
 		}
 
 		this.retireTarget(target, event.scoreGain > 0)
@@ -518,6 +565,24 @@ export class CombatDirector {
 		this.returnDelayMs = event.overdriveReleased
 			? MOTION.overdriveMs
 			: MOTION.attackMs
+	}
+
+	private renderCombatAction(
+		action: CombatAction,
+		from: { x: number; y: number },
+		to: { x: number; y: number },
+		target: EnemySlot,
+	) {
+		if (action.targetScope === "active") {
+			this.effects.spawnCombatAction(action, from, to, target.accent)
+			return
+		}
+		const candidates = action.targetScope === "lane"
+			? this.staged.filter((candidate) => targetLane(candidate.ordinal) === targetLane(target.ordinal))
+			: this.staged
+		for (const candidate of candidates.length > 0 ? candidates : [target]) {
+			this.effects.spawnCombatAction(action, from, candidate.root.position, candidate.accent)
+		}
 	}
 
 	private retireTarget(target: EnemySlot, clean: boolean) {
@@ -888,8 +953,21 @@ export class CombatDirector {
 			: role === "upcoming"
 				? staging.upcomingAlpha
 				: staging.distantAlpha
+		const queueWord = role === "active"
+			? this.state.currentWord
+			: this.state.upcomingWords[role === "upcoming" ? 0 : 1] ?? ""
+		const roleLabel = role === "active"
+			? "ACTIVE"
+			: role === "upcoming"
+				? "NEXT"
+				: "FAR"
 		slot.rig.root.scale.set(scale)
-		slot.label.visible = role === "active"
+		slot.label.text = queueWord
+			? `${roleLabel}  ${queueWord.toUpperCase()}`
+			: roleLabel
+		slot.label.style.fill = role === "active" ? slot.accent : V.mid
+		slot.label.alpha = role === "active" ? 1 : role === "upcoming" ? 0.92 : 0.78
+		slot.label.visible = true
 		slot.integrity.visible = role === "active"
 		slot.shadow.y = (
 			this.height * (

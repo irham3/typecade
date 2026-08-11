@@ -1,4 +1,5 @@
 import type { OverdrivePresentationEvent } from "./events"
+import type { CombatAction } from "@/lib/engine/overdrive"
 
 export type PresentationEventEnvelope<T extends OverdrivePresentationEvent> = {
   sequence: number
@@ -45,7 +46,8 @@ export type PresentationBeat = {
   priority: PresentationPriority
   dueAtMs: number
   expiresAtMs: number | null
-  payload: Readonly<Record<string, string | number | boolean>>
+	payload: Readonly<Record<string, string | number | boolean>>
+	actions?: readonly CombatAction[]
 }
 
 export type PresentationHealthSnapshot = Readonly<{

@@ -8,6 +8,7 @@ import { KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import { useGame } from "../store"
 import { formatNumber } from "./hud"
 import { Screen } from "./screen"
+import { createResultSharePayload } from "./result-share"
 
 function ResultStat({ label, value }: { label: string; value: string }) {
 	return (
@@ -30,6 +31,7 @@ export function RunOver() {
 		maxCombo: snapshot.maxCombo,
 		runAccuracy: snapshot.runAccuracy,
 		averageWpm: snapshot.averageWpm,
+		highestMult: snapshot.highestMult,
 		totalTokensEarned: snapshot.totalTokensEarned,
 		seed: snapshot.seed,
 		mode: snapshot.mode,
@@ -63,7 +65,15 @@ export function RunOver() {
 	}, [finalScore, state.language, state.mode])
 
 	const share = async () => {
-		const text = `TYPECADE: OVERDRIVE - ${formatNumber(finalScore)} points, Zone ${state.zone}, ${state.runAccuracy}% accuracy. Seed: ${state.seed}`
+		const sharePayload = createResultSharePayload({
+			seed: state.seed,
+			runScore: finalScore,
+			zone: state.zone,
+			keycaps: state.keycaps,
+			macros: state.macros,
+			highestMult: state.highestMult,
+		})
+		const text = `${sharePayload.text} Accuracy: ${state.runAccuracy}%.`
 		try {
 			if (!shareCardRef.current) throw new Error("Share card is unavailable")
 			const { toPng } = await import("html-to-image")
@@ -82,7 +92,7 @@ export function RunOver() {
 
 			if (navigator.share && navigator.canShare?.({ files: [file] })) {
 				await navigator.share({
-					title: "Typecade: Overdrive",
+					title: sharePayload.title,
 					text,
 					files: [file],
 				})

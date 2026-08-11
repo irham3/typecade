@@ -1,5 +1,5 @@
 import type { OverdrivePresentationEvent } from "./events"
-import { PRESENTATION_POLICY, compareBeats } from "./scheduler-policy"
+import { compareBeats } from "./scheduler-policy"
 import type {
   PresentationBeat,
   PresentationEventEnvelope,
@@ -7,6 +7,7 @@ import type {
   PresentationScheduler,
 } from "./scheduler-types"
 import { presentationHealth } from "./telemetry"
+import { characterContactSequence } from "../canvas/choreography/sequences/character-contact"
 
 export type SchedulerOptions = {
   runId: string
@@ -29,26 +30,31 @@ export function createPresentationScheduler(opts: SchedulerOptions): Presentatio
     
     switch (event.type) {
       case "accepted-character":
-        pendingBeats.push({
-          beatId: `contact-${sequence}`,
-          sourceSequence: sequence,
-          targetOrdinal,
-          kind: "contact-cue",
-          priority: "critical",
-          dueAtMs: emittedAtMs + PRESENTATION_POLICY.acceptedCueBudgetMs,
-          expiresAtMs: null,
-          payload: { character: event.character, index: event.index },
-        })
-        pendingBeats.push({
-          beatId: `hit-${sequence}`,
-          sourceSequence: sequence,
-          targetOrdinal,
-          kind: "target-hit",
-          priority: "critical",
-          dueAtMs: emittedAtMs + PRESENTATION_POLICY.acceptedHitBudgetMs,
-          expiresAtMs: null,
-          payload: { character: event.character, index: event.index },
-        })
+			const output = characterContactSequence({
+				sequenceId: `accepted-character-${sequence}`,
+				targetOrdinal,
+				stage: event.stage ?? "warmup",
+				zone: 0,
+				combo: event.combo,
+				character: event.character,
+				characterIndex: event.characterIndex ?? event.index,
+				word: event.word,
+				combatVerb: event.combatVerb ?? "signal-lock",
+			})
+			for (const beat of output.beats) {
+				const kind = beat.payload.kind === "contact-cue" ? "contact-cue" : "target-hit"
+				pendingBeats.push({
+					beatId: beat.id,
+					sourceSequence: sequence,
+					targetOrdinal,
+					kind,
+					priority: beat.priority === "critical" ? "critical" : "tactical",
+					dueAtMs: emittedAtMs + beat.dueMs,
+					expiresAtMs: null,
+					payload: beat.payload,
+					actions: event.actions ?? [],
+				})
+			}
         break
       case "overdrive-ready":
         pendingBeats.push({

@@ -194,6 +194,8 @@ export function GameplayCanvas(props: GameplayCanvasProps) {
       data-pixi-host
       data-testid="pixi-gameplay"
       data-current-word={props.currentWord}
+			data-upcoming-words={props.upcomingWords.slice(0, 2).join("|")}
+			data-armed-items={props.armedItemIds.join("|")}
       data-caret-index={String(props.caretIndex)}
       data-score={String(props.score)}
       data-quota={String(props.quota)}

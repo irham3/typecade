@@ -143,6 +143,7 @@ export const useGame = create<GameStore>((set, get) => {
 				appliedItemIds: payload.appliedItemIds,
 				targetOrdinal: api.snapshot().targetOrdinal,
 				combo: payload.combo,
+				combatActions: payload.combatActions,
 			})
 			const snapshot = api.snapshot()
 			if (get().coachingEnabled && snapshot.totalCleanWords >= 3 && typeof window !== "undefined") {
@@ -151,7 +152,16 @@ export const useGame = create<GameStore>((set, get) => {
 			}
 			sync()
 		})
-		api.events.on("character_accepted", ({ character, caretIndex, charge }) => {
+		api.events.on("character_accepted", ({
+			character,
+			characterIndex,
+			word,
+			targetOrdinal,
+			stage,
+			combatVerb,
+			charge,
+			actions,
+		}) => {
 			emitPresentationEvent(
 				{
 					runId,
@@ -161,13 +171,21 @@ export const useGame = create<GameStore>((set, get) => {
 				{
 					type: "accepted-character",
 					character,
-					index: Math.max(0, caretIndex - 1),
-					word: api.snapshot().currentWord,
-					targetOrdinal: api.snapshot().targetOrdinal,
+					index: characterIndex,
+					word,
+					targetOrdinal,
 					combo: api.snapshot().combo,
 					charge,
+					characterIndex,
+					stage,
+					combatVerb,
+					actions,
 				},
 			)
+			sync()
+		})
+		api.events.on("target_selected", (payload) => {
+			emitLegacyPresentationEvent({ type: "target-selected", ...payload })
 			sync()
 		})
 		api.events.on("overdrive_ready", () => {

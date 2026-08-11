@@ -20,6 +20,9 @@ export class AnimationController {
 	private activeClip: AnimationClip
 	private localTimeMs = 0
 	private contactEmitted = false
+	private blendFrom: Readonly<Record<string, RigTransform>> | null = null
+	private blendRemainingMs = 0
+	private blendDurationMs = 0
 	private readonly baseTransforms: Readonly<Record<string, RigTransform>>
 
 	constructor(private readonly definition: RigDefinition) {
@@ -37,6 +40,7 @@ export class AnimationController {
 		name: AnimationClipName,
 		options: {
 			force?: boolean
+			blendMs?: number
 		} = {},
 	): ClipPlayResult {
 		const requested = this.definition.clips[name]
@@ -51,6 +55,16 @@ export class AnimationController {
 			return { status: "blocked", activeClip: this.activeClip.name }
 		}
 
+		const blendMs = Math.max(0, options.blendMs ?? 0)
+		if (blendMs > 0) {
+			this.blendFrom = this.sampleFrame(this.activeClip, this.localTimeMs, false, false).transforms
+			this.blendRemainingMs = blendMs
+			this.blendDurationMs = blendMs
+		} else {
+			this.blendFrom = null
+			this.blendRemainingMs = 0
+			this.blendDurationMs = 0
+		}
 		this.activeClip = requested
 		this.localTimeMs = 0
 		this.contactEmitted = false
@@ -90,7 +104,28 @@ export class AnimationController {
 
 
 
-		const frame = this.sampleFrame(clip, this.localTimeMs, contactEdge, completed)
+		let frame = this.sampleFrame(clip, this.localTimeMs, contactEdge, completed)
+		if (this.blendFrom && this.blendRemainingMs > 0) {
+			const progress = Math.min(1, 1 - this.blendRemainingMs / this.blendDurationMs)
+			const transforms: Record<string, RigTransform> = {}
+			for (const [partId, target] of Object.entries(frame.transforms)) {
+				const source = this.blendFrom[partId] ?? target
+				transforms[partId] = {
+					x: source.x + (target.x - source.x) * progress,
+					y: source.y + (target.y - source.y) * progress,
+					rotation: source.rotation + (target.rotation - source.rotation) * progress,
+					scaleX: source.scaleX + (target.scaleX - source.scaleX) * progress,
+					scaleY: source.scaleY + (target.scaleY - source.scaleY) * progress,
+					alpha: source.alpha + (target.alpha - source.alpha) * progress,
+				}
+			}
+			frame = { ...frame, transforms }
+			this.blendRemainingMs = Math.max(0, this.blendRemainingMs - elapsed)
+			if (this.blendRemainingMs === 0) {
+				this.blendFrom = null
+				this.blendDurationMs = 0
+			}
+		}
 		if (completed) this.resetToDefault()
 		return frame
 	}
@@ -129,5 +164,8 @@ export class AnimationController {
 		this.activeClip = defaultClip
 		this.localTimeMs = 0
 		this.contactEmitted = false
+		this.blendFrom = null
+		this.blendRemainingMs = 0
+		this.blendDurationMs = 0
 	}
 }

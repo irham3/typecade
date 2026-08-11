@@ -73,6 +73,7 @@ export class RigInstance {
 		options?: {
 			force?: boolean
 			queueContact?: boolean
+			blendMs?: number
 		},
 	) {
 		return this.controller.play(name, options)

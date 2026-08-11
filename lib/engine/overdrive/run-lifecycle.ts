@@ -23,6 +23,7 @@ import {
 	threatBandForZone,
 	type RunContext,
 } from "./run-state"
+import { normalizeVisiblePrefixes } from "./target-selection"
 import {
 	resetRunTelemetry,
 	resetStageTelemetry,
@@ -79,6 +80,7 @@ export function startStage(ctx: RunContext) {
 	ctx.state.glitchState = null
 	ctx.state.currentWord = getBuildBiasedWord(ctx)
 	ctx.state.upcomingWords = Array.from({ length: 8 }, () => getBuildBiasedWord(ctx))
+	normalizeVisiblePrefixes(ctx)
 
 	ctx.scorer = createScorer()
 	ctx.stageItemData = ctx.state.keycaps.map(() => ({}))

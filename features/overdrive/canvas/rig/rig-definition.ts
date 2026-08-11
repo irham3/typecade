@@ -60,12 +60,20 @@ export type RigPartDefinition = {
 	zIndex: number
 }
 
+export type RigSocketDefinition = {
+	partId: string
+	x: number
+	y: number
+	rotation: number
+}
+
 export type RigDefinition = {
 	id: string
 	atlasUrl: string
 	defaultClip: AnimationClipName
 	parts: readonly RigPartDefinition[]
 	clips: Readonly<Partial<Record<AnimationClipName, AnimationClip>>>
+	sockets?: Readonly<Record<string, RigSocketDefinition>>
 }
 
 export type AnimationFrameState = {

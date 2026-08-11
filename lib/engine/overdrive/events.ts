@@ -1,4 +1,5 @@
-import type { ItemContribution, ScoreResolution, StageType } from "./types"
+import type { CombatAction } from "./combat-actions"
+import type { CombatVerb, ItemContribution, ScoreResolution, StageType } from "./types"
 
 export type EngineEvents = {
 	word_complete: {
@@ -15,11 +16,18 @@ export type EngineEvents = {
 		appliedItemIds: string[]
 		combo: number
 		scoreResolution: ScoreResolution
+		combatActions: CombatAction[]
 	}
 	typo: { expected: string; got: string; ignored: boolean }
 	character_accepted: {
 		character: string
 		caretIndex: number
+		characterIndex: number
+		word: string
+		targetOrdinal: number
+		stage: StageType
+		combatVerb: CombatVerb
+		actions: CombatAction[]
 		charge: number
 		becameReady: boolean
 	}
@@ -36,6 +44,13 @@ export type EngineEvents = {
 	mult_change: { mult: number }
 	mult_increased: { mult: number }
 	quota_progress: { score: number; quota: number }
+	target_selected: {
+		word: string
+		previousWord: string
+		queueIndex: number
+		targetOrdinal: number
+		prefix: string
+	}
 	stage_clear: { zone: number; stage: StageType; tokensEarned: number; timeLeftMs: number }
 	stage_fail: { zone: number; stage: StageType; reason: "timeout" | "sudden_death" | "time_penalty" }
 	run_over: { win: boolean; finalScore: number; zoneReached: number }

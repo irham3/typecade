@@ -3,6 +3,7 @@ import {
 	Graphics,
 } from "pixi.js"
 import type { StageType } from "@/lib/engine/overdrive"
+import type { CombatAction } from "@/lib/engine/overdrive"
 import {
 	EFFECTS,
 	MOTION,
@@ -16,7 +17,7 @@ type Point = {
 	y: number
 }
 
-type EffectKind = "bolt" | "contact" | "fragment" | "shield" | "column"
+type EffectKind = "bolt" | "contact" | "fragment" | "shield" | "column" | "orbit" | "railgun" | "bomb" | "drain"
 
 type LiveEffect = {
 	node: Graphics
@@ -27,6 +28,8 @@ type LiveEffect = {
 	end?: Point
 	velocity?: Point
 	spin?: number
+	origin?: Point
+	radius?: number
 }
 
 export class CombatEffects {
@@ -167,6 +170,69 @@ export class CombatEffects {
 		})
 	}
 
+	spawnCombatAction(action: CombatAction, from: Point, to: Point, tone: number) {
+		if (action.kind === "slash" || action.kind === "dash") {
+			this.spawnSmear(from, to, tone)
+			if (action.kind === "dash") this.spawnContact(to, tone, action.overdrive)
+			return
+		}
+		if (action.kind === "blade") {
+			const node = this.acquire()
+				.arc(0, 0, 22, -0.9, 0.9)
+				.stroke({ color: tone, width: 4, alpha: 0.92 })
+				.moveTo(0, -22)
+				.lineTo(10, -32)
+				.lineTo(18, -18)
+				.stroke({ color: V.text, width: 2, alpha: 0.82 })
+			node.position.copyFrom(to)
+			this.activate({ node, kind: "orbit", lifeMs: 420, durationMs: 420, origin: { ...to }, radius: action.power > 1 ? 34 : 24 })
+			return
+		}
+		if (action.kind === "railgun") {
+			const node = this.acquire()
+				.rect(0, -3, Math.max(40, Math.hypot(to.x - from.x, to.y - from.y)), 6)
+				.fill({ color: tone, alpha: 0.9 })
+				.rect(0, -1, Math.max(40, Math.hypot(to.x - from.x, to.y - from.y)), 2)
+				.fill({ color: V.text, alpha: 0.9 })
+			node.position.copyFrom(from)
+			node.rotation = Math.atan2(to.y - from.y, to.x - from.x)
+			this.activate({ node, kind: "railgun", lifeMs: 180, durationMs: 180 })
+			return
+		}
+		if (action.kind === "echo") {
+			this.spawnContact(to, tone, action.overdrive)
+			this.spawnContact({ x: to.x + 18, y: to.y - 12 }, V.violet, action.overdrive)
+			return
+		}
+		if (action.kind === "shield") {
+			this.spawnShield(from)
+			return
+		}
+		if (action.kind === "bomb") {
+			const node = this.acquire()
+				.circle(0, 0, action.overdrive ? 42 : 28)
+				.stroke({ color: tone, width: 4, alpha: 0.92 })
+				.moveTo(-34, 0).lineTo(34, 0)
+				.moveTo(0, -34).lineTo(0, 34)
+				.stroke({ color: V.text, width: 2, alpha: 0.72 })
+			node.position.copyFrom(to)
+			this.activate({ node, kind: "bomb", lifeMs: 300, durationMs: 300 })
+			return
+		}
+		if (action.kind === "drain") {
+			const node = this.acquire()
+				.moveTo(0, 0).lineTo(to.x - from.x, to.y - from.y)
+				.stroke({ color: V.red, width: action.overdrive ? 6 : 3, alpha: 0.82 })
+			node.position.copyFrom(from)
+			this.activate({ node, kind: "drain", lifeMs: 360, durationMs: 360, start: { ...from }, end: { ...to } })
+			return
+		}
+		if (action.kind === "overdrive-burst") {
+			this.spawnOverdriveColumn(from, to)
+			this.spawnContact(to, V.green, true)
+		}
+	}
+
 	update(deltaMs: number) {
 		for (let index = this.live.length - 1; index >= 0; index -= 1) {
 			const effect = this.live[index]
@@ -245,6 +311,24 @@ export class CombatEffects {
 		}
 		if (effect.kind === "column") {
 			effect.node.alpha = Math.sin(progress * Math.PI)
+			return
+		}
+		if (effect.kind === "orbit" && effect.origin) {
+			effect.node.position.set(
+				effect.origin.x + Math.cos(progress * Math.PI * 2) * (effect.radius ?? 24),
+				effect.origin.y + Math.sin(progress * Math.PI * 2) * (effect.radius ?? 24),
+			)
+			effect.node.rotation += deltaMs / 180
+			effect.node.alpha = 1 - progress * 0.72
+			return
+		}
+		if (effect.kind === "railgun" || effect.kind === "bomb") {
+			effect.node.alpha = 1 - progress
+			effect.node.scale.set(1 + progress * 0.18)
+			return
+		}
+		if (effect.kind === "drain" && effect.start && effect.end) {
+			effect.node.alpha = 1 - progress
 		}
 	}
 }

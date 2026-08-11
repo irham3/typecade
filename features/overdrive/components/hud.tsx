@@ -18,6 +18,8 @@ import { usePresentationEvents } from "../presentation/use-presentation-events"
 import { STAGE_COPY } from "../presentation/stage-copy"
 import { useSettings } from "../settings/store"
 import { useGame } from "../store"
+import { collectKeycapFeedback } from "../presentation/action-feedback"
+import { targetChoiceCues } from "../canvas/command-rail-model"
 
 export function formatTime(milliseconds: number) {
 	const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1_000))
@@ -68,6 +70,8 @@ export function Hud() {
 		combo: snapshot.combo,
 		mult: snapshot.mult,
 		currentWord: snapshot.currentWord,
+		caretIndex: snapshot.caretIndex,
+		upcomingWords: snapshot.upcomingWords,
 		keycaps: snapshot.keycaps,
 		macros: snapshot.macros,
 		activeGlitch: snapshot.activeGlitch,
@@ -86,18 +90,8 @@ export function Hud() {
 		setSoundMuted: settings.setSoundMuted,
 	})))
 	const events = usePresentationEvents()
-	const wordBoundaries = events
-		.map((event, index) => event.type === "word-completed" ? index : -1)
-		.filter((index) => index >= 0)
-	const latestBoundary = wordBoundaries.at(-1)
-	const previousBoundary = wordBoundaries.at(-2) ?? -1
-	const batch = latestBoundary === undefined
-		? events.slice(-8)
-		: events.slice(previousBoundary + 1, latestBoundary + 1)
 	const triggeredItems = new Map(
-		batch
-			.filter((event) => event.type === "item-triggered")
-			.map((event) => [event.itemId, event.id]),
+		collectKeycapFeedback(events.slice(-12)).map((feedback) => [feedback.itemId, feedback.eventId]),
 	)
 	const latestMacro = [...events].reverse().find(
 		(event) => event.type === "macro-used",
@@ -107,6 +101,7 @@ export function Hud() {
 	const quotaRatio = state.quota <= 0 ? 0 : state.score / state.quota
 	const scoreRemaining = Math.max(0, state.quota - state.score)
 	const comboProgress = state.combo % 10
+	const targetCues = targetChoiceCues(state.currentWord, state.upcomingWords)
 
 	return (
 		<div className="pointer-events-none absolute inset-0 z-20 flex select-none flex-col p-3 text-text-hi sm:p-6">
@@ -197,6 +192,16 @@ export function Hud() {
 				<div className="mx-auto mt-3 flex max-w-xl items-center gap-3 border-l-2 border-acc-red bg-bg-1 px-3 py-2 text-sm">
 					<strong className="uppercase tracking-[0.08em] text-acc-red">{glitch.name}</strong>
 					<span className="text-text-mid">{glitch.description}</span>
+				</div>
+			)}
+
+			{targetCues.length > 0 && state.caretIndex === 0 && (
+				<div className="mx-auto mt-3 flex max-w-xl items-center justify-center gap-3 border border-line bg-bg-0/80 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] sm:text-sm">
+					<span className="text-text-mid">TARGET SELECT</span>
+					<span className="text-acc-green">
+						{targetCues.map((cue) => `${cue.prefix}:${cue.base}`).join(" / ")}
+					</span>
+					<span className="hidden text-text-mid sm:inline">TYPE FIRST LETTER TO SWITCH</span>
 				</div>
 			)}
 

@@ -42,6 +42,7 @@ export type SceneState = {
 	zone: number
 	stage: StageType
 	activeGlitch: string | null
+	armedItemIds: string[]
 	reducedMotion: boolean
 	screenShake: boolean
 }
@@ -137,6 +138,9 @@ export class CombatScene {
 		this.director.handle(envelope)
 		if (event.type === "accepted-character") {
 			sfx.shot(event.combo)
+			for (const action of event.actions ?? []) {
+				if (action.kind !== "slash") sfx.action(action.kind, action.overdrive)
+			}
 			return
 		}
 		if (event.type === "word-completed") {
@@ -168,10 +172,11 @@ export class CombatScene {
 	private redrawRail() {
 		this.rail.render({
 			word: this.state.currentWord,
+			upcomingWords: this.state.upcomingWords,
 			caretIndex: this.state.caretIndex,
 			dirty: this.state.wordDirty,
 			overdriveCharge: this.state.overdriveCharge,
-			armedItemIds: [],
+			armedItemIds: this.state.armedItemIds,
 			reducedMotion: this.state.reducedMotion,
 		})
 	}
@@ -180,13 +185,17 @@ export class CombatScene {
 		event: Extract<OverdrivePresentationEvent, { type: "word-completed" }>,
 	) {
 		sfx.word(event.combo)
+		for (const action of event.combatActions ?? []) {
+			sfx.action(action.kind, action.overdrive)
+		}
 		this.wordAgeMs = 0
 		this.rail.render({
 			word: this.state.currentWord,
+			upcomingWords: this.state.upcomingWords,
 			caretIndex: this.state.caretIndex,
 			dirty: this.state.wordDirty,
 			overdriveCharge: this.state.overdriveCharge,
-			armedItemIds: [],
+			armedItemIds: this.state.armedItemIds,
 			reducedMotion: this.state.reducedMotion,
 		})
 	}

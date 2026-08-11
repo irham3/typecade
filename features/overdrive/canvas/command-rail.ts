@@ -1,9 +1,11 @@
 import { Container, Graphics, Text } from "pixi.js"
 import { SCENE, V } from "./visual-assets"
 import { TextPool } from "./pools/text-pool"
+import { targetChoiceCues } from "./command-rail-model"
 
 export interface CommandRailState {
   word: string
+  upcomingWords: readonly string[]
   caretIndex: number
   dirty: boolean
   overdriveCharge: number
@@ -121,6 +123,30 @@ export class CommandRail {
     }
     if (state.caretIndex >= characters.length) caretX = cursor
 
+		const targetCues = targetChoiceCues(state.word, state.upcomingWords)
+		const queueNodes = targetCues.slice(1).map((cue) => {
+			const text = this.wordPool.allocate(this.queueLayer, "", 0)
+			text.text = `[${cue.prefix}] ${cue.word.toUpperCase()} · ${cue.base} BASE`
+			text.style.fontSize = SCENE.rail.previewFont
+			text.style.fill = V.mid
+			text.anchor.set(0, 0.5)
+			return text
+		})
+		if (this.compact) {
+			for (const [index, text] of queueNodes.entries()) {
+				text.anchor.set(0.5)
+				text.position.set(0, SCENE.rail.previewY + index * SCENE.rail.previewRowGap)
+			}
+		} else {
+			const queueWidth = queueNodes.reduce((total, text) => total + text.width, 0)
+				+ Math.max(0, queueNodes.length - 1) * SCENE.rail.previewGap
+			let queueX = -queueWidth / 2
+			for (const text of queueNodes) {
+				text.position.set(queueX, SCENE.rail.previewY)
+				queueX += text.width + SCENE.rail.previewGap
+			}
+		}
+
     this.caret
       .clear()
       .rect(
@@ -138,7 +164,14 @@ export class CommandRail {
         .fill({ color: V.red })
     }
 
-    this.status.text = state.armedItemIds.join(" ")
+		const switchKeys = targetCues.slice(1).map((cue) => cue.prefix)
+		const targetInstruction = state.caretIndex === 0 && switchKeys.length > 0
+			? `TYPE ${switchKeys.join(" / ")} TO SWITCH · LONGER WORD = MORE BASE`
+			: ""
+		const armedInstruction = state.armedItemIds.length > 0
+			? `ARMED · ${state.armedItemIds.join(" · ").toUpperCase()}`
+			: ""
+    this.status.text = targetInstruction || armedInstruction
     this.status.style.fill = state.dirty ? V.red : V.text
     this.status.y = SCENE.rail.height / 2 + 20
   }

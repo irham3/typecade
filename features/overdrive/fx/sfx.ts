@@ -1,4 +1,4 @@
-import type { ItemContribution } from "@/lib/engine/overdrive"
+import type { CombatActionKind, ItemContribution } from "@/lib/engine/overdrive"
 
 let ctx: AudioContext | null = null
 let masterGain: GainNode | null = null
@@ -42,6 +42,21 @@ const ITEM_KIND_INTERVAL: Record<ItemContribution["kind"], number> = {
   base: 90,
   score: 240,
   token: 300,
+}
+
+const ACTION_AUDIO: Record<CombatActionKind, {
+  frequency: number
+  wave: OscillatorType
+}> = {
+  slash: { frequency: 520, wave: "square" },
+  dash: { frequency: 290, wave: "sawtooth" },
+  blade: { frequency: 760, wave: "triangle" },
+  railgun: { frequency: 1_080, wave: "square" },
+  echo: { frequency: 640, wave: "sine" },
+  shield: { frequency: 340, wave: "triangle" },
+  bomb: { frequency: 180, wave: "sawtooth" },
+  drain: { frequency: 220, wave: "sawtooth" },
+  "overdrive-burst": { frequency: 96, wave: "square" },
 }
 
 function nextNoiseSample() {
@@ -116,6 +131,17 @@ export const sfx = {
   unlock,
   key() { tone(nextKeyFrequency(), "square", 24, 0.045) },
   shot(combo: number) { tone(520 + Math.min(combo, 30) * 9, "square", 65, 0.09, 900 + combo * 8) },
+  action(kind: CombatActionKind, overdrive = false) {
+    const cue = ACTION_AUDIO[kind]
+    tone(
+      cue.frequency,
+      cue.wave,
+      overdrive ? 150 : 90,
+      overdrive ? 0.14 : 0.08,
+      overdrive ? cue.frequency * 1.8 : cue.frequency * 1.25,
+    )
+    if (kind === "bomb" || kind === "overdrive-burst") noise(70, overdrive ? 0.08 : 0.04, 0.02)
+  },
   hit() { 
     tone(180, "triangle", 55, 0.08, 110)
     noise(45, 0.035) 

@@ -3,6 +3,13 @@ export type RunMode = "free" | "daily" | "practice"
 export type WordPoolLanguage = "EN" | "ID"
 export type ThreatBand = "protected" | "pressure" | "overclocked" | "lethal"
 
+export type CombatVerb =
+	| "signal-lock"
+	| "arc-dash"
+	| "chain-strike"
+	| "execution-ready"
+	| "misfire"
+
 export type Screen =
 	| "menu"
 	| "stage"

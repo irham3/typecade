@@ -26,6 +26,9 @@ import {
 	type RunContext,
 } from "./run-state"
 import { updateTypingStats } from "./run-telemetry-data"
+import { combatVerbFor } from "./combat-grammar"
+import { actionsForCharacter, actionsForWord } from "./combat-actions"
+import { normalizeVisiblePrefixes, selectTarget } from "./target-selection"
 
 type SubmissionMode = "standard" | "overdrive"
 
@@ -206,6 +209,12 @@ function submitWord(
 		&& ctx.state.overdriveCharge >= OVERDRIVE_CHARGE_MAX
 		&& (ctx.state.zone <= 2 || mode === "overdrive")
 	const elapsedMs = ctx.stageElapsedMs
+	const combatActions = actionsForWord({
+		word: ctx.state.currentWord,
+		keycapIds: ctx.state.keycaps,
+		clean: result.clean,
+		overdriveReleased: releasesOverdrive,
+	})
 	const appliedItemIds: string[] = []
 	const contextBase = {
 		word: ctx.state.currentWord,
@@ -300,6 +309,7 @@ function submitWord(
 		appliedItemIds: [...appliedItemIds],
 		combo: ctx.state.combo,
 		scoreResolution: resolvedScore,
+		combatActions,
 	})
 	if (releasesOverdrive) {
 		ctx.events.emit("overdrive_released", {
@@ -325,6 +335,7 @@ function submitWord(
 
 	ctx.state.currentWord = ctx.state.upcomingWords.shift() ?? getBuildBiasedWord(ctx)
 	ctx.state.upcomingWords.push(getBuildBiasedWord(ctx))
+	normalizeVisiblePrefixes(ctx)
 	ctx.state.caretIndex = 0
 	ctx.state.mult = persistentMult(ctx)
 }
@@ -348,6 +359,7 @@ export function feedChar(ctx: RunContext, lifecycle: InputLifecycle, character: 
 		if (ctx.state.caretIndex === ctx.state.currentWord.length) submitWord(ctx, lifecycle)
 		return
 	}
+	selectTarget(ctx, character)
 	if (ctx.state.caretIndex >= ctx.state.currentWord.length) return
 
 	const expected = ctx.state.currentWord[ctx.state.caretIndex]
@@ -362,11 +374,34 @@ export function feedChar(ctx: RunContext, lifecycle: InputLifecycle, character: 
 			OVERDRIVE_CHARGE_MAX,
 			ctx.state.overdriveCharge + OVERDRIVE_CHARGE_PER_CHARACTER,
 		)
+		const characterIndex = ctx.state.caretIndex - 1
 		const becameReady = previousCharge < OVERDRIVE_CHARGE_MAX
 			&& ctx.state.overdriveCharge === OVERDRIVE_CHARGE_MAX
 		ctx.events.emit("character_accepted", {
 			character,
 			caretIndex: ctx.state.caretIndex,
+			characterIndex,
+			word: ctx.state.currentWord,
+			targetOrdinal: ctx.state.targetOrdinal,
+			stage: ctx.state.stage,
+			combatVerb: combatVerbFor({
+				stage: ctx.state.stage,
+				zone: ctx.state.zone,
+				characterIndex,
+				wordLength: ctx.state.currentWord.length,
+				wordDirty: ctx.state.wordDirty,
+				combo: ctx.state.combo,
+				keycapIds: ctx.state.keycaps,
+				overdriveReady: ctx.state.overdriveCharge >= OVERDRIVE_CHARGE_MAX,
+				finalCharacter: ctx.state.caretIndex === ctx.state.currentWord.length,
+			}),
+			actions: actionsForCharacter({
+				word: ctx.state.currentWord,
+				character,
+				characterIndex,
+				keycapIds: ctx.state.keycaps,
+				overdrive: ctx.state.overdriveCharge >= OVERDRIVE_CHARGE_MAX,
+			}),
 			charge: ctx.state.overdriveCharge,
 			becameReady,
 		})

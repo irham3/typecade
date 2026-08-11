@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
+import wordsEN from "../data/words-en.json"
+import { createRun } from "../lib/engine/overdrive"
 
 async function finishStage(page: Page, requiresSpace: boolean) {
 	const host = page.getByTestId("pixi-gameplay")
@@ -72,6 +74,68 @@ test("Zone 1 auto-executes and promotes the next target", async ({ page }) => {
 	)).toBe(firstOrdinal + 1)
 	await expect.poll(async () => host.getAttribute("data-current-word")).not.toBe(firstWord)
 	await expect(host).toHaveAttribute("data-caret-index", "0")
+})
+
+test("the first key can promote a visible upcoming target and is not lost", async ({ page }) => {
+	const run = createRun({
+		seed: "visible-target-choice",
+		words: wordsEN,
+		startingZone: 2,
+	})
+	run.start()
+	const saved = JSON.parse(run.exportState()) as { state: ReturnType<typeof run.snapshot> }
+	Object.assign(saved.state, {
+		currentWord: "arcade",
+		upcomingWords: ["byte", "signal", ...saved.state.upcomingWords.slice(2)],
+		caretIndex: 0,
+		wordDirty: false,
+	})
+	await page.addInitScript((save) => {
+		window.localStorage.setItem("typecade_overdrive_save", save)
+	}, JSON.stringify(saved))
+	await page.goto("/overdrive")
+	await page.getByRole("button", { name: "RESUME RUN" }).click()
+
+	const host = page.getByTestId("pixi-gameplay")
+	await expect(host).toHaveAttribute("data-rig-fallback", "false")
+	const upcoming = (await host.getAttribute("data-upcoming-words"))?.split("|") ?? []
+	expect(upcoming).toHaveLength(2)
+	const selectedWord = upcoming[1]
+	expect(selectedWord).toBeTruthy()
+
+	await page.keyboard.type(selectedWord[0])
+
+	await expect(host).toHaveAttribute("data-current-word", selectedWord)
+	await expect(host).toHaveAttribute("data-caret-index", "1")
+})
+
+test("a combat Keycap names its action and flashes its build slot", async ({ page }) => {
+	const run = createRun({
+		seed: "visible-keycap-action",
+		words: wordsEN,
+		startingZone: 3,
+		startingKeycaps: ["vowel_magnet"],
+	})
+	run.start()
+	const saved = JSON.parse(run.exportState()) as { state: ReturnType<typeof run.snapshot> }
+	Object.assign(saved.state, {
+		currentWord: "arcade",
+		upcomingWords: ["byte", "signal", ...saved.state.upcomingWords.slice(2)],
+		caretIndex: 0,
+		wordDirty: false,
+	})
+	await page.addInitScript((save) => {
+		window.localStorage.setItem("typecade_overdrive_save", save)
+	}, JSON.stringify(saved))
+	await page.goto("/overdrive")
+	await page.getByRole("button", { name: "RESUME RUN" }).click()
+
+	const host = page.getByTestId("pixi-gameplay")
+	await expect(host).toHaveAttribute("data-armed-items", "vowel_magnet")
+	await page.keyboard.type("a")
+
+	await expect(page.getByText("Vowel Magnet · VOWEL BLADE", { exact: true })).toBeVisible()
+	await expect(page.getByLabel("Vowel Magnet Keycap")).toHaveClass(/overdrive-slot-proc/)
 })
 
 test("Focus Pause freezes a protected clock and the next key resumes it", async ({ page }) => {

@@ -1,6 +1,8 @@
 import type {
-  ItemContribution,
-  StageType,
+	CombatAction,
+	CombatVerb,
+	ItemContribution,
+	StageType,
 } from "@/lib/engine/overdrive"
 import type { PresentationEventEnvelope } from "./scheduler-types"
 
@@ -20,6 +22,10 @@ export type OverdrivePresentationEvent =
       targetOrdinal: number
       combo: number
       charge: number
+      characterIndex?: number
+      stage?: StageType
+      combatVerb?: CombatVerb
+      actions?: CombatAction[]
     }
   | { id: number; type: "rejected-character"; character: string }
   | {
@@ -38,6 +44,7 @@ export type OverdrivePresentationEvent =
       appliedItemIds: string[];
       targetOrdinal: number;
       combo: number
+      combatActions?: CombatAction[]
     }
   | { id: number; type: "mult-increased"; mult: number }
   | { id: number; type: "stage-entered"; stage: StageType }
@@ -54,6 +61,15 @@ export type OverdrivePresentationEvent =
       contribution: ItemContribution
     }
   | { id: number; type: "macro-used"; itemId: string; result: string }
+  | {
+      id: number
+      type: "target-selected"
+      word: string
+      previousWord: string
+      queueIndex: number
+      targetOrdinal: number
+      prefix: string
+    }
 
 type PresentationEventInput<T> = T extends { id: number } ? Omit<T, "id"> : never
 export type OverdrivePresentationEventInput = PresentationEventInput<OverdrivePresentationEvent>

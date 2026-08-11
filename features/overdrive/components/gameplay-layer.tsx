@@ -7,27 +7,30 @@ import { GameplayCanvas } from "../canvas/gameplay-canvas"
 import { usePresentationEvents, usePresentationEnvelopes } from "../presentation/use-presentation-events"
 import { useSettings } from "../settings/store"
 import { useGame } from "../store"
+import { collectKeycapFeedback } from "../presentation/action-feedback"
 
 function ProcFeedback() {
 	const events = usePresentationEvents()
-	const latest = [...events].reverse().find(
-		(event) => event.type === "item-triggered" || event.type === "macro-used",
-	)
-	if (!latest) return null
-
-	const itemName = latest.type === "item-triggered"
-		? KEYCAPS[latest.itemId]?.name ?? latest.label
-		: MACROS[latest.itemId]?.name ?? latest.itemId
+	const latestKeycap = collectKeycapFeedback(events).at(-1)
+	const latestMacro = [...events].reverse().find((event) => event.type === "macro-used")
+	const showKeycap = latestKeycap
+		&& (!latestMacro || latestKeycap.eventId > latestMacro.id)
+	if (!showKeycap && !latestMacro) return null
+	const eventId = showKeycap ? latestKeycap.eventId : latestMacro?.id ?? 0
+	const itemName = showKeycap
+		? KEYCAPS[latestKeycap.itemId]?.name ?? latestKeycap.itemId
+		: latestMacro
+			? MACROS[latestMacro.itemId]?.name ?? latestMacro.itemId
+			: ""
+	const feedbackLabel = showKeycap ? latestKeycap.label : latestMacro?.result ?? ""
 
 	return (
 		<div
-			key={latest.id}
+			key={eventId}
 			className="overdrive-proc pointer-events-none absolute left-1/2 top-[34%] z-20 -translate-x-1/2 border-l-2 border-acc-violet bg-bg-0 px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-text-hi"
 			aria-live="polite"
 		>
-			{latest.type === "item-triggered"
-				? `${itemName} · ${latest.contribution.label}`
-				: `${itemName} · ${latest.result}`}
+			{`${itemName} · ${feedbackLabel}`}
 		</div>
 	)
 }
@@ -58,6 +61,7 @@ export function GameplayLayer() {
 		zone: snapshot.zone,
 		stage: snapshot.stage,
 		activeGlitch: snapshot.activeGlitch,
+		armedItemIds: snapshot.armedItemIds,
 		paused: snapshot.paused,
 		quitToMenu: snapshot.quitToMenu,
 	})))
@@ -122,6 +126,7 @@ export function GameplayLayer() {
 				zone={state.zone}
 				stage={state.stage}
 				activeGlitch={state.activeGlitch}
+				armedItemIds={state.armedItemIds}
 				reducedMotion={settings.reducedMotion ?? false}
 				screenShake={settings.screenShake}
 				events={envelopes}
