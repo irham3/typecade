@@ -37,7 +37,7 @@ export class DamageNumbersSystem extends PIXI.Container {
 		return text
 	}
 
-	public emit(x: number, y: number, amount: number, color = 0xffffff) {
+	public spawn(x: number, y: number, amount: number, color = 0xffffff) {
 		const text = this.getText()
 		text.text = amount.toString()
 		text.style.fill = color

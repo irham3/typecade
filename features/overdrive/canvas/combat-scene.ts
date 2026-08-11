@@ -146,7 +146,7 @@ export class CombatScene {
 		if (event.type === "accepted-character") {
 			sfx.shot(event.combo)
 			this.particles.emitMuzzleFlash(this.rail.root.x, this.rail.root.y - 20)
-			this.damageNumbers.emit(this.rail.root.x + (Math.random() * 40 - 20), this.rail.root.y - 40, 10 + event.combo, 0xffffff)
+			this.damageNumbers.spawn(this.rail.root.x + (Math.random() * 40 - 20), this.rail.root.y - 40, 10 + event.combo, 0xffffff)
 			for (const action of event.actions ?? []) {
 				if (action.kind !== "slash") sfx.action(action.kind, action.overdrive)
 			}
@@ -180,6 +180,9 @@ export class CombatScene {
 
 	private redrawRail() {
 		this.rail.render({
+			targetOrdinal: this.state.targetOrdinal,
+			zone: this.state.zone,
+			stage: this.state.stage,
 			word: this.state.currentWord,
 			upcomingWords: this.state.upcomingWords,
 			caretIndex: this.state.caretIndex,
@@ -200,6 +203,9 @@ export class CombatScene {
 		this.wordAgeMs = 0
 		this.particles.emitExplosion(this.rail.root.x, this.rail.root.y - 40, 0x00e5ff)
 		this.rail.render({
+			targetOrdinal: this.state.targetOrdinal,
+			zone: this.state.zone,
+			stage: this.state.stage,
 			word: this.state.currentWord,
 			upcomingWords: this.state.upcomingWords,
 			caretIndex: this.state.caretIndex,

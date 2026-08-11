@@ -112,14 +112,26 @@ export type RunSnapshot = {
 	win?: boolean
 	keycaps: string[]
 	macros: string[]
+	firmware: string[]
 	shopKeycaps: string[]
 	shopMacro: string | null
+	shopFirmware: string | null
+	maxKeycaps: number
+	maxMacros: number
 	rerollCost: number
 	activeGlitch: string | null
 	glitchState: Record<string, boolean | number | string> | null
 	stageItemImpact: Record<string, ItemImpact>
 	runItemImpact: Record<string, ItemImpact>
 	lastScoreResolution?: ScoreResolution
+	shieldCharges: number
+	coreIntegrity: number
+	maxCoreIntegrity: number
+	overdriveActive: boolean
+	overdriveExecutionsRemaining: number
+	typedBuffer: string
+	errorPositions: number[]
+	lastFailReason?: string
 }
 
 export type ItemContribution = {

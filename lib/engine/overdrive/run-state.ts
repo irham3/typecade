@@ -40,6 +40,7 @@ export type CreateRunOptions = {
 	startingMacros?: string[]
 	startingTokens?: number
 	startingZone?: number
+	startingFirmware?: string[]
 }
 
 export type RunContext = {
@@ -124,6 +125,7 @@ function createInitialSnapshot(
 	startingZone: number,
 	startingKeycaps: string[],
 	startingMacros: string[],
+	startingFirmware: string[],
 ): RunSnapshot {
 	return {
 		screen: "menu",
@@ -176,6 +178,18 @@ function createInitialSnapshot(
 		stageItemImpact: {},
 		runItemImpact: {},
 		lastScoreResolution: undefined,
+		firmware: [...startingFirmware],
+		shopFirmware: null,
+		maxKeycaps: MAX_KEYCAPS,
+		maxMacros: MAX_MACROS,
+		shieldCharges: 0,
+		coreIntegrity: 100,
+		maxCoreIntegrity: 100,
+		overdriveActive: false,
+		overdriveExecutionsRemaining: 0,
+		typedBuffer: "",
+		errorPositions: [],
+		lastFailReason: undefined,
 	}
 }
 
@@ -213,7 +227,13 @@ export function createRunContext(opts: CreateRunOptions): RunContext {
 		recentWords: [],
 		startingKeycaps,
 		startingMacros,
-		state: createInitialSnapshot(opts, startingZone, startingKeycaps, startingMacros),
+		state: createInitialSnapshot(
+			opts,
+			startingZone,
+			startingKeycaps,
+			startingMacros,
+			opts.startingFirmware ?? [],
+		),
 		scorer: createScorer(),
 		runItemData: startingKeycaps.map(() => ({})),
 		stageItemData: startingKeycaps.map(() => ({})),
@@ -290,6 +310,18 @@ export function resetRunSnapshot(ctx: RunContext) {
 		stageItemImpact: {},
 		runItemImpact: {},
 		lastScoreResolution: undefined,
+		firmware: [...(ctx.opts.startingFirmware ?? [])],
+		shopFirmware: null,
+		maxKeycaps: MAX_KEYCAPS,
+		maxMacros: MAX_MACROS,
+		shieldCharges: 0,
+		coreIntegrity: 100,
+		maxCoreIntegrity: 100,
+		overdriveActive: false,
+		overdriveExecutionsRemaining: 0,
+		typedBuffer: "",
+		errorPositions: [],
+		lastFailReason: undefined,
 	}
 }
 
@@ -318,8 +350,11 @@ export function snapshotRun(ctx: RunContext): RunSnapshot {
 		...state,
 		keycaps: [...state.keycaps],
 		macros: [...state.macros],
+		firmware: [...state.firmware],
 		shopKeycaps: [...state.shopKeycaps],
+		shopFirmware: state.shopFirmware,
 		upcomingWords: [...state.upcomingWords],
+		errorPositions: [...state.errorPositions],
 		glitchState: state.glitchState ? { ...state.glitchState } : null,
 		stageItemImpact: cloneImpactMap(state.stageItemImpact),
 		runItemImpact: cloneImpactMap(state.runItemImpact),
@@ -590,8 +625,11 @@ export function loadRunState(ctx: RunContext, json: string): boolean {
 			totalTokensEarned: Number(save.state.totalTokensEarned ?? 0),
 			keycaps: [...save.state.keycaps],
 			macros: [...save.state.macros],
+			firmware: [...(save.state.firmware ?? [])],
 			shopKeycaps: [...save.state.shopKeycaps],
+			shopFirmware: save.state.shopFirmware ?? null,
 			upcomingWords: [...save.state.upcomingWords],
+			errorPositions: [...(save.state.errorPositions ?? [])],
 		}
 		ctx.runItemData = save.runItemData.map((data) => ({ ...data }))
 		ctx.stageItemData = save.stageItemData.map((data) => ({ ...data }))

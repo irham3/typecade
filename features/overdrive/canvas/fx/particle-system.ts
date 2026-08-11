@@ -53,7 +53,7 @@ export class ParticleSystem extends PIXI.Container {
 		return sprite
 	}
 
-	public emit(def: Partial<ParticleDef> & { x: number; y: number }, count = 1) {
+	public spawn(def: Partial<ParticleDef> & { x: number; y: number }, count = 1) {
 		for (let i = 0; i < count; i++) {
 			const sprite = this.getSprite()
 			const pDef: ParticleDef = {
@@ -83,11 +83,11 @@ export class ParticleSystem extends PIXI.Container {
 	}
 
 	public emitExplosion(x: number, y: number, color: number) {
-		this.emit({ x, y, color, life: 0.4, scale: 1.5, friction: 0.9 }, 15)
+		this.spawn({ x, y, color, life: 0.4, scale: 1.5, friction: 0.9 }, 15)
 		for (let i = 0; i < 15; i++) {
 			const angle = Math.random() * Math.PI * 2
 			const speed = Math.random() * 5 + 2
-			this.emit({
+			this.spawn({
 				x, y,
 				vx: Math.cos(angle) * speed,
 				vy: Math.sin(angle) * speed,
@@ -100,7 +100,7 @@ export class ParticleSystem extends PIXI.Container {
 	}
 
 	public emitMuzzleFlash(x: number, y: number) {
-		this.emit({
+		this.spawn({
 			x, y,
 			vx: Math.random() * 2,
 			vy: Math.random() * 2 - 1,

@@ -72,7 +72,7 @@ export function RunOver() {
 		...state.macros.map((id) => ({ id, type: "macro" as const })),
 		...state.firmware.map((id) => ({ id, type: "firmware" as const })),
 	].slice(0, 5)
-	const failDiagnosis = state.lastFailReason ? FAIL_DIAGNOSIS[state.lastFailReason] : null
+	const failDiagnosis = state.lastFailReason ? FAIL_DIAGNOSIS[state.lastFailReason as keyof typeof FAIL_DIAGNOSIS] : null
 
 	useEffect(() => {
 		const key = `typecade_overdrive_best_${state.mode}_${state.language.toLowerCase()}`
