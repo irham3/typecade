@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { track } from "@/lib/analytics";
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -28,6 +29,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);
     const [status, setStatus] = useState<StatusState>({ tone: "idle", message: "" });
+
+    useEffect(() => {
+        if (isOpen) track("auth_prompt_shown", { surface: "auth_modal" });
+    }, [isOpen]);
 
     // Reset state when opened
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
@@ -54,6 +59,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
     const handleGoogle = async () => {
         if (!supabaseReady) return;
+        track("auth_started", { method: "google", surface: "auth_modal" });
         const client = getSupabaseClient();
         if (!client) {
             setStatus({ tone: "error", message: "Supabase is not configured yet." });
@@ -98,6 +104,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         setIsSubmitting(true);
         setStatus({ tone: "idle", message: "" });
+        track("auth_started", { method: "email", mode, surface: "auth_modal" });
 
         const result = mode === "sign-in"
             ? await client.auth.signInWithPassword({

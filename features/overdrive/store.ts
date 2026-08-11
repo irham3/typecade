@@ -14,6 +14,7 @@ import {
 	trackEvent,
 	type TelemetryContext,
 } from "@/lib/telemetry"
+import { track } from "@/lib/analytics"
 import { FIRMWARE, KEYCAPS, MACROS } from "@/lib/engine/overdrive/items"
 import {
 	emitLegacyPresentationEvent,
@@ -60,6 +61,21 @@ function dailySeed(language: WordPoolLanguage) {
 	return `${new Date().toISOString().slice(0, 10)}-${language.toLowerCase()}`
 }
 
+function scoreBucket(score: number) {
+	if (score < 500) return "0-499"
+	if (score < 1_000) return "500-999"
+	if (score < 2_500) return "1000-2499"
+	if (score < 5_000) return "2500-4999"
+	return "5000+"
+}
+
+function accuracyBucket(accuracy: number) {
+	if (accuracy < 80) return "0-79"
+	if (accuracy < 90) return "80-89"
+	if (accuracy < 95) return "90-94"
+	return "95-100"
+}
+
 export const useGame = create<GameStore>((set, get) => {
 	function telemetryContext(snapshot: RunSnapshot): TelemetryContext {
 		return {
@@ -90,6 +106,9 @@ export const useGame = create<GameStore>((set, get) => {
 
 	function attach(api: RunApi) {
 		const runId = crypto.randomUUID()
+		let firstStageCompleted = false
+		let firstOverdriveReleased = false
+		let tutorialStepsCompleted = 0
 		const sync = () => set({
 			...api.snapshot(),
 			api,
@@ -147,6 +166,23 @@ export const useGame = create<GameStore>((set, get) => {
 				combatActions: payload.combatActions,
 			})
 			const snapshot = api.snapshot()
+			if (payload.overdriveReleased && !firstOverdriveReleased) {
+				firstOverdriveReleased = true
+				track("overdrive_first_released", {
+					mode: snapshot.mode,
+					language: snapshot.language,
+					zone: snapshot.zone,
+					stage: snapshot.stage,
+				})
+			}
+			while (tutorialStepsCompleted < Math.min(snapshot.totalCleanWords, 3)) {
+				tutorialStepsCompleted += 1
+				track("tutorial_step_completed", {
+					mode: snapshot.mode,
+					language: snapshot.language,
+					step: tutorialStepsCompleted,
+				})
+			}
 			if (get().coachingEnabled && snapshot.totalCleanWords >= 3 && typeof window !== "undefined") {
 				window.localStorage.setItem(OVERDRIVE_BRIEFING_KEY, "1")
 				set({ coachingEnabled: false })
@@ -218,6 +254,16 @@ export const useGame = create<GameStore>((set, get) => {
 		})
 		api.events.on("stage_clear", ({ zone, stage, tokensEarned, timeLeftMs }) => {
 			const snapshot = api.snapshot()
+			if (!firstStageCompleted) {
+				firstStageCompleted = true
+				track("first_stage_completed", {
+					mode: snapshot.mode,
+					language: snapshot.language,
+					zone,
+					stage,
+					score: snapshot.score,
+				})
+			}
 			emitLegacyPresentationEvent({ type: "stage-cleared" })
 			trackEvent("stage_clear", {
 				...telemetryContext(snapshot),
@@ -235,6 +281,17 @@ export const useGame = create<GameStore>((set, get) => {
 		})
 		api.events.on("run_over", ({ win, finalScore, zoneReached }) => {
 			const snapshot = api.snapshot()
+			track("run_finished", {
+				mode: snapshot.mode,
+				language: snapshot.language,
+				zone: zoneReached,
+				outcome: win ? "won" : "failed",
+				score_bucket: scoreBucket(finalScore),
+				accuracy_bucket: accuracyBucket(snapshot.runAccuracy),
+				build_size: snapshot.keycaps.length + snapshot.macros.length + snapshot.firmware.length,
+				overdrive_used: firstOverdriveReleased,
+				fail_reason: snapshot.lastFailReason ?? "none",
+			})
 			trackEvent("run_end", {
 				...telemetryContext(snapshot),
 				win,
@@ -290,6 +347,16 @@ export const useGame = create<GameStore>((set, get) => {
 			emitLegacyPresentationEvent({ type: "macro-used", itemId, result })
 			sync()
 		})
+		api.events.on("stage_fail", ({ zone, stage, reason }) => {
+			const snapshot = api.snapshot()
+			track("stage_failed", {
+				mode: snapshot.mode,
+				language: snapshot.language,
+				zone,
+				stage,
+				fail_reason: reason,
+			})
+		})
 		for (const event of ["typo", "mult_change", "quota_progress", "stage_fail"] as const) {
 			api.events.on(event, sync)
 		}
@@ -338,6 +405,12 @@ export const useGame = create<GameStore>((set, get) => {
 			transition(raw.continueToNextStage)
 			const snapshot = api.snapshot()
 			if (snapshot.screen === "shop") {
+				track("shop_opened", {
+					mode: snapshot.mode,
+					language: snapshot.language,
+					zone: snapshot.zone,
+					stage: snapshot.stage,
+				})
 				trackEvent("shop_offer", {
 					...telemetryContext(snapshot),
 					zone: snapshot.zone,
@@ -369,6 +442,14 @@ export const useGame = create<GameStore>((set, get) => {
 				: undefined
 			transition(() => raw.buyItem(type, index))
 			if (itemId && price !== undefined && api.snapshot().tokens < before.tokens) {
+				track("item_purchased", {
+					mode: before.mode,
+					language: before.language,
+					item_id: itemId,
+					item_type: type,
+					price,
+					zone: before.zone,
+				})
 				trackEvent("shop_buy", {
 					...telemetryContext(api.snapshot()),
 					itemId,
@@ -441,9 +522,19 @@ export const useGame = create<GameStore>((set, get) => {
 		return api
 	}
 
-	function startRun(seed: string, mode: RunMode, build: readonly string[] = []) {
+	function startRun(
+		seed: string,
+		mode: RunMode,
+		build: readonly string[] = [],
+		source: "free" | "daily" | "practice" | "challenge" = mode,
+	) {
 		const previous = get()
 		if (previous.screen === "runOver") {
+			track("second_run_started", {
+				mode,
+				language: get().selectedLanguage,
+				source,
+			})
 			trackEvent("run_restart", {
 				...telemetryContext(previous),
 				previousScore: previous.finalScore ?? previous.runScore,
@@ -471,6 +562,18 @@ export const useGame = create<GameStore>((set, get) => {
 			...telemetryContext(snapshot),
 			zone: snapshot.zone,
 		})
+		track("run_started", {
+			mode: snapshot.mode,
+			language: snapshot.language,
+			source,
+		})
+		if (source === "challenge") {
+			track("challenge_run_started", {
+				mode: snapshot.mode,
+				language: snapshot.language,
+				build_size: startingKeycaps.length + startingMacros.length + startingFirmware.length,
+			})
+		}
 		trackStageStart(snapshot)
 	}
 
@@ -495,17 +598,17 @@ export const useGame = create<GameStore>((set, get) => {
 			set({ resumeAvailable: available })
 		},
 		startNormalRun() {
-			startRun(`free-${Date.now()}`, "free")
+			startRun(`free-${Date.now()}`, "free", [], "free")
 		},
 		startPracticeRun() {
-			startRun(`practice-${Date.now()}`, "practice")
+			startRun(`practice-${Date.now()}`, "practice", [], "practice")
 		},
 		startDailyRun() {
 			const language = get().selectedLanguage
-			startRun(dailySeed(language), "daily")
+			startRun(dailySeed(language), "daily", [], "daily")
 		},
 		startChallengeRun(seed, build) {
-			startRun(seed, "free", build)
+			startRun(seed, "free", build, "challenge")
 		},
 		resumeRun() {
 			if (typeof window === "undefined") return false

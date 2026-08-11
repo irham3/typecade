@@ -6,6 +6,7 @@ import { Lock, Mail, ShieldCheck } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { track } from "@/lib/analytics";
 
 type StatusState = {
     tone: "idle" | "success" | "error";
@@ -78,6 +79,8 @@ export function AuthClient() {
             return;
         }
 
+        track("auth_started", { method: "google", surface: "auth_page" });
+
         // Force redirect to production if not on localhost to avoid Supabase default behavior
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
         const redirectUrl = isLocal
@@ -134,6 +137,7 @@ export function AuthClient() {
 
         setIsSubmitting(true);
         setStatus({ tone: "idle", message: "" });
+        track("auth_started", { method: "email", mode, surface: "auth_page" });
 
         const result = mode === "sign-in"
             ? await client.auth.signInWithPassword({

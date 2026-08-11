@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useStore, ModeOption } from "@/lib/store";
+import { track } from "@/lib/analytics";
 import { Globe, ChevronDown, PenLine, Settings, X, ChevronRight, Keyboard } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -34,6 +35,10 @@ const subOptions: Record<string, string[]> = {
 };
 
 export function HomeClient() {
+	useEffect(() => {
+		track("landing_view", { page: "practice" });
+	}, []);
+
     const activeTab = useStore(state => state.activeTab);
     const setActiveTab = useStore(state => state.setActiveTab);
     const subOption = useStore(state => state.subOption);

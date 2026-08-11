@@ -4,23 +4,23 @@ Typecade currently ships with **no analytics** — we are flying blind. This
 guide walks through wiring up privacy-friendly analytics and submitting the
 site to search engines so we can measure and grow.
 
-## Layer 1 — Plausible Analytics (in-app)
+## Layer 1 — Umami Analytics (in-app)
 
-Privacy-friendly, <1 KB script, no cookies, no consent banner needed,
-GDPR/CCPA compliant out of the box. Free for sites under 10K monthly
-pageviews.
+Privacy-focused and lightweight, with no cookies by default. Product events
+use the typed adapter in `lib/analytics`; detailed gameplay telemetry stays
+in the existing telemetry boundary.
 
-1. Sign up at https://plausible.io (or self-host with their docker image).
-2. Add a site with domain `typecade.com`.
-3. Optional: in `.env.local` set
+1. Create an Umami Cloud website for `typecade.com`.
+2. In `.env.local` set
    ```
-   NEXT_PUBLIC_PLAUSIBLE_DOMAIN=typecade.com
+   NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id
    ```
-   (or your self-hosted API host via `NEXT_PUBLIC_PLAUSIBLE_API_HOST`).
-4. The `<PlausibleAnalytics />` component in `app/layout.tsx` loads the
-   script automatically. No code change needed beyond step 3.
-5. Verify: open the site in an incognito window — the Plausible dashboard
-   "Realtime" view should show a visitor within ~5 seconds.
+   For self-hosting, also set `NEXT_PUBLIC_UMAMI_SCRIPT_URL` to the instance
+   script URL.
+3. The `<UmamiAnalytics />` component in `app/layout.tsx` loads the script
+   automatically.
+4. Verify: open the site in an incognito window — Umami Realtime should show
+   a visitor within ~5 seconds.
 
 ## Layer 2 — Google Search Console
 
@@ -60,8 +60,8 @@ Google for new domains. Worth 5 minutes.
 
 After 2–3 weeks of data, check:
 
-- **Plausible → Top pages** — which routes get organic traffic
-- **Plausible → Top sources** — where visitors come from
+- **Umami → Top pages** — which routes get organic traffic
+- **Umami → Top sources** — where visitors come from
 - **GSC → Performance → Queries** — which keywords trigger impressions
 - **GSC → Coverage → Excluded** — pages Google chose not to index (fix or 410)
 - **GSC → Mobile Usability** — fix any flagged issues
@@ -71,7 +71,6 @@ If impressions = 0 for everything → indexing is the bottleneck.
 
 ## Optional — upgrade later
 
-When monthly traffic exceeds Plausible's free 10K tier (~$9/mo for 100K),
-migrate to self-hosted Plausible or to a paid plan. GA4 is *not*
-recommended for an indie product — the consent banner friction costs more
-than the data quality difference at our scale.
+When product questions need experiments, feature flags, or deeper cohorts,
+evaluate PostHog. Do not add a second analytics vendor until Umami data shows
+that the extra capability is necessary.

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics";
 
 type AuthContextValue = {
     user: User | null;
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Redirect users without a username to onboarding
             if (_event === "SIGNED_IN") {
+                track("auth_completed", { method: "supabase" });
                 const u = nextSession?.user;
                 if (u && !u.user_metadata?.username) {
                     if (window.location.pathname !== "/onboarding") {

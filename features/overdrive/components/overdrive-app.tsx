@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { AnimatePresence } from "framer-motion"
 import { useGame } from "@/features/overdrive/store"
 import { useGameInput } from "@/features/overdrive/use-game-input"
 import { usePersistedRun } from "@/features/overdrive/use-persisted-run"
 import { elapsedFrameMs } from "../frame-clock"
 import { isCompetitiveMode } from "../competitive"
+import { track } from "@/lib/analytics"
 import { Gameplay } from "./gameplay"
 import { Menu } from "./menu"
 import { RunOver } from "./run-over"
@@ -22,11 +23,19 @@ export function OverdriveApp() {
 	const quitToMenu = useGame((state) => state.quitToMenu)
 	const startChallengeRun = useGame((state) => state.startChallengeRun)
 	const competitive = isCompetitiveMode(process.env.NEXT_PUBLIC_OVERDRIVE_COMPETITIVE)
+	const loaded = useRef(false)
+
+	useEffect(() => {
+		if (loaded.current) return
+		loaded.current = true
+		track("game_loaded", { mode: "overdrive" })
+	}, [])
 
 	useEffect(() => {
 		const searchParams = new URLSearchParams(window.location.search)
 		const encodedSeed = searchParams.get("challenge")
 		if (!encodedSeed) return
+		track("challenge_opened", { mode: "overdrive" })
 		try {
 			const paddedSeed = encodedSeed.replaceAll("-", "+").replaceAll("_", "/")
 				.padEnd(Math.ceil(encodedSeed.length / 4) * 4, "=")

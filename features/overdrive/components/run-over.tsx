@@ -9,6 +9,7 @@ import { useGame } from "../store"
 import { formatNumber } from "./hud"
 import { Screen } from "./screen"
 import { createResultSharePayload } from "./result-share"
+import { track } from "@/lib/analytics"
 
 function ResultStat({ label, value }: { label: string; value: string }) {
 	return (
@@ -128,6 +129,13 @@ export function RunOver() {
 				await navigator.clipboard.writeText(text).catch(() => undefined)
 			}
 			setShareStatus("shared")
+			track("result_shared", {
+				mode: state.mode,
+				language: state.language,
+				zone: state.zone,
+				score_bucket: finalScore < 500 ? "0-499" : finalScore < 1_000 ? "500-999" : "1000+",
+				build_size: shareBuild.length,
+			})
 		} catch {
 			setShareStatus("error")
 		}

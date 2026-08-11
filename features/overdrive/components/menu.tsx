@@ -7,6 +7,7 @@ import { useShallow } from "zustand/react/shallow"
 import { GhostButton, PrimaryButton } from "@/components/overdrive/ui"
 import { PlayIcon, TypecadeMark } from "@/components/overdrive/icons"
 import { useGame } from "@/features/overdrive/store"
+import { track } from "@/lib/analytics"
 import type { WordPoolLanguage } from "@/lib/engine/overdrive"
 import { Screen } from "./screen"
 
@@ -52,6 +53,14 @@ export function Menu() {
 	}, [])
 
 	const chooseLanguage = (language: WordPoolLanguage) => setLanguage(language)
+	const play = () => {
+		track("play_clicked", { mode: "overdrive", language: selectedLanguage, source: "free" })
+		startNormalRun()
+	}
+	const playDaily = () => {
+		track("play_clicked", { mode: "overdrive", language: selectedLanguage, source: "daily" })
+		startDailyRun()
+	}
 
 	return (
 		<Screen>
@@ -161,13 +170,13 @@ export function Menu() {
 									</span>
 								</GhostButton>
 							)}
-							<PrimaryButton onClick={startNormalRun} className="h-14">
+							<PrimaryButton onClick={play} className="h-14">
 								<span className="flex w-full items-center justify-between gap-3">
 									<span>PLAY</span>
 									<PlayIcon className="h-5 w-5" />
 								</span>
 							</PrimaryButton>
-							<GhostButton onClick={startDailyRun} className="h-14 justify-between">
+							<GhostButton onClick={playDaily} className="h-14 justify-between">
 								<span className="flex w-full items-center justify-between gap-3">
 									<span>DAILY SEED</span>
 									<span className="text-sm font-normal text-text-mid">{resetIn}</span>

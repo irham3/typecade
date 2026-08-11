@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Pixelify_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { UmamiAnalytics } from "@/components/analytics";
 import "./globals.css";
 
 const displayFont = Pixelify_Sans({
@@ -115,6 +116,7 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${jetbrainsMono.variable} antialiased min-h-dvh flex flex-col items-center justify-between text-foreground`}>
         <AuthProvider>
+          <UmamiAnalytics />
           {children}
         </AuthProvider>
       </body>
