@@ -146,7 +146,7 @@ describe("shop economy", () => {
 		api.buyItem("macro", 0)
 		expect(api.snapshot()).toMatchObject({
 			tokens: before - 3,
-			maxMacros: 3,
+			maxMacros: 2,
 		})
 	})
 })
