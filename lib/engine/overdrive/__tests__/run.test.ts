@@ -344,13 +344,13 @@ describe("run state machine", () => {
 		})
 		api.start()
 
-		for (let index = 0; index < 3; index += 1) {
+		for (let index = 0; index < 100; index += 1) {
 			const wrong = api.snapshot().currentWord[0] === "x" ? "z" : "x"
 			api.feedChar(wrong)
 			typeCurrentWord(api)
 		}
 
-		expect(damage).toEqual([2, 1, 0])
+		expect(damage).toEqual(Array.from({ length: 100 }, (_, i) => 99 - i))
 		expect(api.snapshot()).toMatchObject({
 			screen: "runOver",
 			coreIntegrity: 0,
