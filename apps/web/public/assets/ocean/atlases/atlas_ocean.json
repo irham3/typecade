@@ -1,0 +1,7674 @@
+{
+  "frames": {
+    "ui_equipment_bait_coral.png": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_bait_moon.png": {
+      "frame": {
+        "x": 136,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_bait_shell.png": {
+      "frame": {
+        "x": 268,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_boat_default.png": {
+      "frame": {
+        "x": 400,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_line_braided.png": {
+      "frame": {
+        "x": 532,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_line_luminous.png": {
+      "frame": {
+        "x": 664,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_net_default.png": {
+      "frame": {
+        "x": 796,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_rod_bamboo.png": {
+      "frame": {
+        "x": 928,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "ui_equipment_rod_tideglass.png": {
+      "frame": {
+        "x": 1060,
+        "y": 4,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "fish_ambient_bubbles_idle_0.png": {
+      "frame": {
+        "x": 1192,
+        "y": 4,
+        "w": 220,
+        "h": 120
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 220,
+        "h": 120
+      },
+      "sourceSize": {
+        "w": 220,
+        "h": 120
+      }
+    },
+    "fish_ambient_school_idle_0.png": {
+      "frame": {
+        "x": 1416,
+        "y": 4,
+        "w": 220,
+        "h": 120
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 220,
+        "h": 120
+      },
+      "sourceSize": {
+        "w": 220,
+        "h": 120
+      }
+    },
+    "fish_ambient_shadow_idle_0.png": {
+      "frame": {
+        "x": 1640,
+        "y": 4,
+        "w": 220,
+        "h": 120
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 220,
+        "h": 120
+      },
+      "sourceSize": {
+        "w": 220,
+        "h": 120
+      }
+    },
+    "fish_coral_fry_bite_0.png": {
+      "frame": {
+        "x": 1864,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_bite_1.png": {
+      "frame": {
+        "x": 2028,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_bite_2.png": {
+      "frame": {
+        "x": 2192,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_bite_3.png": {
+      "frame": {
+        "x": 2356,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_caught_0.png": {
+      "frame": {
+        "x": 2520,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_caught_1.png": {
+      "frame": {
+        "x": 2684,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_caught_2.png": {
+      "frame": {
+        "x": 2848,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_caught_3.png": {
+      "frame": {
+        "x": 3012,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_escape_0.png": {
+      "frame": {
+        "x": 3176,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_escape_1.png": {
+      "frame": {
+        "x": 3340,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_escape_2.png": {
+      "frame": {
+        "x": 3504,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_escape_3.png": {
+      "frame": {
+        "x": 3668,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_idle_0.png": {
+      "frame": {
+        "x": 3832,
+        "y": 4,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_idle_1.png": {
+      "frame": {
+        "x": 4,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_idle_2.png": {
+      "frame": {
+        "x": 168,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_idle_3.png": {
+      "frame": {
+        "x": 332,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_struggle_0.png": {
+      "frame": {
+        "x": 496,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_struggle_1.png": {
+      "frame": {
+        "x": 660,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_struggle_2.png": {
+      "frame": {
+        "x": 824,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_struggle_3.png": {
+      "frame": {
+        "x": 988,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_stunned_0.png": {
+      "frame": {
+        "x": 1152,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_stunned_1.png": {
+      "frame": {
+        "x": 1316,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_stunned_2.png": {
+      "frame": {
+        "x": 1480,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_stunned_3.png": {
+      "frame": {
+        "x": 1644,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_swim_0.png": {
+      "frame": {
+        "x": 1808,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_swim_1.png": {
+      "frame": {
+        "x": 1972,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_swim_2.png": {
+      "frame": {
+        "x": 2136,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_coral_fry_swim_3.png": {
+      "frame": {
+        "x": 2300,
+        "y": 136,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_crown_leviathan_bite_0.png": {
+      "frame": {
+        "x": 2464,
+        "y": 136,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_bite_1.png": {
+      "frame": {
+        "x": 2748,
+        "y": 136,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_bite_2.png": {
+      "frame": {
+        "x": 3032,
+        "y": 136,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_bite_3.png": {
+      "frame": {
+        "x": 3316,
+        "y": 136,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_bite_4.png": {
+      "frame": {
+        "x": 3600,
+        "y": 136,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_bite_5.png": {
+      "frame": {
+        "x": 4,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_caught_0.png": {
+      "frame": {
+        "x": 288,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_caught_1.png": {
+      "frame": {
+        "x": 572,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_caught_2.png": {
+      "frame": {
+        "x": 856,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_caught_3.png": {
+      "frame": {
+        "x": 1140,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_caught_4.png": {
+      "frame": {
+        "x": 1424,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_caught_5.png": {
+      "frame": {
+        "x": 1708,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_escape_0.png": {
+      "frame": {
+        "x": 1992,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_escape_1.png": {
+      "frame": {
+        "x": 2276,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_escape_2.png": {
+      "frame": {
+        "x": 2560,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_escape_3.png": {
+      "frame": {
+        "x": 2844,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_escape_4.png": {
+      "frame": {
+        "x": 3128,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_escape_5.png": {
+      "frame": {
+        "x": 3412,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_idle_0.png": {
+      "frame": {
+        "x": 3696,
+        "y": 320,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_idle_1.png": {
+      "frame": {
+        "x": 4,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_idle_2.png": {
+      "frame": {
+        "x": 288,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_idle_3.png": {
+      "frame": {
+        "x": 572,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_idle_4.png": {
+      "frame": {
+        "x": 856,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_idle_5.png": {
+      "frame": {
+        "x": 1140,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_struggle_0.png": {
+      "frame": {
+        "x": 1424,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_struggle_1.png": {
+      "frame": {
+        "x": 1708,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_struggle_2.png": {
+      "frame": {
+        "x": 1992,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_struggle_3.png": {
+      "frame": {
+        "x": 2276,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_struggle_4.png": {
+      "frame": {
+        "x": 2560,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_struggle_5.png": {
+      "frame": {
+        "x": 2844,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_stunned_0.png": {
+      "frame": {
+        "x": 3128,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_stunned_1.png": {
+      "frame": {
+        "x": 3412,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_stunned_2.png": {
+      "frame": {
+        "x": 3696,
+        "y": 504,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_stunned_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_stunned_4.png": {
+      "frame": {
+        "x": 288,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_stunned_5.png": {
+      "frame": {
+        "x": 572,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_swim_0.png": {
+      "frame": {
+        "x": 856,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_swim_1.png": {
+      "frame": {
+        "x": 1140,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_swim_2.png": {
+      "frame": {
+        "x": 1424,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_swim_3.png": {
+      "frame": {
+        "x": 1708,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_swim_4.png": {
+      "frame": {
+        "x": 1992,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_crown_leviathan_swim_5.png": {
+      "frame": {
+        "x": 2276,
+        "y": 688,
+        "w": 280,
+        "h": 180
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 280,
+        "h": 180
+      },
+      "sourceSize": {
+        "w": 280,
+        "h": 180
+      }
+    },
+    "fish_glass_eel_bite_0.png": {
+      "frame": {
+        "x": 2560,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_bite_1.png": {
+      "frame": {
+        "x": 2724,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_bite_2.png": {
+      "frame": {
+        "x": 2888,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_bite_3.png": {
+      "frame": {
+        "x": 3052,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_bite_4.png": {
+      "frame": {
+        "x": 3216,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_bite_5.png": {
+      "frame": {
+        "x": 3380,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_caught_0.png": {
+      "frame": {
+        "x": 3544,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_caught_1.png": {
+      "frame": {
+        "x": 3708,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_caught_2.png": {
+      "frame": {
+        "x": 3872,
+        "y": 688,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_caught_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_caught_4.png": {
+      "frame": {
+        "x": 168,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_caught_5.png": {
+      "frame": {
+        "x": 332,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_escape_0.png": {
+      "frame": {
+        "x": 496,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_escape_1.png": {
+      "frame": {
+        "x": 660,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_escape_2.png": {
+      "frame": {
+        "x": 824,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_escape_3.png": {
+      "frame": {
+        "x": 988,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_escape_4.png": {
+      "frame": {
+        "x": 1152,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_escape_5.png": {
+      "frame": {
+        "x": 1316,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_idle_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_idle_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_idle_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_idle_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_idle_4.png": {
+      "frame": {
+        "x": 2136,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_idle_5.png": {
+      "frame": {
+        "x": 2300,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_struggle_0.png": {
+      "frame": {
+        "x": 2464,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_struggle_1.png": {
+      "frame": {
+        "x": 2628,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_struggle_2.png": {
+      "frame": {
+        "x": 2792,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_struggle_3.png": {
+      "frame": {
+        "x": 2956,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_struggle_4.png": {
+      "frame": {
+        "x": 3120,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_struggle_5.png": {
+      "frame": {
+        "x": 3284,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_stunned_0.png": {
+      "frame": {
+        "x": 3448,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_stunned_1.png": {
+      "frame": {
+        "x": 3612,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_stunned_2.png": {
+      "frame": {
+        "x": 3776,
+        "y": 872,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_stunned_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_stunned_4.png": {
+      "frame": {
+        "x": 168,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_stunned_5.png": {
+      "frame": {
+        "x": 332,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_swim_0.png": {
+      "frame": {
+        "x": 496,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_swim_1.png": {
+      "frame": {
+        "x": 660,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_swim_2.png": {
+      "frame": {
+        "x": 824,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_swim_3.png": {
+      "frame": {
+        "x": 988,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_swim_4.png": {
+      "frame": {
+        "x": 1152,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_glass_eel_swim_5.png": {
+      "frame": {
+        "x": 1316,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_bite_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_bite_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_bite_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_bite_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_caught_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_caught_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_caught_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_caught_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_escape_0.png": {
+      "frame": {
+        "x": 2792,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_escape_1.png": {
+      "frame": {
+        "x": 2956,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_escape_2.png": {
+      "frame": {
+        "x": 3120,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_escape_3.png": {
+      "frame": {
+        "x": 3284,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_idle_0.png": {
+      "frame": {
+        "x": 3448,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_idle_1.png": {
+      "frame": {
+        "x": 3612,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_idle_2.png": {
+      "frame": {
+        "x": 3776,
+        "y": 984,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_idle_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_struggle_0.png": {
+      "frame": {
+        "x": 168,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_struggle_1.png": {
+      "frame": {
+        "x": 332,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_struggle_2.png": {
+      "frame": {
+        "x": 496,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_struggle_3.png": {
+      "frame": {
+        "x": 660,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_stunned_0.png": {
+      "frame": {
+        "x": 824,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_stunned_1.png": {
+      "frame": {
+        "x": 988,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_stunned_2.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_stunned_3.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_swim_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_swim_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_swim_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_kelp_darter_swim_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_bite_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_bite_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_bite_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_bite_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_bite_4.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_bite_5.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_caught_0.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_caught_1.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_caught_2.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_caught_3.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_caught_4.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1096,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_caught_5.png": {
+      "frame": {
+        "x": 4,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_escape_0.png": {
+      "frame": {
+        "x": 168,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_escape_1.png": {
+      "frame": {
+        "x": 332,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_escape_2.png": {
+      "frame": {
+        "x": 496,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_escape_3.png": {
+      "frame": {
+        "x": 660,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_escape_4.png": {
+      "frame": {
+        "x": 824,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_escape_5.png": {
+      "frame": {
+        "x": 988,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_idle_0.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_idle_1.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_idle_2.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_idle_3.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_idle_4.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_idle_5.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_struggle_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_struggle_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_struggle_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_struggle_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_struggle_4.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_struggle_5.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_stunned_0.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_stunned_1.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_stunned_2.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_stunned_3.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_stunned_4.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1208,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_stunned_5.png": {
+      "frame": {
+        "x": 4,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_swim_0.png": {
+      "frame": {
+        "x": 168,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_swim_1.png": {
+      "frame": {
+        "x": 332,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_swim_2.png": {
+      "frame": {
+        "x": 496,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_swim_3.png": {
+      "frame": {
+        "x": 660,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_swim_4.png": {
+      "frame": {
+        "x": 824,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_moonfin_snapper_swim_5.png": {
+      "frame": {
+        "x": 988,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_bite_0.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_bite_1.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_bite_2.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_bite_3.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_caught_0.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_caught_1.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_caught_2.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_caught_3.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_escape_0.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_escape_1.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_escape_2.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_escape_3.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_idle_0.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_idle_1.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_idle_2.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_idle_3.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_struggle_0.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1320,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_struggle_1.png": {
+      "frame": {
+        "x": 4,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_struggle_2.png": {
+      "frame": {
+        "x": 168,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_struggle_3.png": {
+      "frame": {
+        "x": 332,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_stunned_0.png": {
+      "frame": {
+        "x": 496,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_stunned_1.png": {
+      "frame": {
+        "x": 660,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_stunned_2.png": {
+      "frame": {
+        "x": 824,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_stunned_3.png": {
+      "frame": {
+        "x": 988,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_swim_0.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_swim_1.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_swim_2.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_minnow_swim_3.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_bite_0.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_bite_1.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_bite_2.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_bite_3.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_bite_4.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_bite_5.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_caught_0.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_caught_1.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_caught_2.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_caught_3.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_caught_4.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_caught_5.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_escape_0.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1432,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_escape_1.png": {
+      "frame": {
+        "x": 4,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_escape_2.png": {
+      "frame": {
+        "x": 168,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_escape_3.png": {
+      "frame": {
+        "x": 332,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_escape_4.png": {
+      "frame": {
+        "x": 496,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_escape_5.png": {
+      "frame": {
+        "x": 660,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_idle_0.png": {
+      "frame": {
+        "x": 824,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_idle_1.png": {
+      "frame": {
+        "x": 988,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_idle_2.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_idle_3.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_idle_4.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_idle_5.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_struggle_0.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_struggle_1.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_struggle_2.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_struggle_3.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_struggle_4.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_struggle_5.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_stunned_0.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_stunned_1.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_stunned_2.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_stunned_3.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_stunned_4.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_stunned_5.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_swim_0.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1544,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_swim_1.png": {
+      "frame": {
+        "x": 4,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_swim_2.png": {
+      "frame": {
+        "x": 168,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_swim_3.png": {
+      "frame": {
+        "x": 332,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_swim_4.png": {
+      "frame": {
+        "x": 496,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_reef_shark_swim_5.png": {
+      "frame": {
+        "x": 660,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_bite_0.png": {
+      "frame": {
+        "x": 824,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_bite_1.png": {
+      "frame": {
+        "x": 988,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_bite_2.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_bite_3.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_caught_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_caught_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_caught_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_caught_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_escape_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_escape_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_escape_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_escape_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_idle_0.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_idle_1.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_idle_2.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_idle_3.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_struggle_0.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_struggle_1.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_struggle_2.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1656,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_struggle_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_stunned_0.png": {
+      "frame": {
+        "x": 168,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_stunned_1.png": {
+      "frame": {
+        "x": 332,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_stunned_2.png": {
+      "frame": {
+        "x": 496,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_stunned_3.png": {
+      "frame": {
+        "x": 660,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_swim_0.png": {
+      "frame": {
+        "x": 824,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_swim_1.png": {
+      "frame": {
+        "x": 988,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_swim_2.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_shellback_puffer_swim_3.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_bite_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_bite_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_bite_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_bite_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_caught_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_caught_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_caught_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_caught_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_escape_0.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_escape_1.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_escape_2.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_escape_3.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_idle_0.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_idle_1.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_idle_2.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1768,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_idle_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_struggle_0.png": {
+      "frame": {
+        "x": 168,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_struggle_1.png": {
+      "frame": {
+        "x": 332,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_struggle_2.png": {
+      "frame": {
+        "x": 496,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_struggle_3.png": {
+      "frame": {
+        "x": 660,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_stunned_0.png": {
+      "frame": {
+        "x": 824,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_stunned_1.png": {
+      "frame": {
+        "x": 988,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_stunned_2.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_stunned_3.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_swim_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_swim_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_swim_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_sunny_guppy_swim_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_bite_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_bite_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_bite_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_bite_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_caught_0.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_caught_1.png": {
+      "frame": {
+        "x": 2956,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_caught_2.png": {
+      "frame": {
+        "x": 3120,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_caught_3.png": {
+      "frame": {
+        "x": 3284,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_escape_0.png": {
+      "frame": {
+        "x": 3448,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_escape_1.png": {
+      "frame": {
+        "x": 3612,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_escape_2.png": {
+      "frame": {
+        "x": 3776,
+        "y": 1880,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_escape_3.png": {
+      "frame": {
+        "x": 4,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_idle_0.png": {
+      "frame": {
+        "x": 168,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_idle_1.png": {
+      "frame": {
+        "x": 332,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_idle_2.png": {
+      "frame": {
+        "x": 496,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_idle_3.png": {
+      "frame": {
+        "x": 660,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_struggle_0.png": {
+      "frame": {
+        "x": 824,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_struggle_1.png": {
+      "frame": {
+        "x": 988,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_struggle_2.png": {
+      "frame": {
+        "x": 1152,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_struggle_3.png": {
+      "frame": {
+        "x": 1316,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_stunned_0.png": {
+      "frame": {
+        "x": 1480,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_stunned_1.png": {
+      "frame": {
+        "x": 1644,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_stunned_2.png": {
+      "frame": {
+        "x": 1808,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_stunned_3.png": {
+      "frame": {
+        "x": 1972,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_swim_0.png": {
+      "frame": {
+        "x": 2136,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_swim_1.png": {
+      "frame": {
+        "x": 2300,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_swim_2.png": {
+      "frame": {
+        "x": 2464,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "fish_tide_skipper_swim_3.png": {
+      "frame": {
+        "x": 2628,
+        "y": 1992,
+        "w": 160,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 160,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 160,
+        "h": 108
+      }
+    },
+    "ui_collection_card_default.png": {
+      "frame": {
+        "x": 2792,
+        "y": 1992,
+        "w": 250,
+        "h": 340
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 250,
+        "h": 340
+      },
+      "sourceSize": {
+        "w": 250,
+        "h": 340
+      }
+    },
+    "ui_keyboard_settings_default.png": {
+      "frame": {
+        "x": 3046,
+        "y": 1992,
+        "w": 520,
+        "h": 360
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 520,
+        "h": 360
+      },
+      "sourceSize": {
+        "w": 520,
+        "h": 360
+      }
+    },
+    "ui_meter_combo_default.png": {
+      "frame": {
+        "x": 3570,
+        "y": 1992,
+        "w": 220,
+        "h": 72
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 220,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 220,
+        "h": 72
+      }
+    },
+    "ui_meter_durability_default.png": {
+      "frame": {
+        "x": 4,
+        "y": 2356,
+        "w": 320,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 320,
+        "h": 36
+      }
+    },
+    "ui_meter_skill_energy_default.png": {
+      "frame": {
+        "x": 328,
+        "y": 2356,
+        "w": 260,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 260,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 260,
+        "h": 36
+      }
+    },
+    "ui_meter_tension_default.png": {
+      "frame": {
+        "x": 592,
+        "y": 2356,
+        "w": 520,
+        "h": 44
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 520,
+        "h": 44
+      },
+      "sourceSize": {
+        "w": 520,
+        "h": 44
+      }
+    },
+    "ui_rarity_frame_boss.png": {
+      "frame": {
+        "x": 1116,
+        "y": 2356,
+        "w": 240,
+        "h": 240
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 240
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 240
+      }
+    },
+    "ui_rarity_frame_common.png": {
+      "frame": {
+        "x": 1360,
+        "y": 2356,
+        "w": 240,
+        "h": 240
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 240
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 240
+      }
+    },
+    "ui_rarity_frame_rare.png": {
+      "frame": {
+        "x": 1604,
+        "y": 2356,
+        "w": 240,
+        "h": 240
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 240
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 240
+      }
+    },
+    "ui_rarity_frame_uncommon.png": {
+      "frame": {
+        "x": 1848,
+        "y": 2356,
+        "w": 240,
+        "h": 240
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 240
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 240
+      }
+    },
+    "ui_result_panel_default.png": {
+      "frame": {
+        "x": 2092,
+        "y": 2356,
+        "w": 460,
+        "h": 300
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 460,
+        "h": 300
+      },
+      "sourceSize": {
+        "w": 460,
+        "h": 300
+      }
+    },
+    "ui_reward_panel_default.png": {
+      "frame": {
+        "x": 2556,
+        "y": 2356,
+        "w": 420,
+        "h": 260
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 420,
+        "h": 260
+      },
+      "sourceSize": {
+        "w": 420,
+        "h": 260
+      }
+    },
+    "ui_route_node_available.png": {
+      "frame": {
+        "x": 2980,
+        "y": 2356,
+        "w": 90,
+        "h": 90
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 90,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 90,
+        "h": 90
+      }
+    },
+    "ui_route_node_cleared.png": {
+      "frame": {
+        "x": 3074,
+        "y": 2356,
+        "w": 90,
+        "h": 90
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 90,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 90,
+        "h": 90
+      }
+    },
+    "ui_route_node_locked.png": {
+      "frame": {
+        "x": 3168,
+        "y": 2356,
+        "w": 90,
+        "h": 90
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 90,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 90,
+        "h": 90
+      }
+    },
+    "ui_route_node_selected.png": {
+      "frame": {
+        "x": 3262,
+        "y": 2356,
+        "w": 90,
+        "h": 90
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 90,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 90,
+        "h": 90
+      }
+    },
+    "ui_skill_calm_current_default.png": {
+      "frame": {
+        "x": 3356,
+        "y": 2356,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "ui_skill_cast_net_default.png": {
+      "frame": {
+        "x": 3456,
+        "y": 2356,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "ui_skill_perfect_bait_default.png": {
+      "frame": {
+        "x": 3556,
+        "y": 2356,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "ui_skill_reel_mastery_default.png": {
+      "frame": {
+        "x": 3656,
+        "y": 2356,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "ui_skill_sonar_default.png": {
+      "frame": {
+        "x": 3756,
+        "y": 2356,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "ui_skill_steel_line_default.png": {
+      "frame": {
+        "x": 3856,
+        "y": 2356,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "ui_text_correct.png": {
+      "frame": {
+        "x": 3956,
+        "y": 2356,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "ui_text_cursor.png": {
+      "frame": {
+        "x": 4024,
+        "y": 2356,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "ui_text_default.png": {
+      "frame": {
+        "x": 4,
+        "y": 2660,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "ui_text_typo.png": {
+      "frame": {
+        "x": 72,
+        "y": 2660,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "ui_typing_panel_default.png": {
+      "frame": {
+        "x": 140,
+        "y": 2660,
+        "w": 720,
+        "h": 150
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 150
+      },
+      "sourceSize": {
+        "w": 720,
+        "h": 150
+      }
+    },
+    "vfx_bubble_default.png": {
+      "frame": {
+        "x": 864,
+        "y": 2660,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "vfx_foam_droplet_default.png": {
+      "frame": {
+        "x": 932,
+        "y": 2660,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "vfx_glow_ring_default.png": {
+      "frame": {
+        "x": 1000,
+        "y": 2660,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      }
+    },
+    "vfx_sharp_spark_default.png": {
+      "frame": {
+        "x": 1100,
+        "y": 2660,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "vfx_smoke_cloud_default.png": {
+      "frame": {
+        "x": 1168,
+        "y": 2660,
+        "w": 96,
+        "h": 72
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 72
+      }
+    },
+    "vfx_soft_circle_default.png": {
+      "frame": {
+        "x": 1268,
+        "y": 2660,
+        "w": 64,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 64
+      }
+    },
+    "vfx_tension_line_default.png": {
+      "frame": {
+        "x": 1336,
+        "y": 2660,
+        "w": 128,
+        "h": 32
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 32
+      }
+    },
+    "vfx_water_streak_default.png": {
+      "frame": {
+        "x": 1468,
+        "y": 2660,
+        "w": 96,
+        "h": 32
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 32
+      }
+    }
+  },
+  "meta": {
+    "app": "typecade procedural asset generator",
+    "image": "atlas_ocean.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 4096,
+      "h": 4096
+    },
+    "scale": "1"
+  }
+}

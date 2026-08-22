@@ -1,0 +1,2178 @@
+{
+  "version": "ocean-m1-2026-08-17",
+  "atlas": {
+    "image": "/assets/ocean/atlases/atlas_ocean.png",
+    "json": "/assets/ocean/atlases/atlas_ocean.json"
+  },
+  "backgrounds": [
+    "backgrounds/bg_shallow_coast_route_map.webp",
+    "backgrounds/bg_shallow_coast_weather_dawn.webp",
+    "backgrounds/bg_shallow_coast_zone1_encounter.webp",
+    "backgrounds/bg_shallow_coast_zone1_foreground.webp",
+    "backgrounds/bg_shallow_coast_zone1_midground.webp",
+    "backgrounds/bg_shallow_coast_zone1_sky.webp",
+    "backgrounds/bg_shallow_coast_zone1_water.webp",
+    "backgrounds/bg_shallow_coast_zone2_encounter.webp",
+    "backgrounds/bg_shallow_coast_zone2_foreground.webp",
+    "backgrounds/bg_shallow_coast_zone2_midground.webp",
+    "backgrounds/bg_shallow_coast_zone2_sky.webp",
+    "backgrounds/bg_shallow_coast_zone2_water.webp",
+    "backgrounds/bg_shallow_coast_zone3_encounter.webp",
+    "backgrounds/bg_shallow_coast_zone3_foreground.webp",
+    "backgrounds/bg_shallow_coast_zone3_midground.webp",
+    "backgrounds/bg_shallow_coast_zone3_sky.webp",
+    "backgrounds/bg_shallow_coast_zone3_water.webp"
+  ],
+  "audio": [
+    "audio/sfx_ambient_ocean_loop.ogg",
+    "audio/sfx_cast_net_a.ogg",
+    "audio/sfx_catch_impact_a.ogg",
+    "audio/sfx_combo_milestone_a.ogg",
+    "audio/sfx_combo_milestone_b.ogg",
+    "audio/sfx_correct_tick_a.ogg",
+    "audio/sfx_correct_tick_b.ogg",
+    "audio/sfx_escape_snap_a.ogg",
+    "audio/sfx_line_critical_a.ogg",
+    "audio/sfx_line_tension_a.ogg",
+    "audio/sfx_line_tension_b.ogg",
+    "audio/sfx_music_boss_layer.ogg",
+    "audio/sfx_music_expedition_loop.ogg",
+    "audio/sfx_rare_sting_a.ogg",
+    "audio/sfx_reward_sting_a.ogg",
+    "audio/sfx_skill_activate_a.ogg",
+    "audio/sfx_skill_ready_a.ogg",
+    "audio/sfx_splash_a.ogg",
+    "audio/sfx_splash_b.ogg",
+    "audio/sfx_typo_thud_a.ogg",
+    "audio/sfx_typo_thud_b.ogg",
+    "audio/sfx_word_complete_a.ogg",
+    "audio/sfx_word_complete_b.ogg"
+  ],
+  "assets": [
+    {
+      "path": "apps/web/public/assets/ocean/atlases/atlas_ocean.json",
+      "usage": "atlas",
+      "note": "Generated Phaser texture atlas metadata"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/atlases/atlas_ocean.png",
+      "usage": "atlas",
+      "note": "Generated Phaser texture atlas image"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_ambient_ocean_loop.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_ambient_ocean_loop.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_cast_net_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_cast_net_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_catch_impact_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_catch_impact_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_combo_milestone_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_combo_milestone_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_combo_milestone_b.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_combo_milestone_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_correct_tick_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_correct_tick_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_correct_tick_b.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_correct_tick_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_escape_snap_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_escape_snap_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_line_critical_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_line_critical_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_line_tension_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_line_tension_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_line_tension_b.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_line_tension_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_music_boss_layer.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_music_boss_layer.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_music_expedition_loop.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_music_expedition_loop.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_rare_sting_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_rare_sting_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_reward_sting_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_reward_sting_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_skill_activate_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_skill_activate_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_skill_ready_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_skill_ready_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_splash_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_splash_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_splash_b.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_splash_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_typo_thud_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_typo_thud_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_typo_thud_b.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_typo_thud_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_word_complete_a.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_word_complete_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_word_complete_b.ogg",
+      "usage": "audio",
+      "note": "Generated synthesized audio cue sfx_word_complete_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_route_map.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast route map"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_weather_dawn.webp",
+      "usage": "background",
+      "note": "Generated dawn weather overlay"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone1_encounter.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone1_foreground.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone1_midground.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone1_sky.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone1_water.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone2_encounter.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone2_foreground.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone2_midground.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone2_sky.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone2_water.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone3_encounter.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone3_foreground.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone3_midground.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone3_sky.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_zone3_water.webp",
+      "usage": "background",
+      "note": "Generated Shallow Coast parallax layer"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_bait_coral.png",
+      "usage": "equipment",
+      "note": "Generated bait_coral equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_bait_moon.png",
+      "usage": "equipment",
+      "note": "Generated bait_moon equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_bait_shell.png",
+      "usage": "equipment",
+      "note": "Generated bait_shell equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_boat_default.png",
+      "usage": "equipment",
+      "note": "Generated boat equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_line_braided.png",
+      "usage": "equipment",
+      "note": "Generated line_braided equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_line_luminous.png",
+      "usage": "equipment",
+      "note": "Generated line_luminous equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_net_default.png",
+      "usage": "equipment",
+      "note": "Generated net equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_rod_bamboo.png",
+      "usage": "equipment",
+      "note": "Generated rod_bamboo equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/equipment/ui_equipment_rod_tideglass.png",
+      "usage": "equipment",
+      "note": "Generated rod_tideglass equipment asset"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/ambient/fish_ambient_bubbles_idle_0.png",
+      "usage": "ambient",
+      "note": "Generated ambient bubbles silhouette"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/ambient/fish_ambient_school_idle_0.png",
+      "usage": "ambient",
+      "note": "Generated ambient school silhouette"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/ambient/fish_ambient_shadow_idle_0.png",
+      "usage": "ambient",
+      "note": "Generated ambient shadow silhouette"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_bite_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_bite_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_bite_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_bite_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_caught_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_caught_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_caught_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_caught_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_escape_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_escape_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_escape_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_escape_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_idle_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_idle_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_idle_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_idle_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_swim_0.png",
+      "usage": "fish",
+      "note": "Generated coral_fry swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_swim_1.png",
+      "usage": "fish",
+      "note": "Generated coral_fry swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_swim_2.png",
+      "usage": "fish",
+      "note": "Generated coral_fry swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_coral_fry_swim_3.png",
+      "usage": "fish",
+      "note": "Generated coral_fry swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_bite_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_bite_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_bite_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_bite_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_bite_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_bite_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_caught_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_caught_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_caught_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_caught_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_caught_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_caught_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_escape_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_escape_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_escape_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_escape_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_escape_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_escape_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_idle_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_idle_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_idle_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_idle_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_idle_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_idle_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_struggle_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_struggle_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_stunned_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_stunned_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_swim_0.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_swim_1.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_swim_2.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_swim_3.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_swim_4.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_crown_leviathan_swim_5.png",
+      "usage": "fish",
+      "note": "Generated crown_leviathan swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_bite_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_bite_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_bite_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_bite_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_bite_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_bite_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_caught_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_caught_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_caught_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_caught_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_caught_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_caught_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_escape_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_escape_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_escape_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_escape_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_escape_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_escape_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_idle_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_idle_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_idle_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_idle_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_idle_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_idle_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_struggle_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_struggle_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_stunned_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_stunned_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_swim_0.png",
+      "usage": "fish",
+      "note": "Generated glass_eel swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_swim_1.png",
+      "usage": "fish",
+      "note": "Generated glass_eel swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_swim_2.png",
+      "usage": "fish",
+      "note": "Generated glass_eel swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_swim_3.png",
+      "usage": "fish",
+      "note": "Generated glass_eel swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_swim_4.png",
+      "usage": "fish",
+      "note": "Generated glass_eel swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_glass_eel_swim_5.png",
+      "usage": "fish",
+      "note": "Generated glass_eel swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_bite_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_bite_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_bite_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_bite_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_caught_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_caught_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_caught_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_caught_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_escape_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_escape_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_escape_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_escape_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_idle_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_idle_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_idle_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_idle_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_swim_0.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_swim_1.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_swim_2.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_kelp_darter_swim_3.png",
+      "usage": "fish",
+      "note": "Generated kelp_darter swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_bite_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_bite_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_bite_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_bite_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_bite_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_bite_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_caught_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_caught_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_caught_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_caught_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_caught_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_caught_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_escape_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_escape_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_escape_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_escape_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_escape_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_escape_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_idle_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_idle_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_idle_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_idle_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_idle_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_idle_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_struggle_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_struggle_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_stunned_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_stunned_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_swim_0.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_swim_1.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_swim_2.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_swim_3.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_swim_4.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_moonfin_snapper_swim_5.png",
+      "usage": "fish",
+      "note": "Generated moonfin_snapper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_bite_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_bite_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_bite_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_bite_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_caught_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_caught_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_caught_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_caught_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_escape_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_escape_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_escape_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_escape_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_idle_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_idle_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_idle_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_idle_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_swim_0.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_swim_1.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_swim_2.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_minnow_swim_3.png",
+      "usage": "fish",
+      "note": "Generated reef_minnow swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_bite_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_bite_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_bite_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_bite_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_bite_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_bite_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_caught_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_caught_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_caught_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_caught_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_caught_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_caught_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_escape_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_escape_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_escape_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_escape_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_escape_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_escape_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_idle_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_idle_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_idle_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_idle_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_idle_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_idle_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_struggle_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_struggle_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_stunned_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_stunned_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_swim_0.png",
+      "usage": "fish",
+      "note": "Generated reef_shark swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_swim_1.png",
+      "usage": "fish",
+      "note": "Generated reef_shark swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_swim_2.png",
+      "usage": "fish",
+      "note": "Generated reef_shark swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_swim_3.png",
+      "usage": "fish",
+      "note": "Generated reef_shark swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_swim_4.png",
+      "usage": "fish",
+      "note": "Generated reef_shark swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_reef_shark_swim_5.png",
+      "usage": "fish",
+      "note": "Generated reef_shark swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_bite_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_bite_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_bite_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_bite_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_caught_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_caught_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_caught_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_caught_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_escape_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_escape_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_escape_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_escape_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_idle_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_idle_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_idle_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_idle_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_swim_0.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_swim_1.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_swim_2.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_shellback_puffer_swim_3.png",
+      "usage": "fish",
+      "note": "Generated shellback_puffer swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_bite_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_bite_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_bite_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_bite_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_caught_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_caught_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_caught_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_caught_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_escape_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_escape_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_escape_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_escape_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_idle_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_idle_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_idle_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_idle_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_swim_0.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_swim_1.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_swim_2.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_sunny_guppy_swim_3.png",
+      "usage": "fish",
+      "note": "Generated sunny_guppy swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_bite_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_bite_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_bite_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_bite_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper bite animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_caught_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_caught_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_caught_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_caught_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper caught animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_escape_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_escape_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_escape_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_escape_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper escape animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_idle_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_idle_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_idle_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_idle_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper idle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_struggle_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_struggle_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_struggle_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_struggle_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper struggle animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_stunned_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_stunned_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_stunned_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_stunned_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper stunned animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_swim_0.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_swim_1.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_swim_2.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/sprites/fish/fish_tide_skipper_swim_3.png",
+      "usage": "fish",
+      "note": "Generated tide_skipper swim animation frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_collection_card_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for collection"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_keyboard_settings_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for settings"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_meter_combo_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for combo"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_meter_durability_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for durability"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_meter_skill_energy_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for skill"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_meter_tension_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for tension"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_rarity_frame_boss.png",
+      "usage": "ui",
+      "note": "Generated boss rarity frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_rarity_frame_common.png",
+      "usage": "ui",
+      "note": "Generated common rarity frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_rarity_frame_rare.png",
+      "usage": "ui",
+      "note": "Generated rare rarity frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_rarity_frame_uncommon.png",
+      "usage": "ui",
+      "note": "Generated uncommon rarity frame"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_result_panel_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for result"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_reward_panel_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for reward"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_route_node_available.png",
+      "usage": "ui",
+      "note": "Generated route node available"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_route_node_cleared.png",
+      "usage": "ui",
+      "note": "Generated route node cleared"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_route_node_locked.png",
+      "usage": "ui",
+      "note": "Generated route node locked"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_route_node_selected.png",
+      "usage": "ui",
+      "note": "Generated route node selected"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_skill_calm_current_default.png",
+      "usage": "ui",
+      "note": "Generated calm_current skill icon"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_skill_cast_net_default.png",
+      "usage": "ui",
+      "note": "Generated cast_net skill icon"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_skill_perfect_bait_default.png",
+      "usage": "ui",
+      "note": "Generated perfect_bait skill icon"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_skill_reel_mastery_default.png",
+      "usage": "ui",
+      "note": "Generated reel_mastery skill icon"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_skill_sonar_default.png",
+      "usage": "ui",
+      "note": "Generated sonar skill icon"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_skill_steel_line_default.png",
+      "usage": "ui",
+      "note": "Generated steel_line skill icon"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_text_correct.png",
+      "usage": "ui",
+      "note": "Generated typing text state marker"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_text_cursor.png",
+      "usage": "ui",
+      "note": "Generated typing text state marker"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_text_default.png",
+      "usage": "ui",
+      "note": "Generated typing text state marker"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_text_typo.png",
+      "usage": "ui",
+      "note": "Generated typing text state marker"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/ui/ui_typing_panel_default.png",
+      "usage": "ui",
+      "note": "Generated UI chrome for typing"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_bubble_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture bubble"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_foam_droplet_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture foam_droplet"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_glow_ring_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture glow_ring"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_sharp_spark_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture sharp_spark"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_smoke_cloud_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture smoke_cloud"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_soft_circle_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture soft_circle"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_tension_line_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture tension_line"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/vfx/vfx_water_streak_default.png",
+      "usage": "vfx",
+      "note": "Generated grayscale VFX texture water_streak"
+    }
+  ]
+}
