@@ -16,7 +16,7 @@ export type CombatGrammarContext = {
 
 /**
  * Maps typing intent to a readable combat verb. This is deliberately pure:
- * Pixi decides how a verb looks, while the engine decides which verb happened.
+ * the renderer decides how a verb looks, while the engine decides which verb happened.
  */
 export function combatVerbFor(context: CombatGrammarContext): CombatVerb {
 	if (context.wordDirty) return "misfire"

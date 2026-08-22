@@ -21,6 +21,7 @@
 
 # production
 /build
+/dist
 /.worktrees/
 
 # misc
@@ -57,5 +58,7 @@ tsc-errors.txt
 /.idea/
 /.cursor/
 /.ai/
+/.agents/skills/
+/skills-lock.json
 *.swp
 *.swo

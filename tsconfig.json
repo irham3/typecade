@@ -13,22 +13,21 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@typecade/contracts": ["./packages/contracts/src/index.ts"],
+      "@typecade/content": ["./packages/content/src/index.ts"],
+      "@typecade/game-rules": ["./packages/game-rules/src/index.ts"],
+      "@typecade/typing-engine": ["./packages/typing-engine/src/index.ts"]
     }
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "apps/web/src/**/*.ts",
+    "apps/web/src/**/*.tsx",
+    "apps/web/vite.config.ts",
+    "packages/**/*.ts",
+    "vitest.config.ts",
+    "global.d.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next", ".open-next", "out"]
 }
