@@ -22,13 +22,25 @@ test.describe("Ocean Typing RPG shell", () => {
 			await expect(page.getByTestId("prep-screen")).toBeVisible()
 			await page.getByRole("button", { name: "Set Sail" }).click()
 			await expect(page.getByTestId("typing-console")).toBeVisible()
+			const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
+			const prefixEnd = target.split(" ").slice(0, 3).join(" ").length + 1
+			await page.keyboard.type(target.slice(0, prefixEnd), { delay: 2 })
+			const activeSkill = page.locator("[data-testid='skill-dock'] .skill-button.active:enabled").first()
+			await expect(activeSkill).toBeEnabled()
+			await activeSkill.click()
+			await expect(page.getByTestId("skill-feedback")).toBeVisible()
 
 			await expectCanvasNonBlank(page)
 			await expectHudDoesNotOverlap(page)
 
-			const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
-			await page.keyboard.type(target, { delay: 2 })
-			await page.waitForTimeout(1800)
+			// Cast Net can legitimately finish a small fish once the typing gate is
+			// met; other skills still require the rest of the passage.
+			await page.waitForTimeout(100)
+			if (await page.getByTestId("result-toast").count() === 0) {
+				await page.keyboard.type(target.slice(prefixEnd), { delay: 2 })
+			}
+			await expect(page.getByTestId("result-toast")).toBeVisible()
+			await page.waitForTimeout(250)
 			await expectCanvasNonBlank(page)
 			expect(consoleErrors).toEqual([])
 		})

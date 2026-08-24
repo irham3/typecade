@@ -5,7 +5,8 @@
     "json": "/assets/ocean/atlases/atlas_ocean.json"
   },
   "backgrounds": [
-    "backgrounds/bg_shallow_coast_route_map.webp",
+	"backgrounds/bg_shallow_coast_gameplay_ai.webp",
+	"backgrounds/bg_shallow_coast_route_map.webp",
     "backgrounds/bg_shallow_coast_weather_dawn.webp",
     "backgrounds/bg_shallow_coast_zone1_encounter.webp",
     "backgrounds/bg_shallow_coast_zone1_foreground.webp",
@@ -313,6 +314,11 @@
       "note": "Generated synthesized audio cue sfx_word_complete_b.ogg"
     },
     {
+	  "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp",
+	  "usage": "background",
+	  "note": "AI-generated hero gameplay plate, normalized to 1600x900 WebP"
+	},
+	{
       "path": "apps/web/public/assets/ocean/backgrounds/bg_shallow_coast_route_map.webp",
       "usage": "background",
       "note": "Generated Shallow Coast route map"

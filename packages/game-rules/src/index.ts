@@ -14,7 +14,7 @@ import type {
 	ZoneId,
 } from "@typecade/contracts"
 import { CONTENT_VERSION } from "@typecade/contracts"
-import { fishSpecies, getFish, getSkill, shallowCoastZoneOrder } from "@typecade/content"
+import { fishSpecies, fishingSkills, getFish, getSkill, shallowCoastZoneOrder } from "@typecade/content"
 
 export interface SeededRng {
 	nextFloat(): number
@@ -61,6 +61,15 @@ const activeSkillCosts: Record<string, number> = {
 	calm_current: 30,
 }
 
+const skillUnlockLevels: Record<string, number> = {
+	cast_net: 1,
+	steel_line: 1,
+	sonar: 1,
+	calm_current: 2,
+	perfect_bait: 2,
+	reel_mastery: 3,
+}
+
 export function createSeededRng(seed: string): SeededRng {
 	let state = hashSeed(seed)
 
@@ -98,6 +107,39 @@ export function getFishingSkillCost(skillId: string): number {
 	return activeSkillCosts[skillId] ?? 0
 }
 
+export function getFishingSkillUnlockLevel(skillId: string): number {
+	return skillUnlockLevels[skillId] ?? 99
+}
+
+export function getSkillDraft(seed: string, accountLevel: number, size = 4): FishingSkill[] {
+	const eligible = fishingSkills.filter((skill) => getFishingSkillUnlockLevel(skill.id) <= accountLevel)
+	const rng = createSeededRng(`${seed}:skill-draft:${accountLevel}`)
+	const shuffled = [...eligible]
+	for (let index = shuffled.length - 1; index > 0; index -= 1) {
+		const swapIndex = rng.nextInt(0, index + 1)
+		;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!]
+	}
+
+	const picked = shuffled.slice(0, Math.min(size, shuffled.length))
+	const active = shuffled.find((skill) => skill.type === "active")
+	const passive = shuffled.find((skill) => skill.type === "passive")
+	if (active && !picked.some((skill) => skill.type === "active")) {
+		picked[picked.length - 1] = active
+	}
+	if (passive && !picked.some((skill) => skill.type === "passive")) {
+		picked[picked.length - 1] = passive
+	}
+	return picked.filter((skill, index, skills) => skills.findIndex((candidate) => candidate.id === skill.id) === index)
+}
+
+export function getDefaultSkillLoadout(seed: string, accountLevel: number): string[] {
+	const draft = getSkillDraft(seed, accountLevel)
+	const active = draft.find((skill) => skill.type === "active")
+	const passive = draft.find((skill) => skill.type === "passive")
+	const ordered = [active, passive, ...draft].filter((skill): skill is FishingSkill => Boolean(skill))
+	return ordered.filter((skill, index, skills) => skills.findIndex((candidate) => candidate.id === skill.id) === index).slice(0, 3).map((skill) => skill.id)
+}
+
 export function canUseFishingSkill(encounter: EncounterState, skill: FishingSkill): boolean {
 	return skill.type === "active" && encounter.status === "active" && encounter.skillEnergy >= getFishingSkillCost(skill.id)
 }
@@ -125,7 +167,7 @@ export function getAccountLevelProgress(xp: number): AccountLevelProgress {
 
 export function createShallowCoastExpedition(
 	seed: string,
-	selectedSkillIds: string[] = ["cast_net", "steel_line", "sonar", "calm_current", "perfect_bait", "reel_mastery"],
+	selectedSkillIds: string[] = getDefaultSkillLoadout(seed, 1),
 ): ExpeditionState {
 	validateSkills(selectedSkillIds)
 	return {
@@ -235,6 +277,13 @@ export function applyTypingEvents(
 			}
 		}
 
+		if (event.type === "passage-complete") {
+			// Completing the requested passage is the decisive reel-in action.
+			// The typing layer owns completion; fishing rules convert it into a catch.
+			next = { ...next, progress: 1 }
+			events.push({ type: "progress", value: next.progress })
+		}
+
 		next = applyBossPhase(next, events)
 		next = settleEncounterStatus(next, events)
 	}
@@ -288,7 +337,8 @@ export function useFishingSkill(encounter: EncounterState, fish: FishSpecies, sk
 
 	if (skill.id === "cast_net" && next.skillEnergy >= getFishingSkillCost(skill.id)) {
 		events.push({ type: "skill-used", label: skill.name })
-		const instantCapture = fish.rarity === "common" && fish.baseSizeKg <= 2.2 && next.progress >= 0.2
+		// The net is a finisher, not a skip button: typing must first reel a small fish to 45%.
+		const instantCapture = fish.rarity === "common" && fish.baseSizeKg <= 2.2 && next.progress >= 0.45
 		next = {
 			...next,
 			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),

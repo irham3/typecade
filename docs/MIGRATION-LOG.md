@@ -59,6 +59,9 @@ Mismatched pre-refactor assets found under `public/overdrive/art/**`.
 - 2026-08-23: Add MP3 fallbacks beside OGG audio cues and load both in Phaser; this follows browser audio compatibility guidance while preserving the required OGG naming convention.
 - 2026-08-23: Use runtime procedural juice for fish life (pull-based positioning, rod bend, line vibration, rings, particles, boss entrance) rather than trying to hand-author unique animation frames for every behavior.
 - 2026-08-23: Keep all six Milestone 1 skills available, but expose active skill costs, skill charge, Sonar route reveal, and passive trigger callouts so the build layer is legible in the vertical slice.
+- 2026-08-24: Add a Phaser 4 camera displacement map plus vignette post-FX for subtle moving water atmosphere; reduced-motion mode removes the animated displacement while preserving legibility.
+- 2026-08-24: Add typed level-up bridge events and transient React feedback banners for active/passive skills and secured XP threshold crossings. Feedback uses sequence ids so repeated skill casts retrigger the same treatment.
+- 2026-08-24: Make hit-stop release against the longest overlapping impact deadline so catch, phase, and level-up feedback cannot resume the scene early.
 
 ## Asset Production Notes
 
@@ -132,6 +135,16 @@ Grade: A- for the Milestone 0/1 scope.
 - Texture disposal is left to Phaser's game destroy path for this single-scene vertical slice.
 
 ## Verification
+
+### 2026-08-24 Arcade and Asset Pass
+
+- Fixed the decisive typing loop: `passage-complete` now resolves the fishing encounter as `caught`, freezes the old encounter timer, shows the catch result, plays catch feedback, and schedules the next mark.
+- Catch rewards are granted immediately through the existing idempotency key, so XP, coins, materials, and level-up feedback land on every successful encounter while checkpoint securing remains duplicate-safe.
+- Added deterministic seed-based skill drafts: four level-gated offers, up to three equipped skills, and a fresh default loadout per run. Common skills unlock at level 1, uncommon at level 2, and Reel Mastery at level 3.
+- Tuned Cast Net so it remains a finisher only after a small fish reaches 45% reel progress; it cannot bypass the typing gate. Added distinct Phaser VFX for every skill, including passive Steel Line, Perfect Bait, and Reel Mastery triggers.
+- Added `bg_shallow_coast_gameplay_ai.webp`, a normalized 1600x900 hero gameplay plate generated from the approved ocean visual direction. It is layered behind the existing zone overlays and registered in the asset manifest and license table.
+- Fixed Phaser 4 camera easing by passing easing callbacks to `zoomTo` instead of Phaser 3-style string names.
+- Verification: `npx tsc --noEmit` pass; `npm run test` pass (16 tests); `npm run build` pass; `npm run test:e2e` pass (desktop/mobile, catch result visible, no console errors); renderer-retirement audit returns no matches.
 
 - `npm run test`: pass, 12 tests across typing and fishing rules.
 - `npm run build`: pass, Vite production build.

@@ -10,6 +10,8 @@ import {
 	getAccountLevelProgress,
 	getBossPhaseForProgress,
 	getFishingSkillCost,
+	getFishingSkillUnlockLevel,
+	getSkillDraft,
 	resolveCatchResult,
 	secureCheckpoint,
 	startEncounter,
@@ -63,6 +65,16 @@ describe("fishing rules", () => {
 		expect(applied.encounter.durability).toBeLessThan(start.durability)
 	})
 
+	it("resolves a catch when the typing passage is complete", () => {
+		const fish = getFish("reef_minnow")
+		const start = startEncounter(fish, "passage-complete-test", [])
+		const applied = applyTypingEvents(start, fish, [typingEvent("passage-complete")], [])
+
+		expect(applied.encounter.progress).toBe(1)
+		expect(applied.encounter.status).toBe("caught")
+		expect(applied.events.some((event) => event.type === "caught")).toBe(true)
+	})
+
 	it("orders Steel Line before typo damage", () => {
 		const fish = getFish("reef_minnow")
 		const start = startEncounter(fish, "steel-line-test", ["steel_line"])
@@ -96,6 +108,7 @@ describe("fishing rules", () => {
 	it("calculates account level progress from earned XP", () => {
 		const fresh = getAccountLevelProgress(0)
 		const progressed = getAccountLevelProgress(96)
+		const veteran = getAccountLevelProgress(10_000_000)
 
 		expect(fresh.level).toBe(1)
 		expect(fresh.progress).toBe(0)
@@ -104,6 +117,19 @@ describe("fishing rules", () => {
 		expect(progressed.nextLevelXp).toBeGreaterThan(progressed.currentLevelXp)
 		expect(progressed.progress).toBeGreaterThanOrEqual(0)
 		expect(progressed.progress).toBeLessThanOrEqual(1)
+		expect(veteran.level).toBeGreaterThan(100)
+	})
+
+	it("builds a deterministic level-gated skill draft with both play styles", () => {
+		const first = getSkillDraft("run-a", 2)
+		const repeat = getSkillDraft("run-a", 2)
+		const otherRun = getSkillDraft("run-b", 2)
+
+		expect(first.map((skill) => skill.id)).toEqual(repeat.map((skill) => skill.id))
+		expect(first.some((skill) => skill.type === "active")).toBe(true)
+		expect(first.some((skill) => skill.type === "passive")).toBe(true)
+		expect(first.every((skill) => getFishingSkillUnlockLevel(skill.id) <= 2)).toBe(true)
+		expect(otherRun.map((skill) => skill.id)).not.toEqual(first.map((skill) => skill.id))
 	})
 
 	it("secures checkpoint rewards idempotently", () => {

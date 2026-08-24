@@ -7,6 +7,7 @@ const replayableEvents = new Set<GameEventKey>([
 	"line:changed",
 	"settings:volumes",
 	"settings:effects",
+	"screen:changed",
 ])
 
 export class GameEventBridge {

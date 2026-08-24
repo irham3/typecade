@@ -28,6 +28,12 @@ button {
 	cursor: pointer;
 }
 
+button:focus-visible,
+input:focus-visible {
+	outline: 3px solid #f5c240;
+	outline-offset: 3px;
+}
+
 .game-shell {
 	position: relative;
 	width: 100vw;
@@ -68,14 +74,15 @@ button {
 }
 
 .panel-chrome {
-	background:
-		linear-gradient(180deg, rgba(19, 45, 79, 0.96), rgba(5, 20, 39, 0.97)),
-		#081c35;
-	border: 2px solid #8ed3e6;
+	background: linear-gradient(180deg, rgba(19, 45, 79, 0.55), rgba(5, 20, 39, 0.65));
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(142, 211, 230, 0.35);
+	border-top: 1px solid rgba(255, 255, 255, 0.25);
+	border-left: 1px solid rgba(255, 255, 255, 0.15);
 	box-shadow:
-		0 0 0 4px rgba(2, 11, 25, 0.78),
-		inset 0 0 0 2px rgba(255, 255, 255, 0.08),
-		0 12px 30px rgba(0, 0, 0, 0.28);
+		0 8px 32px rgba(0, 0, 0, 0.4),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
 	color: #f5faff;
 }
 
@@ -770,6 +777,60 @@ button {
 	font-size: 0.54rem !important;
 }
 
+.feedback-banner {
+	position: absolute;
+	top: 146px;
+	left: 50%;
+	z-index: 6;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: min(360px, calc(100vw - 40px));
+	padding: 10px 14px;
+	border-radius: 10px;
+	transform: translateX(-50%);
+	pointer-events: none;
+	text-align: left;
+	border-color: rgba(245, 194, 64, 0.78);
+	background: linear-gradient(135deg, rgba(44, 65, 100, 0.9), rgba(8, 27, 54, 0.92));
+	box-shadow: 0 0 26px rgba(245, 194, 64, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.feedback-banner.skill {
+	border-color: rgba(154, 231, 255, 0.78);
+	box-shadow: 0 0 22px rgba(154, 231, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.feedback-banner > svg {
+	width: 28px;
+	height: 28px;
+	flex: 0 0 28px;
+	color: #f5c240;
+	fill: rgba(245, 194, 64, 0.2);
+}
+
+.feedback-banner.skill > svg {
+	color: #9ae7ff;
+	fill: rgba(154, 231, 255, 0.18);
+}
+
+.feedback-banner strong,
+.feedback-banner span {
+	display: block;
+}
+
+.feedback-banner strong {
+	font-size: 1rem;
+	letter-spacing: 0.08em;
+}
+
+.feedback-banner span {
+	margin-top: 2px;
+	color: #dceeff;
+	font-size: 0.76rem;
+	line-height: 1.25;
+}
+
 .result-toast,
 .complete-panel {
 	position: absolute;
@@ -1118,7 +1179,6 @@ button {
 	grid-template-columns: 1fr auto;
 }
 
-.menu-layer,
 .prep-layer {
 	position: absolute;
 	inset: 0;
@@ -1135,6 +1195,30 @@ button {
 		url("/assets/ocean/backgrounds/bg_shallow_coast_zone1_sky.webp");
 	background-size: cover, cover, cover, cover, cover, cover;
 	background-position: center, center, center, center, center, center;
+}
+
+.menu-layer {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	pointer-events: auto;
+	display: grid;
+	color: #f5faff;
+	background-image:
+		linear-gradient(180deg, rgba(5, 19, 38, 0.2), rgba(2, 10, 22, 0.9)),
+		url("/assets/ocean_bg.jpg");
+	background-size: cover, cover;
+	background-position: center, center;
+	animation: menu-bg-drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes menu-bg-drift {
+	from {
+		background-position: left center, left center;
+	}
+	to {
+		background-position: right center, right center;
+	}
 }
 
 .menu-top {
@@ -1317,6 +1401,26 @@ button {
 	text-shadow: 0 2px 0 #020815;
 }
 
+.prep-title-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.prep-title-row span,
+.prep-hint {
+	color: #9ae7ff;
+	font-size: 0.72rem;
+	font-weight: 800;
+}
+
+.prep-hint {
+	margin: -4px 0 12px;
+	color: #dceeff;
+	font-weight: 500;
+}
+
 .prep-profile {
 	display: grid;
 	grid-template-columns: 82px 1fr;
@@ -1365,6 +1469,10 @@ button {
 }
 
 .prep-skill {
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
 	display: grid;
 	grid-template-columns: 62px 1fr;
 	gap: 10px;
@@ -1378,6 +1486,27 @@ button {
 
 .prep-skill.passive {
 	border-color: rgba(115, 227, 154, 0.5);
+}
+
+.prep-skill.selected {
+	border-color: #f5c240;
+	box-shadow: 0 0 18px rgba(245, 194, 64, 0.22), inset 0 0 0 1px rgba(245, 194, 64, 0.2);
+	transform: translateY(-2px);
+}
+
+.prep-skill:hover,
+.prep-skill:focus-visible {
+	border-color: #9ae7ff;
+	transform: translateY(-2px);
+}
+
+.prep-skill em {
+	grid-column: 2;
+	color: #f5c240;
+	font-size: 0.58rem;
+	font-style: normal;
+	font-weight: 1000;
+	letter-spacing: 0.08em;
 }
 
 .prep-skill img {
@@ -1674,6 +1803,11 @@ button {
 	.menu-current-fish {
 		bottom: 138px;
 		font-size: 0.74rem;
+	}
+
+	.feedback-banner {
+		top: 184px;
+		width: min(300px, calc(100vw - 40px));
 	}
 
 	.prep-layer {

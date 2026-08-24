@@ -43,6 +43,7 @@ export class FishingScene extends Phaser.Scene {
 	private bridge?: GameEventBridge
 	private cleanup: Array<() => void> = []
 	private bgLayers: Phaser.GameObjects.Image[] = []
+	private gameplayBackdrop?: Phaser.GameObjects.Image
 	private ambientSprites: Phaser.GameObjects.Image[] = []
 	private fish?: Phaser.GameObjects.Sprite
 	private fishShadow?: Phaser.GameObjects.Image
@@ -52,6 +53,8 @@ export class FishingScene extends Phaser.Scene {
 	private rod?: Phaser.GameObjects.Image
 	private line?: Phaser.GameObjects.Graphics
 	private sceneTint?: Phaser.GameObjects.Rectangle
+	private waterDisplacement?: Phaser.Filters.Displacement
+	private waterVignette?: Phaser.Filters.Vignette
 	private splashEmitter?: Phaser.GameObjects.Particles.ParticleEmitter
 	private bubbleEmitter?: Phaser.GameObjects.Particles.ParticleEmitter
 	private sparkEmitter?: Phaser.GameObjects.Particles.ParticleEmitter
@@ -65,6 +68,8 @@ export class FishingScene extends Phaser.Scene {
 	private pullTrauma = 0
 	private lastTickSfxAt = 0
 	private lastCriticalSfxAt = 0
+	private hitStopUntil = 0
+	private hitStopTimer?: ReturnType<typeof setTimeout>
 	private volumes: Record<VolumeCategory, number> = {
 		music: 0.45,
 		environment: 0.55,
@@ -96,6 +101,8 @@ export class FishingScene extends Phaser.Scene {
 		this.pullTrauma = 0
 		this.lastTickSfxAt = 0
 		this.lastCriticalSfxAt = 0
+		this.hitStopUntil = 0
+		this.hitStopTimer = undefined
 		this.loopsStarted = false
 		this.musicLoop = undefined
 		this.ambientLoop = undefined
@@ -123,26 +130,34 @@ export class FishingScene extends Phaser.Scene {
 	}
 
 	create(): void {
+		if (this.textures.exists("bg_gameplay_ai")) {
+			this.gameplayBackdrop = this.add.image(0, 0, "bg_gameplay_ai").setOrigin(0, 0).setDepth(-2)
+		}
 		for (const layer of layers) {
 			const image = this.add.image(0, 0, `bg_zone1_${layer}`).setOrigin(0, 0)
 			image.setDepth(layer === "foreground" ? 34 : layer === "encounter" ? 8 : 0)
 			this.bgLayers.push(image)
 		}
+		// The AI plate is the hero gameplay composition; generated layers remain
+		// available for overlays and a safe fallback if the plate is unavailable.
+		this.bgLayers[0]?.setVisible(!this.gameplayBackdrop)
+		this.bgLayers[1]?.setVisible(!this.gameplayBackdrop)
 
 		this.sceneTint = this.add.rectangle(0, 0, 10, 10, 0x6ff4ff, 0.08).setOrigin(0, 0).setDepth(9)
 		this.sceneTint.setBlendMode(Phaser.BlendModes.ADD)
+		this.createWaterPostFx()
 
 		this.createAmbientLife()
 		this.line = this.add.graphics().setDepth(27)
 		this.boat = this.add.image(118, 746, "ocean", "ui_equipment_boat_default.png").setDepth(23).setOrigin(0.38, 0.82).setScale(1.42)
 		this.rod = this.add.image(126, 770, "ocean", "ui_equipment_rod_bamboo.png").setDepth(28).setOrigin(0.12, 0.9)
-		this.rod.setScale(2.62).setRotation(-0.82)
+		this.rod.setScale(2.62).setRotation(-0.82).setVisible(false)
 		this.hookGlow = this.add.image(760, 530, "ocean", "vfx_glow_ring_default.png").setDepth(24).setScale(0.45).setAlpha(0.5)
-		this.hookGlow.setBlendMode(Phaser.BlendModes.ADD)
-		this.lure = this.add.image(760, 530, "ocean", "ui_equipment_bait_shell.png").setDepth(29).setScale(0.46)
+		this.hookGlow.setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+		this.lure = this.add.image(760, 530, "ocean", "ui_equipment_bait_shell.png").setDepth(29).setScale(0.46).setVisible(false)
 		this.fishShadow = this.add.image(970, 562, "ocean", "vfx_soft_circle_default.png").setDepth(21).setScale(3.1, 0.68).setAlpha(0.34)
-		this.fishShadow.setTint(0x042238)
-		this.fish = this.add.sprite(970, 515, "ocean", "fish_reef_minnow_idle_0.png").setDepth(25).setScale(1.35)
+		this.fishShadow.setTint(0x042238).setVisible(false)
+		this.fish = this.add.sprite(970, 515, "ocean", "fish_reef_minnow_idle_0.png").setDepth(25).setScale(1.35).setVisible(false)
 
 		this.createEmitters()
 		this.subscribeToBridge()
@@ -165,8 +180,10 @@ export class FishingScene extends Phaser.Scene {
 			layer.setPosition(drift - 10, 0)
 			layer.setDisplaySize(width + 20, height)
 		})
+		this.gameplayBackdrop?.setPosition(Math.sin(time / 4200) * -4 - 10, 0).setDisplaySize(width + 20, height)
 		this.sceneTint?.setSize(width, height)
 		this.animateAmbientLife(time, width, height)
+		this.animateWaterPostFx(time)
 
 		if (this.fish && this.currentFish) {
 			const fishScale = getFishScale(this.currentFish)
@@ -227,39 +244,41 @@ export class FishingScene extends Phaser.Scene {
 			speed: { min: 18, max: 88 },
 			scale: { start: 0.26, end: 0.035 },
 			alpha: { start: 0.72, end: 0 },
-			maxParticles: 72,
+			maxParticles: 120,
 		})
 		this.splashEmitter = this.add.particles(0, 0, "ocean", {
 			frame: "vfx_foam_droplet_default.png",
 			emitting: false,
-			lifespan: 680,
-			speed: { min: 80, max: 230 },
-			angle: { min: 205, max: 335 },
-			gravityY: 230,
-			scale: { start: 0.42, end: 0.08 },
-			alpha: { start: 0.94, end: 0 },
-			maxParticles: 92,
+			lifespan: 800,
+			speed: { min: 100, max: 300 },
+			angle: { min: 200, max: 340 },
+			gravityY: 300,
+			scale: { start: 0.5, end: 0.05 },
+			alpha: { start: 1, end: 0 },
+			maxParticles: 150,
 		})
 		this.sparkEmitter = this.add.particles(0, 0, "ocean", {
 			frame: "vfx_sharp_spark_default.png",
 			emitting: false,
-			lifespan: 540,
-			speed: { min: 80, max: 240 },
-			scale: { start: 0.24, end: 0.025 },
+			lifespan: 650,
+			speed: { min: 120, max: 300 },
+			scale: { start: 0.35, end: 0.02 },
 			tint: 0xf5c240,
-			alpha: { start: 0.95, end: 0 },
-			maxParticles: 68,
+			alpha: { start: 1, end: 0 },
+			blendMode: Phaser.BlendModes.ADD,
+			maxParticles: 100,
 		})
 		this.streakEmitter = this.add.particles(0, 0, "ocean", {
 			frame: "vfx_water_streak_default.png",
 			emitting: false,
-			lifespan: 420,
-			speed: { min: 120, max: 260 },
-			angle: { min: 166, max: 204 },
-			scale: { start: 0.32, end: 0.06 },
-			alpha: { start: 0.75, end: 0 },
+			lifespan: 500,
+			speed: { min: 150, max: 350 },
+			angle: { min: 160, max: 210 },
+			scale: { start: 0.4, end: 0.05 },
+			alpha: { start: 0.85, end: 0 },
 			tint: 0x9ae7ff,
-			maxParticles: 48,
+			blendMode: Phaser.BlendModes.ADD,
+			maxParticles: 80,
 		})
 	}
 
@@ -272,6 +291,49 @@ export class FishingScene extends Phaser.Scene {
 		})
 	}
 
+	private createWaterPostFx(): void {
+		const displacementTexture = this.textures.createCanvas("water_distortion", 128, 128)
+		if (!displacementTexture) {
+			return
+		}
+		this.load.image("bg_gameplay_ai", "/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp")
+
+		const imageData = displacementTexture.context.createImageData(128, 128)
+		for (let y = 0; y < 128; y += 1) {
+			for (let x = 0; x < 128; x += 1) {
+				const index = (y * 128 + x) * 4
+				imageData.data[index] = 128 + Math.round(Math.sin(y * 0.32) * 25)
+				imageData.data[index + 1] = 128 + Math.round(Math.cos(x * 0.24) * 20)
+				imageData.data[index + 2] = 128
+				imageData.data[index + 3] = 255
+			}
+		}
+		displacementTexture.context.putImageData(imageData, 0, 0)
+		displacementTexture.refresh()
+
+		try {
+			const filters = this.cameras.main.filters.external
+			this.waterDisplacement = filters.addDisplacement("water_distortion", 0.0028, 0.005)
+			this.waterDisplacement.setPaddingOverride(null)
+			this.waterVignette = filters.addVignette(0.5, 0.54, 0.82, 0.18, 0x021b38)
+		} catch {
+			// Canvas fallback and older renderers keep the procedural water layers.
+			this.waterDisplacement = undefined
+			this.waterVignette = undefined
+		}
+	}
+
+	private animateWaterPostFx(time: number): void {
+		if (this.waterDisplacement) {
+			const strength = this.reducedMotion ? 0 : 1
+			this.waterDisplacement.x = strength * (0.0028 + Math.sin(time / 1500) * 0.0008)
+			this.waterDisplacement.y = strength * (0.005 + Math.cos(time / 1200) * 0.0012)
+		}
+		if (this.waterVignette) {
+			this.waterVignette.strength = this.reducedMotion ? 0.14 : 0.18 + this.pullTrauma * 0.06
+		}
+	}
+
 	private subscribeToBridge(): void {
 		const bridge = this.bridge
 		if (!bridge) {
@@ -279,20 +341,36 @@ export class FishingScene extends Phaser.Scene {
 		}
 
 		this.cleanup.push(
+			bridge.on("screen:changed", ({ screen }) => {
+				const isGame = screen === "game"
+				this.rod?.setVisible(isGame)
+				this.lure?.setVisible(isGame)
+				this.hookGlow?.setVisible(isGame)
+				this.line?.setVisible(isGame)
+
+				if (!isGame) {
+					this.fish?.setVisible(false)
+					this.fishShadow?.setVisible(false)
+					this.currentFish = undefined
+				}
+			}),
 			bridge.on("encounter:started", ({ encounter, fish }) => {
 				this.currentFish = fish
 				this.lineProgress = encounter.progress
 				this.lineTension = encounter.tension
 				this.lineDurability = encounter.durability
 				this.setZoneBackground(fish.habitat)
+				this.fish?.setVisible(true)
+				this.fishShadow?.setVisible(true)
 				this.playFishAnimation(fish, "bite")
 				this.floatText(fish.rarity === "boss" ? "BOSS HOOKED" : `${fish.rarity.toUpperCase()} BITE`, this.scale.width * 0.6, this.scale.height * 0.42, fish.rarity === "common" ? 0x9ae7ff : 0xf5c240)
 				this.time.delayedCall(360, () => this.playFishAnimation(fish, "swim"))
-				this.bubbleEmitter?.explode(12, this.scale.width * 0.62, this.scale.height * 0.53)
+				this.bubbleEmitter?.explode(24, this.scale.width * 0.62, this.scale.height * 0.53)
 				if (fish.rarity === "rare" || fish.rarity === "boss") {
-					this.sparkEmitter?.explode(fish.rarity === "boss" ? 46 : 22, this.scale.width * 0.62, this.scale.height * 0.5)
+					this.sparkEmitter?.explode(fish.rarity === "boss" ? 70 : 40, this.scale.width * 0.62, this.scale.height * 0.5)
 					if (!this.reducedMotion) {
-						this.cameras.main.flash(fish.rarity === "boss" ? 240 : 120, 245, 194, 64)
+						this.cameras.main.shake(200, 0.008)
+						this.cameras.main.flash(fish.rarity === "boss" ? 300 : 180, 245, 194, 64)
 					}
 					this.playAudio("sfx_rare_sting_a", "gameplay")
 				}
@@ -306,8 +384,12 @@ export class FishingScene extends Phaser.Scene {
 			bridge.on("fish:hooked", ({ fish }) => {
 				this.currentFish = fish
 				this.playFishAnimation(fish, "bite")
-				this.emitWaterImpact(this.scale.width * 0.58, this.scale.height * 0.55, 18)
+				this.emitWaterImpact(this.scale.width * 0.58, this.scale.height * 0.55, 30)
 				this.playAudio("sfx_splash_a", "gameplay")
+				this.hitStop(120)
+				if (!this.reducedMotion) {
+					this.cameras.main.shake(150, 0.005)
+				}
 			}),
 			bridge.on("character:correct", ({ combo }) => {
 				this.pullTrauma = Math.min(1, this.pullTrauma + 0.09 + Math.min(combo, 8) * 0.005)
@@ -319,13 +401,26 @@ export class FishingScene extends Phaser.Scene {
 				}
 			}),
 			bridge.on("word:completed", ({ combo, perfect }) => {
-				this.pullTrauma = Math.min(1, this.pullTrauma + (perfect ? 0.24 : 0.16))
-				this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.62, this.fish?.y ?? this.scale.height * 0.55, combo >= 5 ? 26 : 14)
-				this.popFish(perfect ? 1.18 : 1.08)
+				this.pullTrauma = Math.min(1, this.pullTrauma + (perfect ? 0.35 : 0.2))
+				this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.62, this.fish?.y ?? this.scale.height * 0.55, combo >= 5 ? 40 : 20)
+				this.popFish(perfect ? 1.3 : 1.15)
 				this.floatText(perfect ? "PERFECT REEL" : "REEL", this.scale.width * 0.58, this.scale.height * 0.46, perfect ? 0xf5c240 : 0x9ae7ff)
+
+				if (perfect) {
+					this.hitStop(80)
+					if (!this.reducedMotion) {
+						this.cameras.main.zoomTo(1.04, 60, Phaser.Math.Easing.Quadratic.Out, true)
+						this.cameras.main.shake(120, 0.003)
+						this.time.delayedCall(60, () => this.cameras.main.zoomTo(1, 150, Phaser.Math.Easing.Quadratic.In))
+					}
+				}
+
 				if (combo > 0 && combo % 5 === 0) {
-					this.sparkEmitter?.explode(28, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.5) - 24)
+					this.sparkEmitter?.explode(45, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.5) - 24)
 					this.ringBurst(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.5, 0xf5c240)
+					if (!this.reducedMotion) {
+						this.cameras.main.shake(150, 0.005)
+					}
 					this.playAudio("sfx_combo_milestone_a", "gameplay")
 				} else {
 					this.playAudio("sfx_word_complete_a", "typing")
@@ -344,7 +439,9 @@ export class FishingScene extends Phaser.Scene {
 				this.emitLinePulse(ignoredBySteelLine ? 0x73e39a : 0xf05a5e)
 				this.floatText(ignoredBySteelLine ? "STEEL LINE" : "TENSION SNAP", this.scale.width * 0.5, this.scale.height * 0.42, ignoredBySteelLine ? 0x73e39a : 0xf05a5e)
 				if (!ignoredBySteelLine && !this.reducedMotion) {
-					this.cameras.main.shake(120, 0.0048)
+					this.cameras.main.shake(250, 0.01)
+					this.cameras.main.flash(150, 240, 90, 94)
+					this.hitStop(140)
 				}
 				this.playAudio(ignoredBySteelLine ? "sfx_skill_ready_a" : "sfx_typo_thud_a", ignoredBySteelLine ? "gameplay" : "typing")
 			}),
@@ -360,12 +457,13 @@ export class FishingScene extends Phaser.Scene {
 			}),
 			bridge.on("phase:changed", ({ phase }) => {
 				if (!this.reducedMotion) {
-					this.cameras.main.flash(160, 245, 194, 64)
-					this.cameras.main.shake(200, 0.006)
+					this.cameras.main.flash(300, 245, 194, 64)
+					this.cameras.main.shake(350, 0.012)
+					this.hitStop(200)
 				}
-				this.pullTrauma = 0.9
-				this.sparkEmitter?.explode(46, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.5) - 8)
-				this.ringBurst(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.5, phase === 3 ? 0xf05a5e : 0xf5c240)
+				this.pullTrauma = 1.0
+				this.sparkEmitter?.explode(80, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.5) - 8)
+				this.ringBurst(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.5, phase === 3 ? 0xf05a5e : 0xf5c240, 2.0)
 				this.floatText(`PHASE ${phase}`, this.scale.width * 0.62, this.scale.height * 0.38, phase === 3 ? 0xf05a5e : 0xf5c240)
 				this.playAudio(phase === 3 ? "sfx_rare_sting_a" : "sfx_combo_milestone_b", "gameplay")
 			}),
@@ -378,21 +476,35 @@ export class FishingScene extends Phaser.Scene {
 				}
 				this.pullTrauma = result.caught ? 1 : 0.72
 				this.playAudio(result.caught ? "sfx_catch_impact_a" : "sfx_escape_snap_a", "gameplay")
+				this.hitStop(250)
+
 				if (result.caught) {
 					if (!this.reducedMotion) {
-						this.cameras.main.flash(180, 245, 194, 64)
-						this.cameras.main.shake(210, 0.006)
+						this.cameras.main.flash(300, 245, 194, 64)
+						this.cameras.main.shake(350, 0.012)
 					}
-					this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.54, 56)
-					this.sparkEmitter?.explode(40, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.48) - 20)
-					this.ringBurst(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.5, 0xf5c240, 1.45)
+					this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.54, 80)
+					this.sparkEmitter?.explode(60, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.48) - 20)
+					this.ringBurst(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.5, 0xf5c240, 2.5)
 					this.floatText("CATCH!", this.scale.width * 0.58, this.scale.height * 0.36, 0xf5c240)
 					this.playAudio("sfx_reward_sting_a", "gameplay")
 				} else {
 					this.floatText("ESCAPED", this.scale.width * 0.58, this.scale.height * 0.42, 0xf05a5e)
 					if (!this.reducedMotion) {
-						this.cameras.main.shake(170, 0.005)
+						this.cameras.main.shake(190, 0.005)
 					}
+				}
+			}),
+			bridge.on("level:up", ({ toLevel }) => {
+				this.floatText(`LEVEL ${toLevel}`, this.scale.width * 0.5, this.scale.height * 0.34, 0xf5c240)
+				this.emitWaterImpact(this.scale.width * 0.5, this.scale.height * 0.5, 90)
+				this.sparkEmitter?.explode(100, this.scale.width * 0.5, this.scale.height * 0.42)
+				this.ringBurst(this.scale.width * 0.5, this.scale.height * 0.48, 0xf5c240, 2.8)
+				this.playAudio("sfx_reward_sting_a", "gameplay", 1.1)
+				if (!this.reducedMotion) {
+					this.cameras.main.flash(360, 245, 194, 64)
+					this.cameras.main.shake(380, 0.014)
+					this.hitStop(180)
 				}
 			}),
 			bridge.on("audio:play", ({ key, category }) => this.playAudio(key, category)),
@@ -434,6 +546,8 @@ export class FishingScene extends Phaser.Scene {
 		this.bgLayers.forEach((image, index) => {
 			image.setTexture(`bg_${zoneKey}_${layers[index]}`)
 		})
+		const tint = habitat === "zone_3" ? 0x7b75ff : habitat === "zone_2" ? 0x54e7d1 : 0x6ff4ff
+		this.sceneTint?.setFillStyle(tint, habitat === "zone_1" ? 0.06 : 0.1)
 	}
 
 	private updateLine(time = this.time.now): void {
@@ -484,6 +598,7 @@ export class FishingScene extends Phaser.Scene {
 	private layout(): void {
 		const width = this.scale.width
 		const height = this.scale.height
+		this.gameplayBackdrop?.setDisplaySize(width + 20, height)
 		this.bgLayers.forEach((image) => image.setDisplaySize(width + 20, height))
 		this.sceneTint?.setSize(width, height)
 		this.boat?.setPosition(width * 0.09, height - 54)
@@ -595,6 +710,28 @@ export class FishingScene extends Phaser.Scene {
 			return
 		}
 
+		if (skillId === "steel_line") {
+			this.emitLinePulse(0x9ae7ff)
+			this.ringBurst(this.lure?.x ?? x, this.lure?.y ?? y, 0x9ae7ff, 0.85)
+			return
+		}
+
+		if (skillId === "perfect_bait") {
+			this.ringBurst(x, y, 0xf899ff, 1.2)
+			this.bubbleEmitter?.explode(18, x, y + 14)
+			this.sparkEmitter?.explode(14, x, y - 16)
+			return
+		}
+
+		if (skillId === "reel_mastery") {
+			this.ringBurst(x, y, 0xf5c240, 1.45)
+			this.sparkEmitter?.explode(32, x, y - 20)
+			if (!this.reducedMotion) {
+				this.cameras.main.shake(150, 0.0025)
+			}
+			return
+		}
+
 		this.ringBurst(x, y, color, 1.1)
 		this.sparkEmitter?.explode(22, x, y - 18)
 	}
@@ -668,12 +805,41 @@ export class FishingScene extends Phaser.Scene {
 		})
 	}
 
+	private hitStop(duration: number): void {
+		if (this.reducedMotion || !this.sys) {
+			return
+		}
+		this.hitStopUntil = Math.max(this.hitStopUntil, performance.now() + duration)
+		if (this.hitStopTimer) {
+			return
+		}
+		this.scene.pause()
+		const release = () => {
+			const remaining = this.hitStopUntil - performance.now()
+			if (remaining > 0) {
+				this.hitStopTimer = setTimeout(release, remaining)
+				return
+			}
+			this.hitStopTimer = undefined
+			this.hitStopUntil = 0
+			if (this.sys && this.sys.isActive() === false) {
+				this.scene.resume()
+			}
+		}
+		this.hitStopTimer = setTimeout(release, duration)
+	}
+
 	private shutdownScene(): void {
+		if (this.hitStopTimer) {
+			clearTimeout(this.hitStopTimer)
+			this.hitStopTimer = undefined
+		}
 		this.cleanup.forEach((dispose) => dispose())
 		this.cleanup = []
 		this.scale.off("resize", this.layout, this)
 		this.sound.stopAll()
 		this.bgLayers = []
+		this.gameplayBackdrop = undefined
 		this.ambientSprites = []
 	}
 }

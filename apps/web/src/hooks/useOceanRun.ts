@@ -22,8 +22,12 @@ import {
 	canUseFishingSkill,
 	createInitialCollection,
 	createShallowCoastExpedition,
+	getAccountLevelProgress,
+	getDefaultSkillLoadout,
 	getEncounterIndexInRun,
 	getFishByEncounter,
+	getSkillDraft,
+	grantCatchResult,
 	resolveCatchResult,
 	restoreOceanSave,
 	secureCheckpoint,
@@ -55,6 +59,15 @@ export interface OceanRunView {
 	reducedMotion: boolean
 	sonarRevealed: boolean
 	lastSkillId?: string
+	feedback?: OceanUiFeedback
+	skillOffers: typeof fishingSkills
+}
+
+export interface OceanUiFeedback {
+	id: number
+	kind: "skill" | "level"
+	title: string
+	detail: string
 }
 
 export interface VolumeState {
@@ -68,7 +81,9 @@ export interface OceanRunControls {
 	bridge: GameEventBridge
 	view: OceanRunView
 	activeSkills: typeof fishingSkills
+	skillOffers: typeof fishingSkills
 	chooseRoute(nodeId: string): void
+	setSkillLoadout(skillIds: string[]): void
 	useSkill(skillId: string): boolean
 	setVolume(category: keyof VolumeState, value: number): void
 	setReducedMotion(value: boolean): void
@@ -87,7 +102,13 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	const lastTickRef = useRef<number>(0)
 	const controlsActiveRef = useRef(controlsActive)
 	const sonarRevealedUntilRef = useRef(0)
+	const feedbackSequenceRef = useRef(0)
+	const pendingSkillLoadoutRef = useRef<string[] | null>(null)
 	const [view, setView] = useState<OceanRunView>(() => createInitialView())
+	const activeSkills = useMemo(
+		() => fishingSkills.filter((skill) => view.expedition.selectedSkillIds.includes(skill.id)),
+		[view.expedition.selectedSkillIds],
+	)
 
 	useEffect(() => {
 		controlsActiveRef.current = controlsActive
@@ -179,6 +200,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			routeChoices,
 			selectedRoute,
 			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
+			skillOffers: getSkillDraft(expedition.seed, getAccountLevelProgress(collection.xp).level),
 			log: [logLine ?? `Hooked: ${fish.name}`, ...viewLogTail(view.log)],
 		}
 		setView(nextView)
@@ -208,8 +230,11 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		bridge.emit("catch:resolved", { result })
 
 		const beforeZone = expedition.currentZoneIndex
+		const beforeLevel = getAccountLevelProgress(collection.xp).level
 		let nextExpedition = advanceExpedition(expedition, result)
-		let nextCollection = collection
+		// Reward the arcade loop immediately. The pending result is still secured at
+		// a checkpoint, while its idempotency key prevents a duplicate grant there.
+		let nextCollection = result.caught ? grantCatchResult(collection, result) : collection
 		const securedAtBoundary = result.caught && (nextExpedition.currentZoneIndex !== beforeZone || nextExpedition.complete)
 
 		if (securedAtBoundary) {
@@ -217,6 +242,15 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			nextExpedition = secured.expedition
 			nextCollection = secured.collection
 			bridge.emit("run:checkpoint", { checkpoint: secured.checkpoint })
+		}
+		const nextLevel = getAccountLevelProgress(nextCollection.xp).level
+		const leveledUp = nextLevel > beforeLevel
+		if (leveledUp) {
+			bridge.emit("level:up", {
+				fromLevel: beforeLevel,
+				toLevel: nextLevel,
+				xp: nextCollection.xp,
+			})
 		}
 
 		expeditionRef.current = nextExpedition
@@ -227,6 +261,14 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		const outcome = result.caught ? `Caught ${fish.name} (${result.sizeKg} kg)` : `${fish.name} escaped`
 		syncView({
 			lastResult: result,
+			feedback: leveledUp
+				? {
+						id: ++feedbackSequenceRef.current,
+						kind: "level",
+						title: `LEVEL ${nextLevel}`,
+						detail: "New waters unlocked. Keep the current rolling.",
+					}
+				: undefined,
 			log: [outcome, ...viewLogTail(view.log)],
 		})
 
@@ -237,7 +279,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		window.setTimeout(() => {
 			startEncounterFromExpedition(nextExpedition, nextCollection, result.caught ? "Sailing to the next mark" : "Spare line tied, retrying")
-		}, result.caught ? 1250 : 1500)
+		}, result.caught ? 1800 : 1500)
 	}, [bridge, persist, startEncounterFromExpedition, syncView, view.log])
 
 	const applyRuleEvents = useCallback((nextEncounter: EncounterState, events: ReturnType<typeof applyTypingEvents>["events"]) => {
@@ -266,7 +308,16 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			progress: nextEncounter.progress,
 			timeRemainingMs: nextEncounter.timeRemainingMs,
 		})
-		syncView(lastSkillId ? { lastSkillId, log: [`${eventLabel(lastSkillId)} triggered`, ...viewLogTail(view.log)] } : undefined)
+		syncView(lastSkillId ? {
+			lastSkillId,
+			feedback: {
+				id: ++feedbackSequenceRef.current,
+				kind: "skill",
+				title: eventLabel(lastSkillId),
+				detail: "Passive skill triggered",
+			},
+			log: [`${eventLabel(lastSkillId)} triggered`, ...viewLogTail(view.log)],
+		} : undefined)
 		if (nextEncounter.status !== "active") {
 			finishEncounter(nextEncounter)
 		}
@@ -337,6 +388,12 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		syncView({
 			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
 			lastSkillId: skillId,
+			feedback: {
+				id: ++feedbackSequenceRef.current,
+				kind: "skill",
+				title: skill.name,
+				detail: skill.description,
+			},
 			log: [`${skill.name} used`, ...viewLogTail(view.log)],
 		})
 		return true
@@ -355,9 +412,25 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		bridge.emit("settings:effects", { reducedMotion: value })
 	}, [bridge])
 
+	const setSkillLoadout = useCallback((skillIds: string[]) => {
+		const offerIds = new Set(view.skillOffers.map((skill) => skill.id))
+		const nextSkillIds = skillIds.filter((skillId, index) => offerIds.has(skillId) && skillIds.indexOf(skillId) === index).slice(0, 3)
+		if (nextSkillIds.length === 0) {
+			return
+		}
+		pendingSkillLoadoutRef.current = nextSkillIds
+		const nextExpedition = { ...view.expedition, selectedSkillIds: nextSkillIds }
+		expeditionRef.current = nextExpedition
+		setView((previous) => ({ ...previous, expedition: nextExpedition }))
+	}, [view.expedition, view.skillOffers])
+
 	const startFreshRun = useCallback(() => {
-		const expedition = createShallowCoastExpedition(`${starterSeed}:${Date.now()}`)
+		const seed = `${starterSeed}:${Date.now()}`
 		const collection = collectionRef.current ?? createInitialCollection(new Date().toISOString())
+		const level = getAccountLevelProgress(collection.xp).level
+		const selectedSkillIds = pendingSkillLoadoutRef.current ?? getDefaultSkillLoadout(seed, level)
+		const expedition = createShallowCoastExpedition(seed, selectedSkillIds)
+		pendingSkillLoadoutRef.current = null
 		persist(expedition, collection)
 		startEncounterFromExpedition(expedition, collection, "New Shallow Coast expedition")
 	}, [persist, startEncounterFromExpedition])
@@ -378,9 +451,9 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			}
 
 			const skillIndex = Number.parseInt(event.key, 10)
-			if (skillIndex >= 1 && skillIndex <= fishingSkills.length) {
+			if (skillIndex >= 1 && skillIndex <= activeSkills.length) {
 				event.preventDefault()
-				const skill = fishingSkills[skillIndex - 1]
+				const skill = activeSkills[skillIndex - 1]
 				if (skill) {
 					useSkill(skill.id)
 				}
@@ -399,7 +472,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		window.addEventListener("keydown", onKeyDown)
 		return () => window.removeEventListener("keydown", onKeyDown)
-	}, [handleTypingEvents, useSkill])
+	}, [activeSkills, handleTypingEvents, useSkill])
 
 	useEffect(() => {
 		const interval = window.setInterval(() => {
@@ -422,8 +495,10 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	return {
 		bridge,
 		view,
-		activeSkills: fishingSkills,
+		activeSkills: fishingSkills.filter((skill) => view.expedition.selectedSkillIds.includes(skill.id)),
+		skillOffers: view.skillOffers,
 		chooseRoute,
+		setSkillLoadout,
 		useSkill,
 		setVolume,
 		setReducedMotion,
@@ -451,6 +526,7 @@ function createInitialView(): OceanRunView {
 		metrics: snapshot.metrics,
 		routeChoices,
 		selectedRoute: routeChoices[0]!,
+		skillOffers: getSkillDraft(starterSeed, getAccountLevelProgress(collection.xp).level),
 		log: [`Content ${CONTENT_VERSION}`],
 		volumes: {
 			music: 0.45,

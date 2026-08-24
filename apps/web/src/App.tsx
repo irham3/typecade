@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { CSSProperties, ReactElement, ReactNode } from "react"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
+
+gsap.registerPlugin(useGSAP)
 import {
 	Anchor,
 	BookOpen,
@@ -23,7 +27,7 @@ import {
 import type { AccountLevelProgress, FishingSkill, Rarity } from "@typecade/contracts"
 import { fishSpecies } from "@typecade/content"
 import { getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
-import { useOceanRun, type OceanRunView, type VolumeState } from "./hooks/useOceanRun"
+import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
 
 type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | null
 type Screen = "menu" | "prep" | "game"
@@ -42,7 +46,9 @@ export function App() {
 		bridge,
 		view,
 		activeSkills,
+		skillOffers,
 		chooseRoute,
+		setSkillLoadout,
 		useSkill,
 		setVolume,
 		setReducedMotion,
@@ -73,6 +79,10 @@ export function App() {
 			destroyGame?.()
 		}
 	}, [bridge])
+
+	useEffect(() => {
+		bridge.emit("screen:changed", { screen })
+	}, [screen, bridge])
 
 	const caughtCount = Object.keys(view.collection.records).length
 	const totalCount = fishSpecies.length
@@ -121,11 +131,12 @@ export function App() {
 			{screen === "prep" ? (
 				<PreparationScreen
 					view={view}
-					activeSkills={activeSkills}
+					skillOffers={skillOffers}
 					levelProgress={levelProgress}
 					onBack={() => setScreen("menu")}
 					onStart={beginRun}
 					onChooseRoute={chooseRoute}
+					onSetSkillLoadout={setSkillLoadout}
 				/>
 			) : null}
 
@@ -172,6 +183,19 @@ function GameHud({
 	startFreshRun: () => void
 	goToMenu: () => void
 }) {
+	const containerRef = useRef<HTMLDivElement>(null)
+
+	useGSAP(() => {
+		if (view.reducedMotion) return
+
+		gsap.from(".topbar", { y: -50, opacity: 0, duration: 0.6, ease: "back.out(1.5)", delay: 0.1 })
+		gsap.from(".icon-rail button", { x: -30, opacity: 0, duration: 0.4, stagger: 0.08, ease: "power2.out", delay: 0.2 })
+		gsap.from(".bottom-console", { y: 60, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
+		gsap.from(".skill-button", { y: 40, opacity: 0, duration: 0.4, stagger: 0.1, ease: "back.out(1.5)", delay: 0.4 })
+		gsap.from(".route-strip", { y: -20, opacity: 0, duration: 0.5, ease: "power2.out", delay: 0.2 })
+		gsap.from(".fish-card", { x: 50, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
+	}, { scope: containerRef, dependencies: [view.reducedMotion] })
+
 	const timeLeft = formatTime(view.encounter.timeRemainingMs)
 	const tensionPercent = Math.round(view.encounter.tension)
 	const progressPercent = Math.round(view.encounter.progress * 100)
@@ -180,7 +204,7 @@ function GameHud({
 	const encounterLabel = `${getEncounterNumber(view.expedition.currentZoneIndex, view.expedition.currentEncounterIndex)}/10`
 
 	return (
-		<div className="hud" data-testid="ocean-hud">
+		<div className="hud" data-testid="ocean-hud" ref={containerRef}>
 			<TopBar view={view} levelProgress={levelProgress} onSettings={() => setPanel(panel === "settings" ? null : "settings")} />
 
 			<nav className="icon-rail panel-chrome" aria-label="Ocean navigation">
@@ -197,6 +221,7 @@ function GameHud({
 			</section>
 
 			<FishInfoCard fish={view.fish} record={view.collection.records[view.fish.id]} />
+			{view.feedback ? <FeedbackBanner feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
 
 			<section className="bottom-console" data-testid="typing-console">
 				<div className={`tension-wrap ${tensionPercent >= 82 ? "danger" : ""}`}>
@@ -338,9 +363,22 @@ function MainMenu({
 	onCollection: () => void
 	onSettings: () => void
 }) {
+	const containerRef = useRef<HTMLElement>(null)
 	const featuredFish = fishSpecies.filter((fish) => fish.rarity !== "common").slice(0, 3)
+
+	useGSAP(() => {
+		if (view.reducedMotion) return
+
+		gsap.from(".menu-top", { y: -40, opacity: 0, duration: 0.6, ease: "power2.out" })
+		gsap.from(".logo-mark", { scale: 0.8, y: 30, opacity: 0, duration: 0.8, ease: "back.out(1.5)", delay: 0.2 })
+		gsap.from(".menu-hero p", { y: 20, opacity: 0, duration: 0.5, delay: 0.4 })
+		gsap.from(".menu-actions button", { y: 20, opacity: 0, duration: 0.4, stagger: 0.1, delay: 0.5, ease: "back.out(1.2)" })
+		gsap.from(".featured-card", { scale: 0.9, y: 30, opacity: 0, duration: 0.5, stagger: 0.15, delay: 0.6, ease: "back.out(1.2)" })
+		gsap.from(".menu-current-fish", { opacity: 0, duration: 0.5, delay: 0.8 })
+	}, { scope: containerRef, dependencies: [view.reducedMotion] })
+
 	return (
-		<section className="menu-layer" data-testid="main-menu">
+		<section className="menu-layer" data-testid="main-menu" ref={containerRef}>
 			<div className="menu-top">
 				<section className="player-badge panel-chrome">
 					<div className="avatar">
@@ -394,21 +432,33 @@ function MainMenu({
 
 function PreparationScreen({
 	view,
-	activeSkills,
+	skillOffers,
 	levelProgress,
 	onBack,
 	onStart,
 	onChooseRoute,
+	onSetSkillLoadout,
 }: {
 	view: OceanRunView
-	activeSkills: readonly FishingSkill[]
+	skillOffers: readonly FishingSkill[]
 	levelProgress: AccountLevelProgress
 	onBack: () => void
 	onStart: () => void
 	onChooseRoute: (nodeId: string) => void
+	onSetSkillLoadout: (skillIds: string[]) => void
 }) {
+	const containerRef = useRef<HTMLElement>(null)
+
+	useGSAP(() => {
+		if (view.reducedMotion) return
+		gsap.from(".prep-header", { y: -30, opacity: 0, duration: 0.5, ease: "power2.out" })
+		gsap.from(".prep-card", { y: 40, opacity: 0, duration: 0.6, stagger: 0.15, ease: "back.out(1.2)", delay: 0.2 })
+		gsap.from(".prep-skill", { scale: 0.9, opacity: 0, duration: 0.4, stagger: 0.1, delay: 0.4, ease: "back.out(1.5)" })
+		gsap.from(".route-choice-grid button", { x: -20, opacity: 0, duration: 0.4, stagger: 0.1, delay: 0.5, ease: "power2.out" })
+	}, { scope: containerRef, dependencies: [view.reducedMotion] })
+
 	return (
-		<section className="prep-layer" data-testid="prep-screen">
+		<section className="prep-layer" data-testid="prep-screen" ref={containerRef}>
 			<header className="prep-header">
 				<button className="secondary-action small" onClick={onBack}>Back</button>
 				<LogoMark />
@@ -449,17 +499,33 @@ function PreparationScreen({
 				</section>
 
 				<section className="prep-card panel-chrome wide">
-					<h2>Skill Build</h2>
+					<div className="prep-title-row">
+						<h2>Skill Draft</h2>
+						<span>{view.expedition.selectedSkillIds.length}/3 equipped</span>
+					</div>
+					<p className="prep-hint">This run's tide rolls a different offer. Pick up to three: one active, one passive, then build the combo you want.</p>
 					<div className="prep-skill-grid">
-						{activeSkills.map((skill) => (
-							<article key={skill.id} className={`prep-skill ${skill.type}`}>
+						{skillOffers.map((skill) => {
+							const selected = view.expedition.selectedSkillIds.includes(skill.id)
+							return <button
+								key={skill.id}
+								className={`prep-skill ${skill.type} ${selected ? "selected" : ""}`}
+								aria-pressed={selected}
+								onClick={() => {
+									const next = selected
+										? view.expedition.selectedSkillIds.filter((id) => id !== skill.id)
+										: [...view.expedition.selectedSkillIds, skill.id].slice(0, 3)
+									onSetSkillLoadout(next)
+								}}
+							>
 								<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
 								<div>
 									<strong>{skill.name}</strong>
 									<span>{skill.description}</span>
 								</div>
-							</article>
-						))}
+								<em>{selected ? "EQUIPPED" : skill.type.toUpperCase()}</em>
+							</button>
+						})}
 					</div>
 				</section>
 			</div>
@@ -770,6 +836,60 @@ function ResultToast({ view }: { view: OceanRunView }) {
 	)
 }
 
+function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback; reducedMotion: boolean }) {
+	const bannerRef = useRef<HTMLElement>(null)
+	const [visibleId, setVisibleId] = useState(feedback.id)
+
+	useEffect(() => {
+		setVisibleId(feedback.id)
+		const timeout = window.setTimeout(() => setVisibleId((current) => current === feedback.id ? -1 : current), 2600)
+		return () => window.clearTimeout(timeout)
+	}, [feedback.id])
+
+	useGSAP(() => {
+		if (reducedMotion || visibleId !== feedback.id || !bannerRef.current) return
+		const timeline = gsap.timeline()
+		timeline.fromTo(bannerRef.current, {
+			y: -24,
+			opacity: 0,
+			scale: 0.82,
+		}, {
+			y: 0,
+			opacity: 1,
+			scale: 1,
+			duration: 0.42,
+			ease: "back.out(1.7)",
+		}).to(bannerRef.current, {
+			y: -10,
+			opacity: 0,
+			duration: 0.28,
+			delay: 1.7,
+			ease: "power2.in",
+		})
+		return () => timeline.kill()
+	}, { scope: bannerRef, dependencies: [feedback.id, reducedMotion, visibleId] })
+
+	if (visibleId !== feedback.id) {
+		return null
+	}
+
+	return (
+		<aside
+			ref={bannerRef}
+			className={`feedback-banner panel-chrome ${feedback.kind}`}
+			data-testid={feedback.kind === "level" ? "level-up-banner" : "skill-feedback"}
+			role="status"
+			aria-live="polite"
+		>
+			<Sparkles aria-hidden="true" />
+			<div>
+				<strong>{feedback.title}</strong>
+				<span>{feedback.detail}</span>
+			</div>
+		</aside>
+	)
+}
+
 function EquipmentIcon({ file, label }: { file: string; label: string }) {
 	return (
 		<article>
@@ -788,8 +908,15 @@ function XpBar({ progress }: { progress: number }) {
 }
 
 function OverlayPanel({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
+	const containerRef = useRef<HTMLElement>(null)
+
+	useGSAP(() => {
+		gsap.from(containerRef.current, { scale: 0.95, opacity: 0, duration: 0.3, ease: "back.out(1.5)" })
+		gsap.from(containerRef.current?.children || [], { y: 15, opacity: 0, duration: 0.3, stagger: 0.05, delay: 0.1 })
+	}, { scope: containerRef })
+
 	return (
-		<section className="overlay-panel panel-chrome" data-testid="overlay-panel">
+		<section className="overlay-panel panel-chrome" data-testid="overlay-panel" ref={containerRef}>
 			<header>
 				<strong>{title}</strong>
 				<button onClick={onClose} aria-label="Close">

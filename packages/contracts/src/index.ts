@@ -242,6 +242,11 @@ export interface GameEventMap {
 		expedition: ExpeditionState
 		collection: CollectionState
 	}
+	"level:up": {
+		fromLevel: number
+		toLevel: number
+		xp: number
+	}
 	"audio:play": {
 		key: string
 		category: "music" | "environment" | "gameplay" | "typing"
@@ -254,5 +259,8 @@ export interface GameEventMap {
 	}
 	"settings:effects": {
 		reducedMotion: boolean
+	}
+	"screen:changed": {
+		screen: "menu" | "prep" | "game"
 	}
 }
