@@ -1,4 +1,4 @@
-export const CONTENT_VERSION = "ocean-m1-2026-08-17" as const
+export const CONTENT_VERSION = "ocean-m1-2026-08-23-polish" as const
 
 export type Rarity = "common" | "uncommon" | "rare" | "boss"
 
@@ -165,6 +165,14 @@ export interface CollectionState {
 	grantedResultKeys: string[]
 }
 
+export interface AccountLevelProgress {
+	level: number
+	currentXp: number
+	currentLevelXp: number
+	nextLevelXp: number
+	progress: number
+}
+
 export interface ExpeditionCheckpoint {
 	zoneId: ZoneId
 	securedResultKeys: string[]
@@ -184,6 +192,12 @@ export interface ExpeditionState {
 }
 
 export interface GameEventMap {
+	"character:correct": {
+		key: string
+		expected: string
+		progress: number
+		combo: number
+	}
 	"encounter:started": {
 		encounter: EncounterState
 		fish: FishSpecies

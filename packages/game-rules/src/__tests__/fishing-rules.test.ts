@@ -7,7 +7,9 @@ import {
 	createInitialCollection,
 	createSeededRng,
 	createShallowCoastExpedition,
+	getAccountLevelProgress,
 	getBossPhaseForProgress,
+	getFishingSkillCost,
 	resolveCatchResult,
 	secureCheckpoint,
 	startEncounter,
@@ -82,6 +84,26 @@ describe("fishing rules", () => {
 		const slowed = tickEncounter(calm, fish, 3000, ["calm_current"]).encounter
 
 		expect(slowed.tension).toBeLessThan(pressured.tension)
+	})
+
+	it("reports active skill costs for UI and input gating", () => {
+		expect(getFishingSkillCost("sonar")).toBe(15)
+		expect(getFishingSkillCost("calm_current")).toBe(30)
+		expect(getFishingSkillCost("cast_net")).toBe(35)
+		expect(getFishingSkillCost("steel_line")).toBe(0)
+	})
+
+	it("calculates account level progress from earned XP", () => {
+		const fresh = getAccountLevelProgress(0)
+		const progressed = getAccountLevelProgress(96)
+
+		expect(fresh.level).toBe(1)
+		expect(fresh.progress).toBe(0)
+		expect(progressed.level).toBeGreaterThan(1)
+		expect(progressed.currentXp).toBe(96)
+		expect(progressed.nextLevelXp).toBeGreaterThan(progressed.currentLevelXp)
+		expect(progressed.progress).toBeGreaterThanOrEqual(0)
+		expect(progressed.progress).toBeLessThanOrEqual(1)
 	})
 
 	it("secures checkpoint rewards idempotently", () => {

@@ -19,6 +19,7 @@ import {
 import {
 	advanceExpedition,
 	applyTypingEvents,
+	canUseFishingSkill,
 	createInitialCollection,
 	createShallowCoastExpedition,
 	getEncounterIndexInRun,
@@ -52,6 +53,8 @@ export interface OceanRunView {
 	log: string[]
 	volumes: VolumeState
 	reducedMotion: boolean
+	sonarRevealed: boolean
+	lastSkillId?: string
 }
 
 export interface VolumeState {
@@ -66,13 +69,13 @@ export interface OceanRunControls {
 	view: OceanRunView
 	activeSkills: typeof fishingSkills
 	chooseRoute(nodeId: string): void
-	useSkill(skillId: string): void
+	useSkill(skillId: string): boolean
 	setVolume(category: keyof VolumeState, value: number): void
 	setReducedMotion(value: boolean): void
 	startFreshRun(): void
 }
 
-export function useOceanRun(): OceanRunControls {
+export function useOceanRun(controlsActive = true): OceanRunControls {
 	const bridge = useMemo(() => new GameEventBridge(), [])
 	const sessionRef = useRef<TypingSession | null>(null)
 	const expeditionRef = useRef<ExpeditionState | null>(null)
@@ -82,7 +85,13 @@ export function useOceanRun(): OceanRunControls {
 	const selectedRouteRef = useRef<RouteNode | null>(null)
 	const handledEncounterRef = useRef<string | null>(null)
 	const lastTickRef = useRef<number>(0)
+	const controlsActiveRef = useRef(controlsActive)
+	const sonarRevealedUntilRef = useRef(0)
 	const [view, setView] = useState<OceanRunView>(() => createInitialView())
+
+	useEffect(() => {
+		controlsActiveRef.current = controlsActive
+	}, [controlsActive])
 
 	const persist = useCallback((expedition: ExpeditionState, collection: CollectionState) => {
 		try {
@@ -117,6 +126,7 @@ export function useOceanRun(): OceanRunControls {
 			metrics: snapshot.metrics,
 			routeChoices: getRouteNodesForZone(fish.habitat),
 			selectedRoute,
+			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
 			...patch,
 		}))
 	}, [])
@@ -168,6 +178,7 @@ export function useOceanRun(): OceanRunControls {
 			lastResult: undefined,
 			routeChoices,
 			selectedRoute,
+			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
 			log: [logLine ?? `Hooked: ${fish.name}`, ...viewLogTail(view.log)],
 		}
 		setView(nextView)
@@ -236,10 +247,12 @@ export function useOceanRun(): OceanRunControls {
 		}
 
 		encounterRef.current = nextEncounter
+		let lastSkillId: string | undefined
 		for (const event of events) {
 			if (event.type === "skill-triggered") {
+				lastSkillId = normalizeSkillId(event.label ?? "passive")
 				bridge.emit("skill:used", {
-					skillId: event.label?.toLowerCase().replace(/\s+/g, "_") ?? "passive",
+					skillId: lastSkillId,
 					label: event.label ?? "Skill",
 				})
 			}
@@ -253,11 +266,11 @@ export function useOceanRun(): OceanRunControls {
 			progress: nextEncounter.progress,
 			timeRemainingMs: nextEncounter.timeRemainingMs,
 		})
-		syncView()
+		syncView(lastSkillId ? { lastSkillId, log: [`${eventLabel(lastSkillId)} triggered`, ...viewLogTail(view.log)] } : undefined)
 		if (nextEncounter.status !== "active") {
 			finishEncounter(nextEncounter)
 		}
-	}, [bridge, finishEncounter, syncView])
+	}, [bridge, finishEncounter, syncView, view.log])
 
 	const handleTypingEvents = useCallback((typingEvents: TypingEvent[]) => {
 		const encounter = encounterRef.current
@@ -268,6 +281,14 @@ export function useOceanRun(): OceanRunControls {
 		}
 
 		for (const event of typingEvents) {
+			if (event.type === "correct-char") {
+				bridge.emit("character:correct", {
+					key: event.key,
+					expected: event.expected ?? event.key,
+					progress: encounter.progress,
+					combo: encounter.combo,
+				})
+			}
 			if (event.type === "word-complete" && event.word) {
 				bridge.emit("word:completed", {
 					word: event.word,
@@ -292,22 +313,34 @@ export function useOceanRun(): OceanRunControls {
 		applyRuleEvents(applied.encounter, applied.events)
 	}, [applyRuleEvents, bridge])
 
-	const useSkill = useCallback((skillId: string) => {
+	const useSkill = useCallback((skillId: string): boolean => {
 		const encounter = encounterRef.current
 		const fish = fishRef.current
 		if (!encounter || !fish) {
-			return
-		}
-
-		const applied = useFishingSkill(encounter, fish, skillId)
-		if (applied.events.length === 0) {
-			return
+			return false
 		}
 
 		const skill = getSkill(skillId)
+		if (!canUseFishingSkill(encounter, skill)) {
+			return false
+		}
+		const applied = useFishingSkill(encounter, fish, skillId)
+		if (applied.events.length === 0) {
+			return false
+		}
+
+		if (skillId === "sonar") {
+			sonarRevealedUntilRef.current = Date.now() + 12000
+		}
 		bridge.emit("skill:used", { skillId, label: skill.name })
 		applyRuleEvents(applied.encounter, applied.events)
-	}, [applyRuleEvents, bridge])
+		syncView({
+			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
+			lastSkillId: skillId,
+			log: [`${skill.name} used`, ...viewLogTail(view.log)],
+		})
+		return true
+	}, [applyRuleEvents, bridge, syncView, view.log])
 
 	const setVolume = useCallback((category: keyof VolumeState, value: number) => {
 		setView((previous) => {
@@ -340,7 +373,7 @@ export function useOceanRun(): OceanRunControls {
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (isEditableTarget(event.target)) {
+			if (!controlsActiveRef.current || isEditableTarget(event.target)) {
 				return
 			}
 
@@ -426,6 +459,7 @@ function createInitialView(): OceanRunView {
 			typing: 0.38,
 		},
 		reducedMotion: false,
+		sonarRevealed: false,
 	}
 }
 
@@ -458,4 +492,15 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 function viewLogTail(log: string[]): string[] {
 	return log.slice(0, 5)
+}
+
+function normalizeSkillId(label: string): string {
+	return label.toLowerCase().replace(/\s+/g, "_")
+}
+
+function eventLabel(skillId: string): string {
+	return skillId
+		.split("_")
+		.map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+		.join(" ")
 }

@@ -1,4 +1,5 @@
 import type {
+	AccountLevelProgress,
 	CatchResult,
 	CollectionRecord,
 	CollectionState,
@@ -54,6 +55,11 @@ export const expeditionFishOrder = [
 ] as const
 
 const bossPhaseThresholds = [0, 0.34, 0.67] as const
+const activeSkillCosts: Record<string, number> = {
+	cast_net: 35,
+	sonar: 15,
+	calm_current: 30,
+}
 
 export function createSeededRng(seed: string): SeededRng {
 	let state = hashSeed(seed)
@@ -85,6 +91,35 @@ export function createInitialCollection(nowIso = new Date(0).toISOString()): Col
 		materials: 685,
 		xp: 24,
 		grantedResultKeys: [],
+	}
+}
+
+export function getFishingSkillCost(skillId: string): number {
+	return activeSkillCosts[skillId] ?? 0
+}
+
+export function canUseFishingSkill(encounter: EncounterState, skill: FishingSkill): boolean {
+	return skill.type === "active" && encounter.status === "active" && encounter.skillEnergy >= getFishingSkillCost(skill.id)
+}
+
+export function getAccountLevelProgress(xp: number): AccountLevelProgress {
+	const safeXp = Math.max(0, Math.floor(xp))
+	let level = 1
+	let currentLevelXp = 0
+	let nextLevelXp = getLevelThreshold(level + 1)
+
+	while (safeXp >= nextLevelXp) {
+		level += 1
+		currentLevelXp = nextLevelXp
+		nextLevelXp = getLevelThreshold(level + 1)
+	}
+
+	return {
+		level,
+		currentXp: safeXp,
+		currentLevelXp,
+		nextLevelXp,
+		progress: clamp((safeXp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp), 0, 1),
 	}
 }
 
@@ -195,6 +230,9 @@ export function applyTypingEvents(
 			if (masteryBonus > 0) {
 				events.push({ type: "skill-triggered", label: "Reel Mastery" })
 			}
+			if (selectedSkillIds.includes("perfect_bait") && perfect && next.perfectWords === 4 && fish.rarity !== "common") {
+				events.push({ type: "skill-triggered", label: "Perfect Bait" })
+			}
 		}
 
 		next = applyBossPhase(next, events)
@@ -248,34 +286,34 @@ export function useFishingSkill(encounter: EncounterState, fish: FishSpecies, sk
 	let next = { ...encounter }
 	const events: FishingRuleEvent[] = []
 
-	if (skill.id === "cast_net" && next.skillEnergy >= 35) {
+	if (skill.id === "cast_net" && next.skillEnergy >= getFishingSkillCost(skill.id)) {
 		events.push({ type: "skill-used", label: skill.name })
 		const instantCapture = fish.rarity === "common" && fish.baseSizeKg <= 2.2 && next.progress >= 0.2
 		next = {
 			...next,
-			skillEnergy: next.skillEnergy - 35,
+			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),
 			progress: instantCapture ? 1 : clamp(next.progress + 0.32, 0, 1),
 			tension: clamp(next.tension + 6, 0, 100),
 		}
 		events.push({ type: "progress", value: next.progress })
 	}
 
-	if (skill.id === "calm_current" && next.skillEnergy >= 30) {
+	if (skill.id === "calm_current" && next.skillEnergy >= getFishingSkillCost(skill.id)) {
 		events.push({ type: "skill-used", label: skill.name })
 		next = {
 			...next,
-			skillEnergy: next.skillEnergy - 30,
+			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),
 			calmCurrentRemainingMs: 8000,
 			tension: clamp(next.tension - 10, 0, 100),
 		}
 		events.push({ type: "tension", value: next.tension })
 	}
 
-	if (skill.id === "sonar" && next.skillEnergy >= 15) {
+	if (skill.id === "sonar" && next.skillEnergy >= getFishingSkillCost(skill.id)) {
 		events.push({ type: "skill-used", label: skill.name })
 		next = {
 			...next,
-			skillEnergy: next.skillEnergy - 15,
+			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),
 		}
 	}
 
@@ -531,6 +569,13 @@ function getBehaviorProgressModifier(fish: FishSpecies): number {
 		case "boss":
 			return 0.78
 	}
+}
+
+function getLevelThreshold(level: number): number {
+	if (level <= 1) {
+		return 0
+	}
+	return Math.round(24 * Math.pow(level - 1, 1.72))
 }
 
 function validateSkills(skillIds: readonly string[]): void {
