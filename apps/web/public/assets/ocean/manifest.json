@@ -24,28 +24,51 @@
     "backgrounds/bg_shallow_coast_zone3_water.webp"
   ],
   "audio": [
+    "audio/sfx_ambient_ocean_loop.mp3",
     "audio/sfx_ambient_ocean_loop.ogg",
+    "audio/sfx_cast_net_a.mp3",
     "audio/sfx_cast_net_a.ogg",
+    "audio/sfx_catch_impact_a.mp3",
     "audio/sfx_catch_impact_a.ogg",
+    "audio/sfx_combo_milestone_a.mp3",
     "audio/sfx_combo_milestone_a.ogg",
+    "audio/sfx_combo_milestone_b.mp3",
     "audio/sfx_combo_milestone_b.ogg",
+    "audio/sfx_correct_tick_a.mp3",
     "audio/sfx_correct_tick_a.ogg",
+    "audio/sfx_correct_tick_b.mp3",
     "audio/sfx_correct_tick_b.ogg",
+    "audio/sfx_escape_snap_a.mp3",
     "audio/sfx_escape_snap_a.ogg",
+    "audio/sfx_line_critical_a.mp3",
     "audio/sfx_line_critical_a.ogg",
+    "audio/sfx_line_tension_a.mp3",
     "audio/sfx_line_tension_a.ogg",
+    "audio/sfx_line_tension_b.mp3",
     "audio/sfx_line_tension_b.ogg",
+    "audio/sfx_music_boss_layer.mp3",
     "audio/sfx_music_boss_layer.ogg",
+    "audio/sfx_music_expedition_loop.mp3",
     "audio/sfx_music_expedition_loop.ogg",
+    "audio/sfx_rare_sting_a.mp3",
     "audio/sfx_rare_sting_a.ogg",
+    "audio/sfx_reward_sting_a.mp3",
     "audio/sfx_reward_sting_a.ogg",
+    "audio/sfx_skill_activate_a.mp3",
     "audio/sfx_skill_activate_a.ogg",
+    "audio/sfx_skill_ready_a.mp3",
     "audio/sfx_skill_ready_a.ogg",
+    "audio/sfx_splash_a.mp3",
     "audio/sfx_splash_a.ogg",
+    "audio/sfx_splash_b.mp3",
     "audio/sfx_splash_b.ogg",
+    "audio/sfx_typo_thud_a.mp3",
     "audio/sfx_typo_thud_a.ogg",
+    "audio/sfx_typo_thud_b.mp3",
     "audio/sfx_typo_thud_b.ogg",
+    "audio/sfx_word_complete_a.mp3",
     "audio/sfx_word_complete_a.ogg",
+    "audio/sfx_word_complete_b.mp3",
     "audio/sfx_word_complete_b.ogg"
   ],
   "assets": [
@@ -60,9 +83,19 @@
       "note": "Generated Phaser texture atlas image"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_ambient_ocean_loop.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_ambient_ocean_loop.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_ambient_ocean_loop.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_ambient_ocean_loop.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_cast_net_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_cast_net_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_cast_net_a.ogg",
@@ -70,9 +103,19 @@
       "note": "Generated synthesized audio cue sfx_cast_net_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_catch_impact_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_catch_impact_a.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_catch_impact_a.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_catch_impact_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_combo_milestone_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_combo_milestone_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_combo_milestone_a.ogg",
@@ -80,9 +123,19 @@
       "note": "Generated synthesized audio cue sfx_combo_milestone_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_combo_milestone_b.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_combo_milestone_b.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_combo_milestone_b.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_combo_milestone_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_correct_tick_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_correct_tick_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_correct_tick_a.ogg",
@@ -90,9 +143,19 @@
       "note": "Generated synthesized audio cue sfx_correct_tick_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_correct_tick_b.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_correct_tick_b.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_correct_tick_b.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_correct_tick_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_escape_snap_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_escape_snap_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_escape_snap_a.ogg",
@@ -100,9 +163,19 @@
       "note": "Generated synthesized audio cue sfx_escape_snap_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_line_critical_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_line_critical_a.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_line_critical_a.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_line_critical_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_line_tension_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_line_tension_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_line_tension_a.ogg",
@@ -110,9 +183,19 @@
       "note": "Generated synthesized audio cue sfx_line_tension_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_line_tension_b.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_line_tension_b.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_line_tension_b.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_line_tension_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_music_boss_layer.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_music_boss_layer.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_music_boss_layer.ogg",
@@ -120,9 +203,19 @@
       "note": "Generated synthesized audio cue sfx_music_boss_layer.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_music_expedition_loop.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_music_expedition_loop.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_music_expedition_loop.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_music_expedition_loop.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_rare_sting_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_rare_sting_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_rare_sting_a.ogg",
@@ -130,9 +223,19 @@
       "note": "Generated synthesized audio cue sfx_rare_sting_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_reward_sting_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_reward_sting_a.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_reward_sting_a.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_reward_sting_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_skill_activate_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_skill_activate_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_skill_activate_a.ogg",
@@ -140,9 +243,19 @@
       "note": "Generated synthesized audio cue sfx_skill_activate_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_skill_ready_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_skill_ready_a.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_skill_ready_a.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_skill_ready_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_splash_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_splash_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_splash_a.ogg",
@@ -150,9 +263,19 @@
       "note": "Generated synthesized audio cue sfx_splash_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_splash_b.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_splash_b.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_splash_b.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_splash_b.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_typo_thud_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_typo_thud_a.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_typo_thud_a.ogg",
@@ -160,14 +283,29 @@
       "note": "Generated synthesized audio cue sfx_typo_thud_a.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_typo_thud_b.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_typo_thud_b.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_typo_thud_b.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_typo_thud_b.ogg"
     },
     {
+      "path": "apps/web/public/assets/ocean/audio/sfx_word_complete_a.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_word_complete_a.mp3"
+    },
+    {
       "path": "apps/web/public/assets/ocean/audio/sfx_word_complete_a.ogg",
       "usage": "audio",
       "note": "Generated synthesized audio cue sfx_word_complete_a.ogg"
+    },
+    {
+      "path": "apps/web/public/assets/ocean/audio/sfx_word_complete_b.mp3",
+      "usage": "audio",
+      "note": "Generated synthesized audio fallback sfx_word_complete_b.mp3"
     },
     {
       "path": "apps/web/public/assets/ocean/audio/sfx_word_complete_b.ogg",

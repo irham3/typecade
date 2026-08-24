@@ -198,25 +198,49 @@ def generate_equipment() -> list[dict[str, str]]:
         image = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image, "RGBA")
         if kind == "boat":
-            draw.rounded_rectangle((16, 58, 112, 92), radius=16, fill=(121, 70, 38, 255), outline=UI_INK, width=4)
-            draw.polygon([(34, 58), (92, 58), (78, 36), (48, 36)], fill=(225, 196, 129, 255), outline=UI_INK)
+            draw.ellipse((18, 86, 114, 108), fill=(0, 18, 32, 90))
+            draw.rounded_rectangle((12, 56, 116, 94), radius=18, fill=(105, 59, 34, 255), outline=UI_INK, width=5)
+            draw.rounded_rectangle((23, 51, 105, 75), radius=12, fill=(188, 112, 56, 255), outline=(42, 23, 18, 255), width=3)
+            draw.polygon([(37, 52), (93, 52), (80, 31), (50, 31)], fill=(235, 202, 131, 255), outline=UI_INK)
+            draw.line((28, 82, 100, 80), fill=(246, 205, 102, 160), width=3)
+            draw.ellipse((49, 60, 62, 72), fill=(45, 160, 190, 255), outline=UI_INK, width=2)
+            draw.ellipse((72, 59, 86, 72), fill=(45, 160, 190, 255), outline=UI_INK, width=2)
         elif "rod" in kind:
-            draw.line((28, 104, 102, 18), fill=(136, 79, 40, 255), width=8)
-            draw.line((34, 104, 108, 18), fill=(246, 201, 83, 255), width=2)
-            draw.arc((84, 14, 116, 44), 270, 90, fill=(210, 236, 246, 255), width=3)
+            rod_color = (122, 72, 35, 255) if "bamboo" in kind else (44, 114, 142, 255)
+            glow = (246, 201, 83, 255) if "bamboo" in kind else (144, 238, 255, 255)
+            draw.line((25, 108, 104, 17), fill=UI_INK, width=12)
+            draw.line((28, 106, 103, 18), fill=rod_color, width=8)
+            for band in range(5):
+                x = 34 + band * 14
+                y = 98 - band * 16
+                draw.line((x - 3, y + 4, x + 9, y - 9), fill=glow, width=3)
+            draw.line((34, 104, 108, 18), fill=(255, 240, 176, 190), width=2)
+            draw.ellipse((35, 82, 62, 109), fill=(44, 48, 60, 255), outline=UI_INK, width=3)
+            draw.ellipse((41, 88, 56, 103), fill=glow, outline=UI_INK, width=2)
+            draw.arc((84, 13, 118, 48), 270, 92, fill=(210, 246, 252, 255), width=4)
+            draw.ellipse((108, 26, 116, 34), fill=UI_GOLD, outline=UI_INK, width=1)
         elif "line" in kind:
             color = (210, 244, 250, 255) if "luminous" in kind else (222, 231, 231, 255)
-            for offset in range(26, 104, 18):
-                draw.arc((offset, 16, offset + 42, 112), 90, 270, fill=color, width=4)
+            for offset in range(22, 106, 14):
+                draw.arc((offset, 14, offset + 48, 113), 90, 270, fill=UI_INK, width=7)
+                draw.arc((offset, 14, offset + 48, 113), 90, 270, fill=color, width=4)
+            if "luminous" in kind:
+                draw.ellipse((22, 20, 108, 108), outline=(112, 238, 255, 80), width=5)
         elif "bait" in kind:
             fill = UI_GOLD if "moon" in kind else (238, 108, 128, 255) if "coral" in kind else (131, 222, 178, 255)
-            draw.ellipse((33, 28, 95, 92), fill=fill, outline=UI_INK, width=4)
-            draw.arc((54, 14, 98, 60), 120, 260, fill=WHITE, width=4)
+            draw.ellipse((34, 30, 96, 94), fill=UI_INK)
+            draw.ellipse((30, 24, 92, 88), fill=fill, outline=UI_INK, width=4)
+            draw.ellipse((42, 34, 61, 51), fill=(255, 255, 255, 125))
+            draw.arc((54, 12, 101, 62), 120, 260, fill=WHITE, width=4)
+            draw.ellipse((75, 76, 88, 89), fill=(*rarity_accent("rare"), 170))
         elif kind == "net":
-            draw.ellipse((28, 28, 100, 88), outline=WHITE, width=4)
-            for x in range(36, 96, 14):
-                draw.line((x, 32, x - 20, 88), fill=(190, 225, 232, 180), width=2)
-            draw.line((78, 82, 112, 112), fill=(137, 80, 44, 255), width=8)
+            draw.line((78, 82, 114, 116), fill=UI_INK, width=12)
+            draw.line((78, 82, 114, 116), fill=(137, 80, 44, 255), width=8)
+            draw.ellipse((24, 20, 104, 90), outline=UI_INK, width=8)
+            draw.ellipse((28, 24, 100, 86), outline=WHITE, width=4)
+            for x in range(36, 98, 12):
+                draw.line((x, 29, x - 20, 84), fill=(190, 225, 232, 185), width=2)
+                draw.line((x - 18, 29, x + 4, 84), fill=(190, 225, 232, 130), width=2)
         path = OUT / "equipment" / filename
         image.save(path)
         entries.append(asset_entry(path, "equipment", f"Generated {kind} equipment asset"))
@@ -343,9 +367,11 @@ def generate_audio() -> list[dict[str, str]]:
         ("sfx_music_boss_layer.ogg", 90, 6.0),
     ]
     for filename, frequency, duration in specs:
-        path = OUT / "audio" / filename
-        write_ogg_tone(path, frequency, duration, loop="loop" in filename or "music" in filename)
-        entries.append(asset_entry(path, "audio", f"Generated synthesized audio cue {filename}"))
+        ogg_path = OUT / "audio" / filename
+        mp3_path = ogg_path.with_suffix(".mp3")
+        write_audio_tone(ogg_path, mp3_path, frequency, duration, loop="loop" in filename or "music" in filename)
+        entries.append(asset_entry(ogg_path, "audio", f"Generated synthesized audio cue {filename}"))
+        entries.append(asset_entry(mp3_path, "audio", f"Generated synthesized audio fallback {mp3_path.name}"))
     return entries
 
 
@@ -424,7 +450,8 @@ def draw_fish_frame(
     image = Image.new("RGBA", size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(image, "RGBA")
     phase = frame / frame_count * math.tau
-    tail = math.sin(phase) * 10
+    tail = math.sin(phase) * (16 if rarity in {"rare", "boss"} else 10)
+    body_bob = math.sin(phase) * (5 if state in {"swim", "struggle"} else 2)
     squash = 1.0
     if state == "struggle":
         tail *= 1.65
@@ -435,76 +462,130 @@ def draw_fish_frame(
         tail *= 0.5
     scale = 1.55 if rarity == "boss" else 1
     cx, cy = width * 0.54, height * 0.5
-    body_w, body_h = width * 0.54, height * 0.38 * squash
+    body_w, body_h = width * (0.66 if motif in {"glass", "crown"} else 0.58), height * (0.4 if motif != "glass" else 0.24) * squash
     outline = (4, 11, 25, 255)
-    glow = (primary[0], primary[1], primary[2], 58)
+    highlight = lighten(primary, 72)
+    lowlight = darken(secondary, 30)
+    accent = rarity_accent(rarity)
+    glow = (accent[0], accent[1], accent[2], 72 if rarity in {"rare", "boss"} else 34)
 
     if rarity in {"rare", "boss", "uncommon"}:
-        draw.ellipse((cx - body_w * 0.74, cy - body_h * 0.68, cx + body_w * 0.72, cy + body_h * 0.7), fill=glow)
+        draw.ellipse((cx - body_w * 0.82, cy - body_h * 0.9, cx + body_w * 0.8, cy + body_h * 0.9), fill=glow)
+
+    if motif == "crown":
+        draw_leviathan_body(draw, cx, cy + body_bob, body_w, body_h, primary, secondary, accent, outline, phase, state)
+        add_state_fx(draw, image, state, frame, frame_count, cx, cy, body_w, body_h, accent, outline)
+        if state == "escape":
+            image = image.filter(ImageFilter.GaussianBlur(radius=0.65))
+        return image
+
+    if motif == "glass":
+        draw_eel_body(draw, cx, cy + body_bob, body_w, body_h, primary, secondary, accent, outline, phase, state)
+        add_state_fx(draw, image, state, frame, frame_count, cx, cy, body_w, body_h, accent, outline)
+        if state == "escape":
+            image = image.filter(ImageFilter.GaussianBlur(radius=0.55))
+        return image
 
     tail_points = [
-        (cx - body_w * 0.48, cy),
-        (cx - body_w * 0.86, cy - body_h * 0.46 - tail),
-        (cx - body_w * 0.74, cy),
-        (cx - body_w * 0.86, cy + body_h * 0.46 - tail),
+        (cx - body_w * 0.49, cy + body_bob),
+        (cx - body_w * 0.92, cy - body_h * 0.52 - tail + body_bob),
+        (cx - body_w * 0.72, cy + body_bob),
+        (cx - body_w * 0.92, cy + body_h * 0.52 - tail + body_bob),
     ]
     draw.polygon(tail_points, fill=(*secondary, 255), outline=outline)
+    draw.line((tail_points[1], tail_points[3]), fill=lighten(secondary, 38), width=3)
+
+    if motif == "shark":
+        body_shape = [
+            (cx - body_w * 0.52, cy + body_bob),
+            (cx - body_w * 0.18, cy - body_h * 0.54 + body_bob),
+            (cx + body_w * 0.56, cy - body_h * 0.24 + body_bob),
+            (cx + body_w * 0.62, cy + body_bob),
+            (cx + body_w * 0.46, cy + body_h * 0.28 + body_bob),
+            (cx - body_w * 0.18, cy + body_h * 0.48 + body_bob),
+        ]
+        draw.polygon(body_shape, fill=(*primary, 255), outline=outline)
+    elif motif == "armor":
+        draw.rounded_rectangle(
+            (cx - body_w * 0.52, cy - body_h * 0.56 + body_bob, cx + body_w * 0.48, cy + body_h * 0.56 + body_bob),
+            radius=int(body_h * 0.5),
+            fill=(*primary, 255),
+            outline=outline,
+            width=max(3, int(4 * scale)),
+        )
+        for spike in range(6):
+            sx = cx - body_w * 0.38 + spike * body_w * 0.15
+            draw.polygon([(sx, cy - body_h * 0.5 + body_bob), (sx + 8, cy - body_h * 0.78 + body_bob), (sx + 16, cy - body_h * 0.5 + body_bob)], fill=(*secondary, 255), outline=outline)
+    else:
+        draw.ellipse(
+            (cx - body_w * 0.5, cy - body_h * 0.5 + body_bob, cx + body_w * 0.5, cy + body_h * 0.5 + body_bob),
+            fill=(*primary, 255),
+            outline=outline,
+            width=max(3, int(4 * scale)),
+        )
+
     draw.ellipse(
-        (cx - body_w * 0.5, cy - body_h * 0.5, cx + body_w * 0.5, cy + body_h * 0.5),
-        fill=(*primary, 255),
-        outline=outline,
-        width=max(3, int(4 * scale)),
+        (cx - body_w * 0.42, cy - body_h * 0.42 + body_bob, cx + body_w * 0.44, cy + body_h * 0.02 + body_bob),
+        fill=(*highlight, 72),
+    )
+    draw.arc(
+        (cx - body_w * 0.45, cy - body_h * 0.34 + body_bob, cx + body_w * 0.44, cy + body_h * 0.52 + body_bob),
+        28,
+        164,
+        fill=(*lowlight, 150),
+        width=4,
     )
     draw.polygon(
-        [(cx - body_w * 0.05, cy - body_h * 0.34), (cx + body_w * 0.1, cy - body_h * 0.76), (cx + body_w * 0.24, cy - body_h * 0.32)],
-        fill=(*secondary, 230),
+        [(cx - body_w * 0.07, cy - body_h * 0.34 + body_bob), (cx + body_w * 0.12, cy - body_h * 0.83 + body_bob - abs(tail) * 0.1), (cx + body_w * 0.28, cy - body_h * 0.28 + body_bob)],
+        fill=(*secondary, 238),
         outline=outline,
     )
     draw.polygon(
-        [(cx - body_w * 0.05, cy + body_h * 0.26), (cx + body_w * 0.17, cy + body_h * 0.7), (cx + body_w * 0.3, cy + body_h * 0.2)],
+        [(cx - body_w * 0.06, cy + body_h * 0.24 + body_bob), (cx + body_w * 0.2, cy + body_h * 0.77 + body_bob + abs(tail) * 0.08), (cx + body_w * 0.33, cy + body_h * 0.18 + body_bob)],
         fill=(*secondary, 220),
         outline=outline,
     )
-    draw.ellipse((cx + body_w * 0.24, cy - body_h * 0.18, cx + body_w * 0.38, cy - body_h * 0.04), fill=WHITE, outline=outline, width=2)
-    draw.ellipse((cx + body_w * 0.3, cy - body_h * 0.14, cx + body_w * 0.36, cy - body_h * 0.08), fill=UI_INK)
+    eye_box = (cx + body_w * 0.25, cy - body_h * 0.18 + body_bob, cx + body_w * 0.39, cy - body_h * 0.03 + body_bob)
+    if state == "idle" and frame == frame_count // 2:
+        draw.line((eye_box[0], (eye_box[1] + eye_box[3]) / 2, eye_box[2], (eye_box[1] + eye_box[3]) / 2), fill=outline, width=3)
+    else:
+        draw.ellipse(eye_box, fill=WHITE, outline=outline, width=2)
+        draw.ellipse((cx + body_w * 0.31, cy - body_h * 0.14 + body_bob, cx + body_w * 0.37, cy - body_h * 0.08 + body_bob), fill=UI_INK)
+        draw.point((cx + body_w * 0.34, cy - body_h * 0.12 + body_bob), fill=WHITE)
 
     if motif == "stripe":
         for offset in [-0.18, 0.02, 0.22]:
-            draw.arc((cx + body_w * offset, cy - body_h * 0.45, cx + body_w * (offset + 0.24), cy + body_h * 0.44), 94, 266, fill=(255, 255, 255, 130), width=3)
+            draw.arc((cx + body_w * offset, cy - body_h * 0.45 + body_bob, cx + body_w * (offset + 0.24), cy + body_h * 0.44 + body_bob), 94, 266, fill=(255, 255, 255, 150), width=3)
     elif motif == "spot":
-        for index in range(5):
-            draw.ellipse((cx - body_w * 0.18 + index * 13, cy - 10 + math.sin(index) * 10, cx - body_w * 0.12 + index * 13, cy - 4 + math.sin(index) * 10), fill=(255, 248, 160, 190))
+        for index in range(7):
+            px = cx - body_w * 0.23 + index * body_w * 0.1
+            py = cy - 11 + math.sin(index) * 11 + body_bob
+            draw.ellipse((px, py, px + 7, py + 7), fill=(255, 248, 160, 210))
     elif motif == "armor":
         for offset in [-0.28, -0.1, 0.08, 0.26]:
-            draw.line((cx + body_w * offset, cy - body_h * 0.36, cx + body_w * (offset + 0.08), cy + body_h * 0.36), fill=(10, 40, 46, 150), width=3)
+            draw.line((cx + body_w * offset, cy - body_h * 0.36 + body_bob, cx + body_w * (offset + 0.08), cy + body_h * 0.36 + body_bob), fill=(10, 40, 46, 165), width=3)
     elif motif == "moon":
-        for index in range(10):
+        for index in range(14):
             angle = index * 0.9
-            draw.ellipse((cx - 35 + math.cos(angle) * 42, cy - 16 + math.sin(angle) * 20, cx - 29 + math.cos(angle) * 42, cy - 10 + math.sin(angle) * 20), fill=(255, 213, 245, 220))
-    elif motif == "glass":
-        draw.line((cx - body_w * 0.34, cy, cx + body_w * 0.28, cy), fill=(255, 255, 255, 150), width=3)
+            px = cx - 35 + math.cos(angle) * 45
+            py = cy - 16 + math.sin(angle) * 22 + body_bob
+            draw.ellipse((px, py, px + 7, py + 7), fill=(255, 213, 245, 230))
     elif motif == "shark":
-        draw.polygon([(cx + body_w * 0.02, cy - body_h * 0.5), (cx + body_w * 0.16, cy - body_h * 0.95), (cx + body_w * 0.32, cy - body_h * 0.38)], fill=(*secondary, 255), outline=outline)
-    elif motif == "crown":
-        crown_y = cy - body_h * 0.58
-        draw.polygon(
-            [
-                (cx + body_w * 0.02, crown_y),
-                (cx + body_w * 0.12, crown_y - 22),
-                (cx + body_w * 0.2, crown_y),
-                (cx + body_w * 0.31, crown_y - 28),
-                (cx + body_w * 0.42, crown_y),
-            ],
-            fill=UI_GOLD,
-            outline=outline,
-        )
+        draw.polygon([(cx + body_w * 0.0, cy - body_h * 0.52 + body_bob), (cx + body_w * 0.18, cy - body_h * 1.02 + body_bob), (cx + body_w * 0.34, cy - body_h * 0.38 + body_bob)], fill=(*secondary, 255), outline=outline)
+        draw.line((cx + body_w * 0.14, cy + body_h * 0.07 + body_bob, cx + body_w * 0.48, cy + body_h * 0.06 + body_bob), fill=(255, 255, 255, 120), width=3)
+    elif motif == "coral":
+        for branch in range(5):
+            bx = cx - body_w * 0.28 + branch * body_w * 0.13
+            draw.line((bx, cy - body_h * 0.4 + body_bob, bx + math.sin(branch) * 8, cy - body_h * 0.66 + body_bob), fill=(*accent, 210), width=3)
+    elif motif == "swarm":
+        for index in range(3):
+            sx = cx - body_w * 0.32 + index * body_w * 0.22
+            sy = cy + body_h * 0.2 + math.sin(index + phase) * 6 + body_bob
+            draw_fish_silhouette(draw, sx, sy, 0.18, (*accent, 140))
+    elif motif == "dash":
+        draw.line((cx - body_w * 0.38, cy + body_bob, cx + body_w * 0.2, cy - body_h * 0.2 + body_bob), fill=(*highlight, 175), width=5)
 
-    if state == "stunned":
-        draw.line((cx + body_w * 0.14, cy - body_h * 0.48, cx + body_w * 0.34, cy - body_h * 0.64), fill=UI_GOLD, width=4)
-    if state == "bite":
-        draw.arc((cx + body_w * 0.34, cy - 2, cx + body_w * 0.58, cy + body_h * 0.24), 20, 160, fill=WHITE, width=3)
-    if state == "escape":
-        image = image.filter(ImageFilter.GaussianBlur(radius=0.6))
+    add_state_fx(draw, image, state, frame, frame_count, cx, cy + body_bob, body_w, body_h, accent, outline)
 
     angle = 0
     if state == "struggle":
@@ -516,6 +597,84 @@ def draw_fish_frame(
     if angle:
         image = image.rotate(angle, resample=Image.Resampling.BICUBIC, expand=False)
     return image
+
+
+def draw_eel_body(draw: ImageDraw.ImageDraw, cx: float, cy: float, body_w: float, body_h: float, primary: tuple[int, int, int], secondary: tuple[int, int, int], accent: tuple[int, int, int], outline: tuple[int, int, int, int], phase: float, state: str) -> None:
+    points = []
+    for index in range(10):
+        amount = index / 9
+        x = cx - body_w * 0.55 + body_w * amount
+        y = cy + math.sin(amount * math.tau * 1.25 + phase) * body_h * (0.55 if state == "struggle" else 0.34)
+        points.append((x, y))
+    draw.line(points, fill=outline, width=22, joint="curve")
+    draw.line(points, fill=(*secondary, 255), width=17, joint="curve")
+    draw.line(points, fill=(*primary, 235), width=11, joint="curve")
+    draw.line(points, fill=(255, 255, 255, 150), width=3, joint="curve")
+    head = points[-1]
+    draw.ellipse((head[0] - 12, head[1] - 9, head[0] + 15, head[1] + 10), fill=(*primary, 255), outline=outline, width=3)
+    draw.ellipse((head[0] + 4, head[1] - 5, head[0] + 12, head[1] + 3), fill=WHITE, outline=outline, width=1)
+    draw.ellipse((head[0] + 8, head[1] - 3, head[0] + 12, head[1] + 1), fill=UI_INK)
+    for index, point in enumerate(points[1:-1:2]):
+        draw.ellipse((point[0] - 3, point[1] - 3, point[0] + 3, point[1] + 3), fill=(*accent, 180))
+
+
+def draw_leviathan_body(draw: ImageDraw.ImageDraw, cx: float, cy: float, body_w: float, body_h: float, primary: tuple[int, int, int], secondary: tuple[int, int, int], accent: tuple[int, int, int], outline: tuple[int, int, int, int], phase: float, state: str) -> None:
+    centers = []
+    for index in range(7):
+        amount = index / 6
+        x = cx - body_w * 0.54 + body_w * amount
+        y = cy + math.sin(amount * math.tau * 0.82 + phase) * body_h * (0.24 if state != "struggle" else 0.44)
+        centers.append((x, y))
+    for index, (x, y) in enumerate(centers):
+        radius_x = body_w * (0.16 - index * 0.007)
+        radius_y = body_h * (0.52 - index * 0.02)
+        draw.ellipse((x - radius_x, y - radius_y, x + radius_x, y + radius_y), fill=(*primary, 255), outline=outline, width=4)
+        draw.ellipse((x - radius_x * 0.72, y - radius_y * 0.74, x + radius_x * 0.54, y - radius_y * 0.06), fill=(*lighten(primary, 58), 86))
+        if index % 2 == 0:
+            draw.polygon([(x - 8, y - radius_y * 0.8), (x + 8, y - radius_y * 1.35), (x + 22, y - radius_y * 0.76)], fill=(*secondary, 245), outline=outline)
+    head_x, head_y = centers[-1]
+    draw.polygon([(head_x + 22, head_y - 20), (head_x + 48, head_y - 5), (head_x + 24, head_y + 18)], fill=(*primary, 255), outline=outline)
+    crown_y = head_y - body_h * 0.58
+    draw.polygon(
+        [
+            (head_x - 10, crown_y),
+            (head_x + 2, crown_y - 28),
+            (head_x + 14, crown_y),
+            (head_x + 30, crown_y - 34),
+            (head_x + 46, crown_y),
+        ],
+        fill=UI_GOLD,
+        outline=outline,
+    )
+    draw.ellipse((head_x + 24, head_y - 11, head_x + 38, head_y + 2), fill=WHITE, outline=outline, width=2)
+    draw.ellipse((head_x + 30, head_y - 8, head_x + 36, head_y - 2), fill=UI_INK)
+    for index, (x, y) in enumerate(centers):
+        draw.ellipse((x - 5, y - 3, x + 5, y + 7), fill=(*accent, 170 + (index % 2) * 50))
+
+
+def add_state_fx(draw: ImageDraw.ImageDraw, image: Image.Image, state: str, frame: int, frame_count: int, cx: float, cy: float, body_w: float, body_h: float, accent: tuple[int, int, int], outline: tuple[int, int, int, int]) -> None:
+    if state == "stunned":
+        for index in range(3):
+            x = cx + body_w * (0.05 + index * 0.16)
+            y = cy - body_h * (0.72 + 0.08 * math.sin(frame + index))
+            draw.line((x - 7, y, x, y - 10, x + 7, y), fill=UI_GOLD, width=3)
+    if state == "bite":
+        draw.arc((cx + body_w * 0.32, cy - 4, cx + body_w * 0.62, cy + body_h * 0.25), 20, 160, fill=WHITE, width=4)
+    if state == "caught":
+        draw.ellipse((cx - body_w * 0.62, cy - body_h * 0.68, cx + body_w * 0.68, cy + body_h * 0.72), outline=(*accent, 160), width=4)
+        for index in range(5):
+            angle = frame / max(1, frame_count) * math.tau + index * 1.25
+            px = cx + math.cos(angle) * body_w * 0.58
+            py = cy + math.sin(angle) * body_h * 0.58
+            draw.polygon([(px, py - 5), (px + 4, py), (px, py + 5), (px - 4, py)], fill=UI_GOLD)
+    if state == "struggle":
+        draw.line((cx - body_w * 0.64, cy - body_h * 0.68, cx - body_w * 0.52, cy - body_h * 0.9, cx - body_w * 0.38, cy - body_h * 0.68), fill=(*accent, 180), width=3)
+        draw.line((cx + body_w * 0.36, cy + body_h * 0.52, cx + body_w * 0.5, cy + body_h * 0.72), fill=(255, 255, 255, 180), width=3)
+    if state == "escape":
+        overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        odraw = ImageDraw.Draw(overlay, "RGBA")
+        odraw.rectangle((0, 0, image.size[0], image.size[1]), fill=(20, 80, 120, 48))
+        image.alpha_composite(overlay)
 
 
 def draw_panel(width: int, height: int, label: str, border: tuple[int, int, int, int] = UI_BORDER) -> Image.Image:
@@ -620,9 +779,9 @@ def draw_vfx_tension() -> Image.Image:
     return image
 
 
-def write_ogg_tone(path: Path, frequency: int, duration: float, loop: bool = False) -> None:
+def write_audio_tone(ogg_path: Path, mp3_path: Path, frequency: int, duration: float, loop: bool = False) -> None:
     sample_rate = 44100
-    wav_path = path.with_suffix(".wav")
+    wav_path = ogg_path.with_suffix(".wav")
     frames = int(sample_rate * duration)
     with wave.open(str(wav_path), "w") as handle:
         handle.setnchannels(1)
@@ -632,11 +791,15 @@ def write_ogg_tone(path: Path, frequency: int, duration: float, loop: bool = Fal
             t = index / sample_rate
             envelope = 1.0 if loop else min(1.0, index / max(1, sample_rate * 0.02)) * max(0.0, 1 - index / frames)
             value = math.sin(math.tau * frequency * t) * envelope * 0.25
-            if "ambient" in path.name:
+            if "ambient" in ogg_path.name:
                 value += math.sin(math.tau * (frequency * 0.5) * t) * 0.08
             handle.writeframesraw(int(value * 32767).to_bytes(2, byteorder="little", signed=True))
     subprocess.run(
-        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_path), "-codec:a", "libvorbis", str(path)],
+        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_path), "-codec:a", "libvorbis", str(ogg_path)],
+        check=True,
+    )
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_path), "-codec:a", "libmp3lame", "-b:a", "96k", str(mp3_path)],
         check=True,
     )
     wav_path.unlink(missing_ok=True)
@@ -650,7 +813,7 @@ def write_manifest(entries: list[dict[str, str]]) -> None:
             "json": "/assets/ocean/atlases/atlas_ocean.json",
         },
         "backgrounds": sorted(str(path.relative_to(OUT).as_posix()) for path in (OUT / "backgrounds").glob("*.webp")),
-        "audio": sorted(str(path.relative_to(OUT).as_posix()) for path in (OUT / "audio").glob("*.ogg")),
+        "audio": sorted(str(path.relative_to(OUT).as_posix()) for path in (OUT / "audio").glob("*.*") if path.suffix in {".ogg", ".mp3"}),
         "assets": sorted(entries, key=lambda item: item["path"]),
     }
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -672,7 +835,7 @@ def write_asset_register(entries: list[dict[str, str]]) -> None:
             f"| {entry['path']} | Generated locally by scripts/generate_ocean_assets.py from docs/art-bible.md; Kenney CC0 fallback available | Typecade/Codex procedural generator | Project-owned generated asset; Kenney fallback source is CC0 where referenced | None required | Allowed | {entry['usage']} |"
         )
     rows.append("")
-    rows.append("Generation prompt: stylized 2D fantasy-ocean fishing typing game, dark navy/gold rounded UI chrome, cyan/teal water, coral/magenta reef accents, readable near-black and white typing states, consistent fish state frames named per docs/game-design(new).md section 15.3.")
+    rows.append("Generation prompt: stylized 2D fantasy-ocean fishing typing game, dark navy/gold rounded UI chrome, cyan/teal water, coral/magenta reef accents, readable near-black and white typing states, juicy fish silhouettes with rarity glow and state-specific animation frames named per docs/game-design(new).md section 15.3.")
     (ROOT / "ASSET-LICENSES.md").write_text("\n".join(rows), encoding="utf-8")
 
 
@@ -724,6 +887,24 @@ def draw_rod_hint(draw: ImageDraw.ImageDraw, x: float, y: float, zone_index: int
 def draw_coral(draw: ImageDraw.ImageDraw, x: float, y: float, color: tuple[int, int, int], scale: float) -> None:
     for branch in [-20, 0, 20]:
         draw.line((x, y, x + branch * scale, y - (34 + abs(branch)) * scale), fill=(*color, 170), width=max(3, int(5 * scale)))
+
+
+def lighten(color: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+    return tuple(min(255, channel + amount) for channel in color)
+
+
+def darken(color: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+    return tuple(max(0, channel - amount) for channel in color)
+
+
+def rarity_accent(rarity: str) -> tuple[int, int, int]:
+    if rarity == "boss":
+        return (245, 194, 64)
+    if rarity == "rare":
+        return (245, 137, 255)
+    if rarity == "uncommon":
+        return (120, 238, 229)
+    return (115, 227, 154)
 
 
 def next_power_of_two(value: int) -> int:
