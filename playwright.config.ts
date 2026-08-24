@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000"
+const serverPort = new URL(baseURL).port || "3000"
 
 export default defineConfig({
 	testDir: "./e2e",
@@ -20,7 +21,7 @@ export default defineConfig({
 		},
 	],
 	webServer: {
-		command: "npm run dev",
+		command: `npm run dev -- --port ${serverPort} --strictPort true`,
 		url: baseURL,
 		env: {
 			NEXT_PUBLIC_OVERDRIVE: "true",

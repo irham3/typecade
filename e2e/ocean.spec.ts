@@ -17,6 +17,10 @@ test.describe("Ocean Typing RPG shell", () => {
 			await page.setViewportSize({ width: viewport.width, height: viewport.height })
 			await page.goto("/")
 			await expect(page.getByTestId("phaser-gameplay").locator("canvas")).toHaveCount(1)
+			await expect(page.getByTestId("main-menu")).toBeVisible()
+			await page.getByRole("button", { name: "Start Expedition" }).click()
+			await expect(page.getByTestId("prep-screen")).toBeVisible()
+			await page.getByRole("button", { name: "Set Sail" }).click()
 			await expect(page.getByTestId("typing-console")).toBeVisible()
 
 			await expectCanvasNonBlank(page)
