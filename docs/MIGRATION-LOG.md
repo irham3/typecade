@@ -76,6 +76,7 @@ Mismatched pre-refactor assets found under `public/overdrive/art/**`.
   - 23 `.ogg` audio cues/loops.
   - 23 `.mp3` browser audio fallbacks.
   - 2 atlas files.
+- 2026-08-24: Refreshed the tracked Ocean production pack in place without changing runtime paths. The atlas, fish state sprites, ambient sprites, UI chrome, equipment icons, VFX, and OGG cues were replaced with clearer higher-contrast revisions so the verified branch retains the upgraded art/audio set alongside the gameplay fixes.
 - Every generated asset is listed in `ASSET-LICENSES.md`; the runtime manifest is `apps/web/public/assets/ocean/manifest.json`.
 
 ## 2026-08-23 Game-Feel Polish Self-Audit
