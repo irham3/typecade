@@ -53,6 +53,12 @@ Mismatched pre-refactor assets found under `public/overdrive/art/**`.
 - 2026-08-22: Enable `preserveDrawingBuffer` on the Phaser renderer so Playwright can verify nonblank WebGL canvas pixels; accepted as a small prototype/testability tradeoff and noted for future profiling.
 - 2026-08-22: Keep Colyseus, Supabase Auth/Postgres/RLS, ranked matchmaking, match history, and `apps/game-server` out of this pass per the user's scope boundary.
 - 2026-08-22: Replace the root `AGENTS.md` Overdrive/Pixi guidance with Ocean/Phaser guidance so future tasks do not follow the retired stack.
+- 2026-08-23: Add a React-owned main menu and preparation screen before gameplay; this matches game-product expectations without letting React manipulate Phaser scene internals.
+- 2026-08-23: Bump `CONTENT_VERSION` to `ocean-m1-2026-08-23-polish` so incompatible pre-polish local saves reset cleanly after rules/UI progression changes.
+- 2026-08-23: Regenerate the Ocean asset pack with the deterministic local generator instead of paid image APIs; no paid image key was required, and reproducibility is preferred for this polish pass.
+- 2026-08-23: Add MP3 fallbacks beside OGG audio cues and load both in Phaser; this follows browser audio compatibility guidance while preserving the required OGG naming convention.
+- 2026-08-23: Use runtime procedural juice for fish life (pull-based positioning, rod bend, line vibration, rings, particles, boss entrance) rather than trying to hand-author unique animation frames for every behavior.
+- 2026-08-23: Keep all six Milestone 1 skills available, but expose active skill costs, skill charge, Sonar route reveal, and passive trigger callouts so the build layer is legible in the vertical slice.
 
 ## Asset Production Notes
 
@@ -61,12 +67,21 @@ Mismatched pre-refactor assets found under `public/overdrive/art/**`.
   - Common: `fish_reef_minnow_idle_0.png` has readable compact silhouette, sea-green/cyan palette, thick dark outline, and low texture density.
   - Rare: `fish_moonfin_snapper_idle_0.png` has magenta/blue rarity treatment, glow spots, and distinct moon-fin silhouette.
   - Boss: `fish_crown_leviathan_idle_0.png` uses larger frame size, crown/coral treatment, and a heavier silhouette for phase-based presentation.
-- Generated asset count: 426 files under `apps/web/public/assets/ocean`:
+- Generated asset count after the 2026-08-23 polish pass: 449 files under `apps/web/public/assets/ocean`:
   - 384 `.png` sprite/UI/VFX files.
   - 17 `.webp` background/map/weather files.
   - 23 `.ogg` audio cues/loops.
+  - 23 `.mp3` browser audio fallbacks.
   - 2 atlas files.
 - Every generated asset is listed in `ASSET-LICENSES.md`; the runtime manifest is `apps/web/public/assets/ocean/manifest.json`.
+
+## 2026-08-23 Game-Feel Polish Self-Audit
+
+- Discovery: React shell now has three explicit screens (`menu`, `prep`, `game`), and Phaser still has one gameplay scene. Source changes are limited to `apps/web`, `packages/contracts`, `packages/game-rules`, tests, docs, and the asset generator.
+- Architecture grade: A- maintained. React owns screen flow, HUD, collection, settings, and persistence. Phaser receives only typed bridge events and owns the animated canvas/VFX/audio.
+- Performance audit: Particle emitters remain bounded, fish life is procedural, atlas usage remains central, background assets stay WebP, and reduced-effects still gates shake/large flashes.
+- API correctness: Phaser audio now loads MP3+OGG arrays. Sound volume updates use a typed fallback helper because Phaser's `BaseSound` type does not expose `setVolume` for every backend.
+- Lifecycle/cleanup: Scene shutdown still clears bridge subscriptions, resize listeners, audio loops, and transient arrays; generated float labels/rings self-destroy through tweens.
 
 ## Structural Self-Audit
 
@@ -122,6 +137,12 @@ Grade: A- for the Milestone 0/1 scope.
 - `npm run build`: pass, Vite production build.
 - `npm run test:e2e`: pass, desktop/mobile canvas nonblank after scene transition, no major HUD overlap, no console errors.
 - Pixi source/package audit: `rg -n "pixi|PIXI|@pixi|Pixi|pixi-gameplay|data-pixi-host" package.json package-lock.json apps packages features e2e lib` returns no matches.
+- 2026-08-23 polish verification:
+  - `npx tsc --noEmit`: pass.
+  - `npm run test`: pass, 14 tests across typing and fishing rules.
+  - `npm run build`: pass, Vite production build. Non-failing Phaser chunk-size warning remains expected for the lazy-loaded renderer chunk.
+  - `PLAYWRIGHT_BASE_URL=http://localhost:3003 npm run test:e2e`: pass, desktop/mobile main-menu -> prep -> gameplay flow, canvas nonblank, HUD no-overlap. Port 3003 was used locally because port 3000 was occupied by another workspace process.
+  - Pixi source/package audit remains clean: `rg -n "pixi|PIXI|@pixi|Pixi|pixi-gameplay|data-pixi-host" package.json package-lock.json apps packages features e2e lib AGENTS.md .gitignore` returns no matches.
 
 ## Touched Files
 
@@ -136,7 +157,7 @@ This list is updated as files are changed.
 - `package-lock.json`
 - `tsconfig.json`
 - `vitest.config.ts`
-- `playwright.config.ts` (read/audited; unchanged)
+- `playwright.config.ts`
 - `apps/web/package.json`
 - `apps/web/index.html`
 - `apps/web/vite.config.ts`
