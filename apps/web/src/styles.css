@@ -1203,66 +1203,128 @@ input:focus-visible {
 	z-index: 3;
 	pointer-events: auto;
 	display: grid;
+	overflow: hidden;
 	color: #f5faff;
-	background-image:
-		linear-gradient(180deg, rgba(5, 19, 38, 0.2), rgba(2, 10, 22, 0.9)),
-		url("/assets/ocean_bg.jpg");
-	background-size: cover, cover;
-	background-position: center, center;
-	animation: menu-bg-drift 30s ease-in-out infinite alternate;
+	background: url("/assets/ocean/mainmenu/background-mainmenu.png") center / cover no-repeat;
+	image-rendering: pixelated;
 }
 
-@keyframes menu-bg-drift {
-	from {
-		background-position: left center, left center;
-	}
-	to {
-		background-position: right center, right center;
-	}
+.mainmenu-dock,
+.mainmenu-ship,
+.mainmenu-logo,
+.mainmenu-button img {
+	user-select: none;
+	image-rendering: pixelated;
 }
 
-.menu-top {
+.mainmenu-dock {
 	position: absolute;
-	top: 18px;
-	left: 18px;
-	right: 18px;
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
+	left: clamp(-10px, 1vw, -5px);
+	bottom: clamp(-20px, -2vh, 10px);
+	z-index: 1;
+	width: clamp(400px, 34vw, 650px);
+	height: auto;
+	pointer-events: none;
 }
 
-.menu-hero {
-	align-self: center;
-	justify-self: center;
+.mainmenu-ship {
+	position: absolute;
+	right: clamp(38px, 7.8vw, 150px);
+	bottom: clamp(58px, 11vh, 116px);
+	z-index: 2;
+	width: clamp(230px, 25vw, 390px);
+	height: auto;
+	pointer-events: none;
+	transform-origin: 50% 72%;
+	animation: mainmenu-ship-float 3.4s ease-in-out infinite;
+}
+
+.mainmenu-center {
+	position: absolute;
+	top: clamp(34px, 5.2vh, 60px);
+	left: 50%;
+	z-index: 3;
 	display: grid;
 	justify-items: center;
-	gap: 14px;
-	width: min(720px, calc(100vw - 40px));
-	margin-top: -5vh;
-	text-align: center;
-	text-shadow: 0 3px 0 #020815;
+	width: min(36vw, 520px);
+	min-width: 340px;
+	transform: translateX(-50%);
 }
 
-.menu-hero .logo-mark {
-	font-size: clamp(3.6rem, 9vw, 6.8rem);
-	margin: 0;
+.mainmenu-logo {
+	width: min(34vw, 490px);
+	min-width: 320px;
+	max-width: 490px;
+	height: auto;
+	margin-bottom: clamp(14px, 1.8vh, 22px);
+	filter: drop-shadow(0 5px 0 rgba(4, 18, 35, 0.28));
 }
 
-.menu-hero p {
-	max-width: 52ch;
-	margin: 0;
-	font-size: clamp(1rem, 2vw, 1.32rem);
-	font-weight: 800;
-	line-height: 1.35;
-	color: #e7fbff;
+.mainmenu-stack {
+	display: grid;
+	justify-items: center;
+	gap: clamp(4px, 1vh, 10px);
+	width: min(28vw, 380px);
+	min-width: 280px;
 }
 
-.menu-actions {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 10px;
-	margin-top: 8px;
+.mainmenu-button {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	line-height: 0;
+	cursor: pointer;
+	transform: translateY(0) scale(1);
+	transform-origin: 50% 50%;
+	transition:
+		transform 130ms cubic-bezier(0.2, 0.9, 0.2, 1.15),
+		filter 130ms ease;
+	filter: drop-shadow(0 4px 0 rgba(30, 14, 8, 0.34));
+	-webkit-tap-highlight-color: transparent;
+}
+
+.mainmenu-button.primary {
+	width: min(100%, 362px);
+	margin-bottom: clamp(1px, 0.25vh, 3px);
+}
+
+.mainmenu-button img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.mainmenu-button:hover,
+.mainmenu-button:focus-visible {
+	transform: translateY(-3px) scale(1.03);
+	filter:
+		brightness(1.07)
+		drop-shadow(0 5px 0 rgba(30, 14, 8, 0.36))
+		drop-shadow(0 0 3px rgba(255, 238, 148, 0.62));
+}
+
+.mainmenu-button.primary:hover,
+.mainmenu-button.primary:focus-visible {
+	transform: translateY(-3px) scale(1.035);
+	filter:
+		brightness(1.1)
+		drop-shadow(0 6px 0 rgba(30, 14, 8, 0.38))
+		drop-shadow(0 0 4px rgba(255, 225, 105, 0.7));
+}
+
+.mainmenu-button:active {
+	transform: translateY(2px) scale(0.975);
+	filter:
+		brightness(0.94)
+		drop-shadow(0 2px 0 rgba(30, 14, 8, 0.34));
+}
+
+.mainmenu-button:focus-visible {
+	outline: 3px solid #fff2a8;
+	outline-offset: 4px;
+	border-radius: 6px;
 }
 
 .primary-action,
@@ -1302,61 +1364,14 @@ input:focus-visible {
 	height: 22px;
 }
 
-.featured-collection {
-	position: absolute;
-	left: 50%;
-	bottom: 28px;
-	transform: translateX(-50%);
-	display: grid;
-	grid-template-columns: repeat(3, minmax(150px, 210px));
-	gap: 12px;
-	width: min(680px, calc(100vw - 36px));
-}
-
-.featured-card {
-	position: relative;
-	display: grid;
-	place-items: center;
-	gap: 4px;
-	min-height: 156px;
-	padding: 12px;
-	border-radius: 8px;
-	border: 2px solid rgba(142, 211, 230, 0.72);
-	background:
-		linear-gradient(180deg, rgba(19, 45, 79, 0.9), rgba(5, 20, 39, 0.94)),
-		#081c35;
-	box-shadow:
-		0 0 0 4px rgba(2, 11, 25, 0.72),
-		0 16px 32px rgba(0, 0, 0, 0.24);
-	overflow: hidden;
-	text-align: center;
-}
-
-.featured-card img {
-	width: 100%;
-	height: 78px;
-	object-fit: contain;
-	image-rendering: pixelated;
-	animation: fish-card-bob 2.8s ease-in-out infinite;
-}
-
-.featured-card strong {
-	z-index: 1;
-	text-shadow: 0 2px 0 #020815;
-}
-
-.menu-current-fish {
-	position: absolute;
-	left: 50%;
-	bottom: 202px;
-	transform: translateX(-50%);
-	padding: 6px 12px;
-	border-radius: 999px;
-	background: rgba(2, 12, 26, 0.62);
-	border: 1px solid rgba(142, 211, 230, 0.46);
-	color: #9ae7ff;
-	font-weight: 900;
-	text-shadow: 0 2px 0 #020815;
+@keyframes mainmenu-ship-float {
+	0%,
+	100% {
+		transform: translateY(0) rotate(-0.45deg);
+	}
+	50% {
+		transform: translateY(4px) rotate(0.45deg);
+	}
 }
 
 .prep-layer {
@@ -1746,63 +1761,41 @@ input:focus-visible {
 		max-height: calc(100vh - 132px);
 	}
 
-	.menu-top {
-		top: 10px;
-		left: 10px;
-		right: 10px;
-	}
-
-	.menu-top .player-badge {
-		width: min(220px, calc(100vw - 70px));
-	}
-
-	.menu-hero {
-		margin-top: -10vh;
-	}
-
-	.menu-hero .logo-mark {
-		font-size: clamp(2.7rem, 13vw, 4.4rem);
-	}
-
-	.menu-actions {
-		display: grid;
-		width: min(300px, 90vw);
-	}
-
 	.primary-action,
 	.secondary-action {
 		width: 100%;
 		min-height: 48px;
 	}
 
-	.featured-collection {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 6px;
-		bottom: 12px;
+	.mainmenu-center {
+		top: 28px;
+		width: min(74vw, 330px);
+		min-width: 236px;
 	}
 
-	.featured-card {
-		min-height: 116px;
-		padding: 8px 5px;
+	.mainmenu-logo {
+		width: min(70vw, 310px);
+		min-width: 222px;
+		margin-bottom: 8px;
 	}
 
-	.featured-card img {
-		height: 56px;
-	}
-
-	.featured-card strong {
-		font-size: 0.72rem;
-	}
-
-	.featured-card .stars {
-		font-size: 0.8rem;
+	.mainmenu-stack {
+		width: min(64vw, 286px);
+		min-width: 218px;
 		gap: 1px;
-		margin: 2px 0;
 	}
 
-	.menu-current-fish {
-		bottom: 138px;
-		font-size: 0.74rem;
+	.mainmenu-dock {
+		left: -100px;
+		bottom: -52px;
+		width: min(62vw, 330px);
+	}
+
+	.mainmenu-ship {
+		right: -42px;
+		bottom: 88px;
+		width: min(48vw, 230px);
+		opacity: 0.96;
 	}
 
 	.feedback-banner {

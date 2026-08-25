@@ -18,7 +18,17 @@ test.describe("Ocean Typing RPG shell", () => {
 			await page.goto("/")
 			await expect(page.getByTestId("phaser-gameplay").locator("canvas")).toHaveCount(1)
 			await expect(page.getByTestId("main-menu")).toBeVisible()
-			await page.getByRole("button", { name: "Start Expedition" }).click()
+			await expect(page.locator(".menu-layer .logo-mark")).toHaveCount(0)
+			await expect(page.locator(".mainmenu-dock")).toBeVisible()
+			await expect(page.locator(".mainmenu-ship")).toBeVisible()
+			await expect(page.getByRole("img", { name: "Typecade" })).toBeVisible()
+			await expect(page.getByTestId("main-menu")).toHaveCSS("background-image", /background-mainmenu\.png/)
+			for (const label of ["Play", "Adventure", "Ranked Duel", "Shop", "Collection", "Leaderboard"]) {
+				await expect(page.getByRole("button", { name: label, exact: true })).toBeVisible()
+			}
+			await page.keyboard.press("Tab")
+			await expect(page.getByRole("button", { name: "Play", exact: true })).toBeFocused()
+			await page.getByRole("button", { name: "Play", exact: true }).click()
 			await expect(page.getByTestId("prep-screen")).toBeVisible()
 			await page.getByRole("button", { name: "Set Sail" }).click()
 			await expect(page.getByTestId("typing-console")).toBeVisible()

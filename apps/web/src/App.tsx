@@ -10,11 +10,9 @@ import {
 	CheckCircle2,
 	ClipboardList,
 	Coins,
-	Compass,
 	Fish,
 	Gem,
 	Hourglass,
-	Play,
 	Radar,
 	Settings,
 	Sparkles,
@@ -29,7 +27,7 @@ import { fishSpecies } from "@typecade/content"
 import { getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
 
-type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | null
+type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | "leaderboard" | "ranked" | null
 type Screen = "menu" | "prep" | "game"
 
 const rarityStars: Record<Rarity, number> = {
@@ -118,13 +116,12 @@ export function App() {
 			{screen === "menu" ? (
 				<MainMenu
 					view={view}
-					levelProgress={levelProgress}
-					caughtCount={caughtCount}
-					totalCount={totalCount}
 					onStart={() => setScreen("prep")}
-					onContinue={() => setScreen("game")}
+					onAdventure={() => setScreen("prep")}
+					onRankedDuel={() => setPanel("ranked")}
+					onShop={() => setPanel("shop")}
 					onCollection={() => setPanel("collection")}
-					onSettings={() => setPanel("settings")}
+					onLeaderboard={() => setPanel("leaderboard")}
 				/>
 			) : null}
 
@@ -141,6 +138,9 @@ export function App() {
 			) : null}
 
 			{screen !== "game" && panel === "collection" ? <CollectionPanel onClose={() => setPanel(null)} collection={view.collection} /> : null}
+			{screen !== "game" && panel === "shop" ? <MenuShopPanel onClose={() => setPanel(null)} /> : null}
+			{screen !== "game" && panel === "leaderboard" ? <LeaderboardPanel onClose={() => setPanel(null)} /> : null}
+			{screen !== "game" && panel === "ranked" ? <RankedDuelPanel onClose={() => setPanel(null)} /> : null}
 			{screen !== "game" && panel === "settings" ? (
 				<SettingsPanel
 					volumes={view.volumes}
@@ -346,86 +346,54 @@ function TopBar({ view, levelProgress, onSettings }: { view: OceanRunView; level
 
 function MainMenu({
 	view,
-	levelProgress,
-	caughtCount,
-	totalCount,
 	onStart,
-	onContinue,
+	onAdventure,
+	onRankedDuel,
+	onShop,
 	onCollection,
-	onSettings,
+	onLeaderboard,
 }: {
 	view: OceanRunView
-	levelProgress: AccountLevelProgress
-	caughtCount: number
-	totalCount: number
 	onStart: () => void
-	onContinue: () => void
+	onAdventure: () => void
+	onRankedDuel: () => void
+	onShop: () => void
 	onCollection: () => void
-	onSettings: () => void
+	onLeaderboard: () => void
 }) {
 	const containerRef = useRef<HTMLElement>(null)
-	const featuredFish = fishSpecies.filter((fish) => fish.rarity !== "common").slice(0, 3)
+	const menuItems = [
+		{ label: "Play", src: "/assets/ocean/mainmenu/1.play.png", onClick: onStart, primary: true },
+		{ label: "Adventure", src: "/assets/ocean/mainmenu/2.adventure.png", onClick: onAdventure },
+		{ label: "Ranked Duel", src: "/assets/ocean/mainmenu/3.ranked duel.png", onClick: onRankedDuel },
+		{ label: "Shop", src: "/assets/ocean/mainmenu/4.duel.png", onClick: onShop },
+		{ label: "Collection", src: "/assets/ocean/mainmenu/5.collection.png", onClick: onCollection },
+		{ label: "Leaderboard", src: "/assets/ocean/mainmenu/6.leaderboard.png", onClick: onLeaderboard },
+	]
 
 	useGSAP(() => {
 		if (view.reducedMotion) return
 
-		gsap.from(".menu-top", { y: -40, opacity: 0, duration: 0.6, ease: "power2.out" })
-		gsap.from(".logo-mark", { scale: 0.8, y: 30, opacity: 0, duration: 0.8, ease: "back.out(1.5)", delay: 0.2 })
-		gsap.from(".menu-hero p", { y: 20, opacity: 0, duration: 0.5, delay: 0.4 })
-		gsap.from(".menu-actions button", { y: 20, opacity: 0, duration: 0.4, stagger: 0.1, delay: 0.5, ease: "back.out(1.2)" })
-		gsap.from(".featured-card", { scale: 0.9, y: 30, opacity: 0, duration: 0.5, stagger: 0.15, delay: 0.6, ease: "back.out(1.2)" })
-		gsap.from(".menu-current-fish", { opacity: 0, duration: 0.5, delay: 0.8 })
+		gsap.from(".mainmenu-logo", { y: -22, scale: 0.96, opacity: 0, duration: 0.45, ease: "back.out(1.4)" })
+		gsap.from(".mainmenu-button", { y: 16, opacity: 0, duration: 0.28, stagger: 0.055, delay: 0.16, ease: "back.out(1.2)" })
+		gsap.from(".mainmenu-dock", { x: -36, opacity: 0, duration: 0.45, ease: "power2.out" })
+		gsap.from(".mainmenu-ship", { x: 24, opacity: 0, duration: 0.45, delay: 0.22, ease: "power2.out" })
 	}, { scope: containerRef, dependencies: [view.reducedMotion] })
 
 	return (
 		<section className="menu-layer" data-testid="main-menu" ref={containerRef}>
-			<div className="menu-top">
-				<section className="player-badge panel-chrome">
-					<div className="avatar">
-						<Fish aria-hidden="true" />
-					</div>
-					<div>
-						<strong>WaveRider</strong>
-						<span>
-							<Sparkles aria-hidden="true" /> Lv {levelProgress.level}
-						</span>
-						<XpBar progress={levelProgress.progress} />
-					</div>
-				</section>
-				<button className="icon-button panel-chrome" aria-label="Settings" onClick={onSettings}>
-					<Settings aria-hidden="true" />
-				</button>
+			<img className="mainmenu-dock" src="/assets/ocean/mainmenu/dock-mainmenu.png" alt="" aria-hidden="true" draggable={false} />
+			<img className="mainmenu-ship" src="/assets/ocean/mainmenu/ship-mainmenu.png" alt="" aria-hidden="true" draggable={false} />
+			<div className="mainmenu-center">
+				<img className="mainmenu-logo" src="/assets/ocean/mainmenu/logo-1.png" alt="Typecade" draggable={false} />
+				<nav className="mainmenu-stack" aria-label="Main menu">
+					{menuItems.map((item) => (
+						<button key={item.label} className={`mainmenu-button ${item.primary ? "primary" : ""}`} onClick={item.onClick} aria-label={item.label}>
+							<img src={item.src} alt="" draggable={false} />
+						</button>
+					))}
+				</nav>
 			</div>
-
-			<div className="menu-hero">
-				<LogoMark />
-				<p>Hook rare fish with clean rhythm, build skill combos, and fill the Shallow Coast collection.</p>
-				<div className="menu-actions">
-					<button className="primary-action" onClick={onStart}>
-						<Play aria-hidden="true" />
-						Start Expedition
-					</button>
-					<button className="secondary-action" onClick={onContinue}>
-						<Compass aria-hidden="true" />
-						Continue Run
-					</button>
-					<button className="secondary-action" onClick={onCollection}>
-						<BookOpen aria-hidden="true" />
-						Collection {caughtCount}/{totalCount}
-					</button>
-				</div>
-			</div>
-
-			<div className="featured-collection">
-				{featuredFish.map((fish, index) => (
-					<article key={fish.id} className={`featured-card rarity-${fish.rarity}`}>
-						<img src={`/assets/ocean/sprites/fish/${fish.assetKey}_swim_${index % 2}.png`} alt="" />
-						<strong>{fish.name}</strong>
-						<StarRow rarity={fish.rarity} />
-					</article>
-				))}
-			</div>
-			<span className="menu-current-fish">Next mark: {view.fish.name}</span>
 		</section>
 	)
 }
@@ -694,6 +662,58 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 						</article>
 					)
 				})}
+			</div>
+		</OverlayPanel>
+	)
+}
+
+function MenuShopPanel({ onClose }: { onClose: () => void }) {
+	return (
+		<OverlayPanel title="Shop" onClose={onClose}>
+			<div className="tasks-list">
+				<article>
+					<strong>Tideglass Rod</strong>
+					<span>Equipment shopping is reserved for a future upgrade pass.</span>
+					<em>Preview</em>
+				</article>
+				<article>
+					<strong>Moon Bait</strong>
+					<span>Rare-fish bait is planned for the full Shallow Coast economy.</span>
+					<em>Preview</em>
+				</article>
+			</div>
+		</OverlayPanel>
+	)
+}
+
+function LeaderboardPanel({ onClose }: { onClose: () => void }) {
+	return (
+		<OverlayPanel title="Leaderboard" onClose={onClose}>
+			<div className="tasks-list">
+				<article>
+					<strong>Shallow Coast</strong>
+					<span>WaveRider local run records will live here.</span>
+					<em>Local</em>
+				</article>
+				<article>
+					<strong>Ranked Duel</strong>
+					<span>Online leaderboard data is out of scope for Milestone 1.</span>
+					<em>Soon</em>
+				</article>
+			</div>
+		</OverlayPanel>
+	)
+}
+
+function RankedDuelPanel({ onClose }: { onClose: () => void }) {
+	return (
+		<OverlayPanel title="Ranked Duel" onClose={onClose}>
+			<div className="tasks-list">
+				<article>
+					<strong>Boat Duel</strong>
+					<span>Ranked matchmaking is reserved for the later competition milestone.</span>
+					<em>Locked</em>
+				</article>
 			</div>
 		</OverlayPanel>
 	)
