@@ -125,6 +125,14 @@ input:focus-visible {
 	height: 24px;
 }
 
+.pixel-icon {
+	display: block;
+	width: 26px;
+	height: 26px;
+	object-fit: contain;
+	image-rendering: pixelated;
+}
+
 .player-badge strong,
 .player-badge span,
 .currency-pill span {
@@ -188,6 +196,16 @@ input:focus-visible {
 	-webkit-text-stroke: 3px #071221;
 }
 
+.logo-mark-image {
+	justify-self: center;
+	display: block;
+	width: min(34vw, 430px);
+	max-height: 86px;
+	object-fit: contain;
+	filter: drop-shadow(0 5px 0 rgba(4, 18, 35, 0.46));
+	image-rendering: pixelated;
+}
+
 .logo-mark span:nth-child(2) {
 	color: #f5c240;
 }
@@ -212,7 +230,7 @@ input:focus-visible {
 	display: flex;
 	justify-content: flex-end;
 	align-items: center;
-	gap: 10px;
+	gap: 8px;
 }
 
 .currency-pill,
@@ -235,6 +253,11 @@ input:focus-visible {
 	fill: currentColor;
 }
 
+.currency-pill .pixel-icon {
+	width: 28px;
+	height: 28px;
+}
+
 .currency-row .currency-pill:nth-child(2) svg {
 	color: #98e8ff;
 	fill: currentColor;
@@ -246,6 +269,11 @@ input:focus-visible {
 	width: 56px;
 	padding: 0;
 	color: #f5faff;
+}
+
+.icon-button .pixel-icon {
+	width: 30px;
+	height: 30px;
 }
 
 .icon-rail {
@@ -278,6 +306,11 @@ input:focus-visible {
 	width: 30px;
 	height: 30px;
 	color: #f5c240;
+}
+
+.rail-button .pixel-icon {
+	width: 32px;
+	height: 32px;
 }
 
 .rail-button span {
@@ -341,6 +374,8 @@ input:focus-visible {
 	padding: 16px;
 	border-radius: 8px;
 	text-align: center;
+	background-image: linear-gradient(180deg, rgba(19, 45, 79, 0.4), rgba(5, 20, 39, 0.54)), url("/assets/ocean/ui/ui_collection_card_default.png");
+	background-size: 100% 100%;
 }
 
 .fish-card.rarity-rare,
@@ -468,6 +503,12 @@ input:focus-visible {
 	filter: drop-shadow(0 2px 0 #020815);
 }
 
+.tension-wrap .meter-icon {
+	width: 32px;
+	height: 32px;
+	filter: drop-shadow(0 2px 0 #020815);
+}
+
 .meter-block {
 	display: grid;
 	gap: 4px;
@@ -492,11 +533,11 @@ input:focus-visible {
 
 .meter-track {
 	height: 20px;
-	padding: 3px;
+	padding: 4px 8px;
 	border-radius: 10px;
-	background: #061426;
-	border: 2px solid #8ed3e6;
-	box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45);
+	background: url("/assets/ocean/ui/ui_meter_tension_default.png") center / 100% 100% no-repeat;
+	border: 0;
+	box-shadow: none;
 }
 
 .meter-fill {
@@ -508,10 +549,33 @@ input:focus-visible {
 
 .typing-panel {
 	display: grid;
-	gap: 10px;
+	gap: 8px;
 	min-height: 150px;
 	padding: 20px 24px;
 	border-radius: 8px;
+	background-image: linear-gradient(180deg, rgba(19, 45, 79, 0.18), rgba(5, 20, 39, 0.28)), url("/assets/ocean/ui/ui_typing_panel_default.png");
+	background-size: 100% 100%;
+}
+
+.typing-help {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	color: #9ae7ff;
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+}
+
+.typing-help kbd {
+	padding: 3px 7px;
+	border: 1px solid rgba(142, 211, 230, 0.55);
+	border-radius: 4px;
+	color: #f5c240;
+	font: inherit;
+	letter-spacing: 0.04em;
 }
 
 .typing-target,
@@ -596,6 +660,11 @@ input:focus-visible {
 	fill: rgba(245, 194, 64, 0.2);
 }
 
+.stat .pixel-icon {
+	width: 36px;
+	height: 36px;
+}
+
 .stat.hot svg,
 .stat.hot strong {
 	color: #f5c240;
@@ -665,11 +734,11 @@ input:focus-visible {
 
 .skill-dock {
 	position: absolute;
-	left: 50%;
-	bottom: 370px;
-	transform: translateX(-50%);
+	left: 16px;
+	bottom: 350px;
+	transform: none;
 	display: grid;
-	grid-template-columns: repeat(6, minmax(66px, 92px));
+	grid-template-columns: repeat(2, minmax(76px, 96px));
 	gap: 8px;
 	padding: 8px;
 	border-radius: 8px;
@@ -842,6 +911,8 @@ input:focus-visible {
 	width: 300px;
 	padding: 14px;
 	border-radius: 8px;
+	background-image: linear-gradient(180deg, rgba(19, 45, 79, 0.22), rgba(5, 20, 39, 0.38)), url("/assets/ocean/ui/ui_result_panel_default.png");
+	background-size: 100% 100%;
 }
 
 .result-toast.caught {
@@ -854,6 +925,73 @@ input:focus-visible {
 	color: #f5c240;
 	font-size: 0.78rem;
 	font-weight: 900;
+}
+
+.result-toast em {
+	display: block;
+	margin-top: 5px;
+	color: #9ae7ff;
+	font-size: 0.7rem;
+	font-style: normal;
+	font-weight: 800;
+}
+
+.pause-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 20;
+	display: grid;
+	place-items: center;
+	padding: 24px;
+	background: rgba(2, 10, 22, 0.58);
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	pointer-events: auto;
+}
+
+.pause-card {
+	display: grid;
+	justify-items: center;
+	gap: 10px;
+	width: min(420px, 100%);
+	padding: 26px;
+	border: 3px solid #f5c240;
+	border-radius: 10px;
+	text-align: center;
+	box-shadow: 0 0 0 5px rgba(2, 11, 25, 0.76), 0 18px 48px rgba(0, 0, 0, 0.44);
+}
+
+.pause-kicker {
+	color: #f5c240;
+	font-size: 0.72rem;
+	font-weight: 1000;
+	letter-spacing: 0.14em;
+}
+
+.pause-card h2 {
+	margin: 0;
+	font-size: clamp(1.7rem, 4vw, 2.5rem);
+	text-shadow: 0 3px 0 #020815;
+}
+
+.pause-card p {
+	max-width: 34ch;
+	margin: 0;
+	color: #dceeff;
+	line-height: 1.4;
+}
+
+.pause-actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	width: 100%;
+	margin-top: 8px;
+}
+
+.pause-card small {
+	color: #8cc7db;
+	font-size: 0.72rem;
 }
 
 @keyframes toast-arrive {
@@ -964,7 +1102,28 @@ input:focus-visible {
 .collection-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
-	gap: 10px;
+	gap: 8px;
+}
+
+.collection-section-heading {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 18px 0 10px;
+	padding-top: 14px;
+	border-top: 1px solid rgba(142, 211, 230, 0.26);
+}
+
+.collection-section-heading strong {
+	color: #f5c240;
+	font-size: 0.95rem;
+}
+
+.collection-section-heading span {
+	color: #8cc7db;
+	font-size: 0.72rem;
+	text-align: right;
 }
 
 .collection-card {
@@ -978,6 +1137,8 @@ input:focus-visible {
 	text-align: center;
 	overflow: hidden;
 	position: relative;
+	background-image: linear-gradient(180deg, rgba(19, 45, 79, 0.28), rgba(4, 16, 32, 0.38)), url("/assets/ocean/ui/ui_collection_card_default.png");
+	background-size: 100% 100%;
 }
 
 .collection-card::before,
@@ -1017,6 +1178,20 @@ input:focus-visible {
 .collection-card.caught img {
 	filter: none;
 	animation: fish-card-bob 2.8s ease-in-out infinite;
+}
+
+.collection-card.catalog-preview {
+	min-height: 164px;
+	border-color: rgba(142, 211, 230, 0.34);
+}
+
+.collection-card.catalog-preview img {
+	filter: none;
+	opacity: 0.92;
+}
+
+.collection-card.catalog-preview span {
+	line-height: 1.25;
 }
 
 .collection-card strong {
@@ -1388,8 +1563,9 @@ input:focus-visible {
 	margin-bottom: 18px;
 }
 
-.prep-header .logo-mark {
-	font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+.prep-header .logo-mark-image {
+	width: min(34vw, 430px);
+	max-height: 76px;
 	margin: 0;
 }
 
@@ -1558,8 +1734,9 @@ input:focus-visible {
 	}
 
 	.skill-dock {
-		bottom: 370px;
-		grid-template-columns: repeat(3, minmax(74px, 92px));
+		left: 10px;
+		bottom: 350px;
+		grid-template-columns: repeat(2, minmax(74px, 92px));
 	}
 
 	.prep-grid {
@@ -1591,12 +1768,13 @@ input:focus-visible {
 		flex-basis: 40px;
 	}
 
-	.logo-mark {
+	.logo-mark-image {
 		position: absolute;
 		top: 62px;
 		left: 50%;
 		transform: translateX(-50%);
-		font-size: 2.1rem;
+		width: min(58vw, 250px);
+		max-height: 54px;
 	}
 
 	.currency-row {
@@ -1711,8 +1889,8 @@ input:focus-visible {
 	}
 
 	.skill-dock {
-		left: auto;
-		right: 10px;
+		left: 8px;
+		right: auto;
 		bottom: 380px;
 		transform: none;
 		grid-template-columns: repeat(3, 54px);
@@ -1812,10 +1990,13 @@ input:focus-visible {
 		gap: 8px;
 	}
 
-	.prep-header .logo-mark {
+	.prep-header .logo-mark-image {
 		grid-column: 1 / -1;
 		grid-row: 1;
-		font-size: 2.3rem;
+		position: static;
+		transform: none;
+		width: min(68vw, 280px);
+		max-height: 58px;
 	}
 
 	.prep-header .secondary-action {

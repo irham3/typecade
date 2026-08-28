@@ -13,6 +13,8 @@ import {
 	Fish,
 	Gem,
 	Hourglass,
+	Pause,
+	Play,
 	Radar,
 	Settings,
 	Sparkles,
@@ -23,7 +25,7 @@ import {
 	Zap,
 } from "lucide-react"
 import type { AccountLevelProgress, FishingSkill, Rarity } from "@typecade/contracts"
-import { fishSpecies } from "@typecade/content"
+import { fishSpecies, generatedFishCatalog } from "@typecade/content"
 import { getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
 
@@ -35,6 +37,13 @@ const rarityStars: Record<Rarity, number> = {
 	uncommon: 2,
 	rare: 3,
 	boss: 5,
+}
+
+function getFishArtworkPath(assetKey: string): string {
+	if (assetKey === "fish_pebble_goby") {
+		return "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_01.png"
+	}
+	return `/assets/ocean/sprites/fish/${assetKey}_idle_0.png`
 }
 
 export function App() {
@@ -51,6 +60,7 @@ export function App() {
 		setVolume,
 		setReducedMotion,
 		startFreshRun,
+		togglePause,
 	} = useOceanRun(screen === "game")
 	const [panel, setPanel] = useState<Panel>(null)
 	const levelProgress = getAccountLevelProgress(view.collection.xp)
@@ -109,6 +119,7 @@ export function App() {
 					setVolume={setVolume}
 					setReducedMotion={setReducedMotion}
 					startFreshRun={beginRun}
+					togglePause={togglePause}
 					goToMenu={() => setScreen("menu")}
 				/>
 			) : null}
@@ -167,6 +178,7 @@ function GameHud({
 	setVolume,
 	setReducedMotion,
 	startFreshRun,
+	togglePause,
 	goToMenu,
 }: {
 	view: OceanRunView
@@ -181,6 +193,7 @@ function GameHud({
 	setVolume: (category: keyof VolumeState, value: number) => void
 	setReducedMotion: (value: boolean) => void
 	startFreshRun: () => void
+	togglePause: () => void
 	goToMenu: () => void
 }) {
 	const containerRef = useRef<HTMLDivElement>(null)
@@ -205,13 +218,21 @@ function GameHud({
 
 	return (
 		<div className="hud" data-testid="ocean-hud" ref={containerRef}>
-			<TopBar view={view} levelProgress={levelProgress} onSettings={() => setPanel(panel === "settings" ? null : "settings")} />
+			<TopBar
+				view={view}
+				levelProgress={levelProgress}
+				onSettings={() => setPanel(panel === "settings" ? null : "settings")}
+				onPause={() => {
+					setPanel(null)
+					togglePause()
+				}}
+			/>
 
 			<nav className="icon-rail panel-chrome" aria-label="Ocean navigation">
-				<RailButton label="Fish" active={panel === "fish"} onClick={() => setPanel(panel === "fish" ? null : "fish")} icon={<Fish aria-hidden="true" />} />
-				<RailButton label="Collection" active={panel === "collection"} onClick={() => setPanel(panel === "collection" ? null : "collection")} icon={<BookOpen aria-hidden="true" />} badge={caughtCount} />
-				<RailButton label="Tasks" active={panel === "tasks"} onClick={() => setPanel(panel === "tasks" ? null : "tasks")} icon={<ClipboardList aria-hidden="true" />} badge={view.expedition.spareLines} />
-				<RailButton label="Shop" active={panel === "shop"} onClick={() => setPanel(panel === "shop" ? null : "shop")} icon={<ShoppingBag aria-hidden="true" />} />
+				<RailButton label="Fish" active={panel === "fish"} onClick={() => setPanel(panel === "fish" ? null : "fish")} icon={<PixelIcon file="icon_nav_fish.png" />} />
+				<RailButton label="Collection" active={panel === "collection"} onClick={() => setPanel(panel === "collection" ? null : "collection")} icon={<PixelIcon file="icon_nav_collection.png" />} badge={caughtCount} />
+				<RailButton label="Tasks" active={panel === "tasks"} onClick={() => setPanel(panel === "tasks" ? null : "tasks")} icon={<PixelIcon file="icon_nav_tasks.png" />} badge={view.expedition.spareLines} />
+				<RailButton label="Shop" active={panel === "shop"} onClick={() => setPanel(panel === "shop" ? null : "shop")} icon={<PixelIcon file="icon_nav_shop.png" />} />
 			</nav>
 
 			<section className="route-strip panel-chrome" data-testid="route-strip">
@@ -225,7 +246,7 @@ function GameHud({
 
 			<section className="bottom-console" data-testid="typing-console">
 				<div className={`tension-wrap ${tensionPercent >= 82 ? "danger" : ""}`}>
-					<Anchor aria-hidden="true" />
+					<PixelIcon file="icon_meter_anchor.png" className="meter-icon" />
 					<div className="meter-block">
 						<div className="meter-label">
 							<span>LINE TENSION</span>
@@ -238,6 +259,10 @@ function GameHud({
 				</div>
 
 				<div className="typing-panel panel-chrome">
+					<div className="typing-help">
+						<span>Type the highlighted passage</span>
+						<kbd>Esc pause</kbd>
+					</div>
 					<TypingTarget text={view.targetText} cursor={view.cursor} />
 					<div className="typing-input" data-testid="typing-input">
 						<span>{view.currentInput || " "}</span>
@@ -246,9 +271,9 @@ function GameHud({
 				</div>
 
 				<div className="stat-row panel-chrome">
-					<Stat icon={<Zap aria-hidden="true" />} label="COMBO" value={`x${Math.max(1, view.encounter.combo)}`} hot={view.encounter.combo >= 5} />
-					<Stat icon={<Target aria-hidden="true" />} label="ACCURACY" value={`${Math.round(view.metrics.accuracy)}%`} hot={view.metrics.accuracy >= 95} />
-					<Stat icon={<Hourglass aria-hidden="true" />} label="TIME LEFT" value={timeLeft} hot={view.encounter.timeRemainingMs < 12000} />
+				<Stat icon={<PixelIcon file="icon_stat_combo.png" />} label="COMBO" value={`x${Math.max(1, view.encounter.combo)}`} hot={view.encounter.combo >= 5} />
+				<Stat icon={<PixelIcon file="icon_stat_accuracy.png" />} label="ACCURACY" value={`${Math.round(view.metrics.accuracy)}%`} hot={view.metrics.accuracy >= 95} />
+				<Stat icon={<PixelIcon file="icon_stat_timer.png" />} label="TIME LEFT" value={timeLeft} hot={view.encounter.timeRemainingMs < 12000} />
 				</div>
 
 				<div className="progress-stack">
@@ -272,6 +297,8 @@ function GameHud({
 			</section>
 
 			{view.lastResult ? <ResultToast view={view} /> : null}
+
+			{view.isPaused ? <PausePanel onResume={togglePause} onMainMenu={goToMenu} /> : null}
 
 			{view.expedition.complete ? (
 				<section className="complete-panel panel-chrome" data-testid="complete-panel">
@@ -309,7 +336,7 @@ function GameHud({
 	)
 }
 
-function TopBar({ view, levelProgress, onSettings }: { view: OceanRunView; levelProgress: AccountLevelProgress; onSettings: () => void }) {
+function TopBar({ view, levelProgress, onSettings, onPause }: { view: OceanRunView; levelProgress: AccountLevelProgress; onSettings: () => void; onPause: () => void }) {
 	return (
 		<header className="topbar" data-testid="topbar">
 			<section className="player-badge panel-chrome">
@@ -329,15 +356,18 @@ function TopBar({ view, levelProgress, onSettings }: { view: OceanRunView; level
 
 			<section className="currency-row">
 				<div className="currency-pill panel-chrome">
-					<Coins aria-hidden="true" />
+					<PixelIcon file="icon_currency_coin.png" />
 					<span>{view.collection.coins.toLocaleString()}</span>
 				</div>
 				<div className="currency-pill panel-chrome">
-					<Gem aria-hidden="true" />
+					<PixelIcon file="icon_currency_gem.png" />
 					<span>{view.collection.materials.toLocaleString()}</span>
 				</div>
+				<button className="icon-button panel-chrome" aria-label={view.isPaused ? "Resume game" : "Pause game"} onClick={onPause}>
+					{view.isPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+				</button>
 				<button className="icon-button panel-chrome" aria-label="Settings" onClick={onSettings}>
-					<Settings aria-hidden="true" />
+					<PixelIcon file="icon_utility_settings.png" />
 				</button>
 			</section>
 		</header>
@@ -502,13 +532,11 @@ function PreparationScreen({
 }
 
 function LogoMark() {
-	return (
-		<section className="logo-mark" aria-label="Typecade">
-			<span className="hook">Q</span>
-			<span>TYPE</span>
-			<span>CADE</span>
-		</section>
-	)
+	return <img className="logo-mark-image" src="/assets/ocean/mainmenu/logo-1.png" alt="Typecade" draggable={false} />
+}
+
+function PixelIcon({ file, className = "" }: { file: string; className?: string }) {
+	return <img className={`pixel-icon ${className}`} src={`/assets/ocean/reference-derived-pixel-pack/${file}`} alt="" aria-hidden="true" draggable={false} />
 }
 
 function RailButton({
@@ -546,7 +574,7 @@ function FishInfoCard({
 			<strong>{fish.rarity.toUpperCase()}</strong>
 			<StarRow rarity={fish.rarity} />
 			<div className="fish-frame">
-				<img src={`/assets/ocean/sprites/fish/${fish.assetKey}_idle_0.png`} alt="" />
+				<img src={getFishArtworkPath(fish.assetKey)} alt="" />
 			</div>
 			<p>{fish.lore}</p>
 			{record ? <span className="record-chip">Best {Math.round(record.bestQuality * 100)}% / {record.largestSizeKg} kg</span> : null}
@@ -654,7 +682,7 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 					return (
 						<article key={fish.id} className={`collection-card rarity-${fish.rarity} ${record ? "caught" : ""}`}>
 							<div className="collection-art">
-								<img src={`/assets/ocean/sprites/fish/${fish.assetKey}_idle_0.png`} alt="" />
+								<img src={getFishArtworkPath(fish.assetKey)} alt="" />
 							</div>
 							<strong>{record ? fish.name : "Unknown"}</strong>
 							<StarRow rarity={fish.rarity} />
@@ -662,6 +690,22 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 						</article>
 					)
 				})}
+			</div>
+			<div className="collection-section-heading">
+				<strong>Extended Concept Catalog</strong>
+				<span>40 generated species previews · collection-only for this milestone</span>
+			</div>
+			<div className="collection-grid generated-fish-catalog" data-testid="generated-fish-catalog">
+				{generatedFishCatalog.map((fish) => (
+					<article key={fish.id} className={`collection-card catalog-preview rarity-${fish.rarity}`}>
+						<div className="collection-art">
+							<img src={fish.spritePath} alt="" />
+						</div>
+						<strong>{fish.name}</strong>
+						<StarRow rarity={fish.rarity} />
+						<span>{fish.landmark}</span>
+					</article>
+				))}
 			</div>
 		</OverlayPanel>
 	)
@@ -793,7 +837,7 @@ function FishPanel({
 	return (
 		<OverlayPanel title={fish.name} onClose={onClose}>
 			<div className={`fish-detail rarity-${fish.rarity}`}>
-				<img src={`/assets/ocean/sprites/fish/${fish.assetKey}_swim_1.png`} alt="" />
+				<img src={getFishArtworkPath(fish.assetKey)} alt="" />
 				<StarRow rarity={fish.rarity} />
 				<p>{fish.lore}</p>
 				{record ? (
@@ -839,6 +883,23 @@ function SettingsPanel({
 	)
 }
 
+function PausePanel({ onResume, onMainMenu }: { onResume: () => void; onMainMenu: () => void }) {
+	return (
+		<section className="pause-overlay" data-testid="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+			<div className="pause-card panel-chrome">
+				<span className="pause-kicker">EXPEDITION PAUSED</span>
+				<h2 id="pause-title">Tide on hold</h2>
+				<p>Your line, timer, fish, and typing target are frozen safely.</p>
+				<div className="pause-actions">
+					<button className="primary-action" onClick={onResume}><Play aria-hidden="true" /> Resume fishing</button>
+					<button className="secondary-action" onClick={onMainMenu}>Main menu</button>
+				</div>
+				<small>Press Esc anytime to pause or resume.</small>
+			</div>
+		</section>
+	)
+}
+
 function ResultToast({ view }: { view: OceanRunView }) {
 	const result = view.lastResult
 	if (!result) {
@@ -846,11 +907,12 @@ function ResultToast({ view }: { view: OceanRunView }) {
 	}
 	return (
 		<section className={`result-toast panel-chrome ${result.caught ? "caught" : "escaped"}`} data-testid="result-toast">
-			<CheckCircle2 aria-hidden="true" />
+			{result.caught ? <CheckCircle2 aria-hidden="true" /> : <X aria-hidden="true" />}
 			<div>
 				<strong>{result.caught ? "Catch secured" : "Line lost"}</strong>
 				<span>{view.fish.name} / {result.sizeKg} kg / Q{Math.round(result.quality * 100)}</span>
 				<small>+{result.rewards.coins} coins / +{result.rewards.xp} XP</small>
+				<em>{view.expedition.complete ? "Expedition complete" : "Next encounter loading..."}</em>
 			</div>
 		</section>
 	)
