@@ -13,6 +13,25 @@ const layers = ["sky", "water", "midground", "encounter", "foreground"] as const
 const zones = ["zone1", "zone2", "zone3"] as const
 const rareOrBossFish = new Set(["moonfin_snapper", "glass_eel", "reef_shark", "crown_leviathan"])
 const bossFish = "crown_leviathan"
+const animatedFishAssetKey = "fish_pebble_goby"
+const pebbleGobyFrameCounts: Record<FishVisualState, number> = {
+	idle: 4,
+	swim: 6,
+	bite: 4,
+	struggle: 6,
+	stunned: 4,
+	caught: 4,
+	escape: 6,
+}
+const pebbleGobyFrameRates: Record<FishVisualState, number> = {
+	idle: 8,
+	swim: 10,
+	bite: 12,
+	struggle: 12,
+	stunned: 6,
+	caught: 10,
+	escape: 14,
+}
 const audioFiles = [
 	"sfx_ambient_ocean_loop",
 	"sfx_cast_net_a",
@@ -61,6 +80,7 @@ export class FishingScene extends Phaser.Scene {
 	private streakEmitter?: Phaser.GameObjects.Particles.ParticleEmitter
 	private currentFish?: FishSpecies
 	private currentFishState: FishVisualState = "idle"
+	private gamePaused = true
 	private reducedMotion = false
 	private lineProgress = 0
 	private lineTension = 28
@@ -94,6 +114,7 @@ export class FishingScene extends Phaser.Scene {
 		}
 		this.currentFish = undefined
 		this.currentFishState = "idle"
+		this.gamePaused = true
 		this.reducedMotion = false
 		this.lineProgress = 0
 		this.lineTension = 28
@@ -114,6 +135,15 @@ export class FishingScene extends Phaser.Scene {
 			console.error("[typecade] asset load failed", file.key, file.src)
 		})
 		this.load.atlas("ocean", "/assets/ocean/atlases/atlas_ocean.png", "/assets/ocean/atlases/atlas_ocean.json")
+		for (const state of Object.keys(pebbleGobyFrameCounts) as FishVisualState[]) {
+			const frameCount = pebbleGobyFrameCounts[state]
+			const key = `pebble_goby_${state}_${frameCount}f`
+			this.load.spritesheet(
+				key,
+				`/assets/ocean/concepts/fish-catalog-v2/animation-sets/pebble-goby/pebble_goby_${state}_${frameCount}f.png`,
+				{ frameWidth: 128, frameHeight: 96 },
+			)
+		}
 		for (const zone of zones) {
 			for (const layer of layers) {
 				this.load.image(`bg_${zone}_${layer}`, `/assets/ocean/backgrounds/bg_shallow_coast_${zone}_${layer}.webp`)
@@ -157,7 +187,7 @@ export class FishingScene extends Phaser.Scene {
 		this.lure = this.add.image(760, 530, "ocean", "ui_equipment_bait_shell.png").setDepth(29).setScale(0.46).setVisible(false)
 		this.fishShadow = this.add.image(970, 562, "ocean", "vfx_soft_circle_default.png").setDepth(21).setScale(3.1, 0.68).setAlpha(0.34)
 		this.fishShadow.setTint(0x042238).setVisible(false)
-		this.fish = this.add.sprite(970, 515, "ocean", "fish_reef_minnow_idle_0.png").setDepth(25).setScale(1.35).setVisible(false)
+		this.fish = this.add.sprite(970, 515, "pebble_goby_idle_4f", 0).setDepth(25).setScale(1.35).setVisible(false)
 
 		this.createEmitters()
 		this.subscribeToBridge()
@@ -170,6 +200,9 @@ export class FishingScene extends Phaser.Scene {
 	}
 
 	override update(time: number, delta: number): void {
+		if (this.gamePaused) {
+			return
+		}
 		const width = this.scale.width
 		const height = this.scale.height
 		const dt = Math.min(48, delta) / 1000
@@ -512,6 +545,16 @@ export class FishingScene extends Phaser.Scene {
 				this.volumes = { ...volumes }
 				this.updateLoopVolumes()
 			}),
+			bridge.on("game:paused", ({ paused }) => {
+				this.gamePaused = paused
+				if (paused) {
+					this.anims.pauseAll()
+					this.tweens.pauseAll()
+				} else {
+					this.anims.resumeAll()
+					this.tweens.resumeAll()
+				}
+			}),
 			bridge.on("settings:effects", ({ reducedMotion }) => {
 				this.reducedMotion = reducedMotion
 			}),
@@ -523,6 +566,22 @@ export class FishingScene extends Phaser.Scene {
 			return
 		}
 		this.currentFishState = state
+		if (fish.assetKey === animatedFishAssetKey) {
+			const frameCount = pebbleGobyFrameCounts[state]
+			const sheetKey = `pebble_goby_${state}_${frameCount}f`
+			const key = `${animatedFishAssetKey}_${state}`
+			if (!this.anims.exists(key)) {
+				this.anims.create({
+					key,
+					frames: this.anims.generateFrameNumbers(sheetKey, { start: 0, end: frameCount - 1 }),
+					frameRate: pebbleGobyFrameRates[state],
+					repeat: state === "caught" || state === "escape" ? 0 : -1,
+				})
+			}
+			this.fish.setTexture(sheetKey, 0)
+			this.fish.play(key, true)
+			return
+		}
 		const frameCount = rareOrBossFish.has(fish.id) ? 6 : 4
 		const key = `${fish.assetKey}_${state}`
 		if (!this.anims.exists(key)) {
@@ -538,6 +597,7 @@ export class FishingScene extends Phaser.Scene {
 				repeat: state === "caught" || state === "escape" ? 0 : -1,
 			})
 		}
+		this.fish.setTexture("ocean", `${fish.assetKey}_${state}_0.png`)
 		this.fish.play(key, true)
 	}
 

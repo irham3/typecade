@@ -192,6 +192,9 @@ export interface ExpeditionState {
 }
 
 export interface GameEventMap {
+	"game:paused": {
+		paused: boolean
+	}
 	"character:correct": {
 		key: string
 		expected: string

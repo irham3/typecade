@@ -61,6 +61,7 @@ export interface OceanRunView {
 	lastSkillId?: string
 	feedback?: OceanUiFeedback
 	skillOffers: typeof fishingSkills
+	isPaused: boolean
 }
 
 export interface OceanUiFeedback {
@@ -88,6 +89,7 @@ export interface OceanRunControls {
 	setVolume(category: keyof VolumeState, value: number): void
 	setReducedMotion(value: boolean): void
 	startFreshRun(): void
+	togglePause(): void
 }
 
 export function useOceanRun(controlsActive = true): OceanRunControls {
@@ -101,6 +103,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	const handledEncounterRef = useRef<string | null>(null)
 	const lastTickRef = useRef<number>(0)
 	const controlsActiveRef = useRef(controlsActive)
+	const pausedRef = useRef(true)
 	const sonarRevealedUntilRef = useRef(0)
 	const feedbackSequenceRef = useRef(0)
 	const pendingSkillLoadoutRef = useRef<string[] | null>(null)
@@ -188,6 +191,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		const snapshot = session.getSnapshot()
 		const nextView: OceanRunView = {
 			...view,
+			isPaused: pausedRef.current,
 			expedition,
 			collection,
 			encounter,
@@ -430,10 +434,22 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		const level = getAccountLevelProgress(collection.xp).level
 		const selectedSkillIds = pendingSkillLoadoutRef.current ?? getDefaultSkillLoadout(seed, level)
 		const expedition = createShallowCoastExpedition(seed, selectedSkillIds)
+		pausedRef.current = false
+		bridge.emit("game:paused", { paused: false })
 		pendingSkillLoadoutRef.current = null
 		persist(expedition, collection)
 		startEncounterFromExpedition(expedition, collection, "New Shallow Coast expedition")
 	}, [persist, startEncounterFromExpedition])
+
+	const togglePause = useCallback(() => {
+		if (!controlsActiveRef.current) {
+			return
+		}
+		const paused = !pausedRef.current
+		pausedRef.current = paused
+		setView((previous) => ({ ...previous, isPaused: paused }))
+		bridge.emit("game:paused", { paused })
+	}, [bridge])
 
 	useEffect(() => {
 		const restored = restoreFromLocalStorage()
@@ -447,6 +463,14 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!controlsActiveRef.current || isEditableTarget(event.target)) {
+				return
+			}
+			if (event.key === "Escape") {
+				event.preventDefault()
+				togglePause()
+				return
+			}
+			if (pausedRef.current) {
 				return
 			}
 
@@ -472,10 +496,13 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		window.addEventListener("keydown", onKeyDown)
 		return () => window.removeEventListener("keydown", onKeyDown)
-	}, [activeSkills, handleTypingEvents, useSkill])
+	}, [activeSkills, handleTypingEvents, togglePause, useSkill])
 
 	useEffect(() => {
 		const interval = window.setInterval(() => {
+			if (!controlsActiveRef.current || pausedRef.current) {
+				return
+			}
 			const encounter = encounterRef.current
 			const fish = fishRef.current
 			const expedition = expeditionRef.current
@@ -503,6 +530,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		setVolume,
 		setReducedMotion,
 		startFreshRun,
+		togglePause,
 	}
 }
 
@@ -536,6 +564,7 @@ function createInitialView(): OceanRunView {
 		},
 		reducedMotion: false,
 		sonarRevealed: false,
+		isPaused: true,
 	}
 }
 

@@ -3,6 +3,7 @@ import type { GameEventMap } from "@typecade/contracts"
 type GameEventKey = keyof GameEventMap
 type Handler<K extends GameEventKey> = (payload: GameEventMap[K]) => void
 const replayableEvents = new Set<GameEventKey>([
+	"game:paused",
 	"encounter:started",
 	"line:changed",
 	"settings:volumes",
