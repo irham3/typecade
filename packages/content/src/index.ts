@@ -1,4 +1,12 @@
-import type { FishSpecies, FishingSkill, RouteNode, ZoneId } from "@typecade/contracts"
+import type { FishSpecies, FishingSkill, Rarity, RouteNode, ZoneId } from "@typecade/contracts"
+
+export interface FishCatalogEntry {
+	id: string
+	name: string
+	rarity: Rarity
+	spritePath: string
+	landmark: string
+}
 
 export const languagePacks = {
 	id: {
@@ -27,7 +35,7 @@ export const languagePacks = {
 export const fishSpecies: FishSpecies[] = [
 	{
 		id: "reef_minnow",
-		name: "Reef Minnow",
+		name: "Pebble Goby",
 		rarity: "common",
 		habitat: "zone_1",
 		behavior: "calm",
@@ -39,8 +47,8 @@ export const fishSpecies: FishSpecies[] = [
 		tensionOnTypo: 7,
 		durabilityOnTypo: 3,
 		idlePressurePerSecond: 0.35,
-		assetKey: "fish_reef_minnow",
-		lore: "A quick silver-green fish that gathers near warm reef stones.",
+		assetKey: "fish_pebble_goby",
+		lore: "A shovel-headed goby that combs warm reef stones for tiny pearls.",
 		reward: { coins: 18, materials: 1, xp: 8 },
 	},
 	{
@@ -205,6 +213,53 @@ export const fishSpecies: FishSpecies[] = [
 		lore: "The reef's old monarch, crowned in coral and drawn by perfect rhythm.",
 		reward: { coins: 180, materials: 12, xp: 90 },
 	},
+]
+
+/**
+ * Extended generated fish catalog. These are collection previews only; the
+ * deterministic Milestone 1 encounter roster remains `fishSpecies` above.
+ */
+export const generatedFishCatalog: FishCatalogEntry[] = [
+	{ id: "catalog_pebble_goby", name: "Pebble Goby", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_01.png", landmark: "Shovel head, barbels, paddle tail" },
+	{ id: "catalog_ribbon_sardine", name: "Ribbon Sardine", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_02.png", landmark: "Streamer tail and thin silver body" },
+	{ id: "catalog_crescent_guppy", name: "Crescent Guppy", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_03.png", landmark: "Oversized crescent tail" },
+	{ id: "catalog_shellback_puffer", name: "Shellback Puffer", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_04.png", landmark: "Spiral shell-like back plate" },
+	{ id: "catalog_tide_skipper", name: "Tide Skipper", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_05.png", landmark: "Pennant tail and jumping posture" },
+	{ id: "catalog_coral_fry", name: "Coral Fry", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_06.png", landmark: "Three coral dorsal prongs" },
+	{ id: "catalog_lantern_anchovy", name: "Lantern Anchovy", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_07.png", landmark: "Forehead lantern stalk" },
+	{ id: "catalog_leafy_wrasse", name: "Leafy Wrasse", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_08.png", landmark: "Leaf-shaped fins" },
+	{ id: "catalog_bandtail_bream", name: "Bandtail Bream", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_09.png", landmark: "Four body bands and three-lobed tail" },
+	{ id: "catalog_needle_minnow", name: "Needle Minnow", rarity: "common", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_10.png", landmark: "Long needle snout" },
+	{ id: "catalog_spotted_lionfish", name: "Spotted Lionfish", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_11.png", landmark: "Seven striped dorsal rays" },
+	{ id: "catalog_sailfin_tang", name: "Sailfin Tang", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_12.png", landmark: "Large sail dorsal fin" },
+	{ id: "catalog_sunset_parrotfish", name: "Sunset Parrotfish", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_13.png", landmark: "Beak-shaped snout" },
+	{ id: "catalog_ribbon_eel", name: "Ribbon Eel", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_14.png", landmark: "Forehead crest and curled ribbon tail" },
+	{ id: "catalog_stargazer", name: "Stargazer", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_15.png", landmark: "Top-set eyes and shovel mouth" },
+	{ id: "catalog_pearl_flounder", name: "Pearl Flounder", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_16.png", landmark: "Both eyes on one side" },
+	{ id: "catalog_marbled_ray", name: "Marbled Ray", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_17.png", landmark: "Diamond body and corkscrew tail" },
+	{ id: "catalog_striped_barracuda", name: "Striped Barracuda", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_18.png", landmark: "Needle jaw and vertical stripes" },
+	{ id: "catalog_giant_clamfish", name: "Giant Clamfish", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_19.png", landmark: "Hinged clam shell rear" },
+	{ id: "catalog_glass_catfish", name: "Glass Catfish", rarity: "uncommon", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_20.png", landmark: "Translucent body and whiskers" },
+	{ id: "catalog_moonfin_snapper", name: "Moonfin Snapper", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_21.png", landmark: "Crescent dorsal and split ribbon tail" },
+	{ id: "catalog_reef_shark", name: "Reef Shark", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_22.png", landmark: "Blunt snout and coral scars" },
+	{ id: "catalog_prism_koi", name: "Prism Koi", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_23.png", landmark: "Asymmetric fins and forehead horn" },
+	{ id: "catalog_pearl_manta", name: "Pearl Manta", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_24.png", landmark: "Diamond ray body and fork tail" },
+	{ id: "catalog_ember_lionfish", name: "Ember Lionfish", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_25.png", landmark: "Eight flame-like fins" },
+	{ id: "catalog_glass_marlin", name: "Glass Marlin", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_26.png", landmark: "Transparent cyan body and long bill" },
+	{ id: "catalog_crown_angelfish", name: "Crown Angelfish", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_27.png", landmark: "Crown upper fin and beard lower fin" },
+	{ id: "catalog_blacktip_barracuda", name: "Blacktip Barracuda", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_28.png", landmark: "Charcoal body and zigzag tail" },
+	{ id: "catalog_comet_swordfish", name: "Comet Swordfish", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_29.png", landmark: "Long silver bill and starry tail" },
+	{ id: "catalog_spineback_grouper", name: "Spineback Grouper", rarity: "rare", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_30.png", landmark: "Six dorsal spines and huge jaw" },
+	{ id: "catalog_abyssal_angler", name: "Abyssal Angler", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_31.png", landmark: "Oversized belly, gold lure, huge jaw" },
+	{ id: "catalog_storm_crown_ray", name: "Storm Crown Ray", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_32.png", landmark: "Diamond ray, lightning fins, whip tail" },
+	{ id: "catalog_sunken_marlin", name: "Sunken Marlin", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_33.png", landmark: "Gold spear bill and towering sail" },
+	{ id: "catalog_coral_dragonfish", name: "Coral Dragonfish", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_34.png", landmark: "Sea-dragon body and horned crest" },
+	{ id: "catalog_tide_emperor", name: "Tide Emperor", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_35.png", landmark: "Disc body, fan crown, mantle fringe" },
+	{ id: "catalog_prism_whale", name: "Prism Whale", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_36.png", landmark: "Rounded whale-fish silhouette" },
+	{ id: "catalog_aurora_serpent", name: "Aurora Serpent", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_37.png", landmark: "Long S-coiled body and horn fins" },
+	{ id: "catalog_shell_monarch", name: "Shell Monarch", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_38.png", landmark: "Three armor shells and banner tail" },
+	{ id: "catalog_deepstar_octofish", name: "Deepstar Octofish", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_39.png", landmark: "Four tentacle fins and star eye" },
+	{ id: "catalog_crown_leviathan", name: "Crown Leviathan", rarity: "boss", spritePath: "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_40.png", landmark: "Crescent blade, crown ridge, comet tail" },
 ]
 
 export const fishingSkills: FishingSkill[] = [
