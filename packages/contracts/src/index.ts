@@ -25,9 +25,9 @@ export type SkillType = "active" | "passive"
 export type SkillEffect =
 	| "instant_small_capture"
 	| "ignore_first_typo_per_encounter"
-	| "reveal_route_rewards"
+	| "reveal_route_fish"
 	| "slow_fish_pressure"
-	| "perfect_streak_rare_odds"
+	| "perfect_streak_tension_recovery"
 	| "fifth_perfect_word_bonus_progress"
 
 export type ZoneId = "zone_1" | "zone_2" | "zone_3"
@@ -134,6 +134,7 @@ export interface EncounterState {
 	steelLineAvailable: boolean
 	calmCurrentRemainingMs: number
 	bossPhase: 1 | 2 | 3
+	bossGuard: number
 	lastEventId: number
 }
 
@@ -182,6 +183,7 @@ export interface ExpeditionCheckpoint {
 export interface ExpeditionState {
 	seed: string
 	contentVersion: typeof CONTENT_VERSION
+	selectedRouteId: string
 	currentZoneIndex: number
 	currentEncounterIndex: number
 	spareLines: number
@@ -235,6 +237,12 @@ export interface GameEventMap {
 	"phase:changed": {
 		phase: 1 | 2 | 3
 	}
+	"boss:guard-broken": {
+		bonusProgress: number
+	}
+	"boss:final-pull": {
+		bonusProgress: number
+	}
 	"catch:resolved": {
 		result: CatchResult
 	}
@@ -264,6 +272,6 @@ export interface GameEventMap {
 		reducedMotion: boolean
 	}
 	"screen:changed": {
-		screen: "menu" | "prep" | "game"
+		screen: "menu" | "practice" | "prep" | "game" | "race"
 	}
 }

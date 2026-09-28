@@ -21,10 +21,14 @@ export default defineConfig({
 			"@typecade/content": path.resolve(rootDir, "packages/content/src/index.ts"),
 			"@typecade/game-rules": path.resolve(rootDir, "packages/game-rules/src/index.ts"),
 			"@typecade/typing-engine": path.resolve(rootDir, "packages/typing-engine/src/index.ts"),
+			"@typecade/race-rules": path.resolve(rootDir, "packages/race-rules/src/index.ts"),
 		},
 	},
 	server: {
 		port: 3000,
 		strictPort: false,
+		proxy: {
+			"/api": { target: "http://localhost:8787", ws: true },
+		},
 	},
 })

@@ -18,7 +18,8 @@
       "@typecade/contracts": ["./packages/contracts/src/index.ts"],
       "@typecade/content": ["./packages/content/src/index.ts"],
       "@typecade/game-rules": ["./packages/game-rules/src/index.ts"],
-      "@typecade/typing-engine": ["./packages/typing-engine/src/index.ts"]
+      "@typecade/typing-engine": ["./packages/typing-engine/src/index.ts"],
+      "@typecade/race-rules": ["./packages/race-rules/src/index.ts"]
     }
   },
   "include": [
@@ -26,8 +27,8 @@
     "apps/web/src/**/*.tsx",
     "apps/web/vite.config.ts",
     "packages/**/*.ts",
-    "vitest.config.ts",
+    "vitest.config.mts",
     "global.d.ts"
   ],
-  "exclude": ["node_modules", ".next", ".open-next", "out"]
+  "exclude": ["node_modules", ".next", ".open-next", "out", "apps/web/src/server"]
 }

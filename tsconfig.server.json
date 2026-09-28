@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": [
+    "apps/web/src/server/**/*.ts",
+    "packages/race-rules/src/index.ts",
+    "packages/content/src/race.ts"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -5,6 +5,118 @@ test.describe("Ocean Typing RPG shell", () => {
 		{ name: "desktop", width: 1366, height: 768 },
 		{ name: "mobile", width: 390, height: 844 },
 	]) {
+		test(`opens every main-menu destination on ${viewport.name}`, async ({ page }) => {
+			await page.setViewportSize({ width: viewport.width, height: viewport.height })
+			await page.goto("/")
+			await expect(page.locator(".mainmenu-button img").nth(0)).toHaveAttribute("src", /\/assets\/ocean\/mainmenu\/1\.play\.png$/)
+			await expect(page.locator(".mainmenu-button img").nth(2)).toHaveAttribute("src", /\/assets\/ocean\/mainmenu\/3\.ranked duel\.png$/)
+			await page.getByRole("button", { name: "Multiplayer", exact: true }).click()
+			await expect(page.getByTestId("race-screen")).toBeVisible()
+			await page.getByRole("button", { name: "Main menu" }).click()
+			await expect(page.getByTestId("main-menu")).toBeVisible()
+			for (const label of ["Shop", "Collection", "Leaderboard"]) {
+				await page.getByRole("button", { name: label, exact: true }).click()
+				await expect(page.getByTestId("overlay-panel")).toBeVisible()
+				await expect(page.getByTestId("overlay-panel")).toContainText(label)
+				await page.getByRole("button", { name: "Close" }).click()
+				await expect(page.getByTestId("overlay-panel")).toHaveCount(0)
+			}
+			await page.getByRole("button", { name: "Practice", exact: true }).click()
+			await expect(page.getByTestId("practice-screen")).toBeVisible()
+			await expect(page.getByRole("button", { name: "Start practice" })).toBeVisible()
+			await page.getByRole("button", { name: "Main menu" }).click()
+			await expect(page.getByTestId("main-menu")).toBeVisible()
+			await page.getByRole("button", { name: "Adventure", exact: true }).click()
+			await expect(page.getByTestId("prep-screen")).toBeVisible()
+			await page.getByRole("button", { name: "Back" }).click()
+			await expect(page.getByTestId("main-menu")).toBeVisible()
+		})
+	}
+
+	test("configures an English custom Perfect Tide practice and completes it", async ({ page }) => {
+		await page.goto("/")
+		await page.getByRole("button", { name: "Practice", exact: true }).click()
+		await page.getByLabel("Practice language").selectOption("en")
+		await page.getByLabel("Practice text format").selectOption("custom")
+		await page.getByLabel("Custom passage").fill("tide")
+		await page.getByLabel("Practice challenge").selectOption("perfect")
+		await page.getByRole("button", { name: "Start practice" }).click()
+		await expect(page.getByTestId("practice-racing")).toContainText("English · custom · perfect")
+		await page.keyboard.type("tide")
+		await expect(page.getByTestId("practice-result")).toContainText("SESSION COMPLETE")
+		await expect(page.getByTestId("practice-result")).toContainText("Good run")
+		await page.getByRole("button", { name: "Practice again" }).click()
+		await expect(page.getByTestId("practice-racing")).toBeVisible()
+		await page.getByRole("button", { name: "Main menu" }).click()
+		await expect(page.getByTestId("practice-screen")).toBeVisible()
+		await page.getByRole("button", { name: "Main menu" }).click()
+		await expect(page.getByTestId("main-menu")).toBeVisible()
+	})
+
+	test("opens HUD panels, changes settings, and pauses without losing the encounter", async ({ page }) => {
+		await page.goto("/")
+		await page.getByRole("button", { name: "Adventure", exact: true }).click()
+		const selectedSkillIndex = await page.locator(".prep-skill").evaluateAll((buttons) => buttons.findIndex((button) => button.getAttribute("aria-pressed") === "true"))
+		const selectedSkill = page.locator(".prep-skill").nth(selectedSkillIndex)
+		await selectedSkill.click()
+		await expect(selectedSkill).toHaveAttribute("aria-pressed", "false")
+		await selectedSkill.click()
+		await expect(selectedSkill).toHaveAttribute("aria-pressed", "true")
+		await page.getByRole("button", { name: "Set Sail" }).click()
+		await expectHudDoesNotOverlap(page)
+		const target = await page.getByTestId("typing-target").textContent()
+		for (const [button, title] of [
+			["Fish", "Pebble Goby"],
+			["Collection", "Collection"],
+			["Tasks", "Route"],
+			["Shop", "Skills"],
+		] as const) {
+			await page.getByRole("button", { name: button, exact: true }).click()
+			await expect(page.getByTestId("overlay-panel")).toContainText(title)
+			await page.getByRole("button", { name: "Close" }).click()
+		}
+		await page.getByRole("button", { name: "Settings" }).click()
+		await expect(page.getByTestId("overlay-panel")).toContainText("Settings")
+		for (const channel of ["music", "environment", "gameplay", "typing"]) {
+			await page.getByRole("slider", { name: channel, exact: true }).fill("0.2")
+			await expect(page.getByRole("slider", { name: channel, exact: true })).toHaveValue("0.2")
+		}
+		await page.getByLabel("Reduced effects").check()
+		await expect(page.getByLabel("Reduced effects")).toBeChecked()
+		await page.getByRole("button", { name: "Close" }).click()
+		await page.getByRole("button", { name: "Settings" }).click()
+		await expect(page.getByRole("slider", { name: "music", exact: true })).toHaveValue("0.2")
+		await expect(page.getByLabel("Reduced effects")).toBeChecked()
+		await page.getByRole("button", { name: "Close" }).click()
+		await page.getByRole("button", { name: "Pause game" }).click()
+		await expect(page.getByTestId("pause-panel")).toBeVisible()
+		await page.getByRole("button", { name: "Resume fishing" }).click()
+		await expect(page.getByTestId("pause-panel")).toHaveCount(0)
+		await page.keyboard.press("Escape")
+		await expect(page.getByTestId("pause-panel")).toBeVisible()
+		await page.keyboard.press("Escape")
+		await expect(page.getByTestId("pause-panel")).toHaveCount(0)
+		await expect(page.getByTestId("typing-target")).toHaveText(target ?? "")
+	})
+
+	test("keeps mobile HUD navigation clickable", async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 })
+		await page.goto("/")
+		await page.getByRole("button", { name: "Adventure", exact: true }).click()
+		await page.getByRole("button", { name: "Set Sail" }).click()
+		await expectHudDoesNotOverlap(page)
+		for (const label of ["Fish", "Collection", "Tasks", "Shop", "Settings"]) {
+			await page.getByRole("button", { name: label, exact: true }).click()
+			await expect(page.getByTestId("overlay-panel")).toBeVisible()
+			await page.getByRole("button", { name: "Close" }).click()
+		}
+	})
+
+	for (const viewport of [
+		{ name: "desktop", width: 1366, height: 768 },
+		{ name: "compact desktop", width: 1024, height: 768 },
+		{ name: "mobile", width: 390, height: 844 },
+	]) {
 		test(`renders a nonblank Phaser scene without HUD overlap on ${viewport.name}`, async ({ page }) => {
 			const consoleErrors: string[] = []
 			page.on("console", (message) => {
@@ -23,18 +135,23 @@ test.describe("Ocean Typing RPG shell", () => {
 			await expect(page.locator(".mainmenu-ship")).toBeVisible()
 			await expect(page.getByRole("img", { name: "Typecade" })).toBeVisible()
 			await expect(page.getByTestId("main-menu")).toHaveCSS("background-image", /background-mainmenu\.png/)
-			for (const label of ["Play", "Adventure", "Ranked Duel", "Shop", "Collection", "Leaderboard"]) {
+			for (const label of ["Practice", "Adventure", "Multiplayer", "Shop", "Collection", "Leaderboard"]) {
 				await expect(page.getByRole("button", { name: label, exact: true })).toBeVisible()
 			}
 			await page.keyboard.press("Tab")
-			await expect(page.getByRole("button", { name: "Play", exact: true })).toBeFocused()
-			await page.getByRole("button", { name: "Play", exact: true }).click()
+			await expect(page.getByRole("button", { name: "Practice", exact: true })).toBeFocused()
+			await page.getByRole("button", { name: "Adventure", exact: true }).click()
 			await expect(page.getByTestId("prep-screen")).toBeVisible()
+			await page.getByTestId("prep-screen").getByRole("button", { name: /Reef Shelf/ }).click()
 			await page.getByRole("button", { name: "Set Sail" }).click()
 			await expect(page.getByTestId("typing-console")).toBeVisible()
+			await expect(page.getByTestId("route-strip")).toContainText("Reef Shelf")
 			const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
 			const prefixEnd = target.split(" ").slice(0, 3).join(" ").length + 1
 			await page.keyboard.type(target.slice(0, prefixEnd), { delay: 2 })
+			await page.getByRole("button", { name: "Tasks" }).click()
+			await expect(page.getByRole("button", { name: /Lagoon Gate/ })).toBeDisabled()
+			await page.getByRole("button", { name: "Close" }).click()
 			const activeSkill = page.locator("[data-testid='skill-dock'] .skill-button.active:enabled").first()
 			await expect(activeSkill).toBeEnabled()
 			await activeSkill.click()
@@ -55,6 +172,33 @@ test.describe("Ocean Typing RPG shell", () => {
 			expect(consoleErrors).toEqual([])
 		})
 	}
+
+	test("completes the full Shallow Coast run including the Leviathan", async ({ page }) => {
+		test.setTimeout(120000)
+		await page.goto("/")
+		await page.getByRole("button", { name: "Adventure", exact: true }).click()
+		await page.getByRole("button", { name: "Set Sail" }).click()
+		for (let encounter = 1; encounter <= 10; encounter += 1) {
+			await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter}/10`)
+			if (encounter === 10) {
+				await expect(page.getByTestId("boss-phase-callout")).toContainText("Crown Wake")
+			}
+			const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
+			await page.keyboard.type(target, { delay: encounter === 10 ? 12 : 1 })
+			await expect(page.getByTestId("result-toast"), `Encounter ${encounter}: ${target}`).toContainText("Catch secured")
+			if (encounter < 10) {
+				await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter + 1}/10`, { timeout: 5000 })
+			}
+		}
+		await expect(page.getByTestId("boss-phase-callout")).toContainText("Final Pull")
+		await expect(page.getByTestId("complete-panel")).toContainText("Shallow Coast cleared")
+		await expectHudDoesNotOverlap(page)
+		await page.getByRole("button", { name: "Sail Again" }).click()
+		await expect(page.getByTestId("route-strip")).toContainText("Encounter 1/10")
+		await page.getByRole("button", { name: "Pause game" }).click()
+		await page.getByRole("button", { name: "Main menu" }).click()
+		await expect(page.getByTestId("main-menu")).toBeVisible()
+	})
 })
 
 async function expectCanvasNonBlank(page: import("@playwright/test").Page): Promise<void> {
@@ -91,13 +235,15 @@ async function sampleCanvas(page: import("@playwright/test").Page): Promise<{ co
 }
 
 async function expectHudDoesNotOverlap(page: import("@playwright/test").Page): Promise<void> {
-	const overlaps = await page.evaluate(() => {
+	await expect.poll(() => page.evaluate(() => {
 		const selectors = [
 			"[data-testid='topbar']",
+			".icon-rail",
 			"[data-testid='route-strip']",
 			"[data-testid='fish-card']",
 			"[data-testid='typing-console']",
 			"[data-testid='skill-dock']",
+			"[data-testid='boss-phase-callout']",
 		]
 		const rects = selectors
 			.map((selector) => {
@@ -130,7 +276,12 @@ async function expectHudDoesNotOverlap(page: import("@playwright/test").Page): P
 			}
 		}
 		return badPairs
-	})
-
-	expect(overlaps).toEqual([])
+	}), { timeout: 3000 }).toEqual([])
+	const offscreenSkills = await page.locator("[data-testid='skill-dock'] .skill-button").evaluateAll((buttons) => buttons
+		.filter((button) => {
+			const rect = button.getBoundingClientRect()
+			return rect.left < 0 || rect.right > innerWidth || rect.top < 0 || rect.bottom > innerHeight
+		})
+		.map((button) => button.textContent?.trim()))
+	expect(offscreenSkills).toEqual([])
 }

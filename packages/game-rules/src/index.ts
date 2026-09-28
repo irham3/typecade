@@ -11,10 +11,9 @@ import type {
 	RewardTable,
 	TypingEvent,
 	TypingMetrics,
-	ZoneId,
 } from "@typecade/contracts"
 import { CONTENT_VERSION } from "@typecade/contracts"
-import { fishSpecies, fishingSkills, getFish, getSkill, shallowCoastZoneOrder } from "@typecade/content"
+import { fishSpecies, fishingSkills, getFish, getRouteNodesForZone, getSkill, shallowCoastZoneOrder } from "@typecade/content"
 
 export interface SeededRng {
 	nextFloat(): number
@@ -35,6 +34,8 @@ export interface FishingRuleEvent {
 		| "skill-triggered"
 		| "skill-used"
 		| "phase-changed"
+		| "boss-guard-broken"
+		| "boss-final-pull"
 		| "caught"
 		| "escaped"
 	value?: number
@@ -93,7 +94,7 @@ export function createSeededRng(seed: string): SeededRng {
 	}
 }
 
-export function createInitialCollection(nowIso = new Date(0).toISOString()): CollectionState {
+export function createInitialCollection(): CollectionState {
 	return {
 		records: {},
 		coins: 12450,
@@ -141,7 +142,10 @@ export function getDefaultSkillLoadout(seed: string, accountLevel: number): stri
 }
 
 export function canUseFishingSkill(encounter: EncounterState, skill: FishingSkill): boolean {
-	return skill.type === "active" && encounter.status === "active" && encounter.skillEnergy >= getFishingSkillCost(skill.id)
+	if (skill.type !== "active" || encounter.status !== "active" || encounter.skillEnergy < getFishingSkillCost(skill.id)) return false
+	if (skill.id !== "cast_net") return true
+	const fish = getFish(encounter.fishId)
+	return fish.rarity === "common" && fish.baseSizeKg <= 2.2 && encounter.progress >= 0.45
 }
 
 export function getAccountLevelProgress(xp: number): AccountLevelProgress {
@@ -173,6 +177,7 @@ export function createShallowCoastExpedition(
 	return {
 		seed,
 		contentVersion: CONTENT_VERSION,
+		selectedRouteId: getRouteNodesForZone("zone_1")[0]!.id,
 		currentZoneIndex: 0,
 		currentEncounterIndex: 0,
 		spareLines: 2,
@@ -215,6 +220,7 @@ export function startEncounter(fish: FishSpecies, seed: string, selectedSkillIds
 		steelLineAvailable: selectedSkillIds.includes("steel_line"),
 		calmCurrentRemainingMs: 0,
 		bossPhase: 1,
+		bossGuard: 0,
 		lastEventId: 0,
 	}
 }
@@ -224,6 +230,7 @@ export function applyTypingEvents(
 	fish: FishSpecies,
 	typingEvents: readonly TypingEvent[],
 	selectedSkillIds: readonly string[],
+	routeRisk = 1,
 ): RuleApplication {
 	let next = { ...encounter }
 	const events: FishingRuleEvent[] = []
@@ -236,7 +243,7 @@ export function applyTypingEvents(
 		if (event.type === "correct-char") {
 			next = {
 				...next,
-				progress: clamp(next.progress + getCorrectCharacterProgress(fish), 0, 1),
+				progress: clamp(next.progress + getCorrectCharacterProgress(fish, next), 0, 1),
 				tension: clamp(next.tension - 0.1, 0, 100),
 			}
 			events.push({ type: "progress", value: next.progress })
@@ -247,8 +254,8 @@ export function applyTypingEvents(
 				next = { ...next, steelLineAvailable: false }
 				events.push({ type: "skill-triggered", label: "Steel Line" })
 			} else {
-				const tension = clamp(next.tension + fish.tensionOnTypo, 0, 100)
-				const durability = clamp(next.durability - fish.durabilityOnTypo * (1 + tension / 180), 0, 100)
+				const tension = clamp(next.tension + fish.tensionOnTypo * routeRisk, 0, 100)
+				const durability = clamp(next.durability - fish.durabilityOnTypo * routeRisk * (1 + tension / 180), 0, 100)
 				next = { ...next, tension, durability, combo: 0 }
 				events.push({ type: "tension", value: tension })
 				events.push({ type: "durability", value: durability })
@@ -259,7 +266,8 @@ export function applyTypingEvents(
 			const perfect = event.perfect === true
 			const combo = perfect ? next.combo + 1 : 0
 			const masteryBonus = selectedSkillIds.includes("reel_mastery") && perfect && combo % 5 === 0 ? 0.08 : 0
-			const progressGain = fish.progressPerWord * getBehaviorProgressModifier(fish) * (1 + Math.min(combo, 12) * 0.018) + masteryBonus
+			const guardMultiplier = fish.id === "crown_leviathan" && next.bossPhase === 2 && next.bossGuard > 0 ? 0.55 : 1
+			const progressGain = fish.progressPerWord * getBehaviorProgressModifier(fish) * (1 + Math.min(combo, 12) * 0.018) * guardMultiplier + masteryBonus
 			next = {
 				...next,
 				combo,
@@ -267,6 +275,20 @@ export function applyTypingEvents(
 				skillEnergy: clamp(next.skillEnergy + (perfect ? 14 : 7), 0, 100),
 				progress: clamp(next.progress + progressGain, 0, 1),
 				tension: clamp(next.tension - (perfect ? 2.2 : 0.8), 0, 100),
+			}
+			if (fish.id === "crown_leviathan" && next.bossPhase === 2 && perfect && next.bossGuard > 0) {
+				const bossGuard = next.bossGuard - 1
+				next = { ...next, bossGuard }
+				if (bossGuard === 0) {
+					const bonusProgress = 0.08
+					next = { ...next, progress: clamp(next.progress + bonusProgress, 0, 1), tension: clamp(next.tension - 6, 0, 100) }
+					events.push({ type: "boss-guard-broken", value: bonusProgress, label: "Crown Guard Broken" })
+				}
+			}
+			if (fish.id === "crown_leviathan" && next.bossPhase === 3 && perfect && combo > 0 && combo % 3 === 0) {
+				const finalPullBonus = 0.1
+				next = { ...next, progress: clamp(next.progress + finalPullBonus, 0, 1), tension: clamp(next.tension - 8, 0, 100) }
+				events.push({ type: "boss-final-pull", value: finalPullBonus, label: "Final Pull" })
 			}
 			events.push({ type: "progress", value: next.progress })
 			if (masteryBonus > 0) {
@@ -296,6 +318,7 @@ export function tickEncounter(
 	fish: FishSpecies,
 	deltaMs: number,
 	selectedSkillIds: readonly string[],
+	routeRisk = 1,
 ): RuleApplication {
 	if (encounter.status !== "active") {
 		return { encounter, events: [] }
@@ -303,7 +326,7 @@ export function tickEncounter(
 
 	const deltaSeconds = Math.max(0, deltaMs) / 1000
 	const calmFactor = encounter.calmCurrentRemainingMs > 0 ? 0.35 : 1
-	const pressure = fish.idlePressurePerSecond * calmFactor * deltaSeconds
+	const pressure = fish.idlePressurePerSecond * routeRisk * calmFactor * deltaSeconds
 	const highTensionDamage = encounter.tension > 78 ? (encounter.tension - 78) * 0.012 * deltaSeconds : 0
 
 	let next: EncounterState = {
@@ -328,7 +351,7 @@ export function tickEncounter(
 
 export function useFishingSkill(encounter: EncounterState, fish: FishSpecies, skillId: string): RuleApplication {
 	const skill = getSkill(skillId)
-	if (skill.type !== "active" || encounter.status !== "active") {
+	if (!canUseFishingSkill(encounter, skill)) {
 		return { encounter, events: [] }
 	}
 
@@ -337,12 +360,10 @@ export function useFishingSkill(encounter: EncounterState, fish: FishSpecies, sk
 
 	if (skill.id === "cast_net" && next.skillEnergy >= getFishingSkillCost(skill.id)) {
 		events.push({ type: "skill-used", label: skill.name })
-		// The net is a finisher, not a skip button: typing must first reel a small fish to 45%.
-		const instantCapture = fish.rarity === "common" && fish.baseSizeKg <= 2.2 && next.progress >= 0.45
 		next = {
 			...next,
 			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),
-			progress: instantCapture ? 1 : clamp(next.progress + 0.32, 0, 1),
+			progress: 1,
 			tension: clamp(next.tension + 6, 0, 100),
 		}
 		events.push({ type: "progress", value: next.progress })
@@ -445,6 +466,7 @@ export function advanceExpedition(expedition: ExpeditionState, result: CatchResu
 		...expedition,
 		currentZoneIndex: nextZoneIndex,
 		currentEncounterIndex: 0,
+		selectedRouteId: getRouteNodesForZone(shallowCoastZoneOrder[nextZoneIndex]!)[0]!.id,
 		pendingResults: nextPending,
 	}
 }
@@ -578,12 +600,18 @@ function applyBossPhase(encounter: EncounterState, events: FishingRuleEvent[]): 
 	if (encounter.fishId !== "crown_leviathan") {
 		return encounter
 	}
-	const bossPhase = getBossPhaseForProgress(encounter.progress)
-	if (bossPhase !== encounter.bossPhase) {
+	const targetPhase = getBossPhaseForProgress(encounter.progress)
+	let next = encounter
+	while (next.bossPhase < targetPhase) {
+		const bossPhase = (next.bossPhase + 1) as 2 | 3
+		next = {
+			...next,
+			bossPhase,
+			bossGuard: bossPhase === 2 ? 3 : 0,
+		}
 		events.push({ type: "phase-changed", value: bossPhase })
-		return { ...encounter, bossPhase }
 	}
-	return encounter
+	return next
 }
 
 function settleEncounterStatus(encounter: EncounterState, events: FishingRuleEvent[]): EncounterState {
@@ -598,8 +626,11 @@ function settleEncounterStatus(encounter: EncounterState, events: FishingRuleEve
 	return encounter
 }
 
-function getCorrectCharacterProgress(fish: FishSpecies): number {
-	return fish.behavior === "armored" ? 0.0025 : 0.0035
+function getCorrectCharacterProgress(fish: FishSpecies, encounter: EncounterState): number {
+	const baseProgress = fish.behavior === "armored" ? 0.0025 : 0.0035
+	return fish.id === "crown_leviathan" && encounter.bossPhase === 2 && encounter.bossGuard > 0
+		? baseProgress * 0.55
+		: baseProgress
 }
 
 function getBehaviorProgressModifier(fish: FishSpecies): number {

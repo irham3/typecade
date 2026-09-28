@@ -34,7 +34,7 @@ import {
 	serializeOceanSave,
 	startEncounter,
 	tickEncounter,
-	useFishingSkill,
+	useFishingSkill as activateFishingSkill,
 } from "@typecade/game-rules"
 import { TypingSession } from "@typecade/typing-engine"
 import { GameEventBridge } from "../bridge/game-event-bridge"
@@ -107,6 +107,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	const sonarRevealedUntilRef = useRef(0)
 	const feedbackSequenceRef = useRef(0)
 	const pendingSkillLoadoutRef = useRef<string[] | null>(null)
+	const pendingRouteIdRef = useRef<string | null>(null)
 	const [view, setView] = useState<OceanRunView>(() => createInitialView())
 	const activeSkills = useMemo(
 		() => fishingSkills.filter((skill) => view.expedition.selectedSkillIds.includes(skill.id)),
@@ -160,21 +161,33 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		if (!fish) {
 			return
 		}
-		const choices = getRouteNodesForZone(fish.habitat)
-		const selected = choices.find((node) => node.id === nodeId) ?? choices[0]
+		const inPrep = !controlsActiveRef.current
+		if (!inPrep) {
+			const metrics = sessionRef.current?.getSnapshot().metrics
+			if (metrics && metrics.correctKeystrokes + metrics.incorrectKeystrokes > 0) return
+		}
+		const choices = getRouteNodesForZone(inPrep ? "zone_1" : fish.habitat)
+		const selected = choices.find((node) => node.id === nodeId)
+		if (!selected) return
 		selectedRouteRef.current = selected
-		syncView({ log: [`Route locked: ${selected.name}`, ...viewLogTail(view.log)] })
-	}, [syncView, view.log])
+		if (inPrep) {
+			pendingRouteIdRef.current = selected.id
+		} else if (expeditionRef.current) {
+			expeditionRef.current = { ...expeditionRef.current, selectedRouteId: selected.id }
+			if (collectionRef.current) persist(expeditionRef.current, collectionRef.current)
+		}
+		syncView({ routeChoices: choices, selectedRoute: selected, log: [`Route selected: ${selected.name}`, ...viewLogTail(view.log)] })
+	}, [persist, syncView, view.log])
 
 	const startEncounterFromExpedition = useCallback((expedition: ExpeditionState, collection: CollectionState, logLine?: string) => {
 		const fish = getFishByEncounter(expedition)
 		const encounterIndex = getEncounterIndexInRun(expedition)
-		const passage = getIndonesianPassage(encounterIndex)
+		const passage = getIndonesianPassage(encounterIndex, fish.typingProfile)
 		const startMs = performance.now()
 		const session = new TypingSession(passage, { startTimestampMs: startMs })
 		const encounter = startEncounter(fish, `${expedition.seed}:${encounterIndex}`, expedition.selectedSkillIds)
 		const routeChoices = getRouteNodesForZone(fish.habitat)
-		const selectedRoute = routeChoices[encounterIndex % routeChoices.length] ?? routeChoices[0]
+		const selectedRoute = routeChoices.find((route) => route.id === expedition.selectedRouteId) ?? routeChoices[0]
 		if (!selectedRoute) {
 			throw new Error(`No route nodes configured for ${fish.habitat}`)
 		}
@@ -264,6 +277,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		const outcome = result.caught ? `Caught ${fish.name} (${result.sizeKg} kg)` : `${fish.name} escaped`
 		syncView({
+			expedition: nextExpedition.complete ? nextExpedition : expedition,
 			lastResult: result,
 			feedback: leveledUp
 				? {
@@ -294,6 +308,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		encounterRef.current = nextEncounter
 		let lastSkillId: string | undefined
+		let bossMoment: { label: "Crown Guard Broken" | "Final Pull"; bonusProgress: number } | undefined
 		for (const event of events) {
 			if (event.type === "skill-triggered") {
 				lastSkillId = normalizeSkillId(event.label ?? "passive")
@@ -303,7 +318,18 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 				})
 			}
 			if (event.type === "phase-changed") {
-				bridge.emit("phase:changed", { phase: nextEncounter.bossPhase })
+				bridge.emit("phase:changed", { phase: event.value as 2 | 3 })
+			}
+			if (event.type === "boss-guard-broken" || event.type === "boss-final-pull") {
+				bossMoment = {
+					label: event.type === "boss-final-pull" ? "Final Pull" : "Crown Guard Broken",
+					bonusProgress: event.value ?? 0,
+				}
+				if (event.type === "boss-final-pull") {
+					bridge.emit("boss:final-pull", { bonusProgress: bossMoment.bonusProgress })
+				} else {
+					bridge.emit("boss:guard-broken", { bonusProgress: bossMoment.bonusProgress })
+				}
 			}
 		}
 		bridge.emit("line:changed", {
@@ -312,7 +338,15 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			progress: nextEncounter.progress,
 			timeRemainingMs: nextEncounter.timeRemainingMs,
 		})
-		syncView(lastSkillId ? {
+		syncView(bossMoment ? {
+			feedback: {
+				id: ++feedbackSequenceRef.current,
+				kind: "skill",
+				title: bossMoment.label.toUpperCase(),
+				detail: `Clean typing gained ${Math.round(bossMoment.bonusProgress * 100)}% reel progress`,
+			},
+			log: [`${bossMoment.label} +${Math.round(bossMoment.bonusProgress * 100)}% reel`, ...viewLogTail(view.log)],
+		} : lastSkillId ? {
 			lastSkillId,
 			feedback: {
 				id: ++feedbackSequenceRef.current,
@@ -364,11 +398,11 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			}
 		}
 
-		const applied = applyTypingEvents(encounter, fish, typingEvents, expedition.selectedSkillIds)
+		const applied = applyTypingEvents(encounter, fish, typingEvents, expedition.selectedSkillIds, selectedRouteRef.current?.risk ?? 1)
 		applyRuleEvents(applied.encounter, applied.events)
 	}, [applyRuleEvents, bridge])
 
-	const useSkill = useCallback((skillId: string): boolean => {
+	const triggerSkill = useCallback((skillId: string): boolean => {
 		const encounter = encounterRef.current
 		const fish = fishRef.current
 		if (!encounter || !fish) {
@@ -379,7 +413,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		if (!canUseFishingSkill(encounter, skill)) {
 			return false
 		}
-		const applied = useFishingSkill(encounter, fish, skillId)
+		const applied = activateFishingSkill(encounter, fish, skillId)
 		if (applied.events.length === 0) {
 			return false
 		}
@@ -430,16 +464,18 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 	const startFreshRun = useCallback(() => {
 		const seed = `${starterSeed}:${Date.now()}`
-		const collection = collectionRef.current ?? createInitialCollection(new Date().toISOString())
+		const collection = collectionRef.current ?? createInitialCollection()
 		const level = getAccountLevelProgress(collection.xp).level
 		const selectedSkillIds = pendingSkillLoadoutRef.current ?? getDefaultSkillLoadout(seed, level)
 		const expedition = createShallowCoastExpedition(seed, selectedSkillIds)
+		if (pendingRouteIdRef.current) expedition.selectedRouteId = pendingRouteIdRef.current
 		pausedRef.current = false
 		bridge.emit("game:paused", { paused: false })
 		pendingSkillLoadoutRef.current = null
+		pendingRouteIdRef.current = null
 		persist(expedition, collection)
 		startEncounterFromExpedition(expedition, collection, "New Shallow Coast expedition")
-	}, [persist, startEncounterFromExpedition])
+	}, [bridge, persist, startEncounterFromExpedition])
 
 	const togglePause = useCallback(() => {
 		if (!controlsActiveRef.current) {
@@ -451,14 +487,15 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		bridge.emit("game:paused", { paused })
 	}, [bridge])
 
+	// Restore a run once on mount; later view changes must not restart the encounter.
 	useEffect(() => {
 		const restored = restoreFromLocalStorage()
 		const expedition = restored?.expedition ?? createShallowCoastExpedition(starterSeed)
-		const collection = restored?.collection ?? createInitialCollection(new Date().toISOString())
+		const collection = restored?.collection ?? createInitialCollection()
 		startEncounterFromExpedition(expedition, collection, restored ? "Restored Shallow Coast expedition" : "New Shallow Coast expedition")
 		bridge.emit("settings:volumes", view.volumes)
 		bridge.emit("settings:effects", { reducedMotion: view.reducedMotion })
-	}, [])
+	}, []) // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -479,7 +516,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 				event.preventDefault()
 				const skill = activeSkills[skillIndex - 1]
 				if (skill) {
-					useSkill(skill.id)
+					triggerSkill(skill.id)
 				}
 				return
 			}
@@ -496,7 +533,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		window.addEventListener("keydown", onKeyDown)
 		return () => window.removeEventListener("keydown", onKeyDown)
-	}, [activeSkills, handleTypingEvents, togglePause, useSkill])
+	}, [activeSkills, handleTypingEvents, togglePause, triggerSkill])
 
 	useEffect(() => {
 		const interval = window.setInterval(() => {
@@ -512,7 +549,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			const now = performance.now()
 			const delta = Math.min(500, now - lastTickRef.current)
 			lastTickRef.current = now
-			const applied = tickEncounter(encounter, fish, delta, expedition.selectedSkillIds)
+			const applied = tickEncounter(encounter, fish, delta, expedition.selectedSkillIds, selectedRouteRef.current?.risk ?? 1)
 			applyRuleEvents(applied.encounter, applied.events)
 		}, 250)
 
@@ -526,7 +563,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		skillOffers: view.skillOffers,
 		chooseRoute,
 		setSkillLoadout,
-		useSkill,
+		useSkill: triggerSkill,
 		setVolume,
 		setReducedMotion,
 		startFreshRun,
@@ -536,10 +573,10 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 function createInitialView(): OceanRunView {
 	const expedition = createShallowCoastExpedition(starterSeed)
-	const collection = createInitialCollection(new Date().toISOString())
+	const collection = createInitialCollection()
 	const fish = getFishByEncounter(expedition)
 	const encounter = startEncounter(fish, `${expedition.seed}:0`, expedition.selectedSkillIds)
-	const session = new TypingSession(getIndonesianPassage(0), { startTimestampMs: 0 })
+	const session = new TypingSession(getIndonesianPassage(0, fish.typingProfile), { startTimestampMs: 0 })
 	const snapshot = session.getSnapshot()
 	const routeChoices = getRouteNodesForZone(fish.habitat)
 
@@ -553,7 +590,7 @@ function createInitialView(): OceanRunView {
 		cursor: snapshot.cursor,
 		metrics: snapshot.metrics,
 		routeChoices,
-		selectedRoute: routeChoices[0]!,
+		selectedRoute: routeChoices.find((route) => route.id === expedition.selectedRouteId) ?? routeChoices[0]!,
 		skillOffers: getSkillDraft(starterSeed, getAccountLevelProgress(collection.xp).level),
 		log: [`Content ${CONTENT_VERSION}`],
 		volumes: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { normalizeText, replayInputLog, TypingSession } from "../index"
+import { normalizeKey, normalizeText, replayInputLog, TypingSession } from "../index"
 
 describe("TypingSession", () => {
 	it("tracks correct character sequences and word combo", () => {
@@ -57,6 +57,21 @@ describe("TypingSession", () => {
 
 	it("normalizes Unicode punctuation consistently", () => {
 		expect(normalizeText("ombak\u00a0besar \u201cmulai\u201d")).toBe('ombak besar "mulai"')
+	})
+
+	it("normalizes legacy space and enter keys", () => {
+		expect(normalizeKey("Spacebar")).toBe(" ")
+		expect(normalizeKey("Enter")).toBe("\n")
+		expect(new TypingSession("\n").processKey("Enter", 10)[0]?.type).toBe("correct-char")
+	})
+
+	it("keeps timestamps monotonic and ignores keys after completion", () => {
+		const session = new TypingSession("a", { startTimestampMs: 5 })
+		session.processKey("a", 10)
+		const ignored = session.processKey("b", 1)
+		expect(ignored[0]?.type).toBe("ignored")
+		expect(ignored[0]?.timestampMs).toBe(10)
+		expect(session.getSnapshot().eventLog.map(({ t }) => t)).toEqual([10, 10])
 	})
 
 	it("replays compact logs into identical deterministic output", () => {

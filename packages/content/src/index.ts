@@ -270,7 +270,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "common",
 		effect: "instant_small_capture",
 		rankedAllowed: false,
-		description: "Instantly resolves or captures nearby small fish.",
+		description: "Catch a small fish after reaching 45% reel progress.",
 	},
 	{
 		id: "steel_line",
@@ -279,16 +279,16 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "common",
 		effect: "ignore_first_typo_per_encounter",
 		rankedAllowed: false,
-		description: "Ignores the first typo in each encounter.",
+		description: "Prevents line damage and tension from the first typo.",
 	},
 	{
 		id: "sonar",
 		name: "Sonar",
 		type: "active",
 		rarity: "common",
-		effect: "reveal_route_rewards",
+		effect: "reveal_route_fish",
 		rankedAllowed: false,
-		description: "Reveals rarity and route rewards before choosing.",
+		description: "Reveals the fish in each route for 12 seconds.",
 	},
 	{
 		id: "calm_current",
@@ -304,9 +304,9 @@ export const fishingSkills: FishingSkill[] = [
 		name: "Perfect Bait",
 		type: "passive",
 		rarity: "uncommon",
-		effect: "perfect_streak_rare_odds",
+		effect: "perfect_streak_tension_recovery",
 		rankedAllowed: false,
-		description: "Perfect-word streaks improve rare encounter odds.",
+		description: "After four perfect words on uncommon or rarer fish, slowly eases tension.",
 	},
 	{
 		id: "reel_mastery",
@@ -394,7 +394,18 @@ export function getRouteNodesForZone(zoneId: ZoneId): RouteNode[] {
 	return shallowCoastRouteNodes.filter((node) => node.zoneId === zoneId)
 }
 
-export function getIndonesianPassage(index: number): string {
+const passageByProfile: Partial<Record<FishSpecies["typingProfile"], string>> = {
+	short_burst: "ikan melesat, diam sebentar, lalu melesat lagi",
+	long_words: "kerang berlapis menyembunyikan perjalanan panjang",
+	tricky_pairs: "karang kering, kerang kuning, karang kering",
+	many_short: "air di kiri, air di kanan, ikan ke batu",
+	medium_burst: "tali menegang saat arus berbalik cepat, lalu tenang sejenak",
+	boss_mixed: "ombak kecil pecah, arus deras datang; tarik tali pelan, lalu cepat saat karang retak dan mahkota emas muncul di bawah perahu",
+}
+
+export function getIndonesianPassage(index: number, profile?: FishSpecies["typingProfile"]): string {
+	const profiled = profile ? passageByProfile[profile] : undefined
+	if (profiled) return profiled
 	const passages = languagePacks.id.passages
 	return passages[index % passages.length] ?? passages[0]
 }

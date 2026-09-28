@@ -12,12 +12,20 @@ const eslintConfig = defineConfig([
     ".open-next/**",
     ".agents/**",
     ".worktrees/**",
+    ".wrangler/**",
     "out/**",
     "build/**",
+    "dist/**",
     "playwright-report/**",
     "test-results/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["apps/web/**/*.{ts,tsx}"],
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
   {
     files: [
       "features/multiplayer/**/*.{ts,tsx}",

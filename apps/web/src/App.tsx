@@ -5,32 +5,24 @@ import gsap from "gsap"
 
 gsap.registerPlugin(useGSAP)
 import {
-	Anchor,
-	BookOpen,
 	CheckCircle2,
-	ClipboardList,
-	Coins,
 	Fish,
-	Gem,
-	Hourglass,
 	Pause,
 	Play,
 	Radar,
-	Settings,
 	Sparkles,
-	ShoppingBag,
-	Target,
 	Trophy,
 	X,
-	Zap,
 } from "lucide-react"
 import type { AccountLevelProgress, FishingSkill, Rarity } from "@typecade/contracts"
-import { fishSpecies, generatedFishCatalog } from "@typecade/content"
-import { getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
+import { fishSpecies, getRouteNodesForZone } from "@typecade/content"
+import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
+import { RaceScreen } from "./multiplayer/RaceScreen"
+import { PracticeScreen } from "./practice/PracticeScreen"
 
-type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | "leaderboard" | "ranked" | null
-type Screen = "menu" | "prep" | "game"
+type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | "leaderboard" | null
+type Screen = "menu" | "practice" | "prep" | "game" | "race"
 
 const rarityStars: Record<Rarity, number> = {
 	common: 1,
@@ -41,14 +33,19 @@ const rarityStars: Record<Rarity, number> = {
 
 function getFishArtworkPath(assetKey: string): string {
 	if (assetKey === "fish_pebble_goby") {
-		return "/assets/ocean/concepts/fish-catalog-v2/fish_catalog_v2_01.png"
+		return "/assets/ocean/concepts/fish-catalog-v2/animation-sets/pebble-goby/pebble_goby_idle_4f.png"
 	}
 	return `/assets/ocean/sprites/fish/${assetKey}_idle_0.png`
 }
 
+function FishArtwork({ assetKey, alt = "" }: { assetKey: string; alt?: string }) {
+	return <img className={assetKey === "fish_pebble_goby" ? "fish-art fish-art-strip" : "fish-art"} src={getFishArtworkPath(assetKey)} alt={alt} />
+}
+
 export function App() {
 	const hostRef = useRef<HTMLDivElement | null>(null)
-	const [screen, setScreen] = useState<Screen>("menu")
+	const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(location.search).has("race") ? "race" : "menu")
+	const initialScreenRef = useRef(screen)
 	const {
 		bridge,
 		view,
@@ -66,7 +63,7 @@ export function App() {
 	const levelProgress = getAccountLevelProgress(view.collection.xp)
 
 	useEffect(() => {
-		if (!hostRef.current) {
+		if (!hostRef.current || initialScreenRef.current === "race") {
 			return
 		}
 		const host = hostRef.current
@@ -127,9 +124,9 @@ export function App() {
 			{screen === "menu" ? (
 				<MainMenu
 					view={view}
-					onStart={() => setScreen("prep")}
+					onStart={() => setScreen("practice")}
 					onAdventure={() => setScreen("prep")}
-					onRankedDuel={() => setPanel("ranked")}
+					onRankedDuel={() => setScreen("race")}
 					onShop={() => setPanel("shop")}
 					onCollection={() => setPanel("collection")}
 					onLeaderboard={() => setPanel("leaderboard")}
@@ -147,11 +144,12 @@ export function App() {
 					onSetSkillLoadout={setSkillLoadout}
 				/>
 			) : null}
+			{screen === "practice" ? <PracticeScreen onBack={() => setScreen("menu")} /> : null}
+			{screen === "race" ? <RaceScreen onBack={() => { history.replaceState(null, "", location.pathname); setScreen("menu") }} /> : null}
 
 			{screen !== "game" && panel === "collection" ? <CollectionPanel onClose={() => setPanel(null)} collection={view.collection} /> : null}
 			{screen !== "game" && panel === "shop" ? <MenuShopPanel onClose={() => setPanel(null)} /> : null}
 			{screen !== "game" && panel === "leaderboard" ? <LeaderboardPanel onClose={() => setPanel(null)} /> : null}
-			{screen !== "game" && panel === "ranked" ? <RankedDuelPanel onClose={() => setPanel(null)} /> : null}
 			{screen !== "game" && panel === "settings" ? (
 				<SettingsPanel
 					volumes={view.volumes}
@@ -204,7 +202,6 @@ function GameHud({
 		gsap.from(".topbar", { y: -50, opacity: 0, duration: 0.6, ease: "back.out(1.5)", delay: 0.1 })
 		gsap.from(".icon-rail button", { x: -30, opacity: 0, duration: 0.4, stagger: 0.08, ease: "power2.out", delay: 0.2 })
 		gsap.from(".bottom-console", { y: 60, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
-		gsap.from(".skill-button", { y: 40, opacity: 0, duration: 0.4, stagger: 0.1, ease: "back.out(1.5)", delay: 0.4 })
 		gsap.from(".route-strip", { y: -20, opacity: 0, duration: 0.5, ease: "power2.out", delay: 0.2 })
 		gsap.from(".fish-card", { x: 50, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
 	}, { scope: containerRef, dependencies: [view.reducedMotion] })
@@ -215,6 +212,12 @@ function GameHud({
 	const durabilityPercent = Math.round(view.encounter.durability)
 	const routeProgress = `${view.expedition.currentZoneIndex + 1}/3`
 	const encounterLabel = `${getEncounterNumber(view.expedition.currentZoneIndex, view.expedition.currentEncounterIndex)}/10`
+	const bossPhaseDetails = [
+		{ title: "Crown Wake", detail: "Reel steadily and learn the Leviathan's pull." },
+		{ title: "Crown Guard", detail: "Three perfect words break the guard; progress is slower while it holds." },
+		{ title: "Final Pull", detail: "Every third consecutive perfect word reels in a large burst." },
+	] as const
+	const bossPhaseDetail = bossPhaseDetails[view.encounter.bossPhase - 1]
 
 	return (
 		<div className="hud" data-testid="ocean-hud" ref={containerRef}>
@@ -240,9 +243,23 @@ function GameHud({
 				<span>{view.selectedRoute.name}</span>
 				<span>Encounter {encounterLabel}</span>
 			</section>
+			{view.fish.id === "crown_leviathan" && bossPhaseDetail ? (
+				<section className="boss-phase-callout panel-chrome" aria-live="polite" data-testid="boss-phase-callout">
+					<div>
+						<span>LEVIATHAN · PHASE {view.encounter.bossPhase}</span>
+						<strong>{bossPhaseDetail.title}</strong>
+						<p>{bossPhaseDetail.detail}</p>
+					</div>
+					{view.encounter.bossPhase === 2 ? (
+						<div className="boss-guard-pips" aria-label={`${view.encounter.bossGuard} guard points remain`}>
+							{[0, 1, 2].map((pip) => <i key={pip} className={pip < view.encounter.bossGuard ? "active" : ""} />)}
+						</div>
+					) : null}
+				</section>
+			) : null}
 
 			<FishInfoCard fish={view.fish} record={view.collection.records[view.fish.id]} />
-			{view.feedback ? <FeedbackBanner feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
+			{view.feedback ? <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
 
 			<section className="bottom-console" data-testid="typing-console">
 				<div className={`tension-wrap ${tensionPercent >= 82 ? "danger" : ""}`}>
@@ -289,7 +306,7 @@ function GameHud({
 						key={skill.id}
 						skill={skill}
 						index={index + 1}
-						energy={view.encounter.skillEnergy}
+						encounter={view.encounter}
 						activePulse={view.lastSkillId === skill.id}
 						onUse={useSkill}
 					/>
@@ -319,6 +336,7 @@ function GameHud({
 					chooseRoute={chooseRoute}
 					log={view.log}
 					sonarRevealed={view.sonarRevealed}
+					locked={view.metrics.correctKeystrokes + view.metrics.incorrectKeystrokes > 0}
 				/>
 			) : null}
 			{panel === "shop" ? <SkillsPanel onClose={() => setPanel(null)} skills={activeSkills} energy={view.encounter.skillEnergy} /> : null}
@@ -393,9 +411,9 @@ function MainMenu({
 }) {
 	const containerRef = useRef<HTMLElement>(null)
 	const menuItems = [
-		{ label: "Play", src: "/assets/ocean/mainmenu/1.play.png", onClick: onStart, primary: true },
+		{ label: "Practice", src: "/assets/ocean/mainmenu/1.play.png", onClick: onStart, primary: true },
 		{ label: "Adventure", src: "/assets/ocean/mainmenu/2.adventure.png", onClick: onAdventure },
-		{ label: "Ranked Duel", src: "/assets/ocean/mainmenu/3.ranked duel.png", onClick: onRankedDuel },
+		{ label: "Multiplayer", src: "/assets/ocean/mainmenu/3.ranked duel.png", onClick: onRankedDuel },
 		{ label: "Shop", src: "/assets/ocean/mainmenu/4.duel.png", onClick: onShop },
 		{ label: "Collection", src: "/assets/ocean/mainmenu/5.collection.png", onClick: onCollection },
 		{ label: "Leaderboard", src: "/assets/ocean/mainmenu/6.leaderboard.png", onClick: onLeaderboard },
@@ -486,8 +504,8 @@ function PreparationScreen({
 				<section className="prep-card panel-chrome">
 					<h2>Branching Route</h2>
 					<div className="route-choice-grid prep-routes">
-						{view.routeChoices.map((choice) => (
-							<button key={choice.id} className={choice.id === view.selectedRoute.id ? "selected" : ""} onClick={() => onChooseRoute(choice.id)}>
+						{getRouteNodesForZone("zone_1").map((choice) => (
+							<button key={choice.id} className={choice.id === (view.selectedRoute.zoneId === "zone_1" ? view.selectedRoute.id : "lagoon_gate") ? "selected" : ""} onClick={() => onChooseRoute(choice.id)}>
 								<strong>{choice.name}</strong>
 								<span>Risk {Math.round(choice.risk * 100)}%</span>
 								<span>Reward x{choice.rewardMultiplier.toFixed(2)}</span>
@@ -501,7 +519,7 @@ function PreparationScreen({
 						<h2>Skill Draft</h2>
 						<span>{view.expedition.selectedSkillIds.length}/3 equipped</span>
 					</div>
-					<p className="prep-hint">This run's tide rolls a different offer. Pick up to three: one active, one passive, then build the combo you want.</p>
+					<p className="prep-hint">This run&apos;s tide rolls a different offer. Pick up to three: one active, one passive, then build the combo you want.</p>
 					<div className="prep-skill-grid">
 						{skillOffers.map((skill) => {
 							const selected = view.expedition.selectedSkillIds.includes(skill.id)
@@ -574,7 +592,7 @@ function FishInfoCard({
 			<strong>{fish.rarity.toUpperCase()}</strong>
 			<StarRow rarity={fish.rarity} />
 			<div className="fish-frame">
-				<img src={getFishArtworkPath(fish.assetKey)} alt="" />
+				<FishArtwork assetKey={fish.assetKey} />
 			</div>
 			<p>{fish.lore}</p>
 			{record ? <span className="record-chip">Best {Math.round(record.bestQuality * 100)}% / {record.largestSizeKg} kg</span> : null}
@@ -639,19 +657,19 @@ function SmallMeter({ label, value, danger = false }: { label: string; value: nu
 function SkillButton({
 	skill,
 	index,
-	energy,
+	encounter,
 	activePulse,
 	onUse,
 }: {
 	skill: FishingSkill
 	index: number
-	energy: number
+	encounter: OceanRunView["encounter"]
 	activePulse: boolean
 	onUse: (skillId: string) => boolean
 }) {
 	const cost = getFishingSkillCost(skill.id)
-	const usable = skill.type === "active" && energy >= cost
-	const charge = skill.type === "active" && cost > 0 ? Math.min(100, Math.round(energy / cost * 100)) : 100
+	const usable = canUseFishingSkill(encounter, skill)
+	const charge = skill.type === "active" && cost > 0 ? Math.min(100, Math.round(encounter.skillEnergy / cost * 100)) : 100
 	const style = { "--skill-charge": `${charge}%` } as CSSProperties
 	return (
 		<button
@@ -682,7 +700,7 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 					return (
 						<article key={fish.id} className={`collection-card rarity-${fish.rarity} ${record ? "caught" : ""}`}>
 							<div className="collection-art">
-								<img src={getFishArtworkPath(fish.assetKey)} alt="" />
+								<FishArtwork assetKey={fish.assetKey} />
 							</div>
 							<strong>{record ? fish.name : "Unknown"}</strong>
 							<StarRow rarity={fish.rarity} />
@@ -690,22 +708,6 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 						</article>
 					)
 				})}
-			</div>
-			<div className="collection-section-heading">
-				<strong>Extended Concept Catalog</strong>
-				<span>40 generated species previews · collection-only for this milestone</span>
-			</div>
-			<div className="collection-grid generated-fish-catalog" data-testid="generated-fish-catalog">
-				{generatedFishCatalog.map((fish) => (
-					<article key={fish.id} className={`collection-card catalog-preview rarity-${fish.rarity}`}>
-						<div className="collection-art">
-							<img src={fish.spritePath} alt="" />
-						</div>
-						<strong>{fish.name}</strong>
-						<StarRow rarity={fish.rarity} />
-						<span>{fish.landmark}</span>
-					</article>
-				))}
 			</div>
 		</OverlayPanel>
 	)
@@ -749,26 +751,13 @@ function LeaderboardPanel({ onClose }: { onClose: () => void }) {
 	)
 }
 
-function RankedDuelPanel({ onClose }: { onClose: () => void }) {
-	return (
-		<OverlayPanel title="Ranked Duel" onClose={onClose}>
-			<div className="tasks-list">
-				<article>
-					<strong>Boat Duel</strong>
-					<span>Ranked matchmaking is reserved for the later competition milestone.</span>
-					<em>Locked</em>
-				</article>
-			</div>
-		</OverlayPanel>
-	)
-}
-
 function RoutePanel({
 	choices,
 	selectedId,
 	chooseRoute,
 	log,
 	sonarRevealed,
+	locked,
 	onClose,
 }: {
 	choices: OceanRunView["routeChoices"]
@@ -776,17 +765,18 @@ function RoutePanel({
 	chooseRoute: (nodeId: string) => void
 	log: string[]
 	sonarRevealed: boolean
+	locked: boolean
 	onClose: () => void
 }) {
 	return (
 		<OverlayPanel title="Route" onClose={onClose}>
 			<div className={`sonar-banner ${sonarRevealed ? "active" : ""}`}>
 				<Radar aria-hidden="true" />
-				<span>{sonarRevealed ? "Sonar sweep active: catch tables revealed." : "Use Sonar to reveal exact route fish before committing."}</span>
+				<span>{locked ? "Route locked after typing starts." : sonarRevealed ? "Sonar sweep active: zone fish revealed." : "Use Sonar to preview the zone fish before choosing."}</span>
 			</div>
 			<div className="route-choice-grid">
 				{choices.map((choice) => (
-					<button key={choice.id} className={choice.id === selectedId ? "selected" : ""} onClick={() => chooseRoute(choice.id)}>
+					<button key={choice.id} className={choice.id === selectedId ? "selected" : ""} onClick={() => chooseRoute(choice.id)} disabled={locked}>
 						<strong>{choice.name}</strong>
 						<span>Risk {Math.round(choice.risk * 100)}%</span>
 						<span>Reward x{choice.rewardMultiplier.toFixed(2)}</span>
@@ -837,7 +827,7 @@ function FishPanel({
 	return (
 		<OverlayPanel title={fish.name} onClose={onClose}>
 			<div className={`fish-detail rarity-${fish.rarity}`}>
-				<img src={getFishArtworkPath(fish.assetKey)} alt="" />
+				<FishArtwork assetKey={fish.assetKey} />
 				<StarRow rarity={fish.rarity} />
 				<p>{fish.lore}</p>
 				{record ? (
@@ -920,16 +910,15 @@ function ResultToast({ view }: { view: OceanRunView }) {
 
 function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback; reducedMotion: boolean }) {
 	const bannerRef = useRef<HTMLElement>(null)
-	const [visibleId, setVisibleId] = useState(feedback.id)
+	const [visible, setVisible] = useState(true)
 
 	useEffect(() => {
-		setVisibleId(feedback.id)
-		const timeout = window.setTimeout(() => setVisibleId((current) => current === feedback.id ? -1 : current), 2600)
+		const timeout = window.setTimeout(() => setVisible(false), 2600)
 		return () => window.clearTimeout(timeout)
-	}, [feedback.id])
+	}, [])
 
 	useGSAP(() => {
-		if (reducedMotion || visibleId !== feedback.id || !bannerRef.current) return
+		if (reducedMotion || !visible || !bannerRef.current) return
 		const timeline = gsap.timeline()
 		timeline.fromTo(bannerRef.current, {
 			y: -24,
@@ -949,9 +938,9 @@ function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback
 			ease: "power2.in",
 		})
 		return () => timeline.kill()
-	}, { scope: bannerRef, dependencies: [feedback.id, reducedMotion, visibleId] })
+	}, { scope: bannerRef, dependencies: [reducedMotion, visible] })
 
-	if (visibleId !== feedback.id) {
+	if (!visible) {
 		return null
 	}
 

@@ -158,6 +158,25 @@ Grade: A- for the Milestone 0/1 scope.
   - `PLAYWRIGHT_BASE_URL=http://localhost:3003 npm run test:e2e`: pass, desktop/mobile main-menu -> prep -> gameplay flow, canvas nonblank, HUD no-overlap. Port 3003 was used locally because port 3000 was occupied by another workspace process.
   - Pixi source/package audit remains clean: `rg -n "pixi|PIXI|@pixi|Pixi|pixi-gameplay|data-pixi-host" package.json package-lock.json apps packages features e2e lib AGENTS.md .gitignore` returns no matches.
 
+### 2026-09-28 Navigation and verification pass
+
+- Raised menu overlay panels above the main-menu layer so Ranked Duel, Shop, Collection, and Leaderboard panels and their Close buttons receive pointer input.
+- Moved the skill dock clear of the icon rail and typing console at desktop, compact, and mobile widths. Playwright checks the final layout after entrance animations settle.
+- Browser tests now exercise all six main-menu destinations on desktop and mobile, HUD navigation on desktop and mobile, skill selection and use, route selection and locking, settings controls, pause and resume, a catch, all ten Shallow Coast encounters, Sail Again, and return to menu.
+- Verification: `npm run test` passed (20 tests); `npm run test:e2e` passed (8 Chromium tests); `npm run build` passed; `npx tsc --noEmit` passed; `npm run lint` passed without warnings; production preview passed two menu/HUD browser tests; `npm audit` found 0 vulnerabilities; `git diff --check` passed.
+- Renderer retirement audit: `rg -n 'pixi|PIXI|@pixi|Pixi|pixi-gameplay|data-pixi-host' package.json package-lock.json apps packages features e2e lib AGENTS.md .gitignore` returned no matches.
+- Vitest source coverage is 22.69% statements, 17.9% branches, 24.39% functions, and 22.09% lines. This does not meet the requested 100% target. Playwright browser interactions are not counted in these Vitest numbers.
+- Ranked Duel still opens a locked placeholder because online multiplayer is outside the Milestone 0/1 scope of this branch. The Phaser lazy chunk also still exceeds Vite's 500 kB size warning.
+
+### 2026-09-28 Practice and menu consistency pass
+
+- Replaced the duplicate Play/Adventure destinations with a dedicated Practice screen and the distinct Adventure preparation screen. The online room entry is labeled Multiplayer.
+- Added EN/ID, Words, Time, Quote difficulty, Custom Text/shuffle, punctuation, numbers, Classic, Perfect Tide, Three Hulls, text size, and monospace controls to Practice using the existing race rules and typing engine.
+- Replaced stale raster menu labels with the project's pixel icon assets and live text. Sharpened shared menu/gameplay controls to use the same navy/gold square pixel chrome.
+- Removed the unrelated 40-species concept preview from Collection. The active Pebble Goby artwork now crops its matching 128x96 pixel animation strip; other fish keep their gameplay sprite assets.
+- Added browser coverage for the practice timer, challenge failures, and multiplayer lobby/race/leaderboard states. A server test exposed and fixed rejected async room operations escaping the room error handler.
+- Verification: `npm run test:coverage` passed (57 tests); coverage is 88.61% statements, 76.70% branches, 87.26% functions, and 89.70% lines, so the requested 100% target remains unmet. `npm run build`, `npm run lint`, TypeScript check, and `git diff --check` passed. The full Playwright suite passed 12 tests; the added Practice flow passed separately, and multiplayer passed 4/4 after the async error-handling fix. Renderer-retirement audit returned no matches. Vite still reports the lazy Phaser chunk above 500 kB.
+
 ## Touched Files
 
 This list is updated as files are changed.
@@ -177,13 +196,20 @@ This list is updated as files are changed.
 - `apps/web/vite.config.ts`
 - `apps/web/src/main.tsx`
 - `apps/web/src/App.tsx`
+- `apps/web/src/App.browser.test.tsx`
 - `apps/web/src/styles.css`
+- `apps/web/src/practice/PracticeScreen.tsx`
+- `apps/web/src/multiplayer/RaceScreen.browser.test.tsx`
+- `apps/web/src/server/index.test.ts`
+- `apps/web/src/server/index.ts`
 - `apps/web/src/bridge/game-event-bridge.ts`
 - `apps/web/src/game/createFishingGame.ts`
 - `apps/web/src/game/FishingScene.ts`
 - `apps/web/src/hooks/useOceanRun.ts`
 - `apps/web/public/assets/ocean/**`
 - `packages/contracts/src/index.ts`
+- `packages/race-rules/src/index.ts`
+- `packages/race-rules/src/index.test.ts`
 - `packages/content/src/index.ts`
 - `packages/typing-engine/src/index.ts`
 - `packages/typing-engine/src/__tests__/typing-engine.test.ts`

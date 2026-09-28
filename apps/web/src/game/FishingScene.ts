@@ -500,6 +500,22 @@ export class FishingScene extends Phaser.Scene {
 				this.floatText(`PHASE ${phase}`, this.scale.width * 0.62, this.scale.height * 0.38, phase === 3 ? 0xf05a5e : 0xf5c240)
 				this.playAudio(phase === 3 ? "sfx_rare_sting_a" : "sfx_combo_milestone_b", "gameplay")
 			}),
+			bridge.on("boss:guard-broken", () => {
+				const x = this.fish?.x ?? this.scale.width * 0.61
+				const y = this.fish?.y ?? this.scale.height * 0.5
+				this.ringBurst(x, y, 0xf5c240, 2.4)
+				this.sparkEmitter?.explode(48, x, y - 8)
+				this.floatText("CROWN GUARD BROKEN", x, y - 40, 0xf5c240)
+				this.playAudio("sfx_combo_milestone_b", "gameplay")
+			}),
+			bridge.on("boss:final-pull", () => {
+				const x = this.fish?.x ?? this.scale.width * 0.61
+				const y = this.fish?.y ?? this.scale.height * 0.5
+				this.ringBurst(x, y, 0xf05a5e, 2.4)
+				this.sparkEmitter?.explode(36, x, y - 8)
+				this.floatText("FINAL PULL", x, y - 40, 0xf05a5e)
+				this.playAudio("sfx_rare_sting_a", "gameplay")
+			}),
 			bridge.on("skill:used", ({ skillId, label }) => {
 				this.emitSkillVfx(skillId, label)
 			}),
