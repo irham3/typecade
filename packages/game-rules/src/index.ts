@@ -429,7 +429,7 @@ export function advanceExpedition(expedition: ExpeditionState, result: CatchResu
 	if ((!result.caught && expedition.spareLines <= 0) || failedMandatoryBoss) {
 		return {
 			...expedition,
-			spareLines: Math.max(0, expedition.spareLines - (result.caught ? 0 : 1)),
+			spareLines: Math.max(0, expedition.spareLines - 1),
 			pendingResults: nextPending,
 			complete: true,
 		}
@@ -653,9 +653,6 @@ function getBehaviorProgressModifier(fish: FishSpecies): number {
 }
 
 function getLevelThreshold(level: number): number {
-	if (level <= 1) {
-		return 0
-	}
 	return Math.round(24 * Math.pow(level - 1, 1.72))
 }
 

@@ -115,6 +115,7 @@ describe("fishing rules", () => {
 		expect(getFishingSkillCost("calm_current")).toBe(30)
 		expect(getFishingSkillCost("cast_net")).toBe(35)
 		expect(getFishingSkillCost("steel_line")).toBe(0)
+		expect(getFishingSkillUnlockLevel("unknown_skill")).toBe(99)
 	})
 
 	it("calculates account level progress from earned XP", () => {
@@ -163,6 +164,15 @@ describe("fishing rules", () => {
 		expect(second.collection.records.reef_minnow?.count).toBe(1)
 		expect(grantCatchResult(first.collection, result)).toBe(first.collection)
 		expect(grantCatchResult(collection, { ...result, caught: false })).toBe(collection)
+		expect(grantCatchResult(collection, result).records.reef_minnow?.count).toBe(1)
+		const once = grantCatchResult(collection, result)
+		const another = grantCatchResult(once, { ...result, idempotencyKey: `${result.idempotencyKey}:again`, sizeKg: result.sizeKg + 1 })
+		expect(another.records.reef_minnow?.count).toBe(2)
+
+		const final = secureCheckpoint({ ...advanced, complete: true, currentZoneIndex: 2 }, first.collection)
+		expect(final.checkpoint.zoneId).toBe("zone_3")
+		const recoveredZone = secureCheckpoint({ ...advanced, complete: true, currentZoneIndex: 99 }, collection)
+		expect(recoveredZone.checkpoint.zoneId).toBe("zone_3")
 	})
 
 	it("transitions boss phases by progress", () => {
@@ -243,6 +253,9 @@ describe("fishing rules", () => {
 		expect(withBait).toBeCloseTo(withoutBait - 0.35)
 		expect(tickEncounter({ ...mastery, timeRemainingMs: 0 }, fish, 1, []).encounter.status).toBe("escaped")
 		expect(getAccountLevelProgress(-20).level).toBe(1)
+		const imperfect = applyTypingEvents(startEncounter(fish, "imperfect-word", []), fish, [typingEvent("word-complete", { perfect: false })], [])
+		expect(imperfect.encounter.combo).toBe(0)
+		expect(imperfect.encounter.skillEnergy).toBe(7)
 	})
 
 	it("applies selected route risk to encounter pressure", () => {
@@ -254,6 +267,10 @@ describe("fishing rules", () => {
 		const typedSafe = applyTypingEvents(encounter, fish, [typingEvent("typo")], [], 0.85).encounter
 		const typedRisky = applyTypingEvents(encounter, fish, [typingEvent("typo")], [], 1.35).encounter
 		expect(typedRisky.durability).toBeLessThan(typedSafe.durability)
+		const highTension = tickEncounter({ ...encounter, tension: 90 }, fish, 1000, []).encounter
+		const lowTension = tickEncounter({ ...encounter, tension: 20 }, fish, 1000, []).encounter
+		expect(highTension.durability).toBeLessThan(encounter.durability)
+		expect(lowTension.durability).toBe(encounter.durability)
 	})
 
 	it("keeps every fish beatable at a steady typing pace", () => {

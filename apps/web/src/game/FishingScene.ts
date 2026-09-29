@@ -135,6 +135,7 @@ export class FishingScene extends Phaser.Scene {
 			console.error("[typecade] asset load failed", file.key, file.src)
 		})
 		this.load.atlas("ocean", "/assets/ocean/atlases/atlas_ocean.png", "/assets/ocean/atlases/atlas_ocean.json")
+		this.load.image("bg_gameplay_ai", "/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp")
 		for (const state of Object.keys(pebbleGobyFrameCounts) as FishVisualState[]) {
 			const frameCount = pebbleGobyFrameCounts[state]
 			const key = `pebble_goby_${state}_${frameCount}f`
@@ -329,7 +330,6 @@ export class FishingScene extends Phaser.Scene {
 		if (!displacementTexture) {
 			return
 		}
-		this.load.image("bg_gameplay_ai", "/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp")
 
 		const imageData = displacementTexture.context.createImageData(128, 128)
 		for (let y = 0; y < 128; y += 1) {

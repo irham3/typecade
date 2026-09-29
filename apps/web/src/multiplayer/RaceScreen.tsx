@@ -137,10 +137,9 @@ export function RaceScreen({ onBack }: { onBack: () => void }) {
 		send({ type: "type", text: event.key, seq })
 	}
 
-	const copyLink = async () => {
-		if (!ticket) return
-		try { await navigator.clipboard.writeText(`${location.origin}${location.pathname}?race=${ticket.code}`) }
-		catch { setError(`Share room code ${ticket.code}`) }
+	const copyLink = async (currentTicket: RaceTicket) => {
+		try { await navigator.clipboard.writeText(`${location.origin}${location.pathname}?race=${currentTicket.code}`) }
+		catch { setError(`Share room code ${currentTicket.code}`) }
 	}
 
 	return <section className="race-screen" data-testid="race-screen">
@@ -180,7 +179,7 @@ export function RaceScreen({ onBack }: { onBack: () => void }) {
 		</div> : !snapshot ? <div className="race-loading" role="status">Connecting to room {ticket.code}…</div> : <>
 			<div className="race-room-meta panel-chrome"><div><strong>ROOM {snapshot.code}</strong><span>{snapshot.config.language.toUpperCase()} · {snapshot.config.format} · {snapshot.config.variant.replaceAll("-", " ")} · {snapshot.players.length}/{snapshot.config.maxPlayers} players</span></div><span className={connected ? "race-online" : "race-offline"}>{connected ? "Live" : "Reconnecting"}</span></div>
 			{snapshot.phase === "waiting" && <div className="race-waiting panel-chrome">
-				<div className="race-waiting-head"><div><h2>Waiting at the harbor</h2><p>Share the code, then each player marks ready. The host starts the race.</p></div><button onClick={copyLink}>Copy invite link</button></div>
+				<div className="race-waiting-head"><div><h2>Waiting at the harbor</h2><p>Share the code, then each player marks ready. The host starts the race.</p></div><button onClick={() => copyLink(ticket)}>Copy invite link</button></div>
 				<div className="race-waiting-grid"><div><h3>Captains</h3><ol>{snapshot.players.map((player) => <li key={player.id}><span>{player.name}{player.id === snapshot.hostId ? " · Host" : ""}{player.id === ticket.playerId ? " · You" : ""}</span><strong>{player.ready ? "Ready" : player.connected ? "Waiting" : "Offline"}</strong></li>)}</ol></div><div><h3>Shared rules</h3><p>{snapshot.config.language === "id" ? "Bahasa Indonesia" : "English"} · {snapshot.config.format === "words" ? `${snapshot.config.wordCount} words` : snapshot.config.format === "time" ? `${snapshot.config.timeSeconds} seconds` : snapshot.config.format === "quote" ? `${snapshot.config.difficulty} quote` : "Custom passage"}</p><p>{snapshot.config.variant === "perfect" ? "One typo eliminates you." : snapshot.config.variant === "three-hulls" ? "Third typo eliminates you." : "Fastest valid finish wins."}</p><p className="race-preview">{snapshot.text.slice(0, 120)}{snapshot.text.length > 120 ? "…" : ""}</p></div></div>
 				<div className="race-waiting-actions"><button className="primary-action" onClick={() => send({ type: "ready", ready: !own?.ready })} disabled={!connected}>{own?.ready ? "Cancel ready" : "I'm ready"}</button>{ticket.playerId === snapshot.hostId && <button className="secondary-action" onClick={() => send({ type: "start" })} disabled={!connected || snapshot.players.length < 2 || snapshot.players.some((player) => !player.ready || !player.connected)}>Start race</button>}</div>
 			</div>}

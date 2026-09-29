@@ -148,7 +148,7 @@ export class RaceRoom {
 		room.members[playerId] = { player: createRacePlayer(playerId, name, room.config.variant), tokenHash: await hashToken(token), lastSeenAt: now, inputWindowAt: 0, inputCount: 0 }
 		if (!room.members[room.hostId]) room.hostId = playerId
 		await this.save()
-		this.broadcast(true)
+		this.broadcast()
 		return json({ code: room.code, playerId, token }, 201)
 	}
 
@@ -171,7 +171,7 @@ export class RaceRoom {
 		member.lastSeenAt = Date.now()
 		await this.save()
 		server.send(JSON.stringify({ type: "snapshot", room: this.snapshot() }))
-		this.broadcast(true)
+		this.broadcast()
 		return new Response(null, { status: 101, webSocket: client, headers: { "sec-websocket-protocol": connectionProtocol } })
 	}
 
@@ -188,7 +188,7 @@ export class RaceRoom {
 		if (message.type === "ready" && room.phase === "waiting") {
 			member.player.ready = message.ready === true
 			await this.save()
-			this.broadcast(true)
+			this.broadcast()
 		} else if (message.type === "start" && room.phase === "waiting" && playerId === room.hostId) {
 			const players = Object.values(room.members).map((entry) => entry.player)
 			if (players.length < 2 || players.some((player) => !player.ready || !player.connected)) {
@@ -200,7 +200,7 @@ export class RaceRoom {
 			room.endsAt = room.startsAt + (room.config.format === "time" ? room.config.timeSeconds * 1000 : Math.min(3600000, Math.max(180000, room.text.length * 200)))
 			await this.save()
 			await this.ctx.storage.setAlarm(room.startsAt)
-			this.broadcast(true)
+			this.broadcast()
 		} else if (message.type === "type" && room.phase === "racing" && now >= (room.startsAt ?? Infinity) && now < (room.endsAt ?? 0)) {
 			const value = message.text
 			const seq = message.seq
@@ -213,7 +213,7 @@ export class RaceRoom {
 			member.player = result.player
 			if (Object.values(room.members).every((entry) => entry.player.status === "finished" || entry.player.status === "out")) room.phase = "finished"
 			await this.save()
-			if (room.phase === "finished" || result.player.status !== "racing" || now - this.lastBroadcastAt >= 200) this.broadcast(true)
+			if (room.phase === "finished" || result.player.status !== "racing" || now - this.lastBroadcastAt >= 200) this.broadcast()
 			else socket.send(JSON.stringify({ type: "snapshot", room: this.snapshot() }))
 		} else if (message.type === "rematch" && room.phase === "finished" && playerId === room.hostId) {
 			for (const [id, entry] of Object.entries(room.members)) {
@@ -225,7 +225,7 @@ export class RaceRoom {
 			room.endsAt = null
 			room.text = generateRaceText(room.config, `${room.code}:${crypto.randomUUID()}`)
 			await this.save()
-			this.broadcast(true)
+			this.broadcast()
 		}
 	}
 
@@ -241,7 +241,7 @@ export class RaceRoom {
 		member.lastSeenAt = Date.now()
 		if (room.phase === "waiting" && room.hostId === playerId) room.hostId = Object.values(room.members).find((entry) => entry.player.connected)?.player.id ?? playerId!
 		await this.save()
-		this.broadcast(true)
+		this.broadcast()
 	}
 
 	async webSocketError(socket: WebSocket): Promise<void> { await this.webSocketClose(socket) }
@@ -265,7 +265,7 @@ export class RaceRoom {
 			}
 		}
 		await this.save()
-		this.broadcast(true)
+		this.broadcast()
 	}
 
 	private snapshot(): RaceRoomSnapshot {
@@ -277,9 +277,8 @@ export class RaceRoom {
 		}
 	}
 
-	private broadcast(force = false): void {
+	private broadcast(): void {
 		const now = Date.now()
-		if (!force && now - this.lastBroadcastAt < 200) return
 		this.lastBroadcastAt = now
 		const payload = JSON.stringify({ type: "snapshot", room: this.snapshot() })
 		for (const socket of this.ctx.getWebSockets()) {

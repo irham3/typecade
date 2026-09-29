@@ -2,7 +2,9 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
+import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
 import { App } from "./App"
+import { PracticeScreen } from "./practice/PracticeScreen"
 
 vi.mock("./game/createFishingGame", () => ({ createFishingGame: () => ({ destroy: vi.fn() }) }))
 
@@ -35,6 +37,12 @@ describe("application browser coverage", () => {
 		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
 	}
 
+	it("disposes a pending renderer import when the application unmounts", async () => {
+		await act(() => root.render(<App />))
+		await act(() => root.unmount())
+		await act(async () => Promise.resolve())
+	})
+
 	it("opens menu panels and renders their meaningful content", async () => {
 		await mount()
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
@@ -49,6 +57,11 @@ describe("application browser coverage", () => {
 		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		await click('button[aria-label="Leaderboard"]')
 		expect(host.textContent).toContain("Online leaderboard data is out of scope")
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
+		await click('button[aria-label="Multiplayer"]')
+		expect(host.querySelector(".race-screen")).not.toBeNull()
+		await click('.race-header button.secondary-action:last-child')
+		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
 	})
 
 	it("opens configurable practice and plays the selected challenge", async () => {
@@ -69,6 +82,7 @@ describe("application browser coverage", () => {
 			for (const key of ["a", "b", "c"]) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
 		})
 		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("Good run")
+		expect(Number(localStorage.getItem("typecade:practice:best"))).toBeGreaterThan(0)
 		await click('[data-testid="practice-result"] button.pixel-action.primary')
 		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
 	})
@@ -77,9 +91,17 @@ describe("application browser coverage", () => {
 		await mount()
 		await click('button[aria-label="Practice"]')
 		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
+		const options = host.querySelectorAll<HTMLInputElement>(".practice-options input")
+		await act(async () => { await userEvent.click(options[0]!) })
+		await act(async () => { await userEvent.click(options[1]!) })
+		expect(options[0]?.checked).toBe(true)
+		expect(options[1]?.checked).toBe(true)
 		await act(async () => { await userEvent.selectOptions(format, "custom") })
 		await click('[data-testid="practice-screen"] button[type="submit"]')
 		expect(host.querySelector('[role="alert"]')?.textContent).toContain("three characters")
+		const shuffle = host.querySelector<HTMLInputElement>(".practice-config input[type=checkbox]")!
+		await act(async () => { await userEvent.click(shuffle) })
+		expect(shuffle.checked).toBe(true)
 		const passage = host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!
 		await act(async () => { await userEvent.fill(passage, "abc") })
 		await click('[data-testid="practice-screen"] button[type="submit"]')
@@ -87,6 +109,8 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="practice-passage"] .next')?.textContent).toBe("a")
 		await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
 		expect(host.querySelector('[data-testid="practice-screen"] button[type="submit"]')).not.toBeNull()
+		await click(".practice-header button.pixel-action.secondary")
+		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
 	})
 
 	it("ends Three Hulls practice after the third mistake", async () => {
@@ -131,6 +155,35 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
 	})
 
+	it("runs quote practice with monospace text and rejects modified or navigation keys", async () => {
+		localStorage.setItem("typecade:practice:best", "999")
+		const onBack = vi.fn()
+		await act(async () => root.render(<PracticeScreen onBack={onBack} />))
+		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
+		await act(async () => { await userEvent.selectOptions(format, "quote") })
+		const difficulty = host.querySelector<HTMLSelectElement>('[aria-label="Quote difficulty"]')!
+		await act(async () => { await userEvent.selectOptions(difficulty, "hard") })
+		const monospace = host.querySelector<HTMLInputElement>('.practice-config input[type="checkbox"]')!
+		await act(() => monospace.click())
+		const size = host.querySelector<HTMLInputElement>('[aria-label="Text size"]')!
+		await act(async () => { await userEvent.fill(size, "32") })
+		expect(host.querySelector('[data-testid="practice-screen"]')?.textContent).toContain("Best 999 WPM")
+		await click('[data-testid="practice-screen"] button[type="submit"]')
+		const passage = host.querySelector<HTMLElement>('[data-testid="practice-passage"]')!
+		expect(passage.classList.contains("mono")).toBe(true)
+		expect(passage.style.fontSize).toBe("32px")
+		const initial = host.querySelectorAll('[data-testid="practice-passage"] .done').length
+		await act(async () => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", ctrlKey: true, bubbles: true }))
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }))
+		})
+		expect(host.querySelectorAll('[data-testid="practice-passage"] .done')).toHaveLength(initial)
+		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".practice-header button")!) })
+		expect(host.querySelector('[data-testid="practice-racing"]')).toBeNull()
+		expect(host.querySelector('[aria-label="Quote difficulty"]')).not.toBeNull()
+		expect(onBack).not.toHaveBeenCalled()
+	})
+
 	it("runs preparation choices, HUD panels, settings, and pause navigation", async () => {
 		await mount()
 		await click('button[aria-label="Adventure"]')
@@ -149,13 +202,18 @@ describe("application browser coverage", () => {
 		await click('button[aria-label="Fish"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]'), host.textContent).not.toBeNull()
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Pebble Goby")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
+		await click('button[aria-label="Fish"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
 		await click('button[aria-label="Tasks"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Use Sonar to preview the zone fish")
 		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		await click('button[aria-label="Shop"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Cost")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
+		await click('button[aria-label="Shop"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
+		await click('button[aria-label="Settings"]')
+		await click('button[aria-label="Settings"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
 		await click('button[aria-label="Settings"]')
 		const range = host.querySelector<HTMLInputElement>('.settings-grid input[type="range"]')!
 		await act(async () => { await userEvent.fill(range, "0.2") })
@@ -170,6 +228,9 @@ describe("application browser coverage", () => {
 		await click('button[aria-label="Pause game"]')
 		await click('[data-testid="pause-panel"] button.secondary-action')
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
+		await click('button[aria-label="Adventure"]')
+		expect(host.querySelector('[data-testid="prep-screen"]')).not.toBeNull()
+		await click('[data-testid="prep-screen"] .prep-header button.secondary-action')
 	})
 
 	it("resolves a catch, persists it, and locks the route after typing starts", async () => {
@@ -186,6 +247,59 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Route locked after typing starts.")
 	})
 
+	it("reports an escaped fish and retries with the next line", async () => {
+		await mount()
+		await sail()
+		await act(async () => {
+			for (let index = 0; index < 50; index += 1) {
+				window.dispatchEvent(new KeyboardEvent("keydown", { key: "~", bubbles: true }))
+			}
+		})
+		expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Line lost")
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1600)) })
+		expect(host.querySelector('[data-testid="result-toast"]')).toBeNull()
+		expect(host.querySelector('[data-testid="typing-target"]')).not.toBeNull()
+	})
+
+	it("reveals catch tables with Sonar and shows newly caught fish records", async () => {
+		const collection = { ...createInitialCollection(), xp: 0 }
+		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(createShallowCoastExpedition("sonar-ui-check"), collection))
+		await mount()
+		await sail()
+		const sonar = [...host.querySelectorAll<HTMLButtonElement>(".skill-button")].find((button) => button.title.startsWith("Sonar:"))
+		expect(sonar?.disabled).toBe(false)
+		await act(() => sonar!.click())
+		await click('button[aria-label="Tasks"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Sonar sweep active")
+		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Pebble Goby")
+		await click('button[aria-label="Tasks"]')
+		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
+		await act(async () => {
+			for (const key of target) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
+		})
+		await click('button[aria-label="Collection"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("1/10 species discovered")
+		await click('button[aria-label="Collection"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
+		await click('button[aria-label="Fish"]')
+		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Largest")
+	})
+
+	it("shows level-up feedback when a saved collection crosses its next level", async () => {
+		const collection = { ...createInitialCollection(), xp: 23 }
+		localStorage.setItem(
+			"typecade:ocean-typing-rpg:m1",
+			serializeOceanSave(createShallowCoastExpedition("level-up-check"), collection),
+		)
+		await mount()
+		await sail()
+		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
+		await act(async () => {
+			for (const key of target) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
+		})
+		expect(host.querySelector('[data-testid="level-up-banner"]')?.textContent).toContain("LEVEL 2")
+	})
+
 	it("uses an earned skill, blocks typing while paused, and resumes the same encounter", async () => {
 		await mount()
 		await sail()
@@ -198,6 +312,8 @@ describe("application browser coverage", () => {
 		expect(activeSkill).not.toBeNull()
 		await act(() => activeSkill!.click())
 		expect(host.querySelector('[data-testid="skill-feedback"]')).not.toBeNull()
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 2700)) })
+		expect(host.querySelector('[data-testid="skill-feedback"]')).toBeNull()
 		const cursor = host.querySelectorAll('[data-testid="typing-target"] .done').length
 		await click('button[aria-label="Pause game"]')
 		await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
@@ -214,9 +330,22 @@ describe("application browser coverage", () => {
 			expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain(`Encounter ${encounter}/10`)
 			const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
 			expect(target.length).toBeGreaterThan(0)
-			await act(async () => {
-				for (const key of target) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-			})
+			if (encounter === 10) {
+				let sawGuardPhase = false
+				for (const key of target) {
+					await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })))
+					if (host.querySelector('[data-testid="boss-phase-callout"] .boss-guard-pips')) {
+						expect(host.querySelector('[data-testid="boss-phase-callout"]')?.textContent).toContain("Crown Guard")
+						const activeGuards = host.querySelectorAll('.boss-guard-pips i.active').length
+						if (activeGuards === 2) sawGuardPhase = true
+					}
+				}
+				expect(sawGuardPhase).toBe(true)
+			} else {
+				await act(async () => {
+					for (const key of target) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
+				})
+			}
 			expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Catch secured")
 			if (encounter < 10) await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1850)) })
 		}
@@ -232,5 +361,15 @@ describe("application browser coverage", () => {
 		expect(host.querySelector(".race-screen")).not.toBeNull()
 		await click('.race-header button.secondary-action:last-child')
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
+	})
+
+	it("keeps settings reachable after returning to the main menu from a paused run", async () => {
+		await mount()
+		await sail()
+		await click('button[aria-label="Settings"]')
+		await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		await click('[data-testid="pause-panel"] button.secondary-action')
+		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
+		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Settings")
 	})
 })

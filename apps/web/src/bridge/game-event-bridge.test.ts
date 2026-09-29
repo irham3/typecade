@@ -41,4 +41,20 @@ describe("GameEventBridge", () => {
 		expect(first).toHaveBeenCalledTimes(1)
 		expect(late).toHaveBeenCalledWith({ paused: false })
 	})
+
+	it("keeps the shared listener set until its last subscriber leaves", () => {
+		const bridge = new GameEventBridge()
+		const first = vi.fn()
+		const second = vi.fn()
+		const unsubscribeFirst = bridge.on("audio:play", first)
+		const unsubscribeSecond = bridge.on("audio:play", second)
+
+		unsubscribeFirst()
+		bridge.emit("audio:play", { key: "sfx_correct_tick_a", category: "typing" })
+		expect(first).not.toHaveBeenCalled()
+		expect(second).toHaveBeenCalledOnce()
+		unsubscribeSecond()
+		bridge.emit("audio:play", { key: "sfx_correct_tick_b", category: "typing" })
+		expect(second).toHaveBeenCalledOnce()
+	})
 })

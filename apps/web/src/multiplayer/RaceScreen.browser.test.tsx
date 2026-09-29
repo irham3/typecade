@@ -35,9 +35,12 @@ describe("multiplayer race screen browser coverage", () => {
 	let host: HTMLDivElement
 	let root: Root
 	let socket: RoomSocket
+	let rootUnmounted = false
 
 	beforeEach(() => {
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+		RoomSocket.latest = null
+		rootUnmounted = false
 		host = document.createElement("div")
 		document.body.append(host)
 		root = createRoot(host)
@@ -46,7 +49,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	afterEach(async () => {
-		await act(async () => root.unmount())
+		if (!rootUnmounted) await act(async () => root.unmount())
 		host.remove()
 		localStorage.clear()
 		sessionStorage.clear()
@@ -105,6 +108,12 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-config button")!) })
 		expect(host.querySelector('[role="alert"]')?.textContent).toBe("Room unavailable")
 		expect(host.querySelector<HTMLButtonElement>(".race-config button")?.disabled).toBe(false)
+		vi.mocked(fetch).mockResolvedValueOnce(new Response("{}", { status: 503 }))
+		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-config button")!) })
+		expect(host.querySelector('[role="alert"]')?.textContent).toBe("Request failed (503)")
+		vi.mocked(fetch).mockRejectedValueOnce("network rejected")
+		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-config button")!) })
+		expect(host.querySelector('[role="alert"]')?.textContent).toBe("Could not enter room")
 
 		const joinInputs = host.querySelectorAll<HTMLInputElement>(".race-join input")
 		await act(async () => { await userEvent.fill(joinInputs[0]!, "abcdefgh") })
@@ -123,5 +132,120 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(host.querySelector('[role="alert"]')?.textContent).toContain("Connection lost")
 		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-header button.secondary-action")!) })
 		expect(host.querySelector(".race-join")).not.toBeNull()
+	})
+
+	it("exposes each supported room format and its matching settings", async () => {
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		const selects = () => host.querySelectorAll<HTMLSelectElement>(".race-config select")
+		await act(async () => { await userEvent.selectOptions(selects()[0]!, "en") })
+		await act(async () => { await userEvent.selectOptions(selects()[1]!, "time") })
+		expect(host.querySelector('input[list="race-time-presets"]')).not.toBeNull()
+		expect(host.querySelector(".race-check")).not.toBeNull()
+		const checks = host.querySelectorAll<HTMLInputElement>('.race-config input[type="checkbox"]')
+		await act(async () => { await userEvent.click(checks[0]!) })
+		await act(async () => { await userEvent.click(checks[1]!) })
+		await act(async () => { await userEvent.selectOptions(selects()[1]!, "quote") })
+		expect(host.querySelectorAll(".race-config select")).toHaveLength(4)
+		await act(async () => { await userEvent.selectOptions(selects()[2]!, "hard") })
+		await act(async () => { await userEvent.selectOptions(selects()[1]!, "custom") })
+		const passage = host.querySelector<HTMLTextAreaElement>(".race-config textarea")!
+		await act(async () => { await userEvent.fill(passage, "one two three") })
+		const shuffle = host.querySelector<HTMLInputElement>('.race-config input[type="checkbox"]')!
+		await act(async () => { await userEvent.click(shuffle) })
+		expect(host.querySelector('[aria-label="Quote difficulty"]')).toBeNull()
+		expect(host.querySelector(".race-config textarea")?.value).toBe("one two three")
+		await act(async () => { await userEvent.selectOptions(selects()[1]!, "words") })
+		expect(host.querySelector('input[list="race-word-presets"]')).not.toBeNull()
+		const numeric = host.querySelectorAll<HTMLInputElement>('.race-config input[type="number"]')
+		await act(async () => { await userEvent.fill(numeric[0]!, "25") })
+		await act(async () => { await userEvent.fill(numeric[1]!, "100") })
+		await act(async () => { await userEvent.selectOptions(selects()[2]!, "three-hulls") })
+	})
+
+	it("ignores a saved room ticket when a different deep link was requested", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		history.replaceState(null, "", "/?race=ZXCVBNMA")
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		expect(host.querySelector(".race-config")).not.toBeNull()
+		expect(host.querySelector<HTMLInputElement>(".race-join input")?.value).toBe("ZXCVBNMA")
+		expect(RoomSocket.latest).toBeNull()
+	})
+
+	it("recovers from a malformed saved room ticket", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", "{")
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		expect(host.querySelector(".race-config")).not.toBeNull()
+	})
+
+	it("handles snapshots without the local player and failed invite copying", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => socket.open())
+		expect(host.textContent).toContain("Connecting to room ABCDEFGH")
+		await act(() => socket.deliver(room("waiting", [player("guest", "Bravo")])))
+		expect(host.textContent).toContain("Waiting at the harbor")
+		await act(() => socket.deliver(room("racing", [player("guest", "Bravo", { status: "racing" })])))
+		expect(host.querySelector('[data-testid="race-play"]')).toBeNull()
+		await act(() => socket.deliver(room("waiting", [player("guest", "Bravo")])) )
+		await act(() => socket.onmessage?.({ data: JSON.stringify({ type: "error" }) } as MessageEvent<string>))
+		expect(host.querySelector('[role="alert"]')?.textContent).toBe("Room error")
+		const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard")
+		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn(async () => { throw new Error("clipboard unavailable") }) } })
+		try {
+			await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent === "Copy invite link")!) })
+			expect(host.querySelector('[role="alert"]')?.textContent).toBe("Share room code ABCDEFGH")
+		} finally {
+			if (clipboardDescriptor) Object.defineProperty(navigator, "clipboard", clipboardDescriptor)
+			else Reflect.deleteProperty(navigator, "clipboard")
+		}
+	})
+
+	it("ignores socket callbacks after unmount", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(async () => root.unmount())
+		rootUnmounted = true
+		await act(async () => {
+			socket.open()
+			socket.deliver(room("waiting", [player("host", "Alpha")]))
+			socket.close()
+		})
+		expect(socket.readyState).toBe(3)
+	})
+
+	it("shows a no-finisher result and opens its leaderboard", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => socket.open())
+		await act(() => socket.deliver(room("finished", [player("host", "Alpha", { status: "out" }), player("guest", "Bravo", { status: "out" })])))
+		expect(host.textContent).toContain("No finisher this round.")
+		await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent === "Full leaderboard")!) })
+		expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Bravo")
+	})
+
+	it("sends only plain single characters from an active racer in a large fleet", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => socket.open())
+		const captains = Array.from({ length: 10 }, (_, index) => player(index === 7 ? "host" : `p${index}`, `Captain ${index}`, { status: "racing", cursor: 10 - index }))
+		await act(() => socket.deliver(room("racing", captains)))
+		const input = host.querySelector<HTMLInputElement>('[aria-label="Race typing input"]')!
+		await act(() => {
+			input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", ctrlKey: true, bubbles: true }))
+			input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }))
+		})
+		expect(socket.sent).toHaveLength(0)
+		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true })))
+		expect(socket.sent.at(-1)).toMatchObject({ type: "type", text: "a", seq: 1 })
+		socket.readyState = 3
+		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true })))
+		expect(socket.sent).toHaveLength(1)
+		const out = captains.map((entry) => entry.id === "host" ? { ...entry, status: "out" as const } : entry)
+		await act(() => socket.deliver(room("racing", out)))
+		expect(input.disabled).toBe(true)
 	})
 })

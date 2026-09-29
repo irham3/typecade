@@ -27,8 +27,8 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	const session = useRef<TypingSession | null>(null)
 	const endAt = useRef(0)
 
-	const start = (event?: React.SyntheticEvent) => {
-		event?.preventDefault()
+	const start = (event: React.SyntheticEvent) => {
+		event.preventDefault()
 		try {
 			const rules = parseRaceConfig(config)
 			const text = generateRaceText(rules, `${Date.now()}:practice`)

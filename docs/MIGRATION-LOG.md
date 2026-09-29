@@ -177,6 +177,14 @@ Grade: A- for the Milestone 0/1 scope.
 - Added browser coverage for the practice timer, challenge failures, and multiplayer lobby/race/leaderboard states. A server test exposed and fixed rejected async room operations escaping the room error handler.
 - Verification: `npm run test:coverage` passed (57 tests); coverage is 88.61% statements, 76.70% branches, 87.26% functions, and 89.70% lines, so the requested 100% target remains unmet. `npm run build`, `npm run lint`, TypeScript check, and `git diff --check` passed. The full Playwright suite passed 12 tests; the added Practice flow passed separately, and multiplayer passed 4/4 after the async error-handling fix. Renderer-retirement audit returned no matches. Vite still reports the lazy Phaser chunk above 500 kB.
 
+### 2026-09-29 Coverage and scene input pass
+
+- Added browser tests for save restoration, invalid storage, route and skill selection, keyboard input, all fish species, boss phases, practice challenges, multiplayer room states, and Worker room lifecycle paths.
+- Moved the gameplay backdrop load into Phaser `preload()` so `create()` can see and render the texture.
+- Removed dead branches in typing, fishing rewards, practice submission, and Worker broadcast code after confirming their guards could never change the result.
+- Verification: `npm run test` passed (85 tests); `npm run test:coverage` passed (85 tests) at 96.95% statements, 91.03% branches, 95.38% functions, and 97.14% lines. `npm run test:e2e` passed (13 Chromium tests); `npm run build`, `npm run lint`, `npm run typecheck:rooms`, and `git diff --check` passed. Renderer retirement audit returned no matches.
+- Coverage remains below the requested 100%; remaining gaps are in UI and Phaser lifecycle branches. Production build still warns that the lazy Phaser chunk is about 1.4 MB.
+
 ## Touched Files
 
 This list is updated as files are changed.
@@ -197,20 +205,27 @@ This list is updated as files are changed.
 - `apps/web/src/main.tsx`
 - `apps/web/src/App.tsx`
 - `apps/web/src/App.browser.test.tsx`
+- `apps/web/src/main.browser.test.tsx`
 - `apps/web/src/styles.css`
 - `apps/web/src/practice/PracticeScreen.tsx`
 - `apps/web/src/multiplayer/RaceScreen.browser.test.tsx`
 - `apps/web/src/server/index.test.ts`
 - `apps/web/src/server/index.ts`
 - `apps/web/src/bridge/game-event-bridge.ts`
+- `apps/web/src/bridge/game-event-bridge.test.ts`
 - `apps/web/src/game/createFishingGame.ts`
+- `apps/web/src/game/createFishingGame.test.ts`
 - `apps/web/src/game/FishingScene.ts`
+- `apps/web/src/game/FishingScene.browser.test.ts`
 - `apps/web/src/hooks/useOceanRun.ts`
+- `apps/web/src/hooks/useOceanRun.browser.test.tsx`
 - `apps/web/public/assets/ocean/**`
 - `packages/contracts/src/index.ts`
 - `packages/race-rules/src/index.ts`
 - `packages/race-rules/src/index.test.ts`
+- `packages/race-rules/src/__tests__/race-rules.test.ts`
 - `packages/content/src/index.ts`
+- `packages/content/src/content.test.ts`
 - `packages/typing-engine/src/index.ts`
 - `packages/typing-engine/src/__tests__/typing-engine.test.ts`
 - `packages/game-rules/src/index.ts`

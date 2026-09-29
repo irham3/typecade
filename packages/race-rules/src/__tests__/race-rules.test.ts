@@ -97,5 +97,10 @@ describe("Ocean Race rules", () => {
 		const accurate = { ...createRacePlayer("b", "B", "classic"), status: "finished" as const, cursor: 10, errors: 0, finishedAt: 100 }
 		expect(rankRacePlayers([inaccurate, accurate]).map(({ id }) => id)).toEqual(["b", "a"])
 		expect(rankRacePlayers([inaccurate, accurate], { ...defaultRaceConfig, format: "time" }).map(({ id }) => id)).toEqual(["b", "a"])
+		const legacy = { ...createRacePlayer("legacy", "Legacy", "classic"), status: "finished" as const, cursor: 3, errors: 0 }
+		expect(rankRacePlayers([legacy, inaccurate]).map(({ id }) => id)).toEqual(["a", "legacy"])
+		const tiedA = { ...createRacePlayer("tie-a", "Tie A", "classic"), status: "finished" as const, cursor: 5, finishedAt: null }
+		const tiedB = { ...tiedA, id: "tie-b", name: "Tie B" }
+		expect(rankRacePlayers([tiedA, tiedB]).map(({ id }) => id)).toEqual(["tie-a", "tie-b"])
 	})
 })

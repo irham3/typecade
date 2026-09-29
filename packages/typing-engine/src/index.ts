@@ -87,7 +87,7 @@ export class TypingSession {
 			]
 		}
 
-		const expected = this.targetText[this.cursor] ?? ""
+		const expected = this.targetText[this.cursor]!
 		const accepted = normalizedKey === expected
 		this.eventLog.push({
 			t: this.lastTimestampMs,

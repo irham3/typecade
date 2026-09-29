@@ -32,6 +32,16 @@ describe("TypingSession", () => {
 		expect(session.getSnapshot().metrics.accuracy).toBe(50)
 	})
 
+	it("keeps a typo in word quality after the word is corrected", () => {
+		const session = new TypingSession("ab")
+		session.processKey("x", 1)
+		session.processKey("a", 2)
+		const completion = session.processKey("b", 3).find((event) => event.type === "word-complete")
+
+		expect(completion).toMatchObject({ perfect: false, combo: 0 })
+		expect(session.getSnapshot().metrics.maxCombo).toBe(0)
+	})
+
 	it("ignores backspace during gameplay", () => {
 		const session = new TypingSession("karang", { startTimestampMs: 0 })
 		const events = session.processKey("Backspace", 1000)
