@@ -2,12 +2,26 @@ import { act, useEffect, useLayoutEffect, useRef } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { getRouteNodesForZone } from "@typecade/content"
+import * as oceanContent from "@typecade/content"
 import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
+import * as gameRules from "@typecade/game-rules"
+import { TypingSession } from "@typecade/typing-engine"
 import type { OceanRunControls } from "./useOceanRun"
 import { useOceanRun } from "./useOceanRun"
 
+vi.mock("@typecade/game-rules", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@typecade/game-rules")>()
+	return { ...actual, applyTypingEvents: vi.fn(actual.applyTypingEvents) }
+})
+
+vi.mock("@typecade/content", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@typecade/content")>()
+	return { ...actual, getRouteNodesForZone: vi.fn(actual.getRouteNodesForZone) }
+})
+
 let controls: OceanRunControls | undefined
 let preInitControls: { skill: boolean; routeId: string } | undefined
+let initialRouteId: string | undefined
 
 function Probe({ active = true }: { active?: boolean }) {
 	const run = useOceanRun(active)
@@ -29,6 +43,17 @@ function PreInitProbe() {
 	return null
 }
 
+function InitialRouteProbe() {
+	const run = useOceanRun()
+	const didProbe = useRef(false)
+	useLayoutEffect(() => {
+		if (didProbe.current) return
+		didProbe.current = true
+		initialRouteId = run.view.selectedRoute.id
+	}, [run])
+	return null
+}
+
 describe("ocean run browser controls", () => {
 	let host: HTMLDivElement
 	let root: Root
@@ -40,12 +65,16 @@ describe("ocean run browser controls", () => {
 		root = createRoot(host)
 		controls = undefined
 		preInitControls = undefined
+		initialRouteId = undefined
 	})
 
 	afterEach(async () => {
 		await act(async () => root.unmount())
 		host.remove()
 		localStorage.clear()
+		vi.mocked(oceanContent.getRouteNodesForZone).mockReset()
+		const actualContent = await vi.importActual<typeof import("@typecade/content")>("@typecade/content")
+		vi.mocked(oceanContent.getRouteNodesForZone).mockImplementation(actualContent.getRouteNodesForZone)
 		vi.restoreAllMocks()
 	})
 
@@ -80,6 +109,14 @@ describe("ocean run browser controls", () => {
 		await act(async () => root.render(<PreInitProbe />))
 		expect(preInitControls?.skill).toBe(false)
 		expect(preInitControls?.routeId).toBe("lagoon_gate")
+	})
+
+	it("falls back to the first route when the route list changes during initialization", async () => {
+		const routes = getRouteNodesForZone("zone_1")
+		let lookup = 0
+		vi.mocked(oceanContent.getRouteNodesForZone).mockImplementation(() => [routes[lookup++ === 0 ? 0 : 1]!])
+		await act(async () => root.render(<InitialRouteProbe />))
+		expect(initialRouteId).toBe(routes[1]!.id)
 	})
 
 	it("chooses valid prep routes, sanitizes skill loadouts, and starts with both selections", async () => {
@@ -166,6 +203,73 @@ describe("ocean run browser controls", () => {
 		await act(() => window.dispatchEvent(keyEvent))
 		expect(keyEvent.defaultPrevented).toBe(true)
 		expect(controls!.view.lastSkillId).toBe(skill.id)
+	})
+
+	it("normalizes optional fields at the typing engine boundary", async () => {
+		const run = await mount()
+		await act(async () => run.startFreshRun())
+		const now = performance.now()
+		const eventBase = { timestampMs: now, index: 0, key: "x", metrics: run.view.metrics }
+		const sessionKeys = ["a", " ", "x", "b"]
+		const processKey = vi.spyOn(TypingSession.prototype, "processKey")
+			.mockReturnValueOnce([{ ...eventBase, type: "correct-char" }])
+			.mockReturnValueOnce([{ ...eventBase, type: "word-complete", word: "word" }])
+			.mockReturnValueOnce([{ ...eventBase, type: "typo" }])
+			.mockReturnValueOnce([{ ...eventBase, type: "combo" }])
+		const correct = vi.fn()
+		const word = vi.fn()
+		const typo = vi.fn()
+		const combo = vi.fn()
+		const unsubscribe = [
+			run.bridge.on("character:correct", correct),
+			run.bridge.on("word:completed", word),
+			run.bridge.on("typo:occurred", typo),
+			run.bridge.on("combo:changed", combo),
+		]
+		try {
+			await act(async () => {
+				for (const key of sessionKeys) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
+			})
+			expect(processKey).toHaveBeenCalledTimes(4)
+			expect(correct).toHaveBeenCalledWith(expect.objectContaining({ key: "x", expected: "x" }))
+			expect(word).toHaveBeenCalledWith(expect.objectContaining({ word: "word", perfect: false, combo: 0 }))
+			expect(typo).toHaveBeenCalledWith(expect.objectContaining({ key: "x", expected: "" }))
+			expect(combo).toHaveBeenCalledWith({ combo: 0 })
+			const skillUsed = vi.fn()
+			const bossGuard = vi.fn()
+			const stopSkill = run.bridge.on("skill:used", skillUsed)
+			const stopBoss = run.bridge.on("boss:guard-broken", bossGuard)
+			vi.mocked(gameRules.applyTypingEvents)
+				.mockReturnValueOnce({ encounter: run.view.encounter, events: [{ type: "skill-triggered" }] })
+				.mockReturnValueOnce({ encounter: run.view.encounter, events: [{ type: "boss-guard-broken" }] })
+			processKey.mockReturnValueOnce([{ ...eventBase, type: "correct-char" }])
+			await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "c", bubbles: true })))
+			expect(skillUsed).toHaveBeenCalledWith({ skillId: "passive", label: "Skill" })
+			processKey.mockReturnValueOnce([{ ...eventBase, type: "correct-char" }])
+			await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "d", bubbles: true })))
+			expect(bossGuard).toHaveBeenCalledWith({ bonusProgress: 0 })
+			stopSkill()
+			stopBoss()
+		} finally {
+			unsubscribe.forEach((stop) => stop())
+			processKey.mockRestore()
+		}
+	})
+
+	it("uses the neutral route risk after recovering a missing route value", async () => {
+		const expedition = createShallowCoastExpedition("route-risk-fallback")
+		expedition.selectedRouteId = "missing-route"
+		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))
+		const route = getRouteNodesForZone("zone_1")[1]!
+		vi.mocked(oceanContent.getRouteNodesForZone).mockReturnValue([route])
+		const run = await mount()
+		expect(run.view.selectedRoute.id).toBe(route.id)
+		vi.mocked(oceanContent.getRouteNodesForZone).mockReturnValue([{ ...route, risk: undefined }] as never)
+		await act(async () => run.startFreshRun())
+		const expected = run.view.targetText[run.view.cursor]
+		await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: expected, bubbles: true })))
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 300)) })
+		expect(controls!.view.encounter.status).toBe("active")
 	})
 
 	it("falls back cleanly when local storage cannot be read or written", async () => {

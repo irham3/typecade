@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
 import { fishSpecies } from "@typecade/content"
 import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
+import { TypingSession } from "@typecade/typing-engine"
 import { App, FeedbackBanner } from "./App"
 import { PracticeScreen } from "./practice/PracticeScreen"
 
@@ -25,6 +26,7 @@ describe("application browser coverage", () => {
 		host.remove()
 		localStorage.clear()
 		history.replaceState(null, "", "/")
+		vi.restoreAllMocks()
 	})
 
 	async function mount() { await act(async () => root.render(<App />)) }
@@ -105,6 +107,15 @@ describe("application browser coverage", () => {
 		}
 	})
 
+	it("marks each correctly typed practice character as complete", async () => {
+		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "abc") })
+		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
+		await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true })))
+		expect(host.querySelector('[data-testid="practice-passage"] .done')?.textContent).toBe("a")
+	})
+
 	it("hides temporary skill feedback after its display duration", async () => {
 		await act(async () => root.render(<FeedbackBanner feedback={{ id: 1, kind: "skill", title: "Sonar", detail: "Sweep active" }} reducedMotion />))
 		expect(host.querySelector<HTMLElement>('[data-testid="skill-feedback"]')?.hidden).toBe(false)
@@ -133,6 +144,23 @@ describe("application browser coverage", () => {
 		expect(host.querySelector(".practice-clock")?.textContent).toBe("1s")
 		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1200)) })
 		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
+	})
+
+	it("keeps practice readable when the typing engine has no initial metrics snapshot", async () => {
+		vi.spyOn(TypingSession.prototype, "getSnapshot").mockReturnValue(null as never)
+		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
+		expect(host.querySelector(".practice-clock")?.textContent).toBe("0%")
+		expect(host.querySelector(".practice-stats")?.textContent).toContain("100% accuracy")
+
+		await act(async () => root.unmount())
+		root = createRoot(host)
+		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
+		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1200)) })
+		expect(host.querySelector(".practice-result-stats")?.textContent).toContain("100%Accuracy")
 	})
 
 	it("validates a custom practice passage and ignores shortcut keys while typing", async () => {

@@ -43,7 +43,7 @@ export default defineConfig({
       },
     ],
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text-summary', 'json-summary', 'json'],
       include: ['packages/*/src/*.ts', 'apps/web/src/**/*.{ts,tsx}'],
     },

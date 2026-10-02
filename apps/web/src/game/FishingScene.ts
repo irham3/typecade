@@ -428,7 +428,7 @@ export class FishingScene extends Phaser.Scene {
 				const now = this.time.now
 				if (now - this.lastTickSfxAt > 48) {
 					this.lastTickSfxAt = now
-					this.playAudio(now % 2 > 1 ? "sfx_correct_tick_a" : "sfx_correct_tick_b", "typing", 0.38)
+					this.playAudio(now % 2 === 0 ? "sfx_correct_tick_a" : "sfx_correct_tick_b", "typing", 0.38)
 				}
 			}),
 			bridge.on("word:completed", ({ combo, perfect }) => {

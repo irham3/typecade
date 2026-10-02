@@ -65,6 +65,9 @@ describe("FishingScene in Chromium", () => {
 		sceneAudio.lastTickSfxAt = 0
 		Reflect.set(clock, "now", 100)
 		bridge.emit("character:correct", { key: "u", expected: "u", progress: 0.3, combo: 2 })
+		expect(tickAudio).toHaveBeenCalledWith("sfx_correct_tick_a", "typing", 0.38)
+		Reflect.set(clock, "now", 151)
+		bridge.emit("character:correct", { key: "s", expected: "s", progress: 0.4, combo: 3 })
 		expect(tickAudio).toHaveBeenCalledWith("sfx_correct_tick_b", "typing", 0.38)
 		Reflect.set(clock, "now", originalNow)
 		tickAudio.mockRestore()
@@ -74,6 +77,8 @@ describe("FishingScene in Chromium", () => {
 		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
 		bridge.emit("line:changed", { tension: 88, durability: 32, progress: 0.5, timeRemainingMs: 1000 })
 		bridge.emit("line:changed", { tension: 50, durability: 45, progress: 0.6, timeRemainingMs: 800 })
+		bridge.emit("line:changed", { tension: 70, durability: 80, progress: 0.7, timeRemainingMs: 700 })
+		sceneUpdate(game, 1200)
 		await new Promise((resolve) => window.setTimeout(resolve, 500))
 		bridge.emit("phase:changed", { phase: 2 })
 		bridge.emit("settings:effects", { reducedMotion: false })
@@ -141,9 +146,36 @@ describe("FishingScene in Chromium", () => {
 
 		expect(host.querySelector("canvas")).not.toBeNull()
 		const objects = phaserScene as unknown as { fish?: Phaser.GameObjects.Sprite; currentFish?: FishSpecies }
+		const animationScene = phaserScene as unknown as { playFishAnimation(species: FishSpecies, state: "caught" | "idle" | "struggle"): void }
+		animationScene.playFishAnimation(commonFish, "caught")
+		animationScene.playFishAnimation(commonFish, "idle")
+		animationScene.playFishAnimation(commonFish, "struggle")
+		animationScene.playFishAnimation(openingFish, "idle")
 		objects.currentFish = undefined
 		bridge.emit("word:completed", { word: "laut", perfect: false, combo: 0 })
 		objects.fish = undefined
+		const impact = vi.spyOn(phaserScene as unknown as { emitWaterImpact(x: number, y: number, strength: number): void }, "emitWaterImpact")
+		const ring = vi.spyOn(phaserScene as unknown as { ringBurst(x: number, y: number, tint: number, scale?: number): void }, "ringBurst")
+		bridge.emit("word:completed", { word: "laut", perfect: false, combo: 5 })
+		expect(impact).toHaveBeenCalledWith(phaserScene.scale.width * 0.62, phaserScene.scale.height * 0.55, 40)
+		expect(ring).toHaveBeenCalledWith(phaserScene.scale.width * 0.61, phaserScene.scale.height * 0.5, 0xf5c240)
+		impact.mockRestore()
+		ring.mockRestore()
+		const typoCallbacks: Array<{ timer: Phaser.Time.TimerEvent; run: () => void }> = []
+		const typoOriginalDelayedCall = phaserScene.time.delayedCall.bind(phaserScene.time)
+		const typoDelayedCall = vi.spyOn(phaserScene.time, "delayedCall").mockImplementation((delay, callback, args, scope) => {
+			const timer = typoOriginalDelayedCall(delay, callback, args, scope)
+			typoCallbacks.push({ timer, run: () => callback.apply(scope ?? phaserScene, args ?? []) })
+			return timer
+		})
+		objects.currentFish = commonFish
+		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
+		objects.currentFish = undefined
+		for (const callback of typoCallbacks) {
+			callback.timer.remove(false)
+			callback.run()
+		}
+		typoDelayedCall.mockRestore()
 		sceneUpdate(game, 3000)
 		bridge.emit("phase:changed", { phase: 2 })
 		bridge.emit("boss:guard-broken", { bonusProgress: 0.08 })
@@ -152,6 +184,10 @@ describe("FishingScene in Chromium", () => {
 		bridge.emit("level:up", { fromLevel: 2, toLevel: 3, xp: 200 })
 		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, fish, { wpm: 50, rawWpm: 55, accuracy: 98, combo: 8, maxCombo: 8, consistency: 90, correctKeystrokes: 80, incorrectKeystrokes: 2, progress: 1, elapsedMs: 10000 }, 1) })
 		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, fish, { wpm: 0, rawWpm: 0, accuracy: 0, combo: 0, maxCombo: 0, consistency: 0, correctKeystrokes: 0, incorrectKeystrokes: 1, progress: 0, elapsedMs: 10000 }, 1) })
+		bridge.emit("settings:effects", { reducedMotion: true })
+		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, fish, { wpm: 50, rawWpm: 55, accuracy: 98, combo: 8, maxCombo: 8, consistency: 90, correctKeystrokes: 80, incorrectKeystrokes: 2, progress: 1, elapsedMs: 10000 }, 1) })
+		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, fish, { wpm: 0, rawWpm: 0, accuracy: 0, combo: 0, maxCombo: 0, consistency: 0, correctKeystrokes: 0, incorrectKeystrokes: 1, progress: 0, elapsedMs: 10000 }, 1) })
+		bridge.emit("level:up", { fromLevel: 3, toLevel: 4, xp: 300 })
 		phaserScene.textures.remove("water_distortion")
 		const filters = phaserScene.cameras.main.filters.external
 		vi.spyOn(filters, "addDisplacement").mockImplementation(() => { throw new Error("WebGL filter unavailable") })
@@ -255,6 +291,22 @@ describe("FishingScene in Chromium", () => {
 		probe.emitSkillVfx("reel_mastery", "Reel Mastery")
 		expect(emit).toHaveBeenCalled()
 		expect(delayedCall).toHaveBeenCalledTimes(4)
+	})
+
+	it("plays common fish struggle animations at the faster frame rate", () => {
+		const scene = new FishingScene()
+		const create = vi.fn()
+		const probe = scene as unknown as {
+			anims: { create: typeof create; exists(key: string): boolean; generateFrameNames(key: string, range: { prefix: string; start: number; end: number; suffix: string }): string[] }
+			fish: { play(key: string, ignoreIfPlaying?: boolean): void; setTexture(key: string, frame?: string | number): void }
+			playFishAnimation(fish: FishSpecies, state: "struggle"): void
+		}
+		Object.defineProperties(scene, {
+			anims: { configurable: true, value: { create, exists: () => false, generateFrameNames: () => [] } },
+			fish: { configurable: true, value: { play: vi.fn(), setTexture: vi.fn() } },
+		})
+		probe.playFishAnimation(getFish("kelp_darter"), "struggle")
+		expect(create).toHaveBeenCalledWith(expect.objectContaining({ frameRate: 12, repeat: -1 }))
 	})
 
 	it("retries hit-stop release after the hold window is extended", async () => {

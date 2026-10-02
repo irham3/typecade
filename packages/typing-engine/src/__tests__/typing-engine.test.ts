@@ -91,7 +91,7 @@ describe("TypingSession", () => {
 		}
 
 		const first = session.getSnapshot()
-		const replayed = replayInputLog(first.targetText, first.eventLog, { startTimestampMs: 0 })
+		const replayed = replayInputLog(first.targetText, first.eventLog)
 
 		expect(replayed.metrics).toEqual(first.metrics)
 		expect(replayed.cursor).toBe(first.cursor)

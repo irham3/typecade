@@ -167,9 +167,10 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		selectedRouteRef.current = selected
 		if (inPrep) {
 			pendingRouteIdRef.current = selected.id
-		} else if (expeditionRef.current) {
-			expeditionRef.current = { ...expeditionRef.current, selectedRouteId: selected.id }
-			if (collectionRef.current) persist(expeditionRef.current, collectionRef.current)
+		} else {
+			const expedition = { ...expeditionRef.current!, selectedRouteId: selected.id }
+			expeditionRef.current = expedition
+			persist(expedition, collectionRef.current!)
 		}
 		syncView({ routeChoices: choices, selectedRoute: selected, log: [`Route selected: ${selected.name}`, ...viewLogTail(view.log)] })
 	}, [persist, syncView, view.log])

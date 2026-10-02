@@ -3,7 +3,13 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
 import { defaultRaceConfig, type RacePlayer, type RaceRoomSnapshot, type RaceTicket } from "@typecade/race-rules"
+import * as raceRules from "@typecade/race-rules"
 import { RaceScreen } from "./RaceScreen"
+
+vi.mock("@typecade/race-rules", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@typecade/race-rules")>()
+	return { ...actual, parseRaceConfig: vi.fn(actual.parseRaceConfig) }
+})
 
 class RoomSocket {
 	static latest: RoomSocket | null = null
@@ -272,6 +278,10 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(() => socket.deliver(waiting))
 		expect(host.textContent).toContain("Bahasa Indonesia · hard quote")
 		expect(host.textContent).toContain("Third typo eliminates you.")
+		waiting.config = { ...waiting.config, format: "time", timeSeconds: 45, variant: "classic" }
+		await act(() => socket.deliver(waiting))
+		expect(host.textContent).toContain("Bahasa Indonesia · 45 seconds")
+		expect(host.textContent).toContain("Fastest valid finish wins.")
 	})
 
 	it("sends only plain single characters from an active racer in a large fleet", async () => {
@@ -334,5 +344,14 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(() => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
 		expect(host.querySelector('[role="alert"]')?.textContent).toContain("wordCount")
 		expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+	})
+
+	it("shows a fallback message for a non-Error settings failure", async () => {
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>(".race-config input")!, "Alpha") })
+		vi.mocked(raceRules.parseRaceConfig).mockImplementationOnce(() => { throw "bad settings" })
+		await act(() => host.querySelector<HTMLFormElement>(".race-config")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
+		expect(host.querySelector('[role="alert"]')?.textContent).toBe("Invalid settings")
+		expect(fetch).not.toHaveBeenCalled()
 	})
 })

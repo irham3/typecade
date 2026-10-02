@@ -374,4 +374,26 @@ describe("multiplayer Worker", () => {
 			vi.useRealTimers()
 		}
 	})
+
+	it("rejects race input when persisted timing boundaries are missing", async () => {
+		const state = stateMock()
+		const room = new RaceRoom(state.ctx as unknown as DurableObjectState, {} as never)
+		const config = { ...defaultRaceConfig, format: "custom" as const, customText: "abc", maxPlayers: 2 }
+		const host = await (await room.fetch(request("/create", { code: "ABCDEFGH", config, name: "Host" }))).json() as { playerId: string }
+		const guest = await (await room.fetch(request("/join", { name: "Guest" }))).json() as { playerId: string }
+		const hostSocket = new FakeSocket()
+		const guestSocket = new FakeSocket()
+		hostSocket.serializeAttachment({ playerId: host.playerId })
+		guestSocket.serializeAttachment({ playerId: guest.playerId })
+		state.sockets.push(hostSocket, guestSocket)
+		const current = (room as unknown as { room: { phase: string; startsAt: number | null; endsAt: number | null; members: Record<string, { player: RacePlayer }> } }).room
+		current.phase = "racing"
+		current.startsAt = null
+		current.endsAt = null
+		await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "a", seq: 1 }))
+		expect(current.members[host.playerId]!.player.cursor).toBe(0)
+		current.startsAt = Date.now() - 1
+		await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "a", seq: 1 }))
+		expect(current.members[host.playerId]!.player.cursor).toBe(0)
+	})
 })

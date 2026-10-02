@@ -630,7 +630,7 @@ function TypingTarget({ text, cursor }: { text: string; cursor: number }) {
 	)
 }
 
-function Stat({ icon, label, value, hot = false }: { icon: ReactElement; label: string; value: string; hot?: boolean }) {
+function Stat({ icon, label, value, hot }: { icon: ReactElement; label: string; value: string; hot?: boolean }) {
 	return (
 		<div className={`stat ${hot ? "hot" : ""}`}>
 			{icon}
