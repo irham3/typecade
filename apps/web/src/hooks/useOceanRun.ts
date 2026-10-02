@@ -100,7 +100,6 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	const encounterRef = useRef<EncounterState | null>(null)
 	const fishRef = useRef<FishSpecies | null>(null)
 	const selectedRouteRef = useRef<RouteNode | null>(null)
-	const handledEncounterRef = useRef<string | null>(null)
 	const lastTickRef = useRef<number>(0)
 	const controlsActiveRef = useRef(controlsActive)
 	const pausedRef = useRef(true)
@@ -127,16 +126,12 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	}, [])
 
 	const syncView = useCallback((patch: Partial<OceanRunView> = {}) => {
-		const session = sessionRef.current
-		const expedition = expeditionRef.current
-		const collection = collectionRef.current
-		const encounter = encounterRef.current
-		const fish = fishRef.current
-		const selectedRoute = selectedRouteRef.current
-
-		if (!session || !expedition || !collection || !encounter || !fish || !selectedRoute) {
-			return
-		}
+		const session = sessionRef.current!
+		const expedition = expeditionRef.current!
+		const collection = collectionRef.current!
+		const encounter = encounterRef.current!
+		const fish = fishRef.current!
+		const selectedRoute = selectedRouteRef.current!
 
 		const snapshot = session.getSnapshot()
 		setView((previous) => ({
@@ -179,7 +174,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		syncView({ routeChoices: choices, selectedRoute: selected, log: [`Route selected: ${selected.name}`, ...viewLogTail(view.log)] })
 	}, [persist, syncView, view.log])
 
-	const startEncounterFromExpedition = useCallback((expedition: ExpeditionState, collection: CollectionState, logLine?: string) => {
+	const startEncounterFromExpedition = useCallback((expedition: ExpeditionState, collection: CollectionState, logLine: string) => {
 		const fish = getFishByEncounter(expedition)
 		const encounterIndex = getEncounterIndexInRun(expedition)
 		const passage = getIndonesianPassage(encounterIndex, fish.typingProfile)
@@ -187,10 +182,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		const session = new TypingSession(passage, { startTimestampMs: startMs })
 		const encounter = startEncounter(fish, `${expedition.seed}:${encounterIndex}`, expedition.selectedSkillIds)
 		const routeChoices = getRouteNodesForZone(fish.habitat)
-		const selectedRoute = routeChoices.find((route) => route.id === expedition.selectedRouteId) ?? routeChoices[0]
-		if (!selectedRoute) {
-			throw new Error(`No route nodes configured for ${fish.habitat}`)
-		}
+		const selectedRoute = routeChoices.find((route) => route.id === expedition.selectedRouteId) ?? routeChoices[0]!
 
 		sessionRef.current = session
 		expeditionRef.current = expedition
@@ -198,7 +190,6 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		encounterRef.current = encounter
 		fishRef.current = fish
 		selectedRouteRef.current = selectedRoute
-		handledEncounterRef.current = null
 		lastTickRef.current = startMs
 
 		const snapshot = session.getSnapshot()
@@ -218,7 +209,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			selectedRoute,
 			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
 			skillOffers: getSkillDraft(expedition.seed, getAccountLevelProgress(collection.xp).level),
-			log: [logLine ?? `Hooked: ${fish.name}`, ...viewLogTail(view.log)],
+			log: [logLine, ...viewLogTail(view.log)],
 		}
 		setView(nextView)
 
@@ -233,16 +224,12 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	}, [bridge, view])
 
 	const finishEncounter = useCallback((encounter: EncounterState) => {
-		const fish = fishRef.current
-		const session = sessionRef.current
-		const expedition = expeditionRef.current
-		const collection = collectionRef.current
-		const route = selectedRouteRef.current
-		if (!fish || !session || !expedition || !collection || !route || handledEncounterRef.current === encounter.id) {
-			return
-		}
+		const fish = fishRef.current!
+		const session = sessionRef.current!
+		const expedition = expeditionRef.current!
+		const collection = collectionRef.current!
+		const route = selectedRouteRef.current!
 
-		handledEncounterRef.current = encounter.id
 		const result = resolveCatchResult(encounter, fish, session.getSnapshot().metrics, route.rewardMultiplier)
 		bridge.emit("catch:resolved", { result })
 
@@ -301,11 +288,6 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	}, [bridge, persist, startEncounterFromExpedition, syncView, view.log])
 
 	const applyRuleEvents = useCallback((nextEncounter: EncounterState, events: ReturnType<typeof applyTypingEvents>["events"]) => {
-		const fish = fishRef.current
-		if (!fish) {
-			return
-		}
-
 		encounterRef.current = nextEncounter
 		let lastSkillId: string | undefined
 		let bossMoment: { label: "Crown Guard Broken" | "Final Pull"; bonusProgress: number } | undefined
@@ -414,9 +396,6 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			return false
 		}
 		const applied = activateFishingSkill(encounter, fish, skillId)
-		if (applied.events.length === 0) {
-			return false
-		}
 
 		if (skillId === "sonar") {
 			sonarRevealedUntilRef.current = Date.now() + 12000
@@ -464,7 +443,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 	const startFreshRun = useCallback(() => {
 		const seed = `${starterSeed}:${Date.now()}`
-		const collection = collectionRef.current ?? createInitialCollection()
+		const collection = collectionRef.current!
 		const level = getAccountLevelProgress(collection.xp).level
 		const selectedSkillIds = pendingSkillLoadoutRef.current ?? getDefaultSkillLoadout(seed, level)
 		const expedition = createShallowCoastExpedition(seed, selectedSkillIds)
@@ -514,19 +493,13 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			const skillIndex = Number.parseInt(event.key, 10)
 			if (skillIndex >= 1 && skillIndex <= activeSkills.length) {
 				event.preventDefault()
-				const skill = activeSkills[skillIndex - 1]
-				if (skill) {
-					triggerSkill(skill.id)
-				}
+				triggerSkill(activeSkills[skillIndex - 1]!.id)
 				return
 			}
 
 			if (event.key.length === 1 || event.key === "Backspace") {
 				event.preventDefault()
-				const session = sessionRef.current
-				if (!session) {
-					return
-				}
+				const session = sessionRef.current!
 				handleTypingEvents(session.processKey(event.key, performance.now()))
 			}
 		}

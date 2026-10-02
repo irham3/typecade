@@ -2,8 +2,9 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
+import { fishSpecies } from "@typecade/content"
 import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
-import { App } from "./App"
+import { App, FeedbackBanner } from "./App"
 import { PracticeScreen } from "./practice/PracticeScreen"
 
 vi.mock("./game/createFishingGame", () => ({ createFishingGame: () => ({ destroy: vi.fn() }) }))
@@ -85,6 +86,13 @@ describe("application browser coverage", () => {
 		expect(Number(localStorage.getItem("typecade:practice:best"))).toBeGreaterThan(0)
 		await click('[data-testid="practice-result"] button.pixel-action.primary')
 		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
+	})
+
+	it("hides temporary skill feedback after its display duration", async () => {
+		await act(async () => root.render(<FeedbackBanner feedback={{ id: 1, kind: "skill", title: "Sonar", detail: "Sweep active" }} reducedMotion />))
+		expect(host.querySelector<HTMLElement>('[data-testid="skill-feedback"]')?.hidden).toBe(false)
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 2700)) })
+		expect(host.querySelector<HTMLElement>('[data-testid="skill-feedback"]')?.hidden).toBe(true)
 	})
 
 	it("starts word-count practice with its selected language and returns to setup", async () => {
@@ -250,6 +258,14 @@ describe("application browser coverage", () => {
 		await click('[data-testid="prep-screen"] .prep-header button.secondary-action')
 	})
 
+	it("starts prep from its safe first route when a restored run is already in another zone", async () => {
+		const expedition = { ...createShallowCoastExpedition("later-zone-prep"), currentZoneIndex: 1, currentEncounterIndex: 3 }
+		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))
+		await mount()
+		await click('button[aria-label="Adventure"]')
+		expect(host.querySelector('[data-testid="prep-screen"] .route-choice-grid button.selected')?.textContent).toContain("Lagoon Gate")
+	})
+
 	it("resolves a catch, persists it, and locks the route after typing starts", async () => {
 		await mount()
 		await sail()
@@ -287,9 +303,16 @@ describe("application browser coverage", () => {
 		const sonar = [...host.querySelectorAll<HTMLButtonElement>(".skill-button")].find((button) => button.title.startsWith("Sonar:"))
 		expect(sonar?.disabled).toBe(false)
 		await act(() => sonar!.click())
-		await click('button[aria-label="Tasks"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Sonar sweep active")
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Pebble Goby")
+		const hiddenSpeciesIndex = fishSpecies.findIndex((species) => species.id === "reef_minnow")
+		const hiddenSpecies = fishSpecies[hiddenSpeciesIndex]!
+		await act(() => { fishSpecies.splice(hiddenSpeciesIndex, 1) })
+		try {
+			await click('button[aria-label="Tasks"]')
+			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Sonar sweep active")
+			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("reef_minnow")
+		} finally {
+			await act(() => { fishSpecies.splice(hiddenSpeciesIndex, 0, hiddenSpecies) })
+		}
 		await click('button[aria-label="Tasks"]')
 		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
 		await act(async () => {
@@ -324,6 +347,10 @@ describe("application browser coverage", () => {
 	it("uses an earned skill, blocks typing while paused, and resumes the same encounter", async () => {
 		await mount()
 		await sail()
+		await click('button[aria-label="Settings"]')
+		const reducedEffects = host.querySelector<HTMLInputElement>('.settings-grid input[type="checkbox"]')!
+		await act(() => reducedEffects.click())
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
 		const prefixLength = target.split(" ").slice(0, 3).join(" ").length + 1
 		await act(async () => {
@@ -333,10 +360,8 @@ describe("application browser coverage", () => {
 		expect(activeSkill).not.toBeNull()
 		await act(() => activeSkill!.click())
 		expect(host.querySelector('[data-testid="skill-feedback"]')).not.toBeNull()
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 2700)) })
-		expect(host.querySelector('[data-testid="skill-feedback"]')).toBeNull()
-		const cursor = host.querySelectorAll('[data-testid="typing-target"] .done').length
 		await click('button[aria-label="Pause game"]')
+		const cursor = host.querySelectorAll('[data-testid="typing-target"] .done').length
 		await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
 		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(cursor)
 		await click('[data-testid="pause-panel"] button.primary-action')

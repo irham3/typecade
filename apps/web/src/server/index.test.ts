@@ -342,7 +342,7 @@ describe("multiplayer Worker", () => {
 			const config = { ...defaultRaceConfig, format: "time" as const, timeSeconds: 1, maxPlayers: 2 }
 			const host = await (await room.fetch(request("/create", { code: "ABCDEFGH", config, name: "Host" }))).json() as { playerId: string }
 			const guest = await (await room.fetch(request("/join", { name: "Guest" }))).json() as { playerId: string }
-			const current = (room as unknown as { room: { phase: string; startsAt: number | null; endsAt: number | null; members: Record<string, { player: RacePlayer }> } }).room
+			const current = (room as unknown as { room: { phase: string; startsAt: number | null; endsAt: number | null; members: Record<string, { player: RacePlayer; inputCount: number }> } }).room
 			for (const member of Object.values(current.members)) member.player.connected = true
 			const hostSocket = new FakeSocket()
 			const guestSocket = new FakeSocket()
@@ -360,6 +360,16 @@ describe("multiplayer Worker", () => {
 			expect(current.phase).toBe("finished")
 			expect(current.members[host.playerId]!.player.status).toBe("finished")
 			expect(current.members[guest.playerId]!.player.status).toBe("finished")
+			current.phase = "racing"
+			current.startsAt = Date.now() + 500
+			current.endsAt = Date.now() + 1000
+			const inputCount = current.members[host.playerId]!.inputCount
+			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "a", seq: 1 }))
+			expect(current.members[host.playerId]!.inputCount).toBe(inputCount)
+			current.startsAt = Date.now() - 500
+			current.endsAt = Date.now()
+			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "b", seq: 2 }))
+			expect(current.members[host.playerId]!.inputCount).toBe(inputCount)
 		} finally {
 			vi.useRealTimers()
 		}

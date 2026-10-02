@@ -47,7 +47,7 @@ export function RaceScreen({ onBack }: { onBack: () => void }) {
 		let retryTimer: ReturnType<typeof setTimeout> | undefined
 		let retryDelay = 500
 		const connect = () => {
-			const scheme = location.protocol === "https:" ? "wss:" : "ws:"
+			const scheme = location.protocol.replace(/^http/, "ws")
 			const socket = new WebSocket(`${scheme}//${location.host}/api/rooms/${ticket.code}/ws?playerId=${encodeURIComponent(ticket.playerId)}`, ["race-v1", `token.${ticket.token}`])
 			socketRef.current = socket
 			socket.onopen = () => { if (!disposed) { setConnected(true); setError(""); retryDelay = 500 } }

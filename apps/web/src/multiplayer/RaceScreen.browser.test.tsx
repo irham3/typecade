@@ -228,6 +228,27 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Bravo")
 	})
 
+	it("describes an English custom room and the full online/offline roster", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => socket.open())
+		const waiting = room("waiting", [
+			player("host", "Alpha", { ready: true }),
+			player("guest", "Bravo", { connected: false }),
+			player("captain-3", "Charlie", { ready: true }),
+		])
+		waiting.config = { ...waiting.config, language: "en", format: "custom", customText: "custom", variant: "perfect" }
+		waiting.text = "x".repeat(121)
+		await act(() => socket.deliver(waiting))
+		expect(host.textContent).toContain("English · Custom passage")
+		expect(host.textContent).toContain("One typo eliminates you.")
+		expect(host.textContent).toContain("Bravo")
+		expect(host.textContent).toContain("Charlie")
+		expect(host.textContent).toContain("Offline")
+		expect(host.querySelector(".race-preview")?.textContent).toContain("…")
+	})
+
 	it("sends only plain single characters from an active racer in a large fleet", async () => {
 		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
@@ -243,7 +264,8 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(socket.sent).toHaveLength(0)
 		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true })))
 		expect(socket.sent.at(-1)).toMatchObject({ type: "type", text: "a", seq: 1 })
-		socket.readyState = 3
+		await act(() => socket.close())
+		expect(input.disabled).toBe(true)
 		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true })))
 		expect(socket.sent).toHaveLength(1)
 		const out = captains.map((entry) => entry.id === "host" ? { ...entry, status: "out" as const } : entry)

@@ -200,6 +200,14 @@ Grade: A- for the Milestone 0/1 scope.
 - Added multiplayer configuration error-path tests and explicit coverage for delayed Phaser animation callbacks.
 - Verification: `npm run test:coverage` passed (88 tests) at 98.46% statements, 92.33% branches, 100% functions, and 98.40% lines. Function coverage reached 100%, but the overall 100% target remains unmet. `FishingScene.browser.test.ts` passed independently after synchronizing with Phaser's `create` event.
 
+### 2026-10-02 Multiplayer and gameplay coverage checkpoint
+
+- Added browser coverage for additional Phaser skill effects, missing scene sprites, encounter route and skill selection, multiplayer lobby and fleet display states, and server race timing boundaries.
+- Simplified UI and run-state paths after checking their callers and lifecycle invariants; retained input validation at the multiplayer room boundary.
+- Verification: `npm run test` passed (97 tests); `npm run test:coverage` passed at 99.95% statements, 96.76% branches, 100% functions, and 100% lines. The uncovered statement is the static import at `apps/web/src/App.tsx:1`; it executes during module loading and has no independently callable path. No coverage exclusions were added. Branch coverage is still below 100%.
+- `npm run test:e2e` passed all 13 Chromium scenarios, including two-player races, challenge modes, menu navigation, responsive HUD, and a complete Shallow Coast run through the Leviathan. `npm run build`, `npm run lint`, `npm run typecheck:rooms`, and `git diff --check` passed. Renderer-retirement audit returned no matches.
+- The production build still reports the lazy Phaser renderer chunk at about 1.4 MB, above Vite's 500 kB advisory threshold.
+
 ## Touched Files
 
 This list is updated as files are changed.

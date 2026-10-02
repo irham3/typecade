@@ -904,7 +904,7 @@ function ResultToast({ view, result }: { view: OceanRunView; result: CatchResult
 	)
 }
 
-function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback; reducedMotion: boolean }) {
+export function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback; reducedMotion: boolean }) {
 	const bannerRef = useRef<HTMLElement>(null)
 	const [visible, setVisible] = useState(true)
 
@@ -914,9 +914,9 @@ function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback
 	}, [])
 
 	useGSAP(() => {
-		if (reducedMotion || !visible || !bannerRef.current) return
+		if (reducedMotion || !visible) return
 		const timeline = gsap.timeline()
-		timeline.fromTo(bannerRef.current, {
+		timeline.fromTo(bannerRef.current!, {
 			y: -24,
 			opacity: 0,
 			scale: 0.82,
@@ -926,7 +926,7 @@ function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback
 			scale: 1,
 			duration: 0.42,
 			ease: "back.out(1.7)",
-		}).to(bannerRef.current, {
+		}).to(bannerRef.current!, {
 			y: -10,
 			opacity: 0,
 			duration: 0.28,
@@ -936,13 +936,10 @@ function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback
 		return () => timeline.kill()
 	}, { scope: bannerRef, dependencies: [reducedMotion, visible] })
 
-	if (!visible) {
-		return null
-	}
-
 	return (
 		<aside
 			ref={bannerRef}
+			hidden={!visible}
 			className={`feedback-banner panel-chrome ${feedback.kind}`}
 			data-testid={feedback.kind === "level" ? "level-up-banner" : "skill-feedback"}
 			role="status"
@@ -979,7 +976,7 @@ function OverlayPanel({ title, children, onClose }: { title: string; children: R
 
 	useGSAP(() => {
 		gsap.from(containerRef.current, { scale: 0.95, opacity: 0, duration: 0.3, ease: "back.out(1.5)" })
-		gsap.from(containerRef.current?.children || [], { y: 15, opacity: 0, duration: 0.3, stagger: 0.05, delay: 0.1 })
+		gsap.from(containerRef.current!.children, { y: 15, opacity: 0, duration: 0.3, stagger: 0.05, delay: 0.1 })
 	}, { scope: containerRef })
 
 	return (
