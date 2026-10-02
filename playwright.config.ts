@@ -21,13 +21,21 @@ export default defineConfig({
 			use: { ...devices["Desktop Chrome"] },
 		},
 	],
-	webServer: {
-		command: `npm run dev -- --port ${serverPort} --strictPort true`,
-		url: baseURL,
-		env: {
-			NEXT_PUBLIC_OVERDRIVE: "true",
+	webServer: [
+		{
+			command: `npm run dev -- --port ${serverPort} --strictPort true`,
+			url: baseURL,
+			env: {
+				NEXT_PUBLIC_OVERDRIVE: "true",
+			},
+			reuseExistingServer: !process.env.CI,
+			timeout: 120000,
 		},
-		reuseExistingServer: !process.env.CI,
-		timeout: 120000,
-	},
+		{
+			command: "npm run dev:rooms",
+			url: "http://localhost:8787",
+			reuseExistingServer: !process.env.CI,
+			timeout: 120000,
+		},
+	],
 })

@@ -248,4 +248,24 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(() => socket.deliver(room("racing", out)))
 		expect(input.disabled).toBe(true)
 	})
+
+	it("renders a timed challenge and closes a socket after a transport error", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => socket.open())
+		const timed = room("racing", [
+			player("host", "Alpha", { status: "racing", lives: 2 }),
+			player("guest", "Bravo", { status: "out", connected: false, errors: 3 }),
+		])
+		timed.config = { ...timed.config, format: "time", variant: "three-hulls" }
+		timed.endsAt = 0
+		await act(() => socket.deliver(timed))
+		expect(host.textContent).toContain("Time 0s")
+		expect(host.textContent).toContain("Lives 2")
+		expect(host.querySelector('[aria-label="Race typing input"]')?.disabled).toBe(false)
+		await act(() => socket.onerror?.())
+		expect(socket.readyState).toBe(3)
+		expect(host.textContent).toContain("Reconnecting")
+	})
 })

@@ -87,6 +87,19 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
 	})
 
+	it("starts word-count practice with its selected language and returns to setup", async () => {
+		await mount()
+		await click('button[aria-label="Practice"]')
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice language"]')!, "en") })
+		const words = host.querySelector<HTMLInputElement>('[aria-label="Practice word count"]')!
+		await act(async () => { await userEvent.fill(words, "5") })
+		await click('[data-testid="practice-screen"] button[type="submit"]')
+		expect(host.querySelector('[data-testid="practice-racing"]')?.textContent).toContain("English · words")
+		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent?.length).toBeGreaterThan(0)
+		await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		expect(host.querySelector('[aria-label="Practice word count"]')).not.toBeNull()
+	})
+
 	it("validates a custom practice passage and ignores shortcut keys while typing", async () => {
 		await mount()
 		await click('button[aria-label="Practice"]')
@@ -189,6 +202,7 @@ describe("application browser coverage", () => {
 		await click('button[aria-label="Adventure"]')
 		expect(host.querySelector('[data-testid="prep-screen"]')).not.toBeNull()
 		await click('[data-testid="prep-screen"] .route-choice-grid button:nth-child(2)')
+		expect(host.querySelector('[data-testid="prep-screen"] .route-choice-grid button.selected')?.textContent).toContain("Reef Shelf")
 		const selectedSkill = host.querySelector<HTMLElement>('.prep-skill[aria-pressed="true"]')
 		if (!selectedSkill) throw new Error("Expected an equipped skill")
 		await act(() => selectedSkill.click())
@@ -206,11 +220,14 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
 		await click('button[aria-label="Tasks"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Use Sonar to preview the zone fish")
+		await click('[data-testid="overlay-panel"] .route-choice-grid button:nth-child(2)')
 		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		await click('button[aria-label="Shop"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Cost")
 		await click('button[aria-label="Shop"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
+		await click('button[aria-label="Shop"]')
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		await click('button[aria-label="Settings"]')
 		await click('button[aria-label="Settings"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
@@ -245,6 +262,7 @@ describe("application browser coverage", () => {
 		expect(JSON.parse(localStorage.getItem("typecade:ocean-typing-rpg:m1") ?? "{}").collection.records.reef_minnow?.count).toBe(1)
 		await click('button[aria-label="Tasks"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Route locked after typing starts.")
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 	})
 
 	it("reports an escaped fish and retries with the next line", async () => {
@@ -281,8 +299,11 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("1/10 species discovered")
 		await click('button[aria-label="Collection"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
+		await click('button[aria-label="Collection"]')
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		await click('button[aria-label="Fish"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Largest")
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 	})
 
 	it("shows level-up feedback when a saved collection crosses its next level", async () => {
@@ -371,5 +392,6 @@ describe("application browser coverage", () => {
 		await click('[data-testid="pause-panel"] button.secondary-action')
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Settings")
+		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 	})
 })

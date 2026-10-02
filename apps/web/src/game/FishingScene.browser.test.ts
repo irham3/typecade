@@ -37,6 +37,14 @@ describe("FishingScene in Chromium", () => {
 		bridge.emit("encounter:started", { encounter: startEncounter(quietFish, "scene-before-audio-common", []), fish: quietFish, targetText: "laut" })
 		phaserScene.input.emit("pointerdown")
 		phaserScene.input.keyboard?.emit("keydown")
+		const audio = phaserScene as unknown as { ambientLoop?: { volume?: number; setVolume?: (value: number) => void } }
+		if (audio.ambientLoop) {
+			let fallbackVolume = 1
+			Object.defineProperty(audio.ambientLoop, "setVolume", { configurable: true, value: undefined })
+			Object.defineProperty(audio.ambientLoop, "volume", { configurable: true, get: () => fallbackVolume, set: (value: number) => { fallbackVolume = value } })
+			bridge.emit("settings:volumes", { music: 0.25, environment: 0.3, gameplay: 0.4, typing: 0.5 })
+			expect(fallbackVolume).toBe(0.3)
+		}
 
 		const fish = getFish("crown_leviathan")
 		const encounter = startEncounter(fish, "scene-smoke", [])
@@ -88,7 +96,19 @@ describe("FishingScene in Chromium", () => {
 		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
 		bridge.emit("screen:changed", { screen: "game" })
 		bridge.emit("game:paused", { paused: false })
+		phaserScene.input.emit("pointerdown")
 		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-restarted", []), fish: commonFish, targetText: "laut" })
+		bridge.emit("skill:used", { skillId: "calm_current", label: "Calm Current" })
+		bridge.emit("skill:used", { skillId: "sonar", label: "Sonar" })
+		bridge.emit("typo:occurred", { key: "x", expected: "l", ignoredBySteelLine: false })
+		bridge.emit("word:completed", { word: "laut", perfect: true, combo: 10 })
+		bridge.emit("encounter:started", { encounter: startEncounter(openingFish, "scene-boss-audio", []), fish: openingFish, targetText: "arus" })
+		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-boss-audio-fade", []), fish: commonFish, targetText: "laut" })
+		await new Promise((resolve) => window.setTimeout(resolve, 800))
+		bridge.emit("settings:effects", { reducedMotion: false })
+		bridge.emit("phase:changed", { phase: 2 })
+		bridge.emit("phase:changed", { phase: 3 })
+		await new Promise((resolve) => window.setTimeout(resolve, 260))
 
 		expect(host.querySelector("canvas")).not.toBeNull()
 	})

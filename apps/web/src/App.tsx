@@ -14,7 +14,7 @@ import {
 	Trophy,
 	X,
 } from "lucide-react"
-import type { AccountLevelProgress, FishingSkill, Rarity } from "@typecade/contracts"
+import type { AccountLevelProgress, CatchResult, FishingSkill, Rarity } from "@typecade/contracts"
 import { fishSpecies, getRouteNodesForZone } from "@typecade/content"
 import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
@@ -313,7 +313,7 @@ function GameHud({
 				))}
 			</section>
 
-			{view.lastResult ? <ResultToast view={view} /> : null}
+			{view.lastResult ? <ResultToast view={view} result={view.lastResult} /> : null}
 
 			{view.isPaused ? <PausePanel onResume={togglePause} onMainMenu={goToMenu} /> : null}
 
@@ -890,11 +890,7 @@ function PausePanel({ onResume, onMainMenu }: { onResume: () => void; onMainMenu
 	)
 }
 
-function ResultToast({ view }: { view: OceanRunView }) {
-	const result = view.lastResult
-	if (!result) {
-		return null
-	}
+function ResultToast({ view, result }: { view: OceanRunView; result: CatchResult }) {
 	return (
 		<section className={`result-toast panel-chrome ${result.caught ? "caught" : "escaped"}`} data-testid="result-toast">
 			{result.caught ? <CheckCircle2 aria-hidden="true" /> : <X aria-hidden="true" />}
@@ -1007,6 +1003,5 @@ function formatTime(ms: number): string {
 }
 
 function getEncounterNumber(zoneIndex: number, encounterIndex: number): number {
-	const offsets = [0, 3, 6]
-	return (offsets[zoneIndex] ?? 0) + encounterIndex + 1
+	return zoneIndex * 3 + encounterIndex + 1
 }

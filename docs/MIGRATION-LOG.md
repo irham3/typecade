@@ -185,6 +185,14 @@ Grade: A- for the Milestone 0/1 scope.
 - Verification: `npm run test` passed (85 tests); `npm run test:coverage` passed (85 tests) at 96.95% statements, 91.03% branches, 95.38% functions, and 97.14% lines. `npm run test:e2e` passed (13 Chromium tests); `npm run build`, `npm run lint`, `npm run typecheck:rooms`, and `git diff --check` passed. Renderer retirement audit returned no matches.
 - Coverage remains below the requested 100%; remaining gaps are in UI and Phaser lifecycle branches. Production build still warns that the lazy Phaser chunk is about 1.4 MB.
 
+### 2026-10-02 Coverage follow-up
+
+- Added UI cases for word-count practice and timed multiplayer races, including the expired-timer display and socket transport errors.
+- Simplified `ResultToast` to require the catch result that its render guard already guarantees, and replaced the encounter-number lookup table with the equivalent zone arithmetic.
+- Verification: `npm run test:coverage` passed (87 tests); coverage is 98.17% statements, 91.81% branches, 98.61% functions, and 98.24% lines. This remains below the requested 100% target. The RaceScreen browser test passed independently (10 tests).
+- Full Playwright E2E passed (13 tests) with the Worker started by Playwright; build, lint, and `npm run typecheck:rooms` also passed. Renderer-retirement audit remains to be rerun before handoff.
+- The remaining coverage gap is concentrated in Phaser scene lifecycle paths, the hook's defensive branches, and a small set of screen render paths.
+
 ## Touched Files
 
 This list is updated as files are changed.
