@@ -129,12 +129,15 @@ describe("ocean run browser controls", () => {
 		const expected = controls!.view.targetText[controls!.view.cursor]
 		await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: expected, bubbles: true })))
 		expect(controls!.view.cursor).toBe(startCursor + 1)
+		const activeCursor = controls!.view.cursor
 		await act(async () => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }))
 			host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
 			window.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }))
 			window.dispatchEvent(new KeyboardEvent("keydown", { key: "9", bubbles: true }))
 		})
 		expect(controls!.view.isPaused).toBe(false)
+		expect(controls!.view.cursor).toBe(activeCursor)
 		await act(() => controls!.setVolume("music", 0.2))
 		await act(() => controls!.setReducedMotion(true))
 		expect(controls!.view.volumes.music).toBe(0.2)
