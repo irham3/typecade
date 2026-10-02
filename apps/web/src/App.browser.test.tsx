@@ -88,6 +88,23 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
 	})
 
+	it("shows readable spaces and a settings error when a practice passage cannot be built", async () => {
+		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "a b") })
+		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
+		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent).toBe("a\u00a0b")
+
+		await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		const now = vi.spyOn(Date, "now").mockImplementation(() => { throw "clock unavailable" })
+		try {
+			await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
+			expect(host.querySelector('[role="alert"]')?.textContent).toBe("Check the practice settings.")
+		} finally {
+			now.mockRestore()
+		}
+	})
+
 	it("hides temporary skill feedback after its display duration", async () => {
 		await act(async () => root.render(<FeedbackBanner feedback={{ id: 1, kind: "skill", title: "Sonar", detail: "Sweep active" }} reducedMotion />))
 		expect(host.querySelector<HTMLElement>('[data-testid="skill-feedback"]')?.hidden).toBe(false)

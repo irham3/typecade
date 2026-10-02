@@ -228,6 +228,26 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Bravo")
 	})
 
+	it("uses safe race clocks and messages finished or disconnected captains", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => socket.open())
+		const countdown = room("countdown", [player("host", "Alpha")])
+		countdown.startsAt = null
+		await act(() => socket.deliver(countdown))
+		expect(host.querySelector(".race-countdown strong")?.textContent).toBe("1")
+
+		const finished = room("racing", [player("host", "Alpha", { status: "finished" })])
+		finished.endsAt = null
+		await act(() => socket.deliver(finished))
+		const input = host.querySelector<HTMLInputElement>('[aria-label="Race typing input"]')!
+		expect(host.textContent).toContain("Finished. Waiting for the others.")
+		expect(input.disabled).toBe(true)
+		await act(() => socket.close())
+		expect(input.placeholder).toBe("Reconnecting…")
+	})
+
 	it("describes an English custom room and the full online/offline roster", async () => {
 		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
@@ -264,6 +284,9 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(socket.sent).toHaveLength(0)
 		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true })))
 		expect(socket.sent.at(-1)).toMatchObject({ type: "type", text: "a", seq: 1 })
+		socket.readyState = 2
+		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true })))
+		expect(socket.sent).toHaveLength(1)
 		await act(() => socket.close())
 		expect(input.disabled).toBe(true)
 		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true })))

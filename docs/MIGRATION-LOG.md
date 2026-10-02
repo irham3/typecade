@@ -208,6 +208,11 @@ Grade: A- for the Milestone 0/1 scope.
 - `npm run test:e2e` passed all 13 Chromium scenarios, including two-player races, challenge modes, menu navigation, responsive HUD, and a complete Shallow Coast run through the Leviathan. `npm run build`, `npm run lint`, `npm run typecheck:rooms`, and `git diff --check` passed. Renderer-retirement audit returned no matches.
 - The production build still reports the lazy Phaser renderer chunk at about 1.4 MB, above Vite's 500 kB advisory threshold.
 
+### 2026-10-02 Coverage boundary follow-up
+
+- Added cases for missing multiplayer clock values, a finished local racer, a closed socket, spaces in practice passages, and a non-Error passage-generation failure.
+- Verification: `npm run test:coverage` passed (99 tests) at 99.95% statements, 97.17% branches, 100% functions, and 100% lines. The strict 100% coverage target remains unmet; no coverage exclusions were used. The complete Playwright suite remains 13/13 from the preceding checkpoint; this follow-up changes tests only.
+
 ## Touched Files
 
 This list is updated as files are changed.
