@@ -216,12 +216,13 @@ Grade: A- for the Milestone 0/1 scope.
 
 ## 2026-10-02 Coverage Checkpoint
 
-- Switched Vitest coverage instrumentation from V8 to Istanbul so executable statements are measured without counting static import declarations as uncovered statements. No files, lines, or branches are excluded.
+- Switched Vitest coverage instrumentation from V8 to Istanbul so executable statements are measured without counting static import declarations as uncovered statements. Coverage covers all 15 tracked production TypeScript files in the active Vite roots (`apps/web/src` and `packages/*/src`), verified against the coverage map; no files, lines, or branches within those roots are excluded. The legacy Next/Overdrive tree is outside the current Vite build and typecheck scope.
 - Added browser and unit cases for optional typing-event payload fallbacks, changing route lists during initialization, invalid multiplayer config errors, absent server race boundaries, malformed practice metrics, and default replay options.
 - Fixed the typing tick sound selector to alternate on even/odd Phaser clock values; the former `now % 2 > 1` condition could never select the first cue for integer timestamps. Both cues now have a regression assertion.
 - Removed the unused `Stat` default parameter; every current caller supplies `hot`, so this preserves rendered behavior and avoids reporting an unreachable default-argument branch.
 - Verification: `npm run test:coverage -- --reporter=dot` passed 108 tests at 100% statements (1993/1993), branches (1446/1446), functions (432/432), and lines (1792/1792). `npm run test` passed (108 tests), `npm run test:e2e` passed (13/13), `npm run lint` passed without warnings, `npm run build` passed, and `npm run typecheck:rooms` passed.
 - Renderer-retirement audit found no Pixi references. Production build retains Vite's advisory that the lazy Phaser chunk is 1,398.09 kB (364.68 kB gzip); build succeeds.
+- Added 100% statement, branch, function, and line thresholds so the coverage gate fails if a later change regresses any category.
 
 ## Touched Files
 

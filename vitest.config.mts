@@ -45,7 +45,8 @@ export default defineConfig({
     coverage: {
       provider: 'istanbul',
       reporter: ['text-summary', 'json-summary', 'json'],
-      include: ['packages/*/src/*.ts', 'apps/web/src/**/*.{ts,tsx}'],
+      include: ['packages/*/src/**/*.{ts,tsx}', 'apps/web/src/**/*.{ts,tsx}'],
+      thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },
     },
     include: [
       'packages/**/*.test.ts',
