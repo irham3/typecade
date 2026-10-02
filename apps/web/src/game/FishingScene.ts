@@ -107,8 +107,6 @@ export class FishingScene extends Phaser.Scene {
 	}
 
 	init(data: Partial<FishingSceneData>): void {
-		this.cleanup.forEach((dispose) => dispose())
-		this.cleanup = []
 		if (data.bridge) {
 			this.bridge = data.bridge
 		}

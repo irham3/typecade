@@ -193,6 +193,13 @@ Grade: A- for the Milestone 0/1 scope.
 - Full Playwright E2E passed (13 tests) with the Worker started by Playwright; build, lint, and `npm run typecheck:rooms` also passed. Renderer-retirement audit remains to be rerun before handoff.
 - The remaining coverage gap is concentrated in Phaser scene lifecycle paths, the hook's defensive branches, and a small set of screen render paths.
 
+### 2026-10-02 Coverage callbacks and invariants
+
+- Removed a redundant Phaser `init()` cleanup pass: scene shutdown already disposes and clears bridge listeners before the next `init()`.
+- Removed the unreachable null-session branch from Practice keyboard handling; a session is assigned synchronously before the racing phase is rendered.
+- Added multiplayer configuration error-path tests and explicit coverage for delayed Phaser animation callbacks.
+- Verification: `npm run test:coverage` passed (88 tests) at 98.46% statements, 92.33% branches, 100% functions, and 98.40% lines. Function coverage reached 100%, but the overall 100% target remains unmet. `FishingScene.browser.test.ts` passed independently after synchronizing with Phaser's `create` event.
+
 ## Touched Files
 
 This list is updated as files are changed.

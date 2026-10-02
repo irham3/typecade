@@ -139,7 +139,9 @@ describe("multiplayer race screen browser coverage", () => {
 		const selects = () => host.querySelectorAll<HTMLSelectElement>(".race-config select")
 		await act(async () => { await userEvent.selectOptions(selects()[0]!, "en") })
 		await act(async () => { await userEvent.selectOptions(selects()[1]!, "time") })
-		expect(host.querySelector('input[list="race-time-presets"]')).not.toBeNull()
+		const timeLimit = host.querySelector<HTMLInputElement>('input[list="race-time-presets"]')!
+		expect(timeLimit).not.toBeNull()
+		await act(async () => { await userEvent.fill(timeLimit, "45") })
 		expect(host.querySelector(".race-check")).not.toBeNull()
 		const checks = host.querySelectorAll<HTMLInputElement>('.race-config input[type="checkbox"]')
 		await act(async () => { await userEvent.click(checks[0]!) })
@@ -263,9 +265,24 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(() => socket.deliver(timed))
 		expect(host.textContent).toContain("Time 0s")
 		expect(host.textContent).toContain("Lives 2")
-		expect(host.querySelector('[aria-label="Race typing input"]')?.disabled).toBe(false)
+		const input = host.querySelector<HTMLInputElement>('[aria-label="Race typing input"]')!
+		expect(input.disabled).toBe(false)
+		const paste = new Event("paste", { bubbles: true, cancelable: true })
+		await act(() => input.dispatchEvent(paste))
+		expect(paste.defaultPrevented).toBe(true)
+		await act(async () => { await userEvent.fill(input, "ignored") })
 		await act(() => socket.onerror?.())
 		expect(socket.readyState).toBe(3)
 		expect(host.textContent).toContain("Reconnecting")
+	})
+
+	it("reports invalid room settings before creating a room", async () => {
+		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>(".race-config input")!, "Alpha") })
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('.race-config input[type="number"]')!, "0") })
+		const form = host.querySelector<HTMLFormElement>(".race-config")!
+		await act(() => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
+		expect(host.querySelector('[role="alert"]')?.textContent).toContain("wordCount")
+		expect(vi.mocked(fetch)).not.toHaveBeenCalled()
 	})
 })

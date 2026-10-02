@@ -69,8 +69,7 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 			}
 			if (event.key.length !== 1 && event.key !== "Enter") return
 			event.preventDefault()
-			const active = session.current
-			if (!active) return
+			const active = session.current!
 			const events = active.processKey(event.key, performance.now())
 			const next = active.getSnapshot()
 			setSnapshot(next)

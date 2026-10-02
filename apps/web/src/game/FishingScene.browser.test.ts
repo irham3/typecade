@@ -62,6 +62,7 @@ describe("FishingScene in Chromium", () => {
 		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
 		bridge.emit("line:changed", { tension: 88, durability: 32, progress: 0.5, timeRemainingMs: 1000 })
 		bridge.emit("line:changed", { tension: 50, durability: 45, progress: 0.6, timeRemainingMs: 800 })
+		await new Promise((resolve) => window.setTimeout(resolve, 500))
 		bridge.emit("phase:changed", { phase: 2 })
 		bridge.emit("settings:effects", { reducedMotion: false })
 		bridge.emit("phase:changed", { phase: 3 })
@@ -92,15 +93,28 @@ describe("FishingScene in Chromium", () => {
 		bridge.emit("screen:changed", { screen: "menu" })
 		sceneUpdate(game, 1500)
 		bridge.emit("game:paused", { paused: true })
+		const restartedSceneCreated = new Promise<void>((resolve) => phaserScene.events.once("create", () => resolve()))
 		phaserScene.scene.restart({ bridge })
-		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
+		await restartedSceneCreated
 		bridge.emit("screen:changed", { screen: "game" })
 		bridge.emit("game:paused", { paused: false })
 		phaserScene.input.emit("pointerdown")
+		const scheduledCallbacks: Array<{ timer: Phaser.Time.TimerEvent; run: () => void }> = []
+		const originalDelayedCall = phaserScene.time.delayedCall.bind(phaserScene.time)
+		const delayedCall = vi.spyOn(phaserScene.time, "delayedCall").mockImplementation((delay, callback, args, scope) => {
+			const timer = originalDelayedCall(delay, callback, args, scope)
+			scheduledCallbacks.push({ timer, run: () => callback.apply(scope ?? phaserScene, args ?? []) })
+			return timer
+		})
 		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-restarted", []), fish: commonFish, targetText: "laut" })
 		bridge.emit("skill:used", { skillId: "calm_current", label: "Calm Current" })
 		bridge.emit("skill:used", { skillId: "sonar", label: "Sonar" })
 		bridge.emit("typo:occurred", { key: "x", expected: "l", ignoredBySteelLine: false })
+		for (const callback of scheduledCallbacks) {
+			callback.timer.remove(false)
+			callback.run()
+		}
+		delayedCall.mockRestore()
 		bridge.emit("word:completed", { word: "laut", perfect: true, combo: 10 })
 		bridge.emit("encounter:started", { encounter: startEncounter(openingFish, "scene-boss-audio", []), fish: openingFish, targetText: "arus" })
 		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-boss-audio-fade", []), fish: commonFish, targetText: "laut" })
