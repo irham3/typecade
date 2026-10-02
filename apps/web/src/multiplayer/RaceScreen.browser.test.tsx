@@ -267,6 +267,11 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(host.textContent).toContain("Charlie")
 		expect(host.textContent).toContain("Offline")
 		expect(host.querySelector(".race-preview")?.textContent).toContain("…")
+		waiting.config = { ...waiting.config, language: "id", format: "quote", difficulty: "hard", variant: "three-hulls" }
+		waiting.text = "quote preview"
+		await act(() => socket.deliver(waiting))
+		expect(host.textContent).toContain("Bahasa Indonesia · hard quote")
+		expect(host.textContent).toContain("Third typo eliminates you.")
 	})
 
 	it("sends only plain single characters from an active racer in a large fleet", async () => {

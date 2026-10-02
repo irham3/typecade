@@ -212,6 +212,7 @@ Grade: A- for the Milestone 0/1 scope.
 
 - Added cases for missing multiplayer clock values, a finished local racer, a closed socket, spaces in practice passages, and a non-Error passage-generation failure.
 - Verification: `npm run test:coverage` passed (99 tests) at 99.95% statements, 97.17% branches, 100% functions, and 100% lines. The strict 100% coverage target remains unmet; no coverage exclusions were used. The complete Playwright suite remains 13/13 from the preceding checkpoint; this follow-up changes tests only.
+- Added rendered waiting-room coverage for the quote and Three Hulls rule summary, a one-second practice session that runs to its deadline, and the alternate typing tick cue under a controlled Phaser clock. The suite now passes 100 tests at 99.95% statements, 97.31% branches, 100% functions, and 100% lines. Remaining branch gaps sit in nullish and reduced-motion fallbacks plus optional fields that current event producers always populate; the report stays unfiltered.
 
 ## Touched Files
 

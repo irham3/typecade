@@ -58,6 +58,16 @@ describe("FishingScene in Chromium", () => {
 		bridge.emit("fish:hooked", { fish })
 		bridge.emit("character:correct", { key: "a", expected: "a", progress: 0.1, combo: 5 })
 		bridge.emit("character:correct", { key: "r", expected: "r", progress: 0.2, combo: 6 })
+		const clock = phaserScene.time
+		const originalNow = clock.now
+		const sceneAudio = phaserScene as unknown as { lastTickSfxAt: number; playAudio(key: string, category: string, volume?: number): void }
+		const tickAudio = vi.spyOn(sceneAudio, "playAudio")
+		sceneAudio.lastTickSfxAt = 0
+		Reflect.set(clock, "now", 100)
+		bridge.emit("character:correct", { key: "u", expected: "u", progress: 0.3, combo: 2 })
+		expect(tickAudio).toHaveBeenCalledWith("sfx_correct_tick_b", "typing", 0.38)
+		Reflect.set(clock, "now", originalNow)
+		tickAudio.mockRestore()
 		bridge.emit("word:completed", { word: "arus", perfect: true, combo: 5 })
 		bridge.emit("word:completed", { word: "arus", perfect: false, combo: 0 })
 		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: true })

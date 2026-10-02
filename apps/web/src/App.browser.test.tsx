@@ -125,6 +125,16 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[aria-label="Practice word count"]')).not.toBeNull()
 	})
 
+	it("finishes timed practice at its configured deadline", async () => {
+		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
+		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
+		expect(host.querySelector(".practice-clock")?.textContent).toBe("1s")
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1200)) })
+		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
+	})
+
 	it("validates a custom practice passage and ignores shortcut keys while typing", async () => {
 		await mount()
 		await click('button[aria-label="Practice"]')
