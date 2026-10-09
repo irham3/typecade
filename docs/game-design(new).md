@@ -123,8 +123,8 @@ Each encounter is generated from a deterministic seed containing the fish, word 
 
 During the encounter:
 
-- Correct characters advance the current word.
-- A completed word adds reel progress.
+- Correct characters advance the current word and reel progress in proportion to the complete passage.
+- A completed word builds skill energy and eases tension; it cannot skip text.
 - Consecutive perfect words build combo and skill energy.
 - A typo does not erase completed text or move the cursor backward.
 - An incorrect key is logged, but the target cursor stays in place until the correct key is pressed.
@@ -132,7 +132,7 @@ During the encounter:
 - A long pause lets an aggressive fish pull away or recover stamina.
 - Active skills use number keys or clickable icons. Adventure text excludes numerical input in the MVP so these controls cannot conflict.
 
-The player catches the fish by filling reel progress before line durability reaches zero or the encounter timer expires.
+The player catches the fish by typing the entire displayed passage before line durability reaches zero or the encounter timer expires.
 
 ### 5.4 Performance model
 
@@ -153,7 +153,7 @@ WPM contributes to performance but does not directly lock beginners out of rare 
 | --- | --- | --- |
 | Calm | Short, steady words | Smooth pull and small ripples |
 | Darting | Alternates short bursts and pauses | Sudden lateral movement |
-| Armored | Longer words, reduced normal progress | Heavy line and impact sparks |
+| Armored | Longer words and stronger line pressure | Heavy line and impact sparks |
 | Tricky | Similar spellings or punctuation | Feints and direction changes |
 | Swarm | Many short targets | Multiple silhouettes around the lure |
 | Predator | Pressure rises while idle | Charge, screen nudge, stronger splash |
@@ -179,12 +179,12 @@ Temporary skills reset at the end of a run. Permanent progression unlocks new sk
 
 | Skill | Type | Effect | Strategic purpose |
 | --- | --- | --- | --- |
-| Cast Net | Active | Instantly resolves or captures nearby small fish | Efficient farming |
+| Cast Net | Active | At 45% typed on a small common fish, reduces tension by 18 and repairs 20% line; passage still required | Efficient farming |
 | Steel Line | Passive | Ignores the first typo in each encounter | Accuracy safety |
 | Sonar | Active | Reveals rarity and route rewards before choosing | Information advantage |
 | Calm Current | Active | Slows fish pressure briefly, not the typing timer | Recovery window |
-| Perfect Bait | Passive | Perfect-word streaks improve rare encounter odds | Rewards consistency |
-| Reel Mastery | Passive | Every fifth perfect word grants bonus progress | Combo build |
+| Perfect Bait | Passive | After four perfect words, eases tension on uncommon or rarer fish | Rewards consistency |
+| Reel Mastery | Passive | Every fifth consecutive perfect word reduces tension by 8 and repairs 5% line | Combo build |
 
 Future skills may create archetypes such as net builds, precision builds, combo builds, rare-hunting builds, and defensive builds.
 
@@ -795,3 +795,8 @@ After this design is approved, create an implementation plan for Milestone 0 and
 - TexturePacker Phaser workflow: https://www.codeandweb.com/texturepacker/tutorials/how-to-create-sprite-sheets-for-phaser
 - Kenney assets and licensing: https://kenney.nl/assets and https://kenney.nl/support
 - OpenGameArt licensing FAQ: https://opengameart.org/content/faq
+
+
+### Adventure passage completion correction, 2026-10-09
+
+Every displayed character is required to land a fish. Reel progress follows validated typing progress, capped below 100% until the typing engine emits passage-complete. Word combos, Cast Net, Reel Mastery, and boss milestones cannot skip the remaining passage. The boss guard adds 35% idle pressure until broken. Boss guard-break removes six tension points; final-pull removes eight. Skills protect the line and create recovery windows. Neither word completion nor passive effects pause the scene or zoom the camera.

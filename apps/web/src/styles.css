@@ -722,6 +722,11 @@ input:focus-visible {
 	font-size: 1.45rem;
 }
 
+.hud .meter-label {
+	justify-content: flex-start;
+	gap: 12px;
+}
+
 .meter-track {
 	height: 20px;
 	padding: 4px 8px;

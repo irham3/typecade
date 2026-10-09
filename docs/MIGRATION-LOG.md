@@ -360,3 +360,45 @@ This list is updated as files are changed.
 - `e2e/overdrive-juice.spec.ts` (deleted)
 - `.asset-sources/kenney_fish-pack_2.zip`
 - `.asset-sources/kenney_fish-pack_2/**`
+
+
+## Full-passage catches and underwater stage repair, 2026-10-09
+
+### Report and causes
+
+The displayed Adventure passage remained unfinished after a catch because character, word, skill and boss bonuses independently filled the reel meter. The rules settled a catch after each event. The renderer also placed fish at 40% viewport height over a perspective coast whose horizon was around 46%, putting fish in the sky.
+
+### Changes
+
+- Reel progress now follows validated passage progress. Only passage-complete reaches 100%; the active HUD floors the percentage. No skill or boss bonus can skip visible text. Tests require every pre-final character to keep every roster encounter active.
+- Cast Net steadies a small common fish at 45% typed, removing 18 tension and repairing 20 line for 35 energy. Reel Mastery removes 8 tension and repairs 5 line every fifth consecutive perfect word. Steel Line, Sonar, Calm Current and Perfect Bait retain their existing effects.
+- Boss guard adds 35% idle pressure while intact; three perfect words break it and remove 6 tension. Final-pull milestones remove 8 tension. Labels and typed bridge events describe tension relief rather than nonexistent text progress.
+- Generated a palette-matched pixel cutaway coast with the built-in image generation tool, exported to backgrounds/bg_shallow_coast_cutaway.webp. Runtime composition aligns the surface to 30% viewport height, the boat to the surface and fish below it. Existing main menu plates, icons and sprite families remain the visual reference.
+- The line begins at the rendered rod tip. The underwater lure uses the existing hook icon. Foam is confined to surface impacts; underwater typing uses bubbles. Fish sizes and word pulses respect both width and height, including mobile. The background uses a centered crop preserving its 16:9 aspect ratio, rather than stretching islands and pixel shapes on phones.
+- Removed per-word scene hit-stop and camera zoom. Catch/escape tweens and boss entrance own fish movement while running. New encounters reset alpha and cancel old fish tweens; delayed bite callbacks cannot overwrite terminal states.
+- A completed encounter now waits through Pause before starting the next encounter. Restart clears any parked transition. Starting an encounter uses current React state, clears old skill feedback, preserves settings changed during the transition, and retains the catch log.
+
+### Verification
+
+Chromium browser tests include real Phaser catch/escape tweens, an underwater bounding check for all ten fish, native Adventure typing through the final character, skill effects and account rewards. Production Playwright exercises desktop, compact desktop, 390x844 and 320x640, all main-menu destinations, Practice, full Shallow Coast including Leviathan, 100 connected room participants, rematch, host transfer, Perfect Tide, Three Hulls and time mode. Final gate results are recorded below after the last run.
+
+- Missing ambient/expedition/boss audio cannot throw during loop startup; browser tests remove and restore real audio cache entries to verify the fallback.
+
+### Limits
+
+Nine replacement fish still use their approved base poses with Phaser motion; Pebble Goby has distinct state strips. This change does not claim nine newly drawn animation sets. Visual responsiveness and verified gameplay do not establish long-term retention, mobile hardware performance or WAN load capacity.
+
+
+### Final verification for passage/cutaway repair
+
+- npm run test: 128 tests passed in 13 files.
+- npm run test:coverage: statements 2100/2100, branches 1532/1532, functions 456/456, lines 1847/1847, all 100% across 17 active source files. No new source exclusions or lowered thresholds.
+- npm run build: passed; the lazy Phaser chunk remains approximately 1.399 MB raw / 365 KB gzip and produces the existing Vite size advisory.
+- npm run test:e2e: 19 tests passed in 4.6 minutes on the final stable production build. One earlier run had audio HTTP 500s because dist/web was rebuilt during its asset requests; the final run kept the build stable and recorded no errors in the gameplay smoke checks.
+- npm run lint, npx tsc --noEmit and npm run typecheck:rooms: passed.
+- Renderer-retirement audit: rg for pixi, PIXI, @pixi, Pixi, pixi-gameplay and data-pixi-host across package manifests, apps, packages, features, e2e, lib, AGENTS.md and .gitignore returned no matches.
+- Manual localhost:8787 check: typed all but the final character, observed 97% reel, used Cast Net while the encounter stayed active, typed the last character and received a catch/reward. Paused at the result, observed the same completed passage, resumed into encounter 2 with a fresh cursor.
+- Proofs: docs/reference/ocean-audit-2026-10-09/underwater-desktop.png, underwater-mobile.png, underwater-small-mobile.png and underwater-boss.png.
+- No new runtime dependencies. Save/collection format is preserved. No deployment, PR or merge performed.
+
+- Final visual follow-up: moved the tension percentage beside its label to keep it clear of Leviathan's tail. npm run test:e2e -- --grep 'renders a nonblank|completes the full' passed all five relevant scenarios in 2.3 minutes after this CSS-only change. Saved proof images were refreshed from that build.

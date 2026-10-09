@@ -15,7 +15,7 @@ Ocean Typing RPG uses bright fantasy-ocean environments behind compact, dark-nav
 - Use the main-menu ship for the gameplay boat and multiplayer competitors. Player names, ranks, and progress stay live UI text.
 - Nine former procedural fish silhouettes are replaced by selected catalog/reference sprites. Pebble Goby keeps its existing state animation strips. `apps/web/scripts/refresh-ocean-art.mjs` lists the exact source mapping and writes fixed atlas cells using nearest-neighbor resizing.
 - Reused poses fill the nine replacement fish's atlas states; Phaser supplies drift, stretch, rotation, catch/escape movement, and bounded particles. These replacements are not nine new hand-animated sprite sets.
-- Keep the hero coast image unobstructed by fallback background layers. Fallback layers remain available when the hero texture fails to load.
+- Adventure uses bg_shallow_coast_cutaway.webp: a side-on underwater cross section with a clear surface at 30% viewport height. Boat sits at that surface; active fish remains below it. Main menu and multiplayer keep their existing coast compositions. Fallback layers remain available when the cutaway texture fails to load.
 - HUD controls, callouts, typing, and results occupy separate flow rows. A dialog uses the browser's modal layer and restores focus on close. Mobile layout must fit at 320×640 and 390×844.
 - Rarity callouts use a monospace font sized to the viewport. Text effects stay clear of the fish and typing panel; reduced effects disable camera shake and hit stop.
 
@@ -44,7 +44,7 @@ Fish and equipment use cel-shaded pixel-inspired forms: two main value bands, on
 
 ## Camera Angle
 
-Gameplay is a side-on 2D fishing stage with a slight elevated horizon: boat/rod on the left, water body mid-screen, active fish right-center, HUD on screen-space overlays. Fish sprites face left when hooked, with pivots near body center so swim/struggle tweens read naturally.
+Gameplay is a side-on 2D fishing cutaway with a visible water surface: boat/rod on the left, water body mid-screen, active fish right-center, HUD on screen-space overlays. Fish sprites face left when hooked, with pivots near body center so swim/struggle tweens read naturally.
 
 ## Texture Density
 
