@@ -402,3 +402,45 @@ Nine replacement fish still use their approved base poses with Phaser motion; Pe
 - No new runtime dependencies. Save/collection format is preserved. No deployment, PR or merge performed.
 
 - Final visual follow-up: moved the tension percentage beside its label to keep it clear of Leviathan's tail. npm run test:e2e -- --grep 'renders a nonblank|completes the full' passed all five relevant scenarios in 2.3 minutes after this CSS-only change. Saved proof images were refreshed from that build.
+## Interaction and multiplayer continuation audit, 2026-10-09
+
+### Confirmed defects and fixes
+
+| Defect reproduced before the fix | Cause | Fix and regression check |
+| --- | --- | --- |
+| Adventure starts the next encounter while Collection is open | The result timeout checks explicit Pause but not inactive controls | Park the transition behind any panel or inactive screen. Drain it once controls resume, unless explicit Pause is still active. Hook and real-browser tests complete a passage, hold Collection past the transition deadline, close it and type the next encounter. |
+| A Practice character is accepted at the exact time limit | Input trusts the 100 ms display timer to end the session | Check the deadline before processing input. Both the interval and input use one finalization path and the configured duration for metrics. A controlled-clock browser test confirms no extra processKey call. |
+| An eliminated leader appears above surviving captains, including as a time-mode winner | Progress sorting runs before elimination status | Place eliminated players below survivors before applying existing progress, finish-time and accuracy rules. Tests cover all four text formats; real two-client time rounds cover Perfect Tide and Three Hulls. |
+| Rematch leaves live participants offline and disables Start race | createRacePlayer resets connected to false even for open sockets | Preserve connected for retained room members when resetting gameplay. The two-client browser test now starts and completes a second round, with the other captain winning. |
+| A valid JSON null message throws in the room server and client | Parsing JSON does not establish an object envelope | Reject null, arrays and primitive envelopes before reading fields. The server ignores them; the client uses its existing reconnect path. Tests retain room state and exercise malformed JSON too. |
+| Short landscape clips menu content after loading and entrance animation | The stacked menu exceeds the available height | Below 500 px height and at least 600 px width, use two columns with the original menu plates: logo/progress left, navigation right. Tests require Settings and Captain progress entirely in view. |
+| Interior cards and selected skill copy do not match the menu chrome | Rounded CSS surfaces remain; selected card descriptions override the dark text color | Square interior frames and meters, use the shared gold form accent, and inherit readable text colors on selected skill plates. Keep existing pixel asset families. |
+
+### Scope and data
+
+The fixes reach the shared race ordering function, its Worker snapshot caller, the race screen, Practice input, the Ocean hook's active-controls caller, browser/package regressions, responsive CSS and production E2E flows. No runtime dependency, public API, content roster or save/collection schema changes. Existing collection rewards remain intact. Full-screen panels retain keyboard focus and return typing focus after closing.
+
+### Verification scope
+
+The automated suites cover all five main-menu destinations, prep routes/loadout, Practice text formats and challenges, HUD panels, Pause, skill hooks, account rewards, collection persistence, all ten Adventure encounters including Leviathan, a live 100-participant room, host transfer, ready/start/leave, full leaderboard/search, two-round rematch, Classic, Perfect Tide, Three Hulls and timed elimination combinations. Viewports include 1366x768, 1024x600, 390x844, 320x640 and 800x360.
+
+A focused proof capture navigated the production preview through prep, Practice, Collection and multiplayer setup and recorded no page errors or asset responses with status 400 or above. Manual browser play also completed a passage, held Collection beyond its timeout, then closed it into encounter 2 with a fresh cursor and paused safely.
+
+Proof images in docs/reference/ocean-audit-2026-10-09:
+- audit-menu-landscape.png
+- audit-prep-desktop.png
+- audit-practice-desktop.png
+- audit-collection-desktop.png
+- audit-multiplayer-desktop.png
+
+### Limits
+
+The 100% source coverage gate measures the active Vite/workspace source, not historical retired Next/Overdrive features or every possible browser/device input. The 100-participant test uses a local Worker and is not a WAN capacity benchmark. No claim of measured retention or guaranteed absence of future bugs. The existing lazy Phaser size advisory remains; reduced-effects behavior and renderer fallbacks are covered, but physical mobile performance needs device testing.
+### Gate results
+
+- npm run test: 132 tests passed across 13 files.
+- npm run test:coverage: 100% statements (2116/2116), branches (1559/1559), functions (457/457) and lines (1861/1861) across 17 active production files. No thresholds lowered or source files newly excluded.
+- npm run test:e2e: all 23 Chromium production scenarios passed in 5.4 minutes, including the complete ten-encounter expedition and two playable multiplayer rounds. An earlier run exposed the landscape clipping; its regression now passes.
+- npm run build, npm run lint, npx tsc --noEmit, npm run typecheck:rooms and git diff --check passed. The renderer-retirement audit returned no matches.
+- The lazy Phaser chunk remains about 1.399 MB raw / 365 KB gzip and emits the existing Vite advisory. No new renderer dependency was introduced.
+- Final CSS/copy follow-up: six relevant production scenarios passed after the selected-skill contrast and shared form-accent changes. The five UI proof images were refreshed from that build.
