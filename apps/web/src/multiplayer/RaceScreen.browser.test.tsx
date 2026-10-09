@@ -43,6 +43,40 @@ describe("multiplayer race screen browser coverage", () => {
 	let socket: RoomSocket
 	let rootUnmounted = false
 
+	it("keeps a 100-captain fleet searchable and closes the board with Escape", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		const fleet = Array.from({ length: 100 }, (_, index) => player(index === 75 ? "host" : `guest${index}`, `Captain ${index}`, { status: "racing", cursor: index % 3 }))
+		await act(() => { socket.open(); socket.deliver({ ...room("racing", fleet), config: { ...defaultRaceConfig, maxPlayers: 100 } }) })
+		expect(host.querySelector(".race-type-top")!.textContent).toContain("76/100")
+		expect(host.querySelectorAll(".race-boat").length).toBeLessThanOrEqual(6)
+		expect([...host.querySelectorAll(".race-minimap span")].reduce((total, entry) => total + Number(entry.textContent), 0)).toBe(100)
+		await act(() => host.querySelector<HTMLButtonElement>(".race-side-head button")!.click())
+		expect(host.querySelectorAll("dialog li")).toHaveLength(100)
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>("dialog input")!, "Captain 75") })
+		expect(host.querySelectorAll("dialog li")).toHaveLength(1)
+		await act(() => host.querySelector("dialog")!.dispatchEvent(new Event("cancel", { cancelable: true })))
+		expect(host.querySelector("dialog")).toBeNull()
+		expect(document.activeElement).toBe(host.querySelector('[aria-label="Race typing input"]'))
+	})
+
+	it("shows invite-copy confirmation and recovers from malformed WebSocket data", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Alpha")])) })
+		const descriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard")
+		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn(async () => undefined) } })
+		try {
+			await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent === "Copy invite link")!) })
+			expect(host.textContent).toContain("Invite link copied")
+		} finally { if (descriptor) Object.defineProperty(navigator, "clipboard", descriptor); else Reflect.deleteProperty(navigator, "clipboard") }
+		await act(() => socket.onmessage!({ data: "{broken" } as MessageEvent<string>))
+		expect(socket.readyState).toBe(3)
+		expect(host.textContent).toContain("Reconnecting")
+	})
+
 	beforeEach(() => {
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 		RoomSocket.latest = null
@@ -65,6 +99,8 @@ describe("multiplayer race screen browser coverage", () => {
 
 	it("creates a room, readies the fleet, types, filters the board, and rematches", async () => {
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Race text size"]')!, "32") })
+		await act(async () => { await userEvent.click([...host.querySelectorAll<HTMLLabelElement>("label")].find((label) => label.textContent?.includes("Monospace text"))!.querySelector("input")!) })
 		const name = host.querySelector<HTMLInputElement>(".race-config input")!
 		await act(async () => { await userEvent.fill(name, "Alpha") })
 		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-config button")!) })
@@ -85,10 +121,12 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(host.textContent).toContain("SET YOUR SAIL")
 		await act(() => socket.deliver(room("racing", readyRoom.players.map((entry) => player(entry.id, entry.name, { ...entry, status: "racing" })))))
 		expect(host.querySelector('[data-testid="race-play"]')).not.toBeNull()
+		expect(host.querySelector<HTMLElement>('[data-testid="race-passage"]')!.style.fontSize).toBe("32px")
+		expect(host.querySelector('[data-testid="race-passage"]')!.classList.contains("mono")).toBe(true)
 		const input = host.querySelector<HTMLInputElement>('[aria-label="Race typing input"]')!
 		await act(async () => { await userEvent.click(input); await userEvent.keyboard("a") })
 		expect(socket.sent.at(-1)).toMatchObject({ type: "type", text: "a", seq: 1 })
-		expect(host.querySelector('[data-testid="race-passage"] .correct')?.textContent).toBe("a")
+		expect(host.querySelector('[data-testid="race-passage"] .done')?.textContent).toBe("a")
 
 		await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent === "Full leaderboard")!) })
 		const search = host.querySelector<HTMLInputElement>('[aria-label="Full leaderboard"] input')!
@@ -104,6 +142,35 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(socket.sent.at(-1)).toMatchObject({ type: "rematch" })
 		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-header button.secondary-action")!) })
 		expect(host.textContent).toContain("Create a room")
+	})
+
+	it("leaves an active room when navigating to the main menu", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		const onBack = vi.fn()
+		await act(() => root.render(<RaceScreen onBack={onBack} />))
+		socket = RoomSocket.latest!
+		await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Alpha")])) })
+		await act(() => [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Main menu")!.click())
+		expect(socket.sent.at(-1)).toMatchObject({ type: "leave" })
+		expect(sessionStorage.getItem("typecade:ocean-race:ticket")).toBeNull()
+		expect(onBack).toHaveBeenCalledOnce()
+	})
+
+	it("creates and leaves a room when browser storage is unavailable", async () => {
+		vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked") })
+		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked") })
+		vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { throw new Error("blocked") })
+		try {
+			await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
+			await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>(".race-config input")!, "Storage Captain") })
+			await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-config button")!) })
+			socket = RoomSocket.latest!
+			await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Storage Captain")])) })
+			expect(host.textContent).toContain("Waiting at the harbor")
+			await act(() => [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Main menu")!.click())
+			expect(socket.readyState).toBe(3)
+			expect(host.textContent).toContain("Create a room")
+		} finally { vi.restoreAllMocks() }
 	})
 
 	it("shows create errors, joins from a shared code, and reports lost connections", async () => {
@@ -161,7 +228,7 @@ describe("multiplayer race screen browser coverage", () => {
 		const shuffle = host.querySelector<HTMLInputElement>('.race-config input[type="checkbox"]')!
 		await act(async () => { await userEvent.click(shuffle) })
 		expect(host.querySelector('[aria-label="Quote difficulty"]')).toBeNull()
-		expect(host.querySelector(".race-config textarea")?.value).toBe("one two three")
+		expect(host.querySelector<HTMLTextAreaElement>(".race-config textarea")?.value).toBe("one two three")
 		await act(async () => { await userEvent.selectOptions(selects()[1]!, "words") })
 		expect(host.querySelector('input[list="race-word-presets"]')).not.toBeNull()
 		const numeric = host.querySelectorAll<HTMLInputElement>('.race-config input[type="number"]')
@@ -231,7 +298,7 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(() => socket.deliver(room("finished", [player("host", "Alpha", { status: "out" }), player("guest", "Bravo", { status: "out" })])))
 		expect(host.textContent).toContain("No finisher this round.")
 		await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent === "Full leaderboard")!) })
-		expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Bravo")
+		expect(host.querySelector('dialog')?.textContent).toContain("Bravo")
 	})
 
 	it("uses safe race clocks and messages finished or disconnected captains", async () => {
@@ -251,7 +318,7 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(host.textContent).toContain("Finished. Waiting for the others.")
 		expect(input.disabled).toBe(true)
 		await act(() => socket.close())
-		expect(input.placeholder).toBe("Reconnecting…")
+		expect(input.placeholder).toBe("Typing paused")
 	})
 
 	it("describes an English custom room and the full online/offline roster", async () => {

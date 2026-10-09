@@ -1,15 +1,22 @@
 import { useEffect, useRef, useState } from "react"
 import { defaultRaceConfig, generateRaceText, parseRaceConfig, type RaceConfig } from "@typecade/race-rules"
 import { TypingSession, type TypingSessionSnapshot } from "@typecade/typing-engine"
+import { TypingInput, TypingPassage } from "../TypingField"
+import { readStorage, writeStorage } from "../storage"
 
 type PracticePhase = "setup" | "racing" | "finished" | "out"
 
 const bestKey = "typecade:practice:best"
 
+function storedBestWpm(): number {
+	const value = Number(readStorage("localStorage", bestKey))
+	return Number.isFinite(value) && value >= 0 ? value : 0
+}
+
 function recordBestWpm(run: TypingSessionSnapshot): number {
-	const stored = Number(localStorage.getItem(bestKey) ?? 0)
+	const stored = storedBestWpm()
 	const best = Math.max(stored, run.metrics.wpm)
-	if (best > stored) localStorage.setItem(bestKey, String(best))
+	if (best > stored) writeStorage("localStorage", bestKey, String(best))
 	return best
 }
 
@@ -23,8 +30,9 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	const [error, setError] = useState("")
 	const [fontSize, setFontSize] = useState(28)
 	const [monospace, setMonospace] = useState(false)
-	const [bestWpm, setBestWpm] = useState(() => Number(localStorage.getItem(bestKey) ?? 0))
+	const [bestWpm, setBestWpm] = useState(storedBestWpm)
 	const session = useRef<TypingSession | null>(null)
+	const sessionEnded = useRef(false)
 	const endAt = useRef(0)
 
 	const start = (event: React.SyntheticEvent) => {
@@ -34,11 +42,12 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 			const text = generateRaceText(rules, `${Date.now()}:practice`)
 			setError("")
 			setPassage(text)
-			session.current = new TypingSession(text, { startTimestampMs: performance.now() })
+			session.current = new TypingSession(text)
+			sessionEnded.current = false
 			setSnapshot(session.current.getSnapshot())
-			setLives(3)
+			setLives(rules.variant === "perfect" ? 1 : 3)
 			setRemaining(rules.format === "time" ? rules.timeSeconds : 0)
-			endAt.current = Date.now() + rules.timeSeconds * 1000
+			endAt.current = 0
 			setPhase("racing")
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : "Check the practice settings.")
@@ -48,46 +57,42 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	useEffect(() => {
 		if (phase !== "racing" || config.format !== "time") return
 		const update = () => {
+			if (!endAt.current) return
 			const seconds = Math.max(0, Math.ceil((endAt.current - Date.now()) / 1000))
 			setRemaining(seconds)
 			if (seconds === 0) {
-				if (snapshot) setBestWpm(recordBestWpm(snapshot))
+				sessionEnded.current = true
+				const final = session.current!.getSnapshot(config.timeSeconds * 1000)
+				setSnapshot(final)
+				setBestWpm(recordBestWpm(final))
 				setPhase("finished")
 			}
 		}
 		const interval = window.setInterval(update, 100)
 		return () => window.clearInterval(interval)
-	}, [config.format, phase, snapshot])
+	}, [config.format, config.timeSeconds, phase])
 
-	useEffect(() => {
-		if (phase !== "racing") return
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.ctrlKey || event.metaKey || event.altKey) return
-			if (event.key === "Escape") {
-				setPhase("setup")
-				return
-			}
-			if (event.key.length !== 1 && event.key !== "Enter") return
-			event.preventDefault()
-			const active = session.current!
-			const events = active.processKey(event.key, performance.now())
-			const next = active.getSnapshot()
-			setSnapshot(next)
-			if (events.some((item) => item.type === "typo")) {
-				if (config.variant === "perfect") setPhase("out")
-				if (config.variant === "three-hulls") {
-					setLives(Math.max(0, lives - 1))
-					if (lives <= 1) setPhase("out")
-				}
-			}
-			if (next.complete) {
-				setBestWpm(recordBestWpm(next))
-				setPhase("finished")
+	const typeKey = (key: string) => {
+		if (sessionEnded.current || key === "Backspace") return
+		if (!endAt.current) endAt.current = Date.now() + config.timeSeconds * 1000
+		const active = session.current!
+		const events = active.processKey(key, Date.now() - (endAt.current - config.timeSeconds * 1000))
+		const next = active.getSnapshot()
+		setSnapshot(next)
+		if (events.some((item) => item.type === "typo")) {
+			if (config.variant === "perfect") { sessionEnded.current = true; setLives(0); setPhase("out") }
+			if (config.variant === "three-hulls") {
+				const nextLives = Math.max(0, 3 - next.metrics.incorrectKeystrokes)
+				setLives(nextLives)
+				if (nextLives === 0) { sessionEnded.current = true; setPhase("out") }
 			}
 		}
-		window.addEventListener("keydown", onKeyDown)
-		return () => window.removeEventListener("keydown", onKeyDown)
-	}, [config.variant, lives, phase])
+		if (next.complete) {
+			sessionEnded.current = true
+			setBestWpm(recordBestWpm(next))
+			setPhase("finished")
+		}
+	}
 
 	const updateConfig = <K extends keyof RaceConfig>(key: K, value: RaceConfig[K]) => setConfig((current) => ({ ...current, [key]: value }))
 	const currentText = snapshot?.targetText ?? passage
@@ -96,9 +101,9 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	return (
 		<main className="practice-screen" data-testid="practice-screen">
 			<header className="practice-header pixel-panel">
-				<button className="pixel-action secondary" onClick={phase === "racing" ? () => setPhase("setup") : onBack}>Main menu</button>
+				<button className="pixel-action secondary" onClick={onBack}>Main menu</button>
 				<div><small>TYPECADE · COASTAL PRACTICE</small><h1>Practice</h1></div>
-				{phase === "racing" ? <strong className="practice-clock" aria-live="polite">{config.format === "time" ? `${remaining}s` : `${Math.round(snapshot?.metrics.progress ?? 0)}%`}</strong> : <span className="practice-best">Best {bestWpm} WPM</span>}
+				{phase === "racing" ? <strong className="practice-clock" aria-live="polite">{config.format === "time" ? `${remaining}s` : `${Math.round((snapshot?.metrics.progress ?? 0) * 100)}%`}</strong> : <span className="practice-best">Best {bestWpm} WPM</span>}
 			</header>
 
 			{phase === "setup" ? (
@@ -125,20 +130,20 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 				</form>
 			) : phase === "racing" ? (
 				<section className="practice-racing pixel-panel" data-testid="practice-racing">
-					<div className="practice-run-meta"><span>{config.language === "id" ? "Bahasa Indonesia" : "English"} · {config.format} · {config.variant.replaceAll("-", " ")}</span><span>{lives} hulls</span></div>
-						<div className={`practice-passage ${monospace ? "mono" : ""}`} style={{ fontSize }} data-testid="practice-passage" tabIndex={0} aria-label="Typing passage">
-						{Array.from(currentText).map((char, index) => <span key={`${index}-${char}`} className={index < cursor ? "done" : index === cursor ? "next" : "ghost"}>{char === " " ? "\u00a0" : char}</span>)}
-					</div>
-					<p className="practice-focus-hint">Start typing · Esc returns to settings</p>
+					<div className="practice-run-meta"><span>{config.language === "id" ? "Bahasa Indonesia" : "English"} · {config.format} · {config.variant.replaceAll("-", " ")}</span>{config.variant !== "classic" && <span>{lives} hulls</span>}</div>
+					<TypingPassage text={currentText} cursor={cursor} className="practice-passage" testId="practice-passage" fontSize={fontSize} monospace={monospace} mistake={snapshot?.eventLog.at(-1)?.ok === 0} />
+					<TypingInput label="Practice typing input" onType={typeKey} onEscape={() => setPhase("setup")} />
+					<p className="practice-focus-hint">Timer starts with your first key. After a typo, retype the highlighted character. Esc opens settings.</p>
+					<button className="pixel-action secondary" onClick={() => setPhase("setup")}>Typing settings</button>
 					<div className="practice-stats"><span><strong>{snapshot?.metrics.wpm ?? 0}</strong> WPM</span><span><strong>{snapshot?.metrics.accuracy ?? 100}%</strong> accuracy</span><span><strong>{snapshot?.metrics.maxCombo ?? 0}</strong> best streak</span></div>
 				</section>
 			) : (
 				<section className="practice-result pixel-panel" data-testid="practice-result">
 					<small>{phase === "out" ? "PRACTICE ENDED" : "SESSION COMPLETE"}</small>
 					<h2>{phase === "out" ? config.variant === "perfect" ? "Perfect Tide broken" : "All hulls lost" : "Good run"}</h2>
-					<div className="practice-result-stats"><strong>{snapshot?.metrics.wpm ?? 0}<span>WPM</span></strong><strong>{snapshot?.metrics.accuracy ?? 100}%<span>Accuracy</span></strong><strong>{snapshot?.metrics.consistency ?? 100}%<span>Consistency</span></strong></div>
+					<div className="practice-result-stats"><strong>{snapshot!.metrics.wpm}<span>WPM</span></strong><strong>{snapshot!.metrics.accuracy}%<span>Accuracy</span></strong><strong>{snapshot!.metrics.consistency}%<span>Consistency</span></strong></div>
 					<p>Best: {bestWpm} WPM</p>
-					<div><button className="pixel-action primary" onClick={(e) => start(e)}>Practice again</button><button className="pixel-action secondary" onClick={onBack}>Main menu</button></div>
+					<div><button className="pixel-action primary" onClick={(e) => start(e)}>Practice again</button><button className="pixel-action secondary" onClick={() => setPhase("setup")}>Typing settings</button></div>
 				</section>
 			)}
 		</main>

@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest"
 import { normalizeKey, normalizeText, replayInputLog, TypingSession } from "../index"
 
 describe("TypingSession", () => {
+	it("accepts Unicode codepoints and advances timed metrics without adding input", () => {
+		const session = new TypingSession("🐟a")
+		session.processKey("🐟", 0)
+		expect(session.getSnapshot().cursor).toBe(2)
+		expect(session.getMetrics().wpm).toBeLessThanOrEqual(24)
+		session.processKey("a", 2000)
+		const final = session.getSnapshot(60000)
+		expect(final.complete).toBe(true)
+		expect(final.metrics.wpm).toBe(0.6)
+		expect(final.metrics.elapsedMs).toBe(60000)
+		expect(final.eventLog).toHaveLength(2)
+	})
 	it("tracks correct character sequences and word combo", () => {
 		const session = new TypingSession("laut biru", { startTimestampMs: 0 })
 		const events = [

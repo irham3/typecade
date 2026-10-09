@@ -1,5 +1,91 @@
 import { expect, test, type Browser, type Page } from "@playwright/test"
 
+test("a live 100-player room renders the fleet, searches standings, and finishes together", async ({ page }) => {
+	test.setTimeout(120000)
+	await page.goto("/")
+	await page.getByRole("button", { name: "Multiplayer", exact: true }).click()
+	await page.locator(".race-config").getByLabel("Your name").fill("Fleet Host")
+	await page.getByLabel("Text format", { exact: true }).selectOption("time")
+	await page.getByRole("spinbutton", { name: /^Seconds/ }).fill("1")
+	await page.getByRole("spinbutton", { name: /^Players/ }).fill("100")
+	await page.getByRole("button", { name: "Create room" }).click()
+	await expect(page.getByText("Waiting at the harbor")).toBeVisible()
+	const code = new URL(page.url()).searchParams.get("race")!
+	const tickets: Array<{ code: string; playerId: string; token: string }> = []
+	for (let first = 1; first < 100; first += 10) {
+		const batch = await Promise.all(Array.from({ length: Math.min(10, 100 - first) }, async (_, offset) => {
+			const response = await page.request.post(`/api/rooms/${code}/join`, { data: { name: `Captain ${first + offset}` } })
+			expect(response.ok()).toBe(true)
+			return response.json()
+		}))
+		tickets.push(...batch)
+	}
+	const overflow = await page.request.post(`/api/rooms/${code}/join`, { data: { name: "Captain 101" } })
+	expect(overflow.ok()).toBe(false)
+	await page.evaluate(async (members) => {
+		const fleetWindow = window as typeof window & { testFleet?: WebSocket[] }
+		fleetWindow.testFleet = []
+		await Promise.all(members.map((member) => new Promise<void>((resolve, reject) => {
+			const socket = new WebSocket(`${location.protocol.replace(/^http/, "ws")}//${location.host}/api/rooms/${member.code}/ws?playerId=${member.playerId}`, ["race-v1", `token.${member.token}`])
+			fleetWindow.testFleet!.push(socket)
+			socket.onopen = () => { socket.send(JSON.stringify({ type: "ready", ready: true })); resolve() }
+			socket.onerror = () => reject(new Error("Fleet connection failed"))
+		})))
+	}, tickets)
+	try {
+		await expect(page.locator(".race-waiting-grid li")).toHaveCount(100)
+		await page.getByRole("button", { name: "I'm ready" }).click()
+		await expect(page.getByRole("button", { name: "Start race" })).toBeEnabled()
+		await page.getByRole("button", { name: "Start race" }).click()
+		await expect(page.getByTestId("race-play")).toBeVisible({ timeout: 10000 })
+		const text = await page.getByTestId("race-passage").textContent()
+		await page.getByLabel("Race typing input").pressSequentially(text!.slice(0, 5))
+		await expect(page.locator(".race-results")).toContainText("Winner: Fleet Host", { timeout: 10000 })
+		await page.getByRole("button", { name: "Full leaderboard", exact: true }).click()
+		await expect(page.getByRole("dialog").locator("li")).toHaveCount(100)
+		await page.getByLabel("Find captain").fill("Captain 99")
+		await expect(page.getByRole("dialog").locator("li")).toHaveCount(1)
+		await page.keyboard.press("Escape")
+		await expect(page.getByRole("dialog")).toHaveCount(0)
+	} finally {
+		await page.evaluate(async () => {
+			const fleet = (window as typeof window & { testFleet?: WebSocket[] }).testFleet ?? []
+			for (const socket of fleet) {
+				if (socket.readyState === WebSocket.CLOSED) continue
+				await new Promise<void>((resolve) => {
+					socket.addEventListener("close", () => resolve(), { once: true })
+					if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "leave" }))
+				})
+			}
+		})
+	}
+})
+
+test("leaving a lobby releases its slot and transfers the host immediately", async ({ page, browser }) => {
+	await page.goto("/")
+	await page.getByRole("button", { name: "Multiplayer", exact: true }).click()
+	await page.locator(".race-config").getByLabel("Your name").fill("Leaving Host")
+	await page.getByRole("spinbutton", { name: /^Players/ }).fill("2")
+	await page.getByRole("button", { name: "Create room" }).click()
+	await expect(page.getByText("Waiting at the harbor")).toBeVisible()
+	const code = new URL(page.url()).searchParams.get("race")!
+	const guestContext = await browser.newContext()
+	const guest = await guestContext.newPage()
+	try {
+		await guest.goto(`/?race=${code}`)
+		await guest.locator(".race-join").getByLabel("Your name").fill("Remaining Captain")
+		await guest.getByRole("button", { name: "Join room" }).click()
+		await expect(guest.locator(".race-waiting-grid li")).toHaveCount(2)
+		await page.getByRole("button", { name: "Main menu", exact: true }).click()
+		await expect(page.getByTestId("main-menu")).toBeVisible()
+		await expect(guest.locator(".race-waiting-grid li")).toHaveCount(1)
+		await expect(guest.getByRole("button", { name: "Start race" })).toBeVisible()
+		const replacement = await page.request.post(`/api/rooms/${code}/join`, { data: { name: "New Captain" } })
+		expect(replacement.ok()).toBe(true)
+		await expect(guest.locator(".race-waiting-grid li")).toHaveCount(2)
+	} finally { await guestContext.close() }
+})
+
 async function startPair(browser: Browser, host: Page, configure: (page: Page) => Promise<void>) {
 	await host.goto("/")
 	await host.getByRole("button", { name: "Multiplayer" }).click()
@@ -33,7 +119,7 @@ async function typePassage(page: Page) {
 	await page.keyboard.type(text!, { delay: 12 })
 }
 
-test("two captains race the same Indonesian passage, see results, and rematch", async ({ browser, page }) => {
+test("two captains race the same Indonesian passage, see results, and rematch", async ({ browser, page }, testInfo) => {
 	test.setTimeout(90000)
 	const { guest, guestContext } = await startPair(browser, page, async (host) => {
 		await host.getByRole("spinbutton", { name: /^Words/ }).fill("3")
@@ -41,6 +127,13 @@ test("two captains race the same Indonesian passage, see results, and rematch", 
 	})
 	try {
 		await expect(guest.getByTestId("race-passage")).toHaveText(await page.getByTestId("race-passage").textContent() ?? "")
+		for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+			await guest.setViewportSize(viewport)
+			await guest.getByLabel("Race typing input").focus()
+			await guest.screenshot({ path: testInfo.outputPath(`race-mobile-${viewport.width}.png`) })
+			await expect(guest.locator(".race-stage")).toBeInViewport({ ratio: 1 })
+			await expect(guest.getByLabel("Race typing input")).toBeInViewport({ ratio: 1 })
+		}
 		await typePassage(page)
 		await expect(page.getByText("Finished. Waiting for the others.")).toBeVisible()
 		await typePassage(guest)

@@ -1,27 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { CSSProperties, ReactElement, ReactNode } from "react"
 import { useGSAP } from "@gsap/react"
 import gsap from "gsap"
 
 gsap.registerPlugin(useGSAP)
-import {
-	CheckCircle2,
-	Fish,
-	Pause,
-	Play,
-	Radar,
-	Sparkles,
-	Trophy,
-	X,
-} from "lucide-react"
 import type { AccountLevelProgress, CatchResult, FishingSkill, Rarity } from "@typecade/contracts"
-import { fishSpecies, getRouteNodesForZone } from "@typecade/content"
-import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost } from "@typecade/game-rules"
+import { fishSpecies, fishingSkills, getRouteNodesForZone } from "@typecade/content"
+import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost, getFishingSkillUnlockLevel } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
 import { RaceScreen } from "./multiplayer/RaceScreen"
 import { PracticeScreen } from "./practice/PracticeScreen"
+import { TypingInput, TypingPassage } from "./TypingField"
 
-type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | "leaderboard" | null
+type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | null
 type Screen = "menu" | "practice" | "prep" | "game" | "race"
 
 const rarityStars: Record<Rarity, number> = {
@@ -45,7 +36,7 @@ function FishArtwork({ assetKey, alt = "" }: { assetKey: string; alt?: string })
 export function App() {
 	const hostRef = useRef<HTMLDivElement | null>(null)
 	const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(location.search).has("race") ? "race" : "menu")
-	const initialScreenRef = useRef(screen)
+	const [panel, setPanel] = useState<Panel>(null)
 	const {
 		bridge,
 		view,
@@ -58,12 +49,13 @@ export function App() {
 		setReducedMotion,
 		startFreshRun,
 		togglePause,
-	} = useOceanRun(screen === "game")
-	const [panel, setPanel] = useState<Panel>(null)
+		typeKey,
+	} = useOceanRun(screen === "game" && panel === null)
+	const rendererEnabled = screen !== "race" && screen !== "practice"
 	const levelProgress = getAccountLevelProgress(view.collection.xp)
 
 	useEffect(() => {
-		if (!hostRef.current || initialScreenRef.current === "race") {
+		if (!hostRef.current || !rendererEnabled) {
 			return
 		}
 		const host = hostRef.current
@@ -80,10 +72,9 @@ export function App() {
 
 		return () => {
 			disposed = true
-			bridge.clear()
 			destroyGame?.()
 		}
-	}, [bridge])
+	}, [bridge, rendererEnabled])
 
 	useEffect(() => {
 		bridge.emit("screen:changed", { screen })
@@ -117,6 +108,7 @@ export function App() {
 					setReducedMotion={setReducedMotion}
 					startFreshRun={beginRun}
 					togglePause={togglePause}
+					typeKey={typeKey}
 					goToMenu={() => setScreen("menu")}
 				/>
 			) : null}
@@ -127,9 +119,8 @@ export function App() {
 					onStart={() => setScreen("practice")}
 					onAdventure={() => setScreen("prep")}
 					onRankedDuel={() => setScreen("race")}
-					onShop={() => setPanel("shop")}
 					onCollection={() => setPanel("collection")}
-					onLeaderboard={() => setPanel("leaderboard")}
+					onSettings={() => setPanel("settings")}
 				/>
 			) : null}
 
@@ -148,8 +139,6 @@ export function App() {
 			{screen === "race" ? <RaceScreen onBack={() => { history.replaceState(null, "", location.pathname); setScreen("menu") }} /> : null}
 
 			{screen !== "game" && panel === "collection" ? <CollectionPanel onClose={() => setPanel(null)} collection={view.collection} /> : null}
-			{screen !== "game" && panel === "shop" ? <MenuShopPanel onClose={() => setPanel(null)} /> : null}
-			{screen !== "game" && panel === "leaderboard" ? <LeaderboardPanel onClose={() => setPanel(null)} /> : null}
 			{screen !== "game" && panel === "settings" ? (
 				<SettingsPanel
 					volumes={view.volumes}
@@ -172,11 +161,12 @@ function GameHud({
 	panel,
 	setPanel,
 	chooseRoute,
-	useSkill,
+	useSkill: activateSkill,
 	setVolume,
 	setReducedMotion,
 	startFreshRun,
 	togglePause,
+	typeKey,
 	goToMenu,
 }: {
 	view: OceanRunView
@@ -192,9 +182,11 @@ function GameHud({
 	setReducedMotion: (value: boolean) => void
 	startFreshRun: () => void
 	togglePause: () => void
+	typeKey: (key: string) => void
 	goToMenu: () => void
 }) {
 	const containerRef = useRef<HTMLDivElement>(null)
+	const typingInputRef = useRef<HTMLInputElement>(null)
 
 	useGSAP(() => {
 		if (view.reducedMotion) return
@@ -234,8 +226,8 @@ function GameHud({
 			<nav className="icon-rail panel-chrome" aria-label="Ocean navigation">
 				<RailButton label="Fish" active={panel === "fish"} onClick={() => setPanel(panel === "fish" ? null : "fish")} icon={<PixelIcon file="icon_nav_fish.png" />} />
 				<RailButton label="Collection" active={panel === "collection"} onClick={() => setPanel(panel === "collection" ? null : "collection")} icon={<PixelIcon file="icon_nav_collection.png" />} badge={caughtCount} />
-				<RailButton label="Tasks" active={panel === "tasks"} onClick={() => setPanel(panel === "tasks" ? null : "tasks")} icon={<PixelIcon file="icon_nav_tasks.png" />} badge={view.expedition.spareLines} />
-				<RailButton label="Shop" active={panel === "shop"} onClick={() => setPanel(panel === "shop" ? null : "shop")} icon={<PixelIcon file="icon_nav_shop.png" />} />
+				<RailButton label="Route" active={panel === "tasks"} onClick={() => setPanel(panel === "tasks" ? null : "tasks")} icon={<PixelIcon file="icon_nav_tasks.png" />} badge={view.expedition.spareLines} />
+				<RailButton label="Skills" active={panel === "shop"} onClick={() => setPanel(panel === "shop" ? null : "shop")} icon={<PixelIcon file="icon_nav_shop.png" />} />
 			</nav>
 
 			<section className="route-strip panel-chrome" data-testid="route-strip">
@@ -243,7 +235,8 @@ function GameHud({
 				<span>{view.selectedRoute.name}</span>
 				<span>Encounter {encounterLabel}</span>
 			</section>
-			{view.fish.id === "crown_leviathan" && bossPhaseDetail ? (
+			<div className="encounter-stage">
+			{view.fish.id === "crown_leviathan" && bossPhaseDetail && !view.lastResult ? (
 				<section className="boss-phase-callout panel-chrome" aria-live="polite" data-testid="boss-phase-callout">
 					<div>
 						<span>LEVIATHAN · PHASE {view.encounter.bossPhase}</span>
@@ -259,7 +252,19 @@ function GameHud({
 			) : null}
 
 			<FishInfoCard fish={view.fish} record={view.collection.records[view.fish.id]} />
-			{view.feedback ? <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
+			{!view.lastResult && view.feedback?.kind === "skill" ? <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
+			{view.lastResult ? <ResultToast view={view} result={view.lastResult} /> : null}
+			{view.expedition.complete ? (
+				<section className="complete-panel panel-chrome" data-testid="complete-panel">
+					<PixelIcon file="icon_nav_collection.png" />
+					<strong>{view.lastResult?.caught && view.fish.id === "crown_leviathan" ? "Shallow Coast cleared" : "Expedition ended"}</strong>
+					<span>{caughtCount}/{totalCount} species recorded · Rewards and XP saved</span>
+					<button onClick={startFreshRun}>Sail Again</button>
+					<button className="secondary" onClick={goToMenu}>Main Menu</button>
+				</section>
+			) : null}
+
+			</div>
 
 			<section className="bottom-console" data-testid="typing-console">
 				<div className={`tension-wrap ${tensionPercent >= 82 ? "danger" : ""}`}>
@@ -277,18 +282,15 @@ function GameHud({
 
 				<div className="typing-panel panel-chrome">
 					<div className="typing-help">
-						<span>Type the highlighted passage</span>
+						<span>Retype the highlighted character after a typo</span>
 						<kbd>Esc pause</kbd>
 					</div>
-					<TypingTarget text={view.targetText} cursor={view.cursor} />
-					<div className="typing-input" data-testid="typing-input">
-						<span>{view.currentInput || " "}</span>
-						<span className="cursor" />
-					</div>
+					<TypingPassage text={view.targetText} cursor={view.cursor} className="typing-target" testId="typing-target" mistake={view.lastKeyWasTypo} />
+					<TypingInput inputRef={typingInputRef} label="Adventure typing input" testId="typing-input" onType={typeKey} onEscape={togglePause} disabled={view.isPaused || panel !== null || view.encounter.status !== "active"} />
 				</div>
 
 				<div className="stat-row panel-chrome">
-				<Stat icon={<PixelIcon file="icon_stat_combo.png" />} label="COMBO" value={`x${Math.max(1, view.encounter.combo)}`} hot={view.encounter.combo >= 5} />
+				<Stat icon={<PixelIcon file="icon_stat_combo.png" />} label="COMBO" value={`x${view.encounter.combo}`} hot={view.encounter.combo >= 5} />
 				<Stat icon={<PixelIcon file="icon_stat_accuracy.png" />} label="ACCURACY" value={`${Math.round(view.metrics.accuracy)}%`} hot={view.metrics.accuracy >= 95} />
 				<Stat icon={<PixelIcon file="icon_stat_timer.png" />} label="TIME LEFT" value={timeLeft} hot={view.encounter.timeRemainingMs < 12000} />
 				</div>
@@ -308,24 +310,13 @@ function GameHud({
 						index={index + 1}
 						encounter={view.encounter}
 						activePulse={view.lastSkillId === skill.id}
-						onUse={useSkill}
+						onUse={(skillId) => { const used = activateSkill(skillId); typingInputRef.current?.focus(); return used }}
 					/>
 				))}
 			</section>
 
-			{view.lastResult ? <ResultToast view={view} result={view.lastResult} /> : null}
-
 			{view.isPaused ? <PausePanel onResume={togglePause} onMainMenu={goToMenu} /> : null}
 
-			{view.expedition.complete ? (
-				<section className="complete-panel panel-chrome" data-testid="complete-panel">
-					<Trophy aria-hidden="true" />
-					<strong>Shallow Coast cleared</strong>
-					<span>{caughtCount}/{totalCount} species recorded</span>
-					<button onClick={startFreshRun}>Sail Again</button>
-					<button className="secondary" onClick={goToMenu}>Main Menu</button>
-				</section>
-			) : null}
 
 			{panel === "collection" ? <CollectionPanel onClose={() => setPanel(null)} collection={view.collection} /> : null}
 			{panel === "tasks" ? (
@@ -359,12 +350,12 @@ function TopBar({ view, levelProgress, onSettings, onPause }: { view: OceanRunVi
 		<header className="topbar" data-testid="topbar">
 			<section className="player-badge panel-chrome">
 				<div className="avatar">
-					<Fish aria-hidden="true" />
+					<PixelIcon file="icon_nav_fish.png" />
 				</div>
 				<div>
 					<strong>WaveRider</strong>
 					<span>
-						<Sparkles aria-hidden="true" /> Lv {levelProgress.level}
+						<PixelIcon file="icon_stat_combo.png" /> Lv {levelProgress.level}
 					</span>
 					<XpBar progress={levelProgress.progress} />
 				</div>
@@ -381,8 +372,8 @@ function TopBar({ view, levelProgress, onSettings, onPause }: { view: OceanRunVi
 					<PixelIcon file="icon_currency_gem.png" />
 					<span>{view.collection.materials.toLocaleString()}</span>
 				</div>
-				<button className="icon-button panel-chrome" aria-label={view.isPaused ? "Resume game" : "Pause game"} onClick={onPause}>
-					{view.isPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+				<button className="icon-button panel-chrome" aria-label={view.isPaused ? "Resume game" : "Pause game"} onClick={onPause} disabled={view.expedition.complete}>
+					<span aria-hidden="true">{view.isPaused ? "▶" : "Ⅱ"}</span>
 				</button>
 				<button className="icon-button panel-chrome" aria-label="Settings" onClick={onSettings}>
 					<PixelIcon file="icon_utility_settings.png" />
@@ -397,26 +388,23 @@ function MainMenu({
 	onStart,
 	onAdventure,
 	onRankedDuel,
-	onShop,
 	onCollection,
-	onLeaderboard,
+	onSettings,
 }: {
 	view: OceanRunView
 	onStart: () => void
 	onAdventure: () => void
 	onRankedDuel: () => void
-	onShop: () => void
 	onCollection: () => void
-	onLeaderboard: () => void
+	onSettings: () => void
 }) {
 	const containerRef = useRef<HTMLElement>(null)
 	const menuItems = [
-		{ label: "Practice", src: "/assets/ocean/mainmenu/1.play.png", onClick: onStart, primary: true },
-		{ label: "Adventure", src: "/assets/ocean/mainmenu/2.adventure.png", onClick: onAdventure },
-		{ label: "Multiplayer", src: "/assets/ocean/mainmenu/3.ranked duel.png", onClick: onRankedDuel },
-		{ label: "Shop", src: "/assets/ocean/mainmenu/4.duel.png", onClick: onShop },
-		{ label: "Collection", src: "/assets/ocean/mainmenu/5.collection.png", onClick: onCollection },
-		{ label: "Leaderboard", src: "/assets/ocean/mainmenu/6.leaderboard.png", onClick: onLeaderboard },
+		{ label: "Practice", icon: "icon_nav_fish.png", onClick: onStart, primary: true },
+		{ label: "Adventure", icon: "icon_nav_tasks.png", onClick: onAdventure },
+		{ label: "Multiplayer", icon: "icon_stat_combo.png", onClick: onRankedDuel },
+		{ label: "Collection", icon: "icon_nav_collection.png", onClick: onCollection },
+		{ label: "Settings", icon: "icon_utility_settings.png", onClick: onSettings },
 	]
 
 	useGSAP(() => {
@@ -437,10 +425,11 @@ function MainMenu({
 				<nav className="mainmenu-stack" aria-label="Main menu">
 					{menuItems.map((item) => (
 						<button key={item.label} className={`mainmenu-button ${item.primary ? "primary" : ""}`} onClick={item.onClick} aria-label={item.label}>
-							<img src={item.src} alt="" draggable={false} />
+							<img src={`/assets/ocean/mainmenu/button_${item.primary ? "gold" : "blue"}_empty.png`} alt="" draggable={false} /><span className="mainmenu-button-label"><PixelIcon file={item.icon} />{item.label}</span>
 						</button>
 					))}
 				</nav>
+				<aside className="menu-progress panel-chrome" aria-label="Captain progress"><strong>Captain Lv {getAccountLevelProgress(view.collection.xp).level}</strong><XpBar progress={getAccountLevelProgress(view.collection.xp).progress} /><span>{getAccountLevelProgress(view.collection.xp).nextLevelXp - view.collection.xp} XP to next level · {Object.keys(view.collection.records).length}/{fishSpecies.length} fish discovered</span></aside>
 			</div>
 		</section>
 	)
@@ -486,7 +475,7 @@ function PreparationScreen({
 					<h2>Captain Loadout</h2>
 					<div className="prep-profile">
 						<div className="avatar large">
-							<Fish aria-hidden="true" />
+							<PixelIcon file="icon_nav_fish.png" />
 						</div>
 						<div>
 							<strong>Level {levelProgress.level}</strong>
@@ -519,7 +508,8 @@ function PreparationScreen({
 						<h2>Skill Draft</h2>
 						<span>{view.expedition.selectedSkillIds.length}/3 equipped</span>
 					</div>
-					<p className="prep-hint">This run&apos;s tide rolls a different offer. Pick up to three: one active, one passive, then build the combo you want.</p>
+					<p className="prep-hint">{fishingSkills.filter((skill) => getFishingSkillUnlockLevel(skill.id) > levelProgress.level).map((skill) => `Lv ${getFishingSkillUnlockLevel(skill.id)}: ${skill.name}`).join(" · ") || "All six skills unlocked. Try a different loadout or route to improve your catch records."}</p>
+					<p className="prep-hint">Equip one to three skills. Remove a selected skill before adding a fourth. Passive skills work automatically.</p>
 					<div className="prep-skill-grid">
 						{skillOffers.map((skill) => {
 							const selected = view.expedition.selectedSkillIds.includes(skill.id)
@@ -527,6 +517,7 @@ function PreparationScreen({
 								key={skill.id}
 								className={`prep-skill ${skill.type} ${selected ? "selected" : ""}`}
 								aria-pressed={selected}
+								disabled={selected ? view.expedition.selectedSkillIds.length === 1 : view.expedition.selectedSkillIds.length >= 3}
 								onClick={() => {
 									const next = selected
 										? view.expedition.selectedSkillIds.filter((id) => id !== skill.id)
@@ -611,25 +602,6 @@ function StarRow({ rarity }: { rarity: Rarity }) {
 	)
 }
 
-function TypingTarget({ text, cursor }: { text: string; cursor: number }) {
-	const chars = useMemo(() => Array.from(text), [text])
-	let position = 0
-	return (
-		<div className="typing-target" data-testid="typing-target">
-			{chars.map((char, index) => {
-				const charStart = position
-				position += char.length
-				const className = charStart < cursor ? "done" : charStart === cursor ? "next" : "ghost"
-				return (
-					<span key={`${char}-${index}`} className={className}>
-						{char === " " ? "\u00a0" : char}
-					</span>
-				)
-			})}
-		</div>
-	)
-}
-
 function Stat({ icon, label, value, hot }: { icon: ReactElement; label: string; value: string; hot?: boolean }) {
 	return (
 		<div className={`stat ${hot ? "hot" : ""}`}>
@@ -679,7 +651,7 @@ function SkillButton({
 			disabled={skill.type === "passive" || !usable}
 			title={`${skill.name}: ${skill.description}${cost ? ` Cost ${cost} energy.` : ""}`}
 		>
-			<span className="skill-key">{skill.type === "active" ? index : "P"}</span>
+			<span className="skill-key">{skill.type === "active" ? `Alt+${index}` : "P"}</span>
 			<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
 			<span>{skill.name}</span>
 			<span className="skill-cost">{skill.type === "active" ? `${charge}%` : "PASSIVE"}</span>
@@ -691,7 +663,7 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 	return (
 		<OverlayPanel title="Collection" onClose={onClose}>
 			<div className="collection-summary">
-				<Trophy aria-hidden="true" />
+				<PixelIcon file="icon_nav_collection.png" />
 				<span>{Object.keys(collection.records).length}/{fishSpecies.length} species discovered</span>
 			</div>
 			<div className="collection-grid">
@@ -708,44 +680,6 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 						</article>
 					)
 				})}
-			</div>
-		</OverlayPanel>
-	)
-}
-
-function MenuShopPanel({ onClose }: { onClose: () => void }) {
-	return (
-		<OverlayPanel title="Shop" onClose={onClose}>
-			<div className="tasks-list">
-				<article>
-					<strong>Tideglass Rod</strong>
-					<span>Equipment shopping is reserved for a future upgrade pass.</span>
-					<em>Preview</em>
-				</article>
-				<article>
-					<strong>Moon Bait</strong>
-					<span>Rare-fish bait is planned for the full Shallow Coast economy.</span>
-					<em>Preview</em>
-				</article>
-			</div>
-		</OverlayPanel>
-	)
-}
-
-function LeaderboardPanel({ onClose }: { onClose: () => void }) {
-	return (
-		<OverlayPanel title="Leaderboard" onClose={onClose}>
-			<div className="tasks-list">
-				<article>
-					<strong>Shallow Coast</strong>
-					<span>WaveRider local run records will live here.</span>
-					<em>Local</em>
-				</article>
-				<article>
-					<strong>Ranked Duel</strong>
-					<span>Online leaderboard data is out of scope for Milestone 1.</span>
-					<em>Soon</em>
-				</article>
 			</div>
 		</OverlayPanel>
 	)
@@ -771,7 +705,7 @@ function RoutePanel({
 	return (
 		<OverlayPanel title="Route" onClose={onClose}>
 			<div className={`sonar-banner ${sonarRevealed ? "active" : ""}`}>
-				<Radar aria-hidden="true" />
+				<PixelIcon file="icon_nav_tasks.png" />
 				<span>{locked ? "Route locked after typing starts." : sonarRevealed ? "Sonar sweep active: zone fish revealed." : "Use Sonar to preview the zone fish before choosing."}</span>
 			</div>
 			<div className="route-choice-grid">
@@ -874,30 +808,34 @@ function SettingsPanel({
 }
 
 function PausePanel({ onResume, onMainMenu }: { onResume: () => void; onMainMenu: () => void }) {
+	const dialog = useRef<HTMLDialogElement>(null)
+	useEffect(() => { dialog.current!.showModal() }, [])
 	return (
-		<section className="pause-overlay" data-testid="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+		<dialog ref={dialog} className="pause-overlay" data-testid="pause-panel" aria-labelledby="pause-title" onCancel={(event) => { event.preventDefault(); onResume() }}>
 			<div className="pause-card panel-chrome">
 				<span className="pause-kicker">EXPEDITION PAUSED</span>
 				<h2 id="pause-title">Tide on hold</h2>
 				<p>Your line, timer, fish, and typing target are frozen safely.</p>
 				<div className="pause-actions">
-					<button className="primary-action" onClick={onResume}><Play aria-hidden="true" /> Resume fishing</button>
+					<button className="primary-action" onClick={onResume}>Resume fishing</button>
 					<button className="secondary-action" onClick={onMainMenu}>Main menu</button>
 				</div>
 				<small>Press Esc anytime to pause or resume.</small>
 			</div>
-		</section>
+		</dialog>
 	)
 }
 
 function ResultToast({ view, result }: { view: OceanRunView; result: CatchResult }) {
 	return (
 		<section className={`result-toast panel-chrome ${result.caught ? "caught" : "escaped"}`} data-testid="result-toast">
-			{result.caught ? <CheckCircle2 aria-hidden="true" /> : <X aria-hidden="true" />}
+			{result.caught ? <PixelIcon file="icon_nav_collection.png" /> : <span aria-hidden="true">×</span>}
 			<div>
 				<strong>{result.caught ? "Catch secured" : "Line lost"}</strong>
+				{view.feedback?.kind === "level" && <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} />}
 				<span>{view.fish.name} / {result.sizeKg} kg / Q{Math.round(result.quality * 100)}</span>
 				<small>+{result.rewards.coins} coins / +{result.rewards.xp} XP</small>
+				{result.caught && <span>{view.collection.records[result.fishId].count === 1 ? "NEW SPECIES" : `Catch #${view.collection.records[result.fishId].count}`} · {getAccountLevelProgress(view.collection.xp).nextLevelXp - view.collection.xp} XP to next level</span>}
 				<em>{view.expedition.complete ? "Expedition complete" : "Next encounter loading..."}</em>
 			</div>
 		</section>
@@ -945,7 +883,7 @@ export function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiF
 			role="status"
 			aria-live="polite"
 		>
-			<Sparkles aria-hidden="true" />
+			<PixelIcon file="icon_stat_combo.png" />
 			<div>
 				<strong>{feedback.title}</strong>
 				<span>{feedback.detail}</span>
@@ -972,23 +910,19 @@ function XpBar({ progress }: { progress: number }) {
 }
 
 function OverlayPanel({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
-	const containerRef = useRef<HTMLElement>(null)
-
-	useGSAP(() => {
-		gsap.from(containerRef.current, { scale: 0.95, opacity: 0, duration: 0.3, ease: "back.out(1.5)" })
-		gsap.from(containerRef.current!.children, { y: 15, opacity: 0, duration: 0.3, stagger: 0.05, delay: 0.1 })
-	}, { scope: containerRef })
+	const containerRef = useRef<HTMLDialogElement>(null)
+	useEffect(() => { containerRef.current!.showModal() }, [])
 
 	return (
-		<section className="overlay-panel panel-chrome" data-testid="overlay-panel" ref={containerRef}>
+		<dialog className="overlay-panel panel-chrome" data-testid="overlay-panel" ref={containerRef} aria-label={title} onCancel={(event) => { event.preventDefault(); onClose() }}>
 			<header>
 				<strong>{title}</strong>
 				<button onClick={onClose} aria-label="Close">
-					<X aria-hidden="true" />
+					<span aria-hidden="true">×</span>
 				</button>
 			</header>
 			{children}
-		</section>
+		</dialog>
 	)
 }
 

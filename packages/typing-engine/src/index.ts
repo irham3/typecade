@@ -87,7 +87,7 @@ export class TypingSession {
 			]
 		}
 
-		const expected = this.targetText[this.cursor]!
+		const expected = String.fromCodePoint(this.targetText.codePointAt(this.cursor)!)
 		const accepted = normalizedKey === expected
 		this.eventLog.push({
 			t: this.lastTimestampMs,
@@ -178,7 +178,8 @@ export class TypingSession {
 		return events
 	}
 
-	getSnapshot(): TypingSessionSnapshot {
+	getSnapshot(timestampMs?: number): TypingSessionSnapshot {
+		if (timestampMs !== undefined) this.lastTimestampMs = Math.max(timestampMs, this.lastTimestampMs)
 		return {
 			targetText: this.targetText,
 			cursor: this.cursor,
@@ -191,7 +192,7 @@ export class TypingSession {
 
 	getMetrics(): TypingMetrics {
 		const elapsedMs = Math.max(1, this.lastTimestampMs - this.startTimestampMs)
-		const elapsedMinutes = elapsedMs / 60000
+		const elapsedMinutes = Math.max(1000, elapsedMs) / 60000
 		const totalKeystrokes = this.correctKeystrokes + this.incorrectKeystrokes
 		const accuracy = totalKeystrokes === 0 ? 100 : (this.correctKeystrokes / totalKeystrokes) * 100
 
@@ -258,7 +259,7 @@ function getWordBoundaries(targetText: string): WordBoundary[] {
 }
 
 function shouldIgnoreKey(rawKey: string, normalizedKey: string): boolean {
-	return IGNORED_KEYS.has(rawKey) || normalizedKey.length !== 1
+	return IGNORED_KEYS.has(rawKey) || Array.from(normalizedKey).length !== 1
 }
 
 function clamp(value: number, min: number, max: number): number {

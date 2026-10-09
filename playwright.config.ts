@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000"
-const serverPort = new URL(baseURL).port || "3000"
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:8788"
+const serverPort = new URL(baseURL).port || "8788"
 
 export default defineConfig({
 	testDir: "./e2e",
@@ -23,18 +23,9 @@ export default defineConfig({
 	],
 	webServer: [
 		{
-			command: `npm run dev -- --port ${serverPort} --strictPort true`,
+			command: `npx wrangler dev --config wrangler.ocean.jsonc --port ${serverPort} --persist-to .wrangler/e2e-state`,
 			url: baseURL,
-			env: {
-				NEXT_PUBLIC_OVERDRIVE: "true",
-			},
-			reuseExistingServer: !process.env.CI,
-			timeout: 120000,
-		},
-		{
-			command: "npm run dev:rooms",
-			url: "http://localhost:8787",
-			reuseExistingServer: !process.env.CI,
+			reuseExistingServer: false,
 			timeout: 120000,
 		},
 	],

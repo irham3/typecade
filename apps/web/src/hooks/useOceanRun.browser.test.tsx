@@ -58,6 +58,48 @@ describe("ocean run browser controls", () => {
 	let host: HTMLDivElement
 	let root: Root
 
+	it("grants repeat-run rewards once per new expedition and cancels stale encounter transitions", async () => {
+		await mount()
+		await act(() => controls!.startFreshRun())
+		const firstSeed = controls!.view.expedition.seed
+		const passage = controls!.view.targetText
+		await act(() => { for (const key of passage) controls!.typeKey(key) })
+		const firstXp = controls!.view.collection.xp
+		expect(firstXp).toBeGreaterThan(0)
+		await act(() => controls!.startFreshRun())
+		expect(controls!.view.expedition.seed).not.toBe(firstSeed)
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1900)) })
+		expect(controls!.view.expedition.currentEncounterIndex).toBe(0)
+		expect(controls!.view.cursor).toBe(0)
+		await act(() => { for (const key of controls!.view.targetText) controls!.typeKey(key) })
+		expect(controls!.view.collection.xp).toBeGreaterThan(firstXp)
+		expect(controls!.view.collection.records.reef_minnow.count).toBe(2)
+	})
+
+	it("excludes paused time from typing metrics and ignores browser shortcuts and UI buttons", async () => {
+		await mount()
+		await act(() => controls!.startFreshRun())
+		await act(() => controls!.togglePause())
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1100)) })
+		await act(() => controls!.togglePause())
+		await act(() => controls!.typeKey("o"))
+		expect(controls!.view.metrics.elapsedMs).toBeLessThan(500)
+		const errors = controls!.view.metrics.incorrectKeystrokes
+		const button = document.createElement("button")
+		host.append(button)
+		await act(() => {
+			button.dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true }))
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", ctrlKey: true, bubbles: true }))
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", metaKey: true, bubbles: true }))
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", altKey: true, bubbles: true }))
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", isComposing: true, bubbles: true }))
+		})
+		expect(controls!.view.metrics.incorrectKeystrokes).toBe(errors)
+		await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "1", bubbles: true })))
+		expect(controls!.view.metrics.incorrectKeystrokes).toBe(errors + 1)
+		expect(controls!.view.lastSkillId).not.toBe("cast_net")
+	})
+
 	beforeEach(() => {
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 		host = document.createElement("div")
@@ -138,7 +180,7 @@ describe("ocean run browser controls", () => {
 		const passive = selection.find((id) => run.view.skillOffers.find((skill) => skill.id === id)?.type === "passive")
 		if (passive) await act(() => expect(controls!.useSkill(passive)).toBe(false))
 		const usable = selection.find((id) => id !== "cast_net" && run.view.skillOffers.find((skill) => skill.id === id)?.type === "active")
-		if (usable) await act(() => expect(controls!.useSkill(usable)).toBe(true))
+		if (usable) await act(() => expect(controls!.useSkill(usable)).toBe(false))
 
 		await act(async () => root.unmount())
 		root = createRoot(host)
@@ -199,10 +241,27 @@ describe("ocean run browser controls", () => {
 		await act(async () => {
 			for (const key of run.view.targetText.slice(0, prefixLength)) window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
 		})
-		const keyEvent = new KeyboardEvent("keydown", { key: "1", bubbles: true, cancelable: true })
+		const keyEvent = new KeyboardEvent("keydown", { key: "1", altKey: true, bubbles: true, cancelable: true })
 		await act(() => window.dispatchEvent(keyEvent))
 		expect(keyEvent.defaultPrevented).toBe(true)
 		expect(controls!.view.lastSkillId).toBe(skill.id)
+	})
+
+	it("gates Cast Net by progress and retains level rewards when it lands the catch", async () => {
+		const collection = { ...createInitialCollection(), xp: 23 }
+		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(createShallowCoastExpedition("cast-net-reward"), collection))
+		await mount()
+		await act(() => controls!.setSkillLoadout(["cast_net", "steel_line"]))
+		await act(() => controls!.startFreshRun())
+		await act(() => expect(controls!.useSkill("cast_net")).toBe(false))
+		await act(() => expect(controls!.useSkill("steel_line")).toBe(false))
+		const text = controls!.view.targetText
+		await act(() => { for (const key of text.slice(0, Math.ceil(text.length * 0.6))) controls!.typeKey(key) })
+		expect(controls!.view.encounter.progress).toBeGreaterThanOrEqual(0.45)
+		await act(() => expect(controls!.useSkill("cast_net")).toBe(true))
+		expect(controls!.view.lastResult?.caught).toBe(true)
+		expect(controls!.view.feedback?.kind).toBe("level")
+		expect(controls!.view.collection.xp).toBeGreaterThan(23)
 	})
 
 	it("normalizes optional fields at the typing engine boundary", async () => {

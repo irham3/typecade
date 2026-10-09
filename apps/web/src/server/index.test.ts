@@ -10,6 +10,7 @@ function stateMock() {
 		get: vi.fn(async <T>(key: string) => values.get(key) as T | undefined),
 		put: vi.fn(async (key: string, value: unknown) => { values.set(key, structuredClone(value)) }),
 		setAlarm: vi.fn(async (when: number) => { alarms.push(when) }),
+		deleteAlarm: vi.fn(async () => undefined),
 	}
 	const ctx = {
 		storage,
@@ -164,6 +165,35 @@ describe("multiplayer Worker", () => {
 		} finally {
 			vi.unstubAllGlobals()
 		}
+	})
+
+	it("releases explicit departures immediately, transfers hosting, and settles a deserted race", async () => {
+		const state = stateMock()
+		const room = new RaceRoom(state.ctx as unknown as DurableObjectState, {} as never)
+		const host = await (await room.fetch(request("/create", { code: "ABCDEFGH", config: { ...defaultRaceConfig, maxPlayers: 3 }, name: "Host" }))).json() as { playerId: string }
+		const guest = await (await room.fetch(request("/join", { name: "Guest" }))).json() as { playerId: string }
+		const third = await (await room.fetch(request("/join", { name: "Third" }))).json() as { playerId: string }
+		const internal = (room as unknown as { room: { phase: string; hostId: string; members: Record<string, { player: RacePlayer }> } }).room
+		const sockets = [host, guest, third].map((ticket) => { const socket = new FakeSocket(); socket.serializeAttachment({ playerId: ticket.playerId }); internal.members[ticket.playerId]!.player.connected = true; state.sockets.push(socket); return socket })
+		await room.webSocketMessage(sockets[0]! as unknown as WebSocket, JSON.stringify({ type: "leave" }))
+		expect(internal.hostId).toBe(guest.playerId)
+		expect(internal.members[host.playerId]).toBeUndefined()
+		expect((await room.fetch(request("/join", { name: "Replacement" }))).status).toBe(201)
+		internal.phase = "racing"
+		for (const member of Object.values(internal.members)) member.player.status = "racing"
+		await room.webSocketMessage(sockets[2]! as unknown as WebSocket, JSON.stringify({ type: "leave" }))
+		expect(internal.phase).toBe("racing")
+		const replacement = Object.values(internal.members).find((entry) => entry.player.name === "Replacement")!
+		replacement.player.status = "finished"
+		await room.webSocketMessage(sockets[1]! as unknown as WebSocket, JSON.stringify({ type: "leave" }))
+		expect(internal.phase).toBe("finished")
+		expect(state.storage.deleteAlarm).toHaveBeenCalled()
+		expect(internal.hostId).toBe(replacement.player.id)
+		const replacementSocket = new FakeSocket()
+		replacementSocket.serializeAttachment({ playerId: replacement.player.id })
+		await room.webSocketMessage(replacementSocket as unknown as WebSocket, JSON.stringify({ type: "leave" }))
+		expect(internal.hostId).toBe("")
+		expect(sockets.every((socket) => socket.closed)).toBe(true)
 	})
 
 	it("creates, fills, starts, finishes, and rematches a room through its state machine", async () => {

@@ -38,8 +38,8 @@ input:focus-visible {
 	position: relative;
 	width: 100vw;
 	height: 100vh;
-	min-width: 320px;
-	min-height: 560px;
+	min-width: 0;
+	height: 100dvh;
 	overflow: hidden;
 	background: #051326;
 }
@@ -166,7 +166,7 @@ input:focus-visible {
 
 @media (max-width: 900px) {
 	.race-setup, .race-play { grid-template-columns: 1fr; }
-	.race-side { grid-row: 1; grid-template-columns: 1fr auto; align-items: center; }
+	.race-side { grid-template-columns: 1fr auto; align-items: center; }
 	.race-side > p, .race-side > h3, .race-side > .race-minimap, .race-side > small { display: none; }
 	.race-nearby { grid-column: 1 / -1; }
 }
@@ -2397,3 +2397,169 @@ input:focus-visible {
 		grid-template-columns: 1fr;
 	}
 }
+/* Shared pixel chrome and an in-flow HUD: controls never occupy the typing area. */
+button, select, textarea { font: inherit; }
+.panel-chrome, .pixel-panel {
+ border: 3px solid #9a723b; border-radius: 0; background: #0a2442ed;
+ backdrop-filter: none; -webkit-backdrop-filter: none;
+ box-shadow: inset 0 0 0 2px #203f61, 3px 3px 0 #041327;
+}
+.game-shell button:not(.mainmenu-button) {
+ border-radius: 0; border: 8px solid transparent;
+ border-image: url('/assets/ocean/mainmenu/button_blue_empty.png') 25 36 fill / 8px / 0 stretch;
+ background: #16375a; color: #ffdf91; font-family: Consolas, monospace; font-weight: 800;
+ min-height: 44px; box-shadow: none; text-shadow: 1px 2px #06182d;
+}
+.game-shell button.primary-action, .game-shell button.pixel-action.primary, .game-shell button.selected, .game-shell button[aria-pressed='true'] {
+ border-image-source: url('/assets/ocean/mainmenu/button_gold_empty.png'); color: #163049; text-shadow: 1px 1px #ffedaf;
+}
+.game-shell button:disabled { cursor: not-allowed; opacity: .55; }
+.game-shell button:not(:disabled):active { translate: 0 2px; }
+.game-shell input:not([type='range']):not([type='checkbox']), .game-shell select, .game-shell textarea {
+ border: 2px solid #678ea4; border-radius: 0; background: #061a2f; color: #e9f5eb; min-height: 44px;
+}
+.mainmenu-button { position: relative; border: 0; padding: 0; aspect-ratio: auto; }
+.mainmenu-button-label { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 12px; font: 900 clamp(1rem, 2vw, 1.5rem)/1 Consolas, monospace; color: #ffe1a0; text-shadow: 2px 2px #07182d; }
+.mainmenu-button-label .pixel-icon { width: 32px; height: 32px; }
+.mainmenu-button.primary .mainmenu-button-label { color: #173757; text-shadow: 1px 1px #ffe7a2; }
+.mainmenu-stack { gap: 7px; }
+.mainmenu-center { top: 20px; }
+.menu-progress { display: grid; justify-items: center; gap: 6px; margin: 14px auto 0; padding: 10px; width: min(100%, 330px); font-size: .8rem; text-align: center; }
+.menu-progress strong { color: #ffe1a0; }
+.menu-progress .xp-track { width: 90%; }
+.menu-progress span { font-size: .7rem; }
+.xp-track, .xp-track i { border-radius: 0; }
+.xp-track i { transition: width 300ms ease-out; }
+.avatar { border-radius: 0; background: #163a59; }
+.prep-layer { background: linear-gradient(#06192d80, #06192dc0), url('/assets/ocean/mainmenu/background-mainmenu.png') center / cover; }
+.hud { display: grid; grid-template-rows: auto auto auto minmax(90px, 1fr) auto auto; gap: 6px; padding: 10px; overflow: auto; }
+.hud .topbar { position: static; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.hud .topbar .logo-mark-image { position: static; transform: none; width: min(24vw, 240px); max-height: 64px; }
+.hud .player-badge { min-height: 56px; padding: 5px 10px; }
+.hud .avatar { width: 36px; height: 36px; flex-basis: 36px; }
+.hud .player-badge strong { font-size: 1rem; }
+.hud .player-badge span { font-size: .75rem; margin-top: 0; }
+.hud .player-badge span .pixel-icon { width: 16px; height: 16px; }
+.hud .currency-row { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; justify-content: end; gap: 5px; }
+.hud .currency-pill { padding: 5px; min-height: 38px; }
+.hud .icon-button { min-width: 44px; width: 44px; height: 44px; padding: 0; }
+.hud .icon-rail { position: static; transform: none; display: flex; width: min(850px, 100%); margin: 0 auto; padding: 4px; gap: 6px; }
+.hud .rail-button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; padding: 3px; }
+.hud .rail-button .pixel-icon { width: 24px; height: 24px; }
+.hud .rail-button em { position: static; font-size: .65rem; padding: 2px; }
+.hud .route-strip { position: static; transform: none; width: min(850px, 100%); margin: 0 auto; padding: 5px 10px; min-height: 28px; font-size: .78rem; }
+.hud .fish-card { display: none; }
+.hud .bottom-console { position: static; grid-row: 5; transform: none; min-width: 0; width: min(850px, 100%); margin: 0 auto; gap: 5px; }
+.hud .typing-panel { min-height: 0; padding: 10px 14px; }
+.hud .typing-help { margin: 0 0 5px; font-size: .7rem; }
+.typing-passage { position: relative; white-space: pre-wrap; overflow: auto; overflow-wrap: anywhere; scrollbar-width: thin; line-height: 1.65; color: #87a9bd; }
+.typing-word { display: inline; }
+.typing-passage .done { color: #80ddaf; }
+.typing-passage .next { color: #081b30; background: #f6d176; border-bottom: 3px solid #e9ae45; }
+.typing-passage .next.mistake { background: #ff8082; border-color: #ec474f; }
+.typing-passage.mono { font-family: Consolas, monospace; }
+.hud .typing-target { font: 600 clamp(1.05rem, 2vw, 1.35rem)/1.6 Consolas, monospace; max-height: 84px; min-height: 36px; }
+.typing-native-input { display: block; width: 100%; padding: 8px 10px; margin-top: 7px; font: 1rem Consolas, monospace; }
+.hud .stat-row { min-height: 45px; padding: 4px 10px; gap: 5px; }
+.hud .stat strong { font-size: 1rem; }
+.hud .stat span { font-size: .6rem; }
+.hud .stat .pixel-icon { width: 24px; height: 24px; }
+.hud .progress-stack { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hud .small-meter { min-width: 0; }
+.hud .skill-dock { position: static; grid-row: 6; transform: none; width: min(850px, 100%); margin: 0 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; gap: 5px; }
+.hud .skill-button { min-height: 60px; padding: 4px; grid-template-columns: auto 1fr; font-size: .75rem; }
+.hud .skill-button img { width: 28px; height: 28px; grid-row: 1 / 3; }
+.hud .skill-key { position: static; font-size: .6rem; padding: 0; }
+.hud .skill-cost { display: block; font-size: .6rem; }
+.hud .skill-button span:last-child { display: block; }
+.hud .skill-button.passive { opacity: .85; }
+.hud .boss-phase-callout { position: absolute; top: 200px; left: 10px; width: min(300px, calc(100% - 20px)); transform: none; padding: 8px; }
+.hud .result-toast { right: 12px; top: 205px; bottom: auto; width: min(330px, calc(100% - 24px)); }
+.hud .feedback-banner { top: 205px; left: 12px; transform: none; width: min(320px, calc(100% - 24px)); }
+.overlay-panel, .race-board-dialog { position: fixed; inset: 0; transform: none; margin: auto; width: min(720px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 18px; overflow: auto; pointer-events: auto; color: #f5faff; }
+.overlay-panel::backdrop, .race-board-dialog::backdrop, .pause-overlay::backdrop { background: #020c1cdc; }
+.race-board-dialog:not([open]), .pause-overlay:not([open]) { display: none; }
+.pause-overlay { inset: 0; margin: auto; padding: 0; border: 0; width: min(480px, calc(100% - 24px)); height: fit-content; background: transparent; pointer-events: auto; }
+.pause-card { width: 100%; }
+.race-screen .race-stage { min-height: 350px; border-radius: 0; background: url('/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp') center / cover; }
+.race-stage::before, .race-stage::after, .race-horizon { display: none; }
+.race-screen .race-boat { width: 100px; }
+.race-screen .race-boat img { width: 90px; height: 50px; }
+.race-screen .race-boat span, .race-buoy { border-radius: 0; }
+.race-screen .race-boat.self { top: 72%; }
+.race-screen .race-boat.rival-0 { top: 6%; }.race-screen .race-boat.rival-1 { top: 25%; }.race-screen .race-boat.rival-2 { top: 44%; }.race-screen .race-boat.rival-3 { top: 61%; display: none; }.race-screen .race-boat.rival-4 { display: none; }
+.race-header, .race-config, .race-join, .race-waiting, .race-results, .race-room-meta, .race-type, .race-side, .race-error { border-radius: 0; }
+.race-side-head { flex-wrap: wrap; }
+.practice-screen .practice-passage { max-height: 240px; }
+.practice-result-stats { flex-wrap: wrap; }
+@media (max-width: 700px) {
+ .race-screen:has(.race-play) { padding: 8px; }
+ .race-screen:has(.race-play) .race-header { padding: 6px; margin-bottom: 8px; }
+ .race-screen:has(.race-play) .race-header > div:first-child { display: none; }
+ .race-screen:has(.race-play) .race-room-meta { padding: 8px; margin-bottom: 8px; font-size: .7rem; }
+ .race-main { gap: 10px; }
+ .race-screen .race-stage { min-height: clamp(180px, 28dvh, 240px); }
+ .race-screen .race-boat.self { top: 68%; }
+ .race-screen .race-boat.rival-0 { top: 3%; }
+ .race-screen .race-boat.rival-1 { top: 35%; }
+ .race-type { padding: 12px; gap: 8px; }
+ .race-passage { min-height: 54px; max-height: 96px; }
+ .race-input-label { font-size: .75rem; }
+}
+@media (max-width: 700px) {
+ .hud { padding: 6px; gap: 4px; }
+ .hud .topbar { gap: 4px; }
+ .hud .topbar .logo-mark-image { display: none; }
+ .hud .player-badge { padding: 5px; gap: 4px; }
+ .hud .player-badge strong, .hud .avatar { display: none; }
+ .hud .player-badge .xp-track { width: 70px; }
+ .hud .currency-pill .pixel-icon { width: 18px; height: 18px; }
+ .hud .currency-pill span { font-size: .72rem; }
+ .hud .currency-row { flex-wrap: nowrap; }
+ .hud .rail-button { gap: 2px; font-size: .68rem; border-width: 6px; }
+ .hud .rail-button .pixel-icon { width: 18px; height: 18px; }
+ .hud .rail-button em { display: none; }
+ .hud .route-strip { gap: 5px; font-size: .62rem; }
+ .hud .typing-panel { padding: 7px; }
+ .hud .typing-help kbd { display: none; }
+ .hud .tension-wrap { padding: 0 6px; grid-template-columns: 22px 1fr; }
+ .hud .meter-label { font-size: .7rem; }
+ .hud .meter-label strong { font-size: .85rem; }
+ .hud .skill-button { font-size: .62rem; }
+ .hud .skill-button img { width: 24px; height: 24px; }
+ .hud .boss-phase-callout { top: 150px; width: min(260px, calc(100% - 12px)); left: 6px; }
+ .hud .feedback-banner, .hud .result-toast { top: 150px; }
+ .menu-progress { margin-top: 10px; padding: 7px; }
+ .mainmenu-stack { gap: 6px; }
+ .race-header { flex-direction: column; }
+ .race-header-actions { justify-content: start; }
+ .race-screen .race-boat { width: 84px; }
+ .race-screen .race-boat img { width: 76px; height: 44px; }
+ .race-screen .race-boat.rival-2 { display: none; }
+ .settings-grid label { grid-template-columns: minmax(80px, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 700px) and (max-height: 700px) {
+ .race-screen .race-boat img { height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+ *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+.mainmenu-button, .mainmenu-button.primary { height: clamp(44px, 8dvh, 62px); width: 100%; }
+.mainmenu-button img { width: 100%; height: 100%; }
+.mainmenu-logo { max-height: min(20dvh, 140px); width: min(100%, 380px); object-fit: contain; }
+.typing-word { display: inline-block; max-width: 100%; }
+.hud .skill-button span { background: none; border: 0; }
+.hud .skill-button span { color: inherit; text-shadow: inherit; }
+.hud .skill-button:disabled { opacity: .75; }
+.hud .result-toast { position: static; grid-row: 4; justify-self: center; align-self: center; width: min(500px, 100%); margin: 0; padding: 10px; }
+.result-toast .feedback-banner { position: static; width: auto; margin: 4px 0; padding: 4px 0; border: 0; box-shadow: none; background: transparent; }
+.result-toast .feedback-banner .pixel-icon { display: none; }
+.result-toast .feedback-banner strong { color: #f8d37d; }
+.hud > .feedback-banner { position: static; grid-row: 4; justify-self: center; align-self: start; width: min(450px, 100%); margin: 0; padding: 10px; }
+.hud .boss-phase-callout { position: static; grid-row: 4; justify-self: start; align-self: start; width: min(300px, 100%); margin: 0; font-size: .7rem; }
+.encounter-stage { grid-row: 4; display: grid; align-content: start; justify-items: center; gap: 6px; min-height: 90px; }
+.hud .encounter-stage > .boss-phase-callout, .hud .encounter-stage > .feedback-banner, .hud .encounter-stage > .result-toast { grid-row: auto; position: static; }
+.hud { grid-template-rows: auto auto auto minmax(min-content, 1fr) auto auto; }
+.hud .encounter-stage > .complete-panel { position: static; width: min(480px, 100%); margin: 0; transform: none; padding: 18px; }
+.hud:has(.complete-panel) .bottom-console, .hud:has(.complete-panel) .skill-dock { display: none; }
+.hud:has(.complete-panel) .icon-button:disabled { display: none; }

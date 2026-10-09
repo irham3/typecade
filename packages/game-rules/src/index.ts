@@ -97,9 +97,9 @@ export function createSeededRng(seed: string): SeededRng {
 export function createInitialCollection(): CollectionState {
 	return {
 		records: {},
-		coins: 12450,
-		materials: 685,
-		xp: 24,
+		coins: 0,
+		materials: 0,
+		xp: 0,
 		grantedResultKeys: [],
 	}
 }

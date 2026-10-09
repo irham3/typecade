@@ -224,6 +224,76 @@ Grade: A- for the Milestone 0/1 scope.
 - Renderer-retirement audit found no Pixi references. Production build retains Vite's advisory that the lazy Phaser chunk is 1,398.09 kB (364.68 kB gzip); build succeeds.
 - Added 100% statement, branch, function, and line thresholds so the coverage gate fails if a later change regresses any category.
 
+## 2026-10-09 Input, progression, pixel assets, and multiplayer audit
+
+### Authorization and active scope
+
+- The user explicitly authorized playable multiplayer despite the original branch restriction, and requested incremental pushes to `app-v2` without a pull request or merge. This pass repairs the existing casual Worker rooms; it does not introduce ranked ratings or account services.
+- Active modes are Practice, Adventure, and Multiplayer. The main menu also exposes the working Collection and Settings dialogs. Placeholder shop/leaderboard destinations were removed; gameplay Skills shows the actual equipped skills.
+
+### Findings and repairs
+
+| Finding | Repair | Regression evidence |
+| --- | --- | --- |
+| Global typing intercepted controls and numeric skill shortcuts | Shared focused native input; Alt+number activates skills; browser shortcuts and IME composition are preserved | Browser tests for modifiers, buttons, mobile input, composition, digits, and focus |
+| Passage cursor and progress were hard to follow | Word wrapping, readable whitespace, current-character feedback, local passage scrolling, correct 0–100% progress | Unicode/cursor/scroll tests and responsive Playwright gameplay |
+| Practice timer began before the first key and timed WPM stopped at the last key | First-key start; deadline snapshot advances elapsed typing metrics | Timed practice test waits before typing, then reaches the shared duration |
+| Multiple mobile characters could continue a challenge after a fatal typo | Synchronous terminal-session flag rejects subsequent characters in the same input event | `xabc` into Perfect Tide with target `abc` remains a loss and never records a best score |
+| New expeditions could share reward identity or be replaced by an old transition | Unique run seed, preserved selected loadout, canceled stale transition timer | Two consecutive catches increase XP and count; restart remains at encounter one after the old transition window |
+| Progress began with demonstration currency and XP | New collections start at zero; existing saves remain intact | Package/browser tests verify initial values and persisted catch rewards |
+| Level-up and skill feedback could overwrite each other | Catch result owns the level banner; Cast Net retains catch/level rewards | Cast Net progress gate and level-reward test |
+| Unlock guidance promised unavailable waters | Show the actual skill unlocks and XP remaining; all six unlocked choices become available in preparation | Level/banner tests, full draft, minimum one and maximum three equipped choices |
+| Completion could overlap typing controls or describe a loss as a cleared coast | Results and replay actions occupy the encounter flow; completed runs hide inactive controls; victory requires a caught Leviathan | Failed expedition/replay test and full ten-encounter boss run |
+| Styling and sprites differed between menus and gameplay | Shared blank pixel button plates, pixel icon pack, selected fish catalog sprites, matching boat/equipment | Asset mapping, atlas refresh, screenshots, desktop/mobile menu traversal |
+| Dialogs could lose keyboard focus and leave the timer running | Native modal dialogs, Escape/cancel handlers, restored typing focus, paused gameplay while a HUD panel is open | Browser dialog tests and pause/panel Playwright checks |
+| Race clock used the local clock without the server offset | Snapshot-based server offset drives the countdown/deadline display | Time race and deadline tests |
+| Leaving a room retained an unavailable lobby member | Explicit leave message removes the member, transfers hosting, and releases capacity immediately | Worker tests and a real two-player lobby departure/replacement scenario |
+| Large fleets needed bounded rendering | Local-rank presentation, nearby competitors, fleet minimap, searchable full standings | 100-member browser rendering test and live 100-connection room scenario |
+| Mobile race standings and the fixed-height stage pushed typing outside the viewport | Standings follow the main arena; compact in-race chrome, viewport-sized stage, and bounded passage height keep typing visible | Two-player production E2E checks that the whole arena and input are in the viewport at 390×844 and 320×640; screenshots retained |
+| Storage denial could crash Practice or Multiplayer | Safe reads/writes preserve the current in-memory session; corrupt/negative best scores fall back to zero | Blocked read/write/remove tests for both modes |
+| Hit stop could pause a scene during initialization | Only start a new hold on an active scene; an existing hold can still be extended | Phaser hold-window test includes inactive scene, extension, release, and an already resumed scene |
+
+### Asset production record
+
+- Refreshed 319 atlas cells with `node apps/web/scripts/refresh-ocean-art.mjs`. Atlas frame names, sizes, and pivots remain stable; PNG output shrank from 1,622,411 to 1,261,015 bytes.
+- The new blue/gold menu plates were generated by editing the existing Typecade plates, removing baked lettering/icons, and preserving pixel borders and transparent margins. `ASSET-LICENSES.md` records current provenance.
+- Pebble Goby retains its multi-frame state strips. Other replacement fish reuse their selected base pose across atlas states; Phaser supplies movement and effects. This pass does not claim new frame-by-frame animation for every species.
+- Shortened typo/phase/catch hit stop and bounded the level-up burst. Viewport-scaled monospace callouts sit above the fish. Reduced effects remain available.
+
+### Verification environment
+
+- `npm run test:e2e` builds the production bundle, then Playwright exercises UI and rooms directly through an isolated Worker on `localhost:8788`, with `.wrangler/e2e-state` for persistence. Normal development stays on 3000/8787. The suite owns its server lifecycle and does not reuse another run's server. Earlier overlapping runs exposed local `SQLITE_BUSY`; the Vite proxy also logged connection resets during fleet teardown. Production E2E bypasses that proxy, and fleet members leave sequentially with server-acknowledged closure. Finished rooms cancel their unused alarm.
+- Coverage covers every one of the 17 production TypeScript files in the active Vite/package roots. No file, line, branch, or function exclusions were added. The historical Next/Overdrive tree remains outside the active Vite build.
+
+### Final verification results
+
+| Gate | Result |
+| --- | --- |
+| `npm run test` | 124 tests passed across 13 files |
+| `npm run test:coverage` | 100% statements (2096/2096), branches (1519/1519), functions (457/457), and lines (1848/1848); 17 active production files, zero skipped items |
+| `npm run build` | Passed; lazy Phaser chunk advisory remains |
+| `npm run test:e2e` | 17 Chromium scenarios passed in 4.1 minutes against the production build, including both mobile race viewport assertions |
+| `npm run lint` | Passed |
+| `npx tsc --noEmit` | Passed |
+| `npm run typecheck:rooms` | Passed |
+| `git diff --check` | Passed |
+| Renderer-retirement audit | No matches in the source/package paths recorded above |
+
+The final E2E server log contains no `ERROR`, `SQLITE`, `Uncaught`, proxy, or failed-operation entries. Node's test-runner color-environment warning is separate from application errors.
+
+Production screenshots retained with this audit:
+
+- [Adventure desktop](reference/ocean-audit-2026-10-09/gameplay-desktop.png)
+- [Adventure mobile](reference/ocean-audit-2026-10-09/gameplay-mobile.png)
+- [Multiplayer mobile, 390×844](reference/ocean-audit-2026-10-09/race-mobile-390.png)
+- [Multiplayer small mobile, 320×640](reference/ocean-audit-2026-10-09/race-mobile-320.png)
+
+### Practical limits
+
+- The live fleet scenario uses 100 local WebSocket connections, capacity overflow rejection, a shared deadline, standings, and search. It is not a test of 100 physical devices typing concurrently across the internet.
+- New collections have an earned progression loop, skill unlocks at levels 2/3, repeat-catch counters, and persistent size/quality records. Longer-term retention and balance still require human play sessions; automated tests cannot establish that a game will be addictive.
+- The lazy Phaser production chunk remains about 1.40 MB (365 kB gzip), above Vite's 500 kB advisory. No new runtime dependency was introduced. No public deployment was performed in this pass.
+
 ## Touched Files
 
 This list is updated as files are changed.

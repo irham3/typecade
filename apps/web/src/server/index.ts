@@ -185,7 +185,17 @@ export class RaceRoom {
 		try { message = JSON.parse(raw) as Record<string, unknown> } catch { return }
 		const now = Date.now()
 		member.lastSeenAt = now
-		if (message.type === "ready" && room.phase === "waiting") {
+		if (message.type === "leave") {
+			delete room.members[playerId!]
+			if (room.hostId === playerId) {
+				const remaining = Object.values(room.members)
+				room.hostId = (remaining.find((entry) => entry.player.connected) ?? remaining[0])?.player.id ?? ""
+			}
+			if (room.phase === "racing" && Object.values(room.members).every((entry) => entry.player.status === "finished" || entry.player.status === "out")) room.phase = "finished"
+			await this.save()
+			this.broadcast()
+			socket.close(1000, "Left room")
+		} else if (message.type === "ready" && room.phase === "waiting") {
 			member.player.ready = message.ready === true
 			await this.save()
 			this.broadcast()
@@ -286,5 +296,8 @@ export class RaceRoom {
 		}
 	}
 
-	private async save(): Promise<void> { await this.ctx.storage.put("room", this.room) }
+	private async save(): Promise<void> {
+		if (this.room!.phase === "finished") await this.ctx.storage.deleteAlarm()
+		await this.ctx.storage.put("room", this.room)
+	}
 }

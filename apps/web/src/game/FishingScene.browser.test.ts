@@ -215,7 +215,7 @@ describe("FishingScene in Chromium", () => {
 		const internals = scene as unknown as { gameplayBackdrop?: Phaser.GameObjects.Image; bgLayers: Phaser.GameObjects.Image[] }
 		internals.gameplayBackdrop = undefined
 		internals.bgLayers = []
-		scene.create()
+		;(scene as FishingScene).create()
 		expect(scene.children.list.some((child) => (child as { texture?: { key: string } }).texture?.key === "bg_gameplay_ai")).toBe(false)
 		expect(scene.children.list.some((child) => (child as Phaser.GameObjects.Image).texture?.key === "bg_zone1_sky" && (child as Phaser.GameObjects.Image).visible)).toBe(true)
 	})
@@ -321,6 +321,10 @@ describe("FishingScene in Chromium", () => {
 		const now = vi.spyOn(performance, "now").mockReturnValue(1000)
 		try {
 			controls.hitStop(100)
+			expect(pause).not.toHaveBeenCalled()
+			isActive.mockReturnValue(true)
+			controls.hitStop(100)
+			isActive.mockReturnValue(false)
 			controls.hitStop(250)
 			vi.setSystemTime(1100)
 			now.mockReturnValue(1100)
@@ -330,7 +334,6 @@ describe("FishingScene in Chromium", () => {
 			now.mockReturnValue(1300)
 			await vi.advanceTimersByTimeAsync(150)
 			expect(resume).toHaveBeenCalledOnce()
-			expect(isActive).toHaveBeenCalledOnce()
 			isActive.mockReturnValue(true)
 			controls.hitStop(50)
 			now.mockReturnValue(1400)
