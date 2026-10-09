@@ -2,6 +2,20 @@
 
 This register covers the Ocean Typing RPG Milestone 0/1 asset set generated for this branch.
 
+## Current runtime substitutions — 2026-10-09
+
+The entries below replace the older procedural provenance for the affected runtime files. Unlisted assets keep their existing register entries. The catalog remains concept art except for the explicitly selected sprites below.
+
+| Runtime output | Source | Creator / rights record | Processing |
+| --- | --- | --- | --- |
+| `mainmenu/button_blue_empty.png`, `button_gold_empty.png` | Existing Typecade menu plate images, edited with OpenAI image generation on 2026-10-09 | Project generated pixel art; no external stock attribution | Removed all lettering/icons, retained border and transparent margins, trimmed and resized to 420px wide with nearest-neighbor filtering |
+| Atlas frames and idle PNGs for Kelp Darter, Sunny Guppy, Shellback Puffer, Tide Skipper, Coral Fry, Glass Eel, Reef Shark, Crown Leviathan | `concepts/fish-catalog-v2/fish_catalog_v2_{08,03,04,05,06,14,21,40}.png`, respectively | Existing project generated catalog art, OpenAI image generation | Trimmed into fixed runtime cells; repeated base pose across state frames |
+| Atlas frames and idle PNG for Moonfin Snapper | `reference-derived-pixel-pack/fish_moonfin_snapper.png` | Existing project generated pixel art | Same fixed-cell normalization |
+| Boat, rods, luminous line, moon bait, six skill icons | `mainmenu/ship-mainmenu.png` and `reference-derived-pixel-pack/*`; exact mapping in `apps/web/scripts/refresh-ocean-art.mjs` | Existing project generated pixel art | Trimmed, nearest-neighbor resized, transparent old atlas pixels cleared before replacement |
+| `atlases/atlas_ocean.png` | Existing atlas plus the runtime substitutions above | Mixed project procedural and generated pixel assets | 319 frame cells refreshed; frame names, dimensions, and pivots preserved |
+
+Menu edit brief: preserve the original Typecade navy/gold pixel plate, rivets, bevels, size, and transparency; remove every word and icon; leave the center empty for live UI labels. The blue and gold source plates were edited separately. No purchased assets were introduced.
+
 | Asset | Source | Creator | License | Attribution | Modification | Used In |
 | --- | --- | --- | --- | --- | --- | --- |
 | docs/reference/typecade-ui-reference.jpg | User-provided reference screenshot | User | Project reference only | Not redistributed as game asset | Not used as source material; used for UI chrome interpretation | docs/reference |
