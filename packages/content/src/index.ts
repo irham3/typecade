@@ -268,9 +268,9 @@ export const fishingSkills: FishingSkill[] = [
 		name: "Cast Net",
 		type: "active",
 		rarity: "common",
-		effect: "instant_small_capture",
+		effect: "steady_small_fish",
 		rankedAllowed: false,
-		description: "Catch a small fish after reaching 45% reel progress.",
+		description: "At 45% on a small fish, ease tension by 18 and repair 20% line. Finish typing to land it.",
 	},
 	{
 		id: "steel_line",
@@ -313,9 +313,9 @@ export const fishingSkills: FishingSkill[] = [
 		name: "Reel Mastery",
 		type: "passive",
 		rarity: "rare",
-		effect: "fifth_perfect_word_bonus_progress",
+		effect: "fifth_perfect_word_line_recovery",
 		rankedAllowed: false,
-		description: "Every fifth perfect word grants bonus progress.",
+		description: "Every fifth consecutive perfect word eases tension by 8 and repairs 5% line.",
 	},
 ]
 

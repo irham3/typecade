@@ -243,7 +243,8 @@ export function applyTypingEvents(
 		if (event.type === "correct-char") {
 			next = {
 				...next,
-				progress: clamp(next.progress + getCorrectCharacterProgress(fish, next), 0, 1),
+				// Rounded metrics must never complete a catch before passage-complete.
+				progress: clamp(event.metrics.progress, 0, 0.999),
 				tension: clamp(next.tension - 0.1, 0, 100),
 			}
 			events.push({ type: "progress", value: next.progress })
@@ -265,30 +266,26 @@ export function applyTypingEvents(
 		if (event.type === "word-complete") {
 			const perfect = event.perfect === true
 			const combo = perfect ? next.combo + 1 : 0
-			const masteryBonus = selectedSkillIds.includes("reel_mastery") && perfect && combo % 5 === 0 ? 0.08 : 0
-			const guardMultiplier = fish.id === "crown_leviathan" && next.bossPhase === 2 && next.bossGuard > 0 ? 0.55 : 1
-			const progressGain = fish.progressPerWord * getBehaviorProgressModifier(fish) * (1 + Math.min(combo, 12) * 0.018) * guardMultiplier + masteryBonus
+			const masteryBonus = selectedSkillIds.includes("reel_mastery") && perfect && combo % 5 === 0 ? 8 : 0
 			next = {
 				...next,
 				combo,
 				perfectWords: perfect ? next.perfectWords + 1 : next.perfectWords,
 				skillEnergy: clamp(next.skillEnergy + (perfect ? 14 : 7), 0, 100),
-				progress: clamp(next.progress + progressGain, 0, 1),
-				tension: clamp(next.tension - (perfect ? 2.2 : 0.8), 0, 100),
+				durability: clamp(next.durability + (masteryBonus > 0 ? 5 : 0), 0, 100),
+				tension: clamp(next.tension - (perfect ? 2.2 : 0.8) - masteryBonus, 0, 100),
 			}
 			if (fish.id === "crown_leviathan" && next.bossPhase === 2 && perfect && next.bossGuard > 0) {
 				const bossGuard = next.bossGuard - 1
 				next = { ...next, bossGuard }
 				if (bossGuard === 0) {
-					const bonusProgress = 0.08
-					next = { ...next, progress: clamp(next.progress + bonusProgress, 0, 1), tension: clamp(next.tension - 6, 0, 100) }
-					events.push({ type: "boss-guard-broken", value: bonusProgress, label: "Crown Guard Broken" })
+					next = { ...next, tension: clamp(next.tension - 6, 0, 100) }
+					events.push({ type: "boss-guard-broken", value: 6, label: "Crown Guard Broken" })
 				}
 			}
 			if (fish.id === "crown_leviathan" && next.bossPhase === 3 && perfect && combo > 0 && combo % 3 === 0) {
-				const finalPullBonus = 0.1
-				next = { ...next, progress: clamp(next.progress + finalPullBonus, 0, 1), tension: clamp(next.tension - 8, 0, 100) }
-				events.push({ type: "boss-final-pull", value: finalPullBonus, label: "Final Pull" })
+				next = { ...next, tension: clamp(next.tension - 8, 0, 100) }
+				events.push({ type: "boss-final-pull", value: 8, label: "Final Pull" })
 			}
 			events.push({ type: "progress", value: next.progress })
 			if (masteryBonus > 0) {
@@ -326,7 +323,8 @@ export function tickEncounter(
 
 	const deltaSeconds = Math.max(0, deltaMs) / 1000
 	const calmFactor = encounter.calmCurrentRemainingMs > 0 ? 0.35 : 1
-	const pressure = fish.idlePressurePerSecond * routeRisk * calmFactor * deltaSeconds
+	const guardPressure = encounter.bossPhase === 2 && encounter.bossGuard > 0 ? 1.35 : 1
+	const pressure = fish.idlePressurePerSecond * routeRisk * calmFactor * guardPressure * deltaSeconds
 	const highTensionDamage = encounter.tension > 78 ? (encounter.tension - 78) * 0.012 * deltaSeconds : 0
 
 	let next: EncounterState = {
@@ -363,8 +361,8 @@ export function useFishingSkill(encounter: EncounterState, fish: FishSpecies, sk
 		next = {
 			...next,
 			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),
-			progress: 1,
-			tension: clamp(next.tension + 6, 0, 100),
+			durability: clamp(next.durability + 20, 0, 100),
+			tension: clamp(next.tension - 18, 0, 100),
 		}
 		events.push({ type: "progress", value: next.progress })
 	}
@@ -624,32 +622,6 @@ function settleEncounterStatus(encounter: EncounterState, events: FishingRuleEve
 		return { ...encounter, status: "escaped" }
 	}
 	return encounter
-}
-
-function getCorrectCharacterProgress(fish: FishSpecies, encounter: EncounterState): number {
-	const baseProgress = fish.behavior === "armored" ? 0.0025 : 0.0035
-	return fish.id === "crown_leviathan" && encounter.bossPhase === 2 && encounter.bossGuard > 0
-		? baseProgress * 0.55
-		: baseProgress
-}
-
-function getBehaviorProgressModifier(fish: FishSpecies): number {
-	switch (fish.behavior) {
-		case "calm":
-			return 1.08
-		case "darting":
-			return 0.96
-		case "armored":
-			return 0.82
-		case "tricky":
-			return 0.92
-		case "swarm":
-			return 1.02
-		case "predator":
-			return 0.9
-		case "boss":
-			return 0.78
-	}
 }
 
 function getLevelThreshold(level: number): number {

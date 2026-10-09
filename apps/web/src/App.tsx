@@ -200,14 +200,14 @@ function GameHud({
 
 	const timeLeft = formatTime(view.encounter.timeRemainingMs)
 	const tensionPercent = Math.round(view.encounter.tension)
-	const progressPercent = Math.round(view.encounter.progress * 100)
+	const progressPercent = Math.floor(view.encounter.progress * 100)
 	const durabilityPercent = Math.round(view.encounter.durability)
 	const routeProgress = `${view.expedition.currentZoneIndex + 1}/3`
 	const encounterLabel = `${getEncounterNumber(view.expedition.currentZoneIndex, view.expedition.currentEncounterIndex)}/10`
 	const bossPhaseDetails = [
 		{ title: "Crown Wake", detail: "Reel steadily and learn the Leviathan's pull." },
-		{ title: "Crown Guard", detail: "Three perfect words break the guard; progress is slower while it holds." },
-		{ title: "Final Pull", detail: "Every third consecutive perfect word reels in a large burst." },
+		{ title: "Crown Guard", detail: "Three perfect words break the guard and release its extra line pressure." },
+		{ title: "Final Pull", detail: "Every third consecutive perfect word eases tension by 8. Finish the passage to land it." },
 	] as const
 	const bossPhaseDetail = bossPhaseDetails[view.encounter.bossPhase - 1]
 

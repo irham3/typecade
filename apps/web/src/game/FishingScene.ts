@@ -133,7 +133,7 @@ export class FishingScene extends Phaser.Scene {
 			console.error("[typecade] asset load failed", file.key, file.src)
 		})
 		this.load.atlas("ocean", "/assets/ocean/atlases/atlas_ocean.png", "/assets/ocean/atlases/atlas_ocean.json")
-		this.load.image("bg_gameplay_ai", "/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp")
+		this.load.image("bg_gameplay_ai", "/assets/ocean/backgrounds/bg_shallow_coast_cutaway.webp")
 		for (const state of Object.keys(pebbleGobyFrameCounts) as FishVisualState[]) {
 			const frameCount = pebbleGobyFrameCounts[state]
 			const key = `pebble_goby_${state}_${frameCount}f`
@@ -160,7 +160,7 @@ export class FishingScene extends Phaser.Scene {
 
 	create(): void {
 		if (this.textures.exists("bg_gameplay_ai")) {
-			this.gameplayBackdrop = this.add.image(0, 0, "bg_gameplay_ai").setOrigin(0, 0).setDepth(-2)
+			this.gameplayBackdrop = this.add.image(0, 0, "bg_gameplay_ai").setOrigin(0.5, 0).setDepth(-2)
 		}
 		for (const layer of layers) {
 			const image = this.add.image(0, 0, `bg_zone1_${layer}`).setOrigin(0, 0)
@@ -182,7 +182,7 @@ export class FishingScene extends Phaser.Scene {
 		this.rod.setScale(1.3).setRotation(-0.82).setVisible(false)
 		this.hookGlow = this.add.image(760, 530, "ocean", "vfx_glow_ring_default.png").setDepth(24).setScale(0.45).setAlpha(0.5)
 		this.hookGlow.setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
-		this.lure = this.add.image(760, 530, "ocean", "ui_equipment_bait_shell.png").setDepth(29).setScale(0.46).setVisible(false)
+		this.lure = this.add.image(760, 530, "ocean", "ui_skill_cast_net_default.png").setDepth(29).setScale(0.22).setVisible(false)
 		this.fishShadow = this.add.image(970, 562, "ocean", "vfx_soft_circle_default.png").setDepth(21).setScale(3.1, 0.68).setAlpha(0.34)
 		this.fishShadow.setTint(0x042238).setVisible(false)
 		this.fish = this.add.sprite(970, 515, "pebble_goby_idle_4f", 0).setDepth(25).setScale(1.35).setVisible(false)
@@ -212,13 +212,13 @@ export class FishingScene extends Phaser.Scene {
 			layer.setPosition(drift - 10, 0)
 			layer.setDisplaySize(width + 20, height)
 		})
-		this.gameplayBackdrop?.setPosition(Math.sin(time / 4200) * -4 - 10, 0).setDisplaySize(width + 20, height)
+		this.gameplayBackdrop?.setPosition(width / 2, -height * 0.107).setDisplaySize(Math.max(width + 20, height * 1.1 * 16 / 9), height * 1.1)
 		this.sceneTint?.setSize(width, height)
 		this.animateAmbientLife(time, width, height)
 		this.animateWaterPostFx(time)
 
-		if (this.fish && this.currentFish) {
-			const fishScale = getFishScale(this.currentFish) * Math.min(1, width / 900)
+		if (this.fish && this.currentFish && this.currentFishState !== "caught" && this.currentFishState !== "escape" && !this.tweens.isTweening(this.fish)) {
+			const fishScale = getFishScale(this.currentFish) * Math.min(1, width / 900, height / 1100)
 			const behavior = this.currentFish.behavior
 			const progressPull = this.lineProgress * (this.currentFish.id === bossFish ? 0.12 : 0.21)
 			const tensionPush = Math.max(0, this.lineTension - 54) / 100 * (behavior === "predator" || behavior === "boss" ? 54 : 30)
@@ -227,7 +227,8 @@ export class FishingScene extends Phaser.Scene {
 			const driftX = Math.sin(time / (behavior === "predator" ? 390 : 820)) * (behavior === "swarm" ? 34 : 16)
 			const snap = Math.sin(time / 42) * this.pullTrauma * 18
 			const targetX = width * (0.73 - progressPull) + driftX + tensionPush + snap
-			const targetY = height * 0.4 + driftY + Math.sin(time / 118) * this.pullTrauma * 8
+			const halfHeight = this.fish.height * fishScale / 2
+			const targetY = Math.min(height * 0.46 - halfHeight - 4, Math.max(height * 0.3 + halfHeight + 4, height * 0.4 + (this.reducedMotion ? 0 : driftY + Math.sin(time / 118) * this.pullTrauma * 8)))
 			this.fish.setPosition(targetX, targetY)
 			this.fish.setScale(fishScale * (1 + this.pullTrauma * 0.08), fishScale * (1 - this.pullTrauma * 0.035))
 			this.fish.setRotation(Math.sin(time / 760) * 0.035 + this.pullTrauma * 0.055)
@@ -251,7 +252,7 @@ export class FishingScene extends Phaser.Scene {
 
 		const bend = (this.lineTension - 30) / 100 * 0.22 + this.pullTrauma * 0.08
 		this.rod?.setRotation(-0.86 + bend + Math.sin(time / 80) * this.pullTrauma * 0.035)
-		this.boat?.setY(height * 0.46 + Math.sin(time / 720) * 5 + this.pullTrauma * 4)
+		this.boat?.setY(height * 0.3 + Math.sin(time / 720) * 2)
 		this.boat?.setRotation(Math.sin(time / 900) * 0.014 - this.pullTrauma * 0.012)
 		this.updateLine(time)
 	}
@@ -386,6 +387,8 @@ export class FishingScene extends Phaser.Scene {
 				}
 			}),
 			bridge.on("encounter:started", ({ encounter, fish }) => {
+				if (this.fish) this.tweens.killTweensOf(this.fish)
+				this.fish?.setAlpha(1)
 				this.currentFish = fish
 				this.lineProgress = encounter.progress
 				this.lineTension = encounter.tension
@@ -393,9 +396,12 @@ export class FishingScene extends Phaser.Scene {
 				this.setZoneBackground(fish.habitat)
 				this.fish?.setVisible(true)
 				this.fishShadow?.setVisible(true)
+				this.fish?.setScale(getFishScale(fish) * Math.min(1, this.scale.width / 900, this.scale.height / 1100))
 				this.playFishAnimation(fish, "bite")
 				this.floatText(fish.rarity === "boss" ? "BOSS HOOKED" : `${fish.rarity.toUpperCase()} BITE`, this.scale.width * 0.6, this.scale.height * 0.28, fish.rarity === "common" ? 0x9ae7ff : 0xf5c240)
-				this.time.delayedCall(360, () => this.playFishAnimation(fish, "swim"))
+				this.time.delayedCall(360, () => {
+					if (this.currentFish === fish && this.currentFishState === "bite") this.playFishAnimation(fish, "swim")
+				})
 				this.bubbleEmitter?.explode(24, this.scale.width * 0.62, this.scale.height * 0.4)
 				if (fish.rarity === "rare" || fish.rarity === "boss") {
 					this.sparkEmitter?.explode(fish.rarity === "boss" ? 70 : 40, this.scale.width * 0.62, this.scale.height * 0.5)
@@ -415,7 +421,7 @@ export class FishingScene extends Phaser.Scene {
 			bridge.on("fish:hooked", ({ fish }) => {
 				this.currentFish = fish
 				this.playFishAnimation(fish, "bite")
-				this.emitWaterImpact(this.scale.width * 0.58, this.scale.height * 0.55, 30)
+				this.emitWaterImpact(this.scale.width * 0.58, this.scale.height * 0.3, 30)
 				this.playAudio("sfx_splash_a", "gameplay")
 				this.hitStop(120)
 				if (!this.reducedMotion) {
@@ -433,18 +439,9 @@ export class FishingScene extends Phaser.Scene {
 			}),
 			bridge.on("word:completed", ({ combo, perfect }) => {
 				this.pullTrauma = Math.min(1, this.pullTrauma + (perfect ? 0.35 : 0.2))
-				this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.62, this.fish?.y ?? this.scale.height * 0.55, combo >= 5 ? 40 : 20)
+				this.bubbleEmitter?.explode(combo >= 5 ? 18 : 8, this.fish?.x ?? this.scale.width * 0.62, this.fish?.y ?? this.scale.height * 0.4)
 				this.popFish(perfect ? 1.3 : 1.15)
 				this.floatText(perfect ? "PERFECT REEL" : "REEL", this.scale.width * 0.58, this.scale.height * 0.46, perfect ? 0xf5c240 : 0x9ae7ff)
-
-				if (perfect) {
-					this.hitStop(80)
-					if (!this.reducedMotion) {
-						this.cameras.main.zoomTo(1.04, 60, Phaser.Math.Easing.Quadratic.Out, true)
-						this.cameras.main.shake(120, 0.003)
-						this.time.delayedCall(60, () => this.cameras.main.zoomTo(1, 150, Phaser.Math.Easing.Quadratic.In))
-					}
-				}
 
 				if (combo > 0 && combo % 5 === 0) {
 					this.sparkEmitter?.explode(45, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.5) - 24)
@@ -518,6 +515,10 @@ export class FishingScene extends Phaser.Scene {
 				this.emitSkillVfx(skillId, label)
 			}),
 			bridge.on("catch:resolved", ({ result }) => {
+				if (this.fish) {
+					this.tweens.killTweensOf(this.fish)
+					this.tweens.add({ targets: this.fish, x: result.caught ? this.scale.width * 0.22 : this.scale.width + this.fish.displayWidth, y: result.caught ? this.scale.height * 0.29 : this.fish.y + 30, alpha: 0, duration: this.reducedMotion ? 180 : 700, ease: "Quad.In" })
+				}
 				if (this.currentFish) {
 					this.playFishAnimation(this.currentFish, result.caught ? "caught" : "escape")
 				}
@@ -530,7 +531,7 @@ export class FishingScene extends Phaser.Scene {
 						this.cameras.main.flash(300, 245, 194, 64)
 						this.cameras.main.shake(350, 0.012)
 					}
-					this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.54, 80)
+					this.emitWaterImpact(this.fish?.x ?? this.scale.width * 0.61, this.scale.height * 0.3, 80)
 					this.sparkEmitter?.explode(60, this.fish?.x ?? this.scale.width * 0.61, (this.fish?.y ?? this.scale.height * 0.48) - 20)
 					this.ringBurst(this.fish?.x ?? this.scale.width * 0.61, this.fish?.y ?? this.scale.height * 0.5, 0xf5c240, 2.5)
 					this.floatText("CATCH!", this.scale.width * 0.58, this.scale.height * 0.36, 0xf5c240)
@@ -630,7 +631,7 @@ export class FishingScene extends Phaser.Scene {
 		}
 		const width = this.scale.width
 		const height = this.scale.height
-		const rodTip = { x: width * 0.27, y: height * 0.31 }
+		const rodTip = this.rod?.getWorldTransformMatrix().transformPoint(this.rod.width * 0.5 - this.rod.displayOriginX, this.rod.height * 0.03 - this.rod.displayOriginY) ?? { x: width * 0.15, y: height * 0.23 }
 		const lure = { x: this.lure.x, y: this.lure.y }
 		const mouth = this.fish
 			? { x: this.fish.x - this.fish.displayWidth * 0.34, y: this.fish.y + this.fish.displayHeight * 0.04 }
@@ -672,11 +673,11 @@ export class FishingScene extends Phaser.Scene {
 	private layout(): void {
 		const width = this.scale.width
 		const height = this.scale.height
-		this.gameplayBackdrop?.setDisplaySize(width + 20, height)
+		this.gameplayBackdrop?.setPosition(width / 2, -height * 0.107).setDisplaySize(Math.max(width + 20, height * 1.1 * 16 / 9), height * 1.1)
 		this.bgLayers.forEach((image) => image.setDisplaySize(width + 20, height))
 		this.sceneTint?.setSize(width, height)
-		this.boat?.setPosition(width * 0.09, height * 0.46)
-		this.rod?.setPosition(width * 0.075, height * 0.5)
+		this.boat?.setPosition(width * 0.09, height * 0.3).setScale(Math.min(1.05, Math.max(0.65, width / 900)))
+		this.rod?.setPosition(width * 0.115, height * 0.28).setScale(Math.min(0.65, width / 1100))
 		this.lure?.setPosition(width * 0.5, height * 0.57)
 		this.hookGlow?.setPosition(width * 0.5, height * 0.57)
 		this.fish?.setPosition(width * 0.64, height * 0.4)
@@ -688,6 +689,7 @@ export class FishingScene extends Phaser.Scene {
 		if (this.loopsStarted) {
 			return
 		}
+		if (!this.cache.audio.exists("sfx_ambient_ocean_loop") || !this.cache.audio.exists("sfx_music_expedition_loop")) return
 		this.loopsStarted = true
 		this.ambientLoop = this.sound.add("sfx_ambient_ocean_loop", { loop: true, volume: this.volumes.environment })
 		this.musicLoop = this.sound.add("sfx_music_expedition_loop", { loop: true, volume: this.volumes.music })
@@ -699,7 +701,7 @@ export class FishingScene extends Phaser.Scene {
 	}
 
 	private ensureBossLayer(): void {
-		if (!this.loopsStarted || this.bossLoop?.isPlaying) {
+		if (!this.loopsStarted || this.bossLoop?.isPlaying || !this.cache.audio.exists("sfx_music_boss_layer")) {
 			return
 		}
 		this.bossLoop = this.sound.add("sfx_music_boss_layer", { loop: true, volume: 0 })
@@ -750,7 +752,7 @@ export class FishingScene extends Phaser.Scene {
 	}
 
 	private emitWaterImpact(x: number, y: number, amount: number): void {
-		this.splashEmitter?.explode(amount, x, y)
+		if (y <= this.scale.height * 0.3 + 2) this.splashEmitter?.explode(amount, x, y)
 		this.bubbleEmitter?.explode(Math.ceil(amount * 0.45), x - 12, y + 16)
 	}
 
@@ -834,7 +836,7 @@ export class FishingScene extends Phaser.Scene {
 			return
 		}
 		this.tweens.killTweensOf(this.fish)
-		const baseScale = this.currentFish ? getFishScale(this.currentFish) : 1.25
+		const baseScale = (this.currentFish ? getFishScale(this.currentFish) : 1.25) * Math.min(1, this.scale.width / 900, this.scale.height / 1100)
 		this.fish.setScale(baseScale * amount, baseScale * (2 - amount))
 		this.tweens.add({
 			targets: this.fish,
@@ -921,7 +923,7 @@ export class FishingScene extends Phaser.Scene {
 
 function getFishScale(fish: FishSpecies): number {
 	if (fish.id === bossFish) {
-		return 1.94
+		return 0.85
 	}
 	if (fish.rarity === "rare") {
 		return 1.42

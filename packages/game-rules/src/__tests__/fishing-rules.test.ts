@@ -178,6 +178,8 @@ describe("fishing rules", () => {
 	it("transitions boss phases by progress", () => {
 		const boss = getFish("crown_leviathan")
 		const start = startEncounter(boss, "boss-test", [])
+		const guarded = { ...start, bossPhase: 2 as const, bossGuard: 3 }
+		expect(tickEncounter(guarded, boss, 1000, []).encounter.tension).toBeGreaterThan(tickEncounter({ ...guarded, bossGuard: 0 }, boss, 1000, []).encounter.tension)
 		const phaseTwo = tickEncounter({ ...start, progress: 0.35 }, boss, 16, []).encounter
 		const phaseThree = tickEncounter({ ...phaseTwo, progress: 0.7 }, boss, 16, []).encounter
 
@@ -197,7 +199,7 @@ describe("fishing rules", () => {
 		expect(useFishingSkill(bossStart, boss, "cast_net").events).toHaveLength(0)
 		const ready = { ...smallStart, progress: 0.45 }
 		expect(canUseFishingSkill(ready, net)).toBe(true)
-		expect(useFishingSkill(ready, small, "cast_net").encounter.status).toBe("caught")
+		expect(useFishingSkill(ready, small, "cast_net").encounter.status).toBe("active")
 	})
 
 	it("uses Calm Current and Sonar once their active conditions are met", () => {
@@ -285,10 +287,25 @@ describe("fishing rules", () => {
 				encounter = tickEncounter(encounter, fish, 300, []).encounter
 				if (encounter.status !== "active") break
 				encounter = applyTypingEvents(encounter, fish, session.processKey(key, (keyIndex + 1) * 300), []).encounter
-				if (encounter.status !== "active") break
+				if (keyIndex < passage.length - 1) expect(encounter.status, `${fish.id}: character ${keyIndex}`).toBe("active")
 			}
 			expect(encounter.status, fish.id).toBe("caught")
+			expect(session.getMetrics().progress, fish.id).toBe(1)
 		}
+	})
+
+	it("skills preserve passage progress while protecting a damaged line", () => {
+		const fish = getFish("reef_minnow")
+		const damaged = { ...startEncounter(fish, "net-help", []), progress: 0.6, tension: 60, durability: 40, skillEnergy: 70 }
+		const net = useFishingSkill(damaged, fish, "cast_net").encounter
+		expect(net).toMatchObject({ progress: 0.6, status: "active", tension: 42, durability: 60, skillEnergy: 35 })
+		const mastery = applyTypingEvents({ ...damaged, combo: 4 }, fish, [typingEvent("word-complete", { perfect: true })], ["reel_mastery"]).encounter
+		expect(mastery.progress).toBe(0.6)
+		expect(mastery.durability).toBe(45)
+		expect(mastery.tension).toBeCloseTo(49.8)
+		const roundedLastChar = applyTypingEvents(damaged, fish, [typingEvent("correct-char")], []).encounter
+		expect(roundedLastChar.status).toBe("active")
+		expect(roundedLastChar.progress).toBeLessThan(1)
 	})
 
 	it("plays the boss guard and final pull before the catch", () => {

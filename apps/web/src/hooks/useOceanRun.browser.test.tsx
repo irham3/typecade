@@ -100,6 +100,28 @@ describe("ocean run browser controls", () => {
 		expect(controls!.view.lastSkillId).not.toBe("cast_net")
 	})
 
+	it("keeps the completed passage frozen while its next encounter is paused", async () => {
+		await mount()
+		await act(() => controls!.startFreshRun())
+		await act(() => expect(controls!.useSkill("sonar")).toBe(true))
+		expect(controls!.view.feedback?.kind).toBe("skill")
+		const text = controls!.view.targetText
+		await act(() => { for (const key of text) controls!.typeKey(key) })
+		await act(() => controls!.togglePause())
+		await act(() => controls!.setVolume("music", 0.31))
+		await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1900)) })
+		expect(controls!.view.targetText).toBe(text)
+		expect(controls!.view.lastResult?.caught).toBe(true)
+		await act(() => controls!.togglePause())
+		expect(controls!.view.expedition.currentEncounterIndex).toBe(1)
+		expect(controls!.view.cursor).toBe(0)
+		expect(controls!.view.isPaused).toBe(false)
+		expect(controls!.view.feedback).toBeUndefined()
+		expect(controls!.view.lastSkillId).toBeUndefined()
+		expect(controls!.view.volumes.music).toBe(0.31)
+		expect(controls!.view.log.some((line) => line.startsWith("Caught Pebble Goby"))).toBe(true)
+	})
+
 	beforeEach(() => {
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 		host = document.createElement("div")
@@ -247,7 +269,7 @@ describe("ocean run browser controls", () => {
 		expect(controls!.view.lastSkillId).toBe(skill.id)
 	})
 
-	it("gates Cast Net by progress and retains level rewards when it lands the catch", async () => {
+	it("gates Cast Net without skipping typing and retains full-passage level rewards", async () => {
 		const collection = { ...createInitialCollection(), xp: 23 }
 		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(createShallowCoastExpedition("cast-net-reward"), collection))
 		await mount()
@@ -259,6 +281,8 @@ describe("ocean run browser controls", () => {
 		await act(() => { for (const key of text.slice(0, Math.ceil(text.length * 0.6))) controls!.typeKey(key) })
 		expect(controls!.view.encounter.progress).toBeGreaterThanOrEqual(0.45)
 		await act(() => expect(controls!.useSkill("cast_net")).toBe(true))
+		expect(controls!.view.encounter.status).toBe("active")
+		await act(() => { for (const key of text.slice(Math.ceil(text.length * 0.6))) controls!.typeKey(key) })
 		expect(controls!.view.lastResult?.caught).toBe(true)
 		expect(controls!.view.feedback?.kind).toBe("level")
 		expect(controls!.view.collection.xp).toBeGreaterThan(23)
@@ -306,7 +330,7 @@ describe("ocean run browser controls", () => {
 			expect(skillUsed).toHaveBeenCalledWith({ skillId: "passive", label: "Skill" })
 			processKey.mockReturnValueOnce([{ ...eventBase, type: "correct-char" }])
 			await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "d", bubbles: true })))
-			expect(bossGuard).toHaveBeenCalledWith({ bonusProgress: 0 })
+			expect(bossGuard).toHaveBeenCalledWith({ tensionRelief: 0 })
 			stopSkill()
 			stopBoss()
 		} finally {

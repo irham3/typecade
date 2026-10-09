@@ -186,13 +186,11 @@ test.describe("Ocean Typing RPG shell", () => {
 			await expectHudDoesNotOverlap(page)
 			await page.screenshot({ path: testInfo.outputPath("active-gameplay.png") })
 
-			// Cast Net can legitimately finish a small fish once the typing gate is
-			// met; other skills still require the rest of the passage.
-			await page.waitForTimeout(100)
-			if (await page.getByTestId("result-toast").count() === 0) {
-				await page.getByLabel("Adventure typing input").focus()
-				await page.keyboard.type(target.slice(prefixEnd), { delay: 2 })
-			}
+			await expect(page.getByTestId("result-toast")).toHaveCount(0)
+			await page.getByLabel("Adventure typing input").focus()
+			await page.keyboard.type(target.slice(prefixEnd, -1), { delay: 2 })
+			await expect(page.getByTestId("result-toast")).toHaveCount(0)
+			await page.keyboard.type(target.slice(-1))
 			await expect(page.getByTestId("result-toast")).toBeVisible()
 			await page.waitForTimeout(250)
 			await expectCanvasNonBlank(page)
@@ -200,7 +198,7 @@ test.describe("Ocean Typing RPG shell", () => {
 		})
 	}
 
-	test("completes the full Shallow Coast run including the Leviathan", async ({ page }) => {
+	test("completes the full Shallow Coast run including the Leviathan", async ({ page }, testInfo) => {
 		test.setTimeout(120000)
 		await page.goto("/")
 		await page.getByRole("button", { name: "Adventure", exact: true }).click()
@@ -209,6 +207,8 @@ test.describe("Ocean Typing RPG shell", () => {
 			await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter}/10`)
 			if (encounter === 10) {
 				await expect(page.getByTestId("boss-phase-callout")).toContainText("Crown Wake")
+				await page.waitForTimeout(1000)
+				await page.screenshot({ path: testInfo.outputPath("boss-gameplay.png") })
 			}
 			const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
 			await page.keyboard.type(target, { delay: encounter === 10 ? 12 : 1 })

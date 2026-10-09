@@ -23,12 +23,12 @@ export type FishState =
 export type SkillType = "active" | "passive"
 
 export type SkillEffect =
-	| "instant_small_capture"
+	| "steady_small_fish"
 	| "ignore_first_typo_per_encounter"
 	| "reveal_route_fish"
 	| "slow_fish_pressure"
 	| "perfect_streak_tension_recovery"
-	| "fifth_perfect_word_bonus_progress"
+	| "fifth_perfect_word_line_recovery"
 
 export type ZoneId = "zone_1" | "zone_2" | "zone_3"
 
@@ -238,10 +238,10 @@ export interface GameEventMap {
 		phase: 1 | 2 | 3
 	}
 	"boss:guard-broken": {
-		bonusProgress: number
+		tensionRelief: number
 	}
 	"boss:final-pull": {
-		bonusProgress: number
+		tensionRelief: number
 	}
 	"catch:resolved": {
 		result: CatchResult

@@ -20,6 +20,54 @@ describe("FishingScene in Chromium", () => {
 		host = undefined
 	})
 
+	it("keeps fish underwater and lets catch and escape movement finish", async () => {
+		host = document.createElement("div")
+		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
+		document.body.append(host)
+		const bridge = new GameEventBridge()
+		game = createFishingGame(host, bridge)
+		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
+		const scene = game.scene.getScene("FishingScene") as FishingScene
+		const visual = scene as unknown as { fish?: Phaser.GameObjects.Sprite; rod?: Phaser.GameObjects.Image; updateLine(): void }
+		const audio = scene as unknown as { startLoops(): void; ensureBossLayer(): void; loopsStarted: boolean; bossLoop?: Phaser.Sound.BaseSound }
+		for (const key of ["sfx_ambient_ocean_loop", "sfx_music_expedition_loop"]) {
+			const data = scene.cache.audio.get(key)
+			scene.cache.audio.remove(key)
+			expect(() => audio.startLoops()).not.toThrow()
+			expect(audio.loopsStarted).toBe(false)
+			scene.cache.audio.add(key, data)
+		}
+		audio.startLoops()
+		const bossAudio = scene.cache.audio.get("sfx_music_boss_layer")
+		scene.cache.audio.remove("sfx_music_boss_layer")
+		expect(() => audio.ensureBossLayer()).not.toThrow()
+		expect(audio.bossLoop).toBeUndefined()
+		scene.cache.audio.add("sfx_music_boss_layer", bossAudio)
+		const species = getFish("reef_minnow")
+		const encounter = startEncounter(species, "underwater-lifecycle", [])
+		bridge.emit("screen:changed", { screen: "game" })
+		bridge.emit("game:paused", { paused: false })
+		bridge.emit("settings:effects", { reducedMotion: true })
+		bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })
+		await new Promise((resolve) => setTimeout(resolve, 400))
+		const sprite = visual.fish!
+		expect(sprite.y - sprite.displayHeight / 2).toBeGreaterThan(scene.scale.height * 0.3)
+		const startX = sprite.x
+		const metrics = { wpm: 40, rawWpm: 40, accuracy: 100, combo: 1, maxCombo: 1, consistency: 100, correctKeystrokes: 5, incorrectKeystrokes: 0, progress: 1, elapsedMs: 1500 }
+		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, species, metrics) })
+		await vi.waitFor(() => expect(sprite.alpha).toBe(0))
+		expect(sprite.x).toBeLessThan(startX)
+		bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })
+		expect(sprite.alpha).toBe(1)
+		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, species, metrics) })
+		await vi.waitFor(() => expect(sprite.alpha).toBe(0))
+		expect(sprite.x).toBeGreaterThan(scene.scale.width)
+		visual.rod = undefined
+		expect(() => visual.updateLine()).not.toThrow()
+		visual.fish = undefined
+		expect(() => bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })).not.toThrow()
+	})
+
 	it("releases bridge listeners when the game is destroyed without scene shutdown", async () => {
 		host = document.createElement("div")
 		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
@@ -107,8 +155,8 @@ describe("FishingScene in Chromium", () => {
 		await new Promise((resolve) => window.setTimeout(resolve, 70))
 		bridge.emit("character:correct", { key: "u", expected: "u", progress: 0.3, combo: 2 })
 		bridge.emit("character:correct", { key: "s", expected: "s", progress: 0.4, combo: 3 })
-		bridge.emit("boss:guard-broken", { bonusProgress: 0.08 })
-		bridge.emit("boss:final-pull", { bonusProgress: 0.1 })
+		bridge.emit("boss:guard-broken", { tensionRelief: 0.08 })
+		bridge.emit("boss:final-pull", { tensionRelief: 0.1 })
 		for (const skillId of ["cast_net", "calm_current", "sonar", "steel_line", "perfect_bait", "reel_mastery", "unknown"]) bridge.emit("skill:used", { skillId, label: skillId })
 		bridge.emit("audio:play", { key: "sfx_correct_tick_a", category: "typing" })
 		bridge.emit("audio:play", { key: "missing-sound", category: "typing" })
@@ -123,7 +171,11 @@ describe("FishingScene in Chromium", () => {
 			bridge.emit("encounter:started", { encounter: startEncounter(species, `scene-${species.id}`, []), fish: species, targetText: "laut" })
 			bridge.emit("line:changed", { tension: index % 2 ? 90 : 20, durability: index % 2 ? 28 : 100, progress: index / fishSpecies.length, timeRemainingMs: 1000 })
 			bridge.emit("word:completed", { word: "laut", perfect: index % 2 === 0, combo: index * 5 })
+			const sprite = (phaserScene as unknown as { fish: Phaser.GameObjects.Sprite }).fish
+			phaserScene.tweens.killTweensOf(sprite)
 			sceneUpdate(game, index * 900 + 2500)
+			expect(sprite.y - sprite.displayHeight / 2, species.id).toBeGreaterThanOrEqual(phaserScene.scale.height * 0.3)
+			expect(sprite.y + sprite.displayHeight / 2, species.id).toBeLessThanOrEqual(phaserScene.scale.height * 0.46)
 		}
 		bridge.emit("screen:changed", { screen: "race" })
 		bridge.emit("settings:effects", { reducedMotion: false })
@@ -175,10 +227,10 @@ describe("FishingScene in Chromium", () => {
 		objects.currentFish = undefined
 		bridge.emit("word:completed", { word: "laut", perfect: false, combo: 0 })
 		objects.fish = undefined
-		const impact = vi.spyOn(phaserScene as unknown as { emitWaterImpact(x: number, y: number, strength: number): void }, "emitWaterImpact")
+		const impact = vi.spyOn((phaserScene as unknown as { bubbleEmitter: Phaser.GameObjects.Particles.ParticleEmitter }).bubbleEmitter, "explode")
 		const ring = vi.spyOn(phaserScene as unknown as { ringBurst(x: number, y: number, tint: number, scale?: number): void }, "ringBurst")
 		bridge.emit("word:completed", { word: "laut", perfect: false, combo: 5 })
-		expect(impact).toHaveBeenCalledWith(phaserScene.scale.width * 0.62, phaserScene.scale.height * 0.55, 40)
+		expect(impact).toHaveBeenCalledWith(18, phaserScene.scale.width * 0.62, phaserScene.scale.height * 0.4)
 		expect(ring).toHaveBeenCalledWith(phaserScene.scale.width * 0.61, phaserScene.scale.height * 0.5, 0xf5c240)
 		impact.mockRestore()
 		ring.mockRestore()
@@ -199,8 +251,8 @@ describe("FishingScene in Chromium", () => {
 		typoDelayedCall.mockRestore()
 		sceneUpdate(game, 3000)
 		bridge.emit("phase:changed", { phase: 2 })
-		bridge.emit("boss:guard-broken", { bonusProgress: 0.08 })
-		bridge.emit("boss:final-pull", { bonusProgress: 0.1 })
+		bridge.emit("boss:guard-broken", { tensionRelief: 0.08 })
+		bridge.emit("boss:final-pull", { tensionRelief: 0.1 })
 		bridge.emit("skill:used", { skillId: "unknown", label: "Unknown skill" })
 		bridge.emit("level:up", { fromLevel: 2, toLevel: 3, xp: 200 })
 		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, fish, { wpm: 50, rawWpm: 55, accuracy: 98, combo: 8, maxCombo: 8, consistency: 90, correctKeystrokes: 80, incorrectKeystrokes: 2, progress: 1, elapsedMs: 10000 }, 1) })

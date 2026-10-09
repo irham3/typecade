@@ -110,6 +110,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	const pendingSkillLoadoutRef = useRef<string[] | null>(null)
 	const pendingRouteIdRef = useRef<string | null>(null)
 	const transitionRef = useRef<number | undefined>(undefined)
+	const pendingTransitionRef = useRef<(() => void) | null>(null)
 	const [view, setView] = useState<OceanRunView>(() => createInitialView())
 	const activeSkills = useMemo(
 		() => fishingSkills.filter((skill) => view.expedition.selectedSkillIds.includes(skill.id)),
@@ -200,8 +201,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		lastTickRef.current = startMs
 
 		const snapshot = session.getSnapshot()
-		const nextView: OceanRunView = {
-			...view,
+		const nextView = {
 			isPaused: pausedRef.current,
 			expedition,
 			collection,
@@ -212,14 +212,15 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			cursor: snapshot.cursor,
 			metrics: snapshot.metrics,
 			lastResult: undefined,
+			feedback: undefined,
+			lastSkillId: undefined,
 			lastKeyWasTypo: false,
 			routeChoices,
 			selectedRoute,
 			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
 			skillOffers: fishingSkills.filter((skill) => expedition.selectedSkillIds.includes(skill.id) || getSkillDraft(expedition.seed, getAccountLevelProgress(collection.xp).level, 6).some((offer) => offer.id === skill.id)),
-			log: [logLine, ...viewLogTail(view.log)],
 		}
-		setView(nextView)
+		setView((previous) => ({ ...previous, ...nextView, log: [logLine, ...viewLogTail(previous.log)] }))
 
 		bridge.emit("encounter:started", { encounter, fish, targetText: passage })
 		bridge.emit("fish:hooked", { fish })
@@ -229,7 +230,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			progress: encounter.progress,
 			timeRemainingMs: encounter.timeRemainingMs,
 		})
-	}, [bridge, view])
+	}, [bridge])
 
 	const finishEncounter = useCallback((encounter: EncounterState) => {
 		const fish = fishRef.current!
@@ -291,14 +292,16 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		}
 
 		transitionRef.current = window.setTimeout(() => {
-			startEncounterFromExpedition(nextExpedition, nextCollection, result.caught ? "Sailing to the next mark" : "Spare line tied, retrying")
+			const advance = () => startEncounterFromExpedition(nextExpedition, nextCollection, result.caught ? "Sailing to the next mark" : "Spare line tied, retrying")
+			if (pausedRef.current) pendingTransitionRef.current = advance
+			else advance()
 		}, result.caught ? 1800 : 1500)
 	}, [bridge, persist, startEncounterFromExpedition, syncView, view.log])
 
 	const applyRuleEvents = useCallback((nextEncounter: EncounterState, events: ReturnType<typeof applyTypingEvents>["events"]) => {
 		encounterRef.current = nextEncounter
 		let lastSkillId: string | undefined
-		let bossMoment: { label: "Crown Guard Broken" | "Final Pull"; bonusProgress: number } | undefined
+		let bossMoment: { label: "Crown Guard Broken" | "Final Pull"; tensionRelief: number } | undefined
 		for (const event of events) {
 			if (event.type === "skill-triggered") {
 				lastSkillId = normalizeSkillId(event.label ?? "passive")
@@ -313,12 +316,12 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			if (event.type === "boss-guard-broken" || event.type === "boss-final-pull") {
 				bossMoment = {
 					label: event.type === "boss-final-pull" ? "Final Pull" : "Crown Guard Broken",
-					bonusProgress: event.value ?? 0,
+					tensionRelief: event.value ?? 0,
 				}
 				if (event.type === "boss-final-pull") {
-					bridge.emit("boss:final-pull", { bonusProgress: bossMoment.bonusProgress })
+					bridge.emit("boss:final-pull", { tensionRelief: bossMoment.tensionRelief })
 				} else {
-					bridge.emit("boss:guard-broken", { bonusProgress: bossMoment.bonusProgress })
+					bridge.emit("boss:guard-broken", { tensionRelief: bossMoment.tensionRelief })
 				}
 			}
 		}
@@ -333,9 +336,9 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 				id: ++feedbackSequenceRef.current,
 				kind: "skill",
 				title: bossMoment.label.toUpperCase(),
-				detail: `Clean typing gained ${Math.round(bossMoment.bonusProgress * 100)}% reel progress`,
+				detail: `Clean typing eased tension by ${bossMoment.tensionRelief}`,
 			},
-			log: [`${bossMoment.label} +${Math.round(bossMoment.bonusProgress * 100)}% reel`, ...viewLogTail(view.log)],
+			log: [`${bossMoment.label}: tension -${bossMoment.tensionRelief}`, ...viewLogTail(view.log)],
 		} : lastSkillId ? {
 			lastSkillId,
 			feedback: {
@@ -411,12 +414,12 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		syncView({
 			sonarRevealed: sonarRevealedUntilRef.current > Date.now(),
 			lastSkillId: skillId,
-			...(applied.encounter.status === "active" ? { feedback: {
+			feedback: {
 				id: ++feedbackSequenceRef.current,
 				kind: "skill",
 				title: skill.name,
 				detail: skill.description,
-			} } : {}),
+			},
 			log: [`${skill.name} used`, ...viewLogTail(view.log)],
 		})
 		return true
@@ -449,6 +452,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 	const startFreshRun = useCallback(() => {
 		window.clearTimeout(transitionRef.current)
+		pendingTransitionRef.current = null
 		const seed = `${starterSeed}:${Date.now()}:${performance.now()}`
 		const collection = collectionRef.current!
 		const selectedSkillIds = pendingSkillLoadoutRef.current ?? expeditionRef.current!.selectedSkillIds
@@ -471,6 +475,11 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		lastTickRef.current = performance.now()
 		setView((previous) => ({ ...previous, isPaused: paused }))
 		bridge.emit("game:paused", { paused })
+		if (!paused && pendingTransitionRef.current) {
+			const advance = pendingTransitionRef.current
+			pendingTransitionRef.current = null
+			advance()
+		}
 	}, [bridge])
 
 	// Restore a run once on mount; later view changes must not restart the encounter.
