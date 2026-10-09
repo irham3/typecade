@@ -10,12 +10,33 @@ describe("FishingScene in Chromium", () => {
 	let game: ReturnType<typeof createFishingGame> | undefined
 	let host: HTMLDivElement | undefined
 
-	afterEach(() => {
-		game?.scene.getScene("FishingScene").events.emit("shutdown")
-		game?.destroy(true)
+	afterEach(async () => {
+		if (game) {
+			game.destroy(true)
+			await vi.waitFor(() => expect(host?.querySelector("canvas")).toBeNull(), { timeout: 10000 })
+		}
 		game = undefined
 		host?.remove()
 		host = undefined
+	})
+
+	it("releases bridge listeners when the game is destroyed without scene shutdown", async () => {
+		host = document.createElement("div")
+		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
+		document.body.append(host)
+		const bridge = new GameEventBridge()
+		game = createFishingGame(host, bridge)
+		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
+		const scene = game.scene.getScene("FishingScene") as FishingScene
+		const visuals = scene as unknown as { setZoneBackground(zone: string): void; hitStop(duration: number): void }
+		const setBackground = vi.spyOn(visuals, "setZoneBackground")
+		visuals.hitStop(200)
+		game.destroy(true)
+		await vi.waitFor(() => expect(host?.querySelector("canvas")).toBeNull(), { timeout: 10000 })
+		game = undefined
+		const fish = getFish("reef_minnow")
+		expect(() => bridge.emit("encounter:started", { encounter: startEncounter(fish, "after-destroy", []), fish, targetText: "ombak" })).not.toThrow()
+		expect(setBackground).not.toHaveBeenCalled()
 	})
 
 	it("renders the coast and responds to a complete boss encounter event stream", async () => {

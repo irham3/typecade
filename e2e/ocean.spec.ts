@@ -34,6 +34,30 @@ test.describe("Ocean Typing RPG shell", () => {
 		})
 	}
 
+	for (const destination of ["Practice", "Multiplayer"]) {
+		test(`Set Sail works after returning from ${destination}`, async ({ page }, testInfo) => {
+			const errors: string[] = []
+			page.on("pageerror", (error) => errors.push(error.message))
+			page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()) })
+			await page.goto("/")
+			await expectCanvasNonBlank(page)
+			await page.getByRole("button", { name: destination, exact: true }).click()
+			await expect(page.getByTestId(destination === "Practice" ? "practice-screen" : "race-screen")).toBeVisible()
+			await expect(page.getByTestId("phaser-gameplay").locator("canvas")).toHaveCount(0)
+			await page.getByRole("button", { name: "Main menu", exact: true }).click()
+			await page.getByRole("button", { name: "Adventure", exact: true }).click()
+			await page.getByRole("button", { name: "Set Sail", exact: true }).click()
+			await expect(page.getByTestId("ocean-hud")).toBeVisible()
+			await expect(page.getByTestId("prep-screen")).toHaveCount(0)
+			await expectCanvasNonBlank(page)
+			const target = await page.getByTestId("typing-target").textContent()
+			await page.getByLabel("Adventure typing input").pressSequentially(target!.slice(0, 3))
+			await expect(page.getByTestId("typing-target").locator(".done")).toHaveCount(3)
+			expect(errors).toEqual([])
+			await page.screenshot({ path: testInfo.outputPath("adventure-after-return.png") })
+		})
+	}
+
 	test("configures an English custom Perfect Tide practice and completes it", async ({ page }) => {
 		await page.goto("/")
 		await page.getByRole("button", { name: "Practice", exact: true }).click()

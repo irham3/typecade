@@ -294,6 +294,16 @@ Production screenshots retained with this audit:
 - New collections have an earned progression loop, skill unlocks at levels 2/3, repeat-catch counters, and persistent size/quality records. Longer-term retention and balance still require human play sessions; automated tests cannot establish that a game will be addictive.
 - The lazy Phaser production chunk remains about 1.40 MB (365 kB gzip), above Vite's 500 kB advisory. No new runtime dependency was introduced. No public deployment was performed in this pass.
 
+## 2026-10-09 Adventure entry after changing modes
+
+- Reproduced the user's failed Set Sail action in the local production browser: Adventure could start from a fresh page, but returning from Practice to Adventure left the preparation screen open. `encounter:started` reached a destroyed Phaser scene and threw `Cannot read properties of undefined (reading 'sys')` in `setZoneBackground`.
+- Phaser game destruction emits the scene's `destroy` event without requiring `shutdown`. The scene only cleaned up on `shutdown`, leaving its bridge listeners and hit-stop timer alive. Registered the existing cleanup for `destroy` as well; the fix is one production line.
+- Removed the test fixture's synthetic `shutdown` event. Renderer tests now wait for real game destruction. The new lifecycle regression failed before the fix with the same texture error and a delayed attempt to resume the destroyed scene; it passes after the fix.
+- Added production Playwright paths for Practice → Main menu → Adventure → Set Sail and Multiplayer → Main menu → Adventure → Set Sail. Both wait for the old canvas to be removed, verify a rendered replacement canvas, type three valid characters, and require an empty application-error list.
+- Rechecked the original path manually at `localhost:8787`: Set Sail entered the arena, typing `ombak ` advanced reel progress to 20%, and navigation returned to the main menu.
+- Final gates: `npm run test` passed 125 tests across 13 files; coverage remains 100% statements (2097/2097), branches (1519/1519), functions (457/457), and lines (1849/1849). `npm run test:e2e` rebuilt production and passed all 19 Chromium scenarios in 4.4 minutes. ESLint, web/room TypeScript checks, diff validation, and the renderer-retirement audit passed. Final test logs contain no unhandled errors. Vite's existing lazy Phaser chunk advisory remains (364.69 kB gzip).
+- [Production screenshot after returning from Practice and starting Adventure](reference/ocean-audit-2026-10-09/adventure-after-practice.png).
+
 ## Touched Files
 
 This list is updated as files are changed.

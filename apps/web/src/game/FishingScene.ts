@@ -190,6 +190,7 @@ export class FishingScene extends Phaser.Scene {
 		this.createEmitters()
 		this.subscribeToBridge()
 		this.events.once("shutdown", this.shutdownScene, this)
+		this.events.once("destroy", this.shutdownScene, this)
 		this.scale.on("resize", this.layout, this)
 		this.input.once("pointerdown", () => this.startLoops())
 		this.input.keyboard?.once("keydown", () => this.startLoops())
