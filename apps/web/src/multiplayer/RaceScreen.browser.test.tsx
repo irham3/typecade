@@ -61,6 +61,19 @@ describe("multiplayer race screen browser coverage", () => {
 		expect(document.activeElement).toBe(host.querySelector('[aria-label="Race typing input"]'))
 	})
 
+	it("rejects non-object WebSocket updates without crashing the race screen", async () => {
+		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
+		socket = RoomSocket.latest!
+		await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Host")])) })
+		for (const raw of ["null", "[]", "1", "true", '"snapshot"']) {
+			await act(() => socket.onmessage?.({ data: raw } as MessageEvent<string>))
+			expect(host.querySelector(".race-error")!.textContent).toMatch(/Reconnecting/)
+			expect(host.querySelector(".race-waiting")).not.toBeNull()
+		}
+		expect(socket.readyState).toBe(3)
+	})
+
 	it("shows invite-copy confirmation and recovers from malformed WebSocket data", async () => {
 		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
 		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
@@ -348,7 +361,7 @@ describe("multiplayer race screen browser coverage", () => {
 		waiting.config = { ...waiting.config, format: "time", timeSeconds: 45, variant: "classic" }
 		await act(() => socket.deliver(waiting))
 		expect(host.textContent).toContain("Bahasa Indonesia · 45 seconds")
-		expect(host.textContent).toContain("Fastest valid finish wins.")
+		expect(host.textContent).toContain("Surviving captains rank by valid progress at the deadline.")
 	})
 
 	it("sends only plain single characters from an active racer in a large fleet", async () => {

@@ -153,6 +153,22 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[aria-label="Practice duration"]')).not.toBeNull()
 	})
 
+	it("rejects input at the practice deadline before the display timer runs", async () => {
+		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
+		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
+		await click('[data-testid="practice-screen"] button[type="submit"]')
+		const passage = host.querySelector('[data-testid="practice-passage"]')!.textContent!
+		const process = vi.spyOn(TypingSession.prototype, "processKey")
+		let now = Date.now()
+		vi.spyOn(Date, "now").mockImplementation(() => now)
+		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: passage[0], bubbles: true })))
+		now += 1000
+		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: passage[1], bubbles: true })))
+		expect(process).toHaveBeenCalledTimes(1)
+		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
+	})
+
 	it("keeps practice readable when the typing engine has no initial metrics snapshot", async () => {
 		const snapshots = vi.spyOn(TypingSession.prototype, "getSnapshot").mockReturnValueOnce(null as never)
 		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))

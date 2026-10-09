@@ -189,6 +189,7 @@ export function raceAccuracy(player: RacePlayer): number {
 
 export function rankRacePlayers(players: readonly RacePlayer[], config?: RaceConfig): RacePlayer[] {
 	return [...players].sort((a, b) => {
+		if ((a.status === "out") !== (b.status === "out")) return a.status === "out" ? 1 : -1
 		if (config?.format === "time" && a.cursor !== b.cursor) return b.cursor - a.cursor
 		if ((a.status === "finished") !== (b.status === "finished")) return a.status === "finished" ? -1 : 1
 		if (a.status === "finished" && b.status === "finished") return (a.finishedAt ?? Infinity) - (b.finishedAt ?? Infinity) || raceAccuracy(b) - raceAccuracy(a)

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { defaultRaceConfig, generateRaceText, parseRaceConfig, type RaceConfig } from "@typecade/race-rules"
 import { TypingSession, type TypingSessionSnapshot } from "@typecade/typing-engine"
 import { TypingInput, TypingPassage } from "../TypingField"
@@ -54,28 +54,35 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 		}
 	}
 
+	const finishTimedSession = useCallback(() => {
+		sessionEnded.current = true
+		const final = session.current!.getSnapshot(config.timeSeconds * 1000)
+		setSnapshot(final)
+		setRemaining(0)
+		setBestWpm(recordBestWpm(final))
+		setPhase("finished")
+	}, [config.timeSeconds])
+
 	useEffect(() => {
 		if (phase !== "racing" || config.format !== "time") return
 		const update = () => {
 			if (!endAt.current) return
 			const seconds = Math.max(0, Math.ceil((endAt.current - Date.now()) / 1000))
 			setRemaining(seconds)
-			if (seconds === 0) {
-				sessionEnded.current = true
-				const final = session.current!.getSnapshot(config.timeSeconds * 1000)
-				setSnapshot(final)
-				setBestWpm(recordBestWpm(final))
-				setPhase("finished")
-			}
+			if (seconds === 0) finishTimedSession()
 		}
 		const interval = window.setInterval(update, 100)
 		return () => window.clearInterval(interval)
-	}, [config.format, config.timeSeconds, phase])
+	}, [config.format, finishTimedSession, phase])
 
 	const typeKey = (key: string) => {
 		if (sessionEnded.current || key === "Backspace") return
 		if (!endAt.current) endAt.current = Date.now() + config.timeSeconds * 1000
 		const active = session.current!
+		if (config.format === "time" && Date.now() >= endAt.current) {
+			finishTimedSession()
+			return
+		}
 		const events = active.processKey(key, Date.now() - (endAt.current - config.timeSeconds * 1000))
 		const next = active.getSnapshot()
 		setSnapshot(next)

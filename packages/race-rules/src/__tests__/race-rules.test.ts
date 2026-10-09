@@ -75,6 +75,18 @@ describe("Ocean Race rules", () => {
 		expect(rankRacePlayers([a, timeLeader, b], { ...defaultRaceConfig, format: "time" }).map((player) => player.id)).toEqual(["c", "b", "a"])
 	})
 
+	it("ranks surviving captains above eliminated leaders in every text format", () => {
+		const eliminated = { ...createRacePlayer("a", "A", "perfect"), status: "out" as const, cursor: 20, finishedAt: 100 }
+		const survivor = { ...createRacePlayer("b", "B", "perfect"), status: "racing" as const, cursor: 4 }
+		const finisher = { ...survivor, status: "finished" as const, finishedAt: 200 }
+		for (const format of ["words", "time", "quote", "custom"] as const) {
+			const config = { ...defaultRaceConfig, format, variant: "perfect" as const }
+			expect(rankRacePlayers([eliminated, survivor], config)[0]?.id).toBe("b")
+			expect(rankRacePlayers([eliminated, finisher], config)[0]?.id).toBe("b")
+			expect(rankRacePlayers([finisher, eliminated], config)[0]?.id).toBe("b")
+		}
+	})
+
 	it("keeps standings deterministic with the 100-player room limit", () => {
 		const players = Array.from({ length: 100 }, (_, index) => ({ ...createRacePlayer(String(index).padStart(3, "0"), `Captain ${index}`, "classic"), status: "racing" as const, cursor: index }))
 		const ranked = rankRacePlayers(players, { ...defaultRaceConfig, maxPlayers: 100 })

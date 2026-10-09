@@ -122,6 +122,30 @@ describe("ocean run browser controls", () => {
 		expect(controls!.view.log.some((line) => line.startsWith("Caught Pebble Goby"))).toBe(true)
 	})
 
+	it("parks result transitions behind panels and advances only after controls resume", async () => {
+		await mount()
+		await act(() => controls!.startFreshRun())
+		const text = controls!.view.targetText
+		await act(() => { for (const key of text) controls!.typeKey(key) })
+		await mount(false)
+		await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1900)) })
+		expect(controls!.view.targetText).toBe(text)
+		expect(controls!.view.lastResult?.caught).toBe(true)
+		await mount(true)
+		expect(controls!.view.expedition.currentEncounterIndex).toBe(1)
+		expect(controls!.view.cursor).toBe(0)
+		await act(() => { for (const key of controls!.view.targetText) controls!.typeKey(key) })
+		await act(() => controls!.togglePause())
+		await mount(false)
+		await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1900)) })
+		await mount(true)
+		expect(controls!.view.lastResult?.caught).toBe(true)
+		expect(controls!.view.isPaused).toBe(true)
+		await act(() => controls!.togglePause())
+		expect(controls!.view.expedition.currentEncounterIndex).toBe(2)
+		expect(controls!.view.cursor).toBe(0)
+	})
+
 	beforeEach(() => {
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 		host = document.createElement("div")

@@ -142,6 +142,15 @@ test("two captains race the same Indonesian passage, see results, and rematch", 
 		await page.getByRole("button", { name: "Rematch" }).click()
 		await expect(page.getByText("Waiting at the harbor")).toBeVisible()
 		await expect(guest.getByText("Waiting at the harbor")).toBeVisible()
+		await page.getByRole("button", { name: "I'm ready" }).click()
+		await guest.getByRole("button", { name: "I'm ready" }).click()
+		await expect(page.getByRole("button", { name: "Start race" })).toBeEnabled()
+		await page.getByRole("button", { name: "Start race" }).click()
+		await expect(page.getByTestId("race-play")).toBeVisible({ timeout: 10000 })
+		await expect(guest.getByTestId("race-play")).toBeVisible({ timeout: 10000 })
+		await typePassage(guest)
+		await typePassage(page)
+		await expect(page.locator(".race-results")).toContainText("Winner: Bravo")
 	} finally { await guestContext.close() }
 })
 
@@ -181,6 +190,26 @@ test("Three Hulls uses custom shuffled text and ends on the third typo", async (
 		await expect(page.locator(".race-results")).toContainText("Winner: Bravo")
 	} finally { await guestContext.close() }
 })
+
+for (const variant of ["perfect", "three-hulls"] as const) {
+	test(`timed ${variant} excludes an eliminated leader from winning`, async ({ browser, page }) => {
+		const { guest, guestContext } = await startPair(browser, page, async (host) => {
+			await host.getByLabel("Text format").selectOption("time")
+			await host.getByRole("spinbutton", { name: /^Seconds/ }).fill("4")
+			await host.getByLabel("Challenge").selectOption(variant)
+			await host.getByRole("spinbutton", { name: /^Players/ }).fill("2")
+		})
+		try {
+			const text = await page.getByTestId("race-passage").textContent() ?? ""
+			await page.getByLabel("Race typing input").pressSequentially(text.slice(0, 12))
+			await page.getByLabel("Race typing input").pressSequentially(variant === "perfect" ? "#" : "###")
+			await expect(page.getByText("You are out. Watch the remaining captains.")).toBeVisible()
+			await guest.getByLabel("Race typing input").pressSequentially(text.slice(0, 3))
+			await expect(page.locator(".race-results")).toContainText("Winner: Bravo", { timeout: 10000 })
+			await expect(guest.locator(".race-results")).toContainText("Winner: Bravo")
+		} finally { await guestContext.close() }
+	})
+}
 
 test("Time mode waits for the shared deadline and ranks validated progress", async ({ browser, page }) => {
 	test.setTimeout(90000)

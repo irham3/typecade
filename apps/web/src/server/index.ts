@@ -183,6 +183,7 @@ export class RaceRoom {
 		if (!room || !member || typeof raw !== "string" || raw.length > 512) return
 		let message: Record<string, unknown>
 		try { message = JSON.parse(raw) as Record<string, unknown> } catch { return }
+		if (!message || typeof message !== "object" || Array.isArray(message)) return
 		const now = Date.now()
 		member.lastSeenAt = now
 		if (message.type === "leave") {
@@ -228,7 +229,7 @@ export class RaceRoom {
 		} else if (message.type === "rematch" && room.phase === "finished" && playerId === room.hostId) {
 			for (const [id, entry] of Object.entries(room.members)) {
 				if (!entry.player.connected) delete room.members[id]
-				else entry.player = createRacePlayer(id, entry.player.name, room.config.variant)
+				else entry.player = { ...createRacePlayer(id, entry.player.name, room.config.variant), connected: true }
 			}
 			room.phase = "waiting"
 			room.startsAt = null

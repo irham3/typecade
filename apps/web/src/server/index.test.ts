@@ -228,6 +228,7 @@ describe("multiplayer Worker", () => {
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "abc", seq: 1 }))
 			await room.webSocketMessage(guestSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "abc", seq: 1 }))
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "rematch" }))
+			expect(Object.values(internalRoom.members).every((member) => member.player.connected)).toBe(true)
 			expect(JSON.parse(hostSocket.sent.at(-1)!).room.phase).toBe("waiting")
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, "not-json")
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, new ArrayBuffer(4))
@@ -255,6 +256,12 @@ describe("multiplayer Worker", () => {
 			for (const member of Object.values(current.members)) member.player.connected = true
 
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, "x".repeat(513))
+			const sentBeforeInvalid = hostSocket.sent.length
+			for (const raw of ["null", "[]", "1", "true", '"ready"', "{}", "{"]) {
+				await expect(room.webSocketMessage(hostSocket as unknown as WebSocket, raw)).resolves.toBeUndefined()
+			}
+			expect(hostSocket.sent).toHaveLength(sentBeforeInvalid)
+			expect(current.members[host.playerId]!.player.ready).toBe(false)
 			await room.webSocketMessage(new FakeSocket() as unknown as WebSocket, JSON.stringify({ type: "ready" }))
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "start" }))
 			expect(JSON.parse(hostSocket.sent.at(-1)!).error).toContain("At least two")

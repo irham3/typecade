@@ -121,6 +121,11 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		controlsActiveRef.current = controlsActive
 		lastTickRef.current = performance.now()
 		bridge.emit("game:paused", { paused: !controlsActive || pausedRef.current })
+		if (controlsActive && !pausedRef.current && pendingTransitionRef.current) {
+			const advance = pendingTransitionRef.current
+			pendingTransitionRef.current = null
+			advance()
+		}
 	}, [controlsActive, bridge])
 	useEffect(() => () => window.clearTimeout(transitionRef.current), [])
 
@@ -293,7 +298,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		transitionRef.current = window.setTimeout(() => {
 			const advance = () => startEncounterFromExpedition(nextExpedition, nextCollection, result.caught ? "Sailing to the next mark" : "Spare line tied, retrying")
-			if (pausedRef.current) pendingTransitionRef.current = advance
+			if (pausedRef.current || !controlsActiveRef.current) pendingTransitionRef.current = advance
 			else advance()
 		}, result.caught ? 1800 : 1500)
 	}, [bridge, persist, startEncounterFromExpedition, syncView, view.log])

@@ -5,11 +5,14 @@ test.describe("Ocean Typing RPG shell", () => {
 		{ name: "desktop", width: 1366, height: 768 },
 		{ name: "mobile", width: 390, height: 844 },
 		{ name: "small mobile", width: 320, height: 640 },
+		{ name: "phone landscape", width: 800, height: 360 },
 	]) {
 		test(`opens every main-menu destination on ${viewport.name}`, async ({ page }) => {
 			await page.setViewportSize({ width: viewport.width, height: viewport.height })
 			await page.goto("/")
 			await expect(page.locator(".mainmenu-button > img").nth(0)).toHaveAttribute("src", /\/assets\/ocean\/mainmenu\/button_gold_empty\.png$/)
+			await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeInViewport({ ratio: 1 })
+			await expect(page.getByRole("complementary", { name: "Captain progress" })).toBeInViewport({ ratio: 1 })
 			await expect(page.locator(".mainmenu-button img").nth(2)).toHaveAttribute("src", /\/assets\/ocean\/mainmenu\/button_blue_empty\.png$/)
 			await page.getByRole("button", { name: "Multiplayer", exact: true }).click()
 			await expect(page.getByTestId("race-screen")).toBeVisible()
@@ -74,6 +77,26 @@ test.describe("Ocean Typing RPG shell", () => {
 		await expect(page.getByTestId("practice-racing")).toBeVisible()
 		await page.getByRole("button", { name: "Main menu" }).click()
 		await expect(page.getByTestId("main-menu")).toBeVisible()
+	})
+
+	test("holds the completed encounter behind Collection and resumes once it closes", async ({ page }) => {
+		await page.goto("/")
+		await page.getByRole("button", { name: "Adventure", exact: true }).click()
+		await page.getByRole("button", { name: "Set Sail" }).click()
+		const target = await page.getByTestId("typing-target").textContent()
+		await page.getByLabel("Adventure typing input").pressSequentially(target!)
+		await expect(page.getByTestId("result-toast")).toContainText("Catch secured")
+		await page.getByRole("button", { name: "Collection", exact: true }).click()
+		await expect(page.getByRole("dialog", { name: "Collection" })).toBeVisible()
+		await page.waitForTimeout(2000)
+		await expect(page.getByTestId("typing-target")).toHaveText(target!)
+		await expect(page.getByTestId("route-strip")).toContainText("Encounter 1/10")
+		await page.getByRole("button", { name: "Close", exact: true }).click()
+		await expect(page.getByTestId("route-strip")).toContainText("Encounter 2/10")
+		await expect(page.getByTestId("typing-target").locator(".done")).toHaveCount(0)
+		const next = await page.getByTestId("typing-target").textContent()
+		await page.getByLabel("Adventure typing input").pressSequentially(next!.slice(0, 3))
+		await expect(page.getByTestId("typing-target").locator(".done")).toHaveCount(3)
 	})
 
 	test("opens HUD panels, changes settings, and pauses without losing the encounter", async ({ page }) => {
