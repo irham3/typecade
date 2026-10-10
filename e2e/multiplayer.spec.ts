@@ -22,17 +22,16 @@ test("a live 100-player room renders the fleet, searches standings, and finishes
 	}
 	const overflow = await page.request.post(`/api/rooms/${code}/join`, { data: { name: "Captain 101" } })
 	expect(overflow.ok()).toBe(false)
-	await page.evaluate(async (members) => {
-		const fleetWindow = window as typeof window & { testFleet?: WebSocket[] }
-		fleetWindow.testFleet = []
-		await Promise.all(members.map((member) => new Promise<void>((resolve, reject) => {
-			const socket = new WebSocket(`${location.protocol.replace(/^http/, "ws")}//${location.host}/api/rooms/${member.code}/ws?playerId=${member.playerId}`, ["race-v1", `token.${member.token}`])
-			fleetWindow.testFleet!.push(socket)
-			socket.onopen = () => { socket.send(JSON.stringify({ type: "ready", ready: true })); resolve() }
-			socket.onerror = () => reject(new Error("Fleet connection failed"))
-		})))
-	}, tickets)
+	const fleet: WebSocket[] = []
+	const socketOrigin = new URL(page.url()).origin.replace(/^http/, "ws")
 	try {
+		// Peers use real platform sockets; the browser owns only its captain's connection.
+		for (let first = 0; first < tickets.length; first += 10) await Promise.all(tickets.slice(first, first + 10).map((member) => new Promise<void>((resolve, reject) => {
+			const socket = new WebSocket(`${socketOrigin}/api/rooms/${member.code}/ws?playerId=${member.playerId}`, ["race-v1", `token.${member.token}`])
+			fleet.push(socket)
+			socket.onopen = () => { socket.send(JSON.stringify({ type: "ready", ready: true })); resolve() }
+			socket.onerror = () => reject(new Error(`Fleet connection failed: ${member.playerId}`))
+		})))
 		await expect(page.locator(".race-waiting-grid li")).toHaveCount(100)
 		await page.getByRole("button", { name: "I'm ready" }).click()
 		await expect(page.getByRole("button", { name: "Start race" })).toBeEnabled()
@@ -48,16 +47,12 @@ test("a live 100-player room renders the fleet, searches standings, and finishes
 		await page.keyboard.press("Escape")
 		await expect(page.getByRole("dialog")).toHaveCount(0)
 	} finally {
-		await page.evaluate(async () => {
-			const fleet = (window as typeof window & { testFleet?: WebSocket[] }).testFleet ?? []
-			for (const socket of fleet) {
-				if (socket.readyState === WebSocket.CLOSED) continue
-				await new Promise<void>((resolve) => {
-					socket.addEventListener("close", () => resolve(), { once: true })
-					if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "leave" }))
-				})
-			}
-		})
+		await Promise.all(fleet.map(socket => new Promise<void>(resolve => {
+			if (socket.readyState === WebSocket.CLOSED) { resolve(); return }
+			socket.addEventListener("close", () => resolve(), { once: true })
+			if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "leave" }))
+			else socket.close()
+		})))
 	}
 })
 

@@ -661,3 +661,35 @@ The user requested resolution of the findings above. A fresh npm audit reproduce
 Five inherited findings remained in eslint-config-next → @next/eslint-plugin-next → fast-glob → micromatch → braces. [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) lists no patched braces release as of this audit. The active project uses Vite, so its ESLint configuration now declares the existing React, TypeScript, React Hooks, import and JSX accessibility plugins directly. Their existing rule settings and historical Hooks exceptions remain. Next-specific lint rules and three obsolete inline suppression comments were removed; historical Next source remains available.
 
 `npm install` now audits 750 packages with **zero vulnerabilities**, confirmed by a separate `npm audit`. This resolves the reported package findings; it is not a penetration test or a guarantee against undiscovered vulnerabilities. Lint, both TypeScript checks, build, 154 unit/browser tests and the unchanged 100% coverage thresholds pass on the working tree. Gameplay changes and the expanded browser matrix are verified in the following entry.
+
+## 2026-10-10 — Release audit follow-up: animation, layout and browser coverage
+
+### Findings and fixes
+
+| Finding | Change | Verification |
+| --- | --- | --- |
+| Fish animations used the session clock, so a bite could begin mid-strip and caught/escape strips could loop. | Each state starts its own clock. Authored playback rates are restored; bite/caught/escape hold their last frame. High tension sustains struggle. Late hook/typo events cannot replace a terminal state. | Real WebGL browser tests assert frame zero, swim/danger loops, terminal frames and late-event handling. |
+| The old landscape overlap check passed after the HUD scrolled its header offscreen; typing covered the fish. | Landscape uses three columns: ocean/route/navigation, typing, and skills. The pixel keyboard occupies the lower right. Fish framing reserves the left 32% of the viewport, underwater. The console's GSAP transform is disabled at this breakpoint so it cannot become the keyboard's positioning ancestor. | Screenshot inspection plus full-viewport and overlap assertions at 800×360; all species are checked in the landscape water band. Pure layout tests also include 667×375. |
+| The lazy renderer exceeded Vite's 500 KB advisory. | Three's existing core module is cached in a separate lazy chunk. Renderer/gameplay remains lazy. The warning limit stays unchanged. | Build has no chunk-size advisory: core 186.59 KB / 50.12 KB gzip, renderer/gameplay 372.78 KB / 91.84 KB gzip, shell 364.78 KB / 117.90 KB gzip, CSS 62.54 KB / 13.53 KB gzip. Splitting adds a request and does not reduce total renderer bytes. |
+| Renderer recovery had only a synthetic context-loss event test. | Added a production E2E case using the browser's `WEBGL_lose_context` extension. | Chromium, Firefox and WebKit all stop the timer, make the HUD inert, rebuild one canvas on Retry, retain the typed prefix and accept the next character. This simulates context loss; it is not a physical driver reset. |
+| CI ran browser-backed unit tests without installing their browser, and omitted coverage/E2E gates. | The existing CI job installs all three Playwright engines and checks audit, lint, both TypeScript projects, unit tests, 100% coverage, build and E2E. The duplicate build:worker step is removed. Timeout is 30 minutes. Existing branch/PR triggers remain. | Workflow YAML is parsed locally; the configured commands pass locally. No GitHub-hosted CI run is claimed for this branch. |
+
+### Browser matrix and fixture correction
+
+Playwright now defines Chromium, Firefox and WebKit projects. Each has 29 scenarios, including all menu destinations, both Practice text styles/configuration, Adventure skills/panels/pause, all multiplayer variants, 100-participant standings, two complete voyages/refits/save/resume, five gameplay viewport sizes and WebGL recovery.
+
+The first full matrix ran 84 scenarios in 14.7 minutes: 83 passed and the WebKit 100-participant fixture failed. That fixture opened 99 sockets from one page. Opening them in batches still stalled in WebKit. It now uses Node's existing platform WebSocket API for the 99 simulated peers, while the browser owns its captain's connection and exercises the UI. Connections authenticate against the same real local Worker, all 100 participants must be ready, participant 101 must be rejected, and the browser checks the winner, 100 leaderboard rows and captain search. Peer sockets are cleaned in `finally`, including failure during connection setup. No participant count or assertions were reduced, and no new socket dependency was added.
+
+Final targeted command: `npm run test:e2e -- --grep '100-player|context loss'` rebuilt the same production source and passed all six cases across all three engines in 1.7 minutes. Together with the 81 unaffected full-matrix cases, all **87 distinct current scenarios have successful verification**. The full matrix was not repeated after this test-fixture-only change. The default E2E command now collects all 87 cases.
+
+### Final gates and evidence
+
+- `npm run test`: 154/154 tests, 16 files.
+- `npm run test:coverage`: statements 2,376/2,376, branches 1,710/1,710, functions 505/505, lines 1,895/1,895 — all 100% across 22 active production source files. Coverage includes and thresholds remain unchanged.
+- `npm run lint`, `npx tsc --noEmit`, `npm run typecheck:rooms`, `npm run build`, `npm audit` and `git diff --check`: passed; audit reports zero findings.
+- Both renderer-retirement searches recorded above returned no matches. Headless package sources have no React, Phaser, Three.js imports or `Math.random()` calls.
+- Evidence directory: `docs/reference/three-ocean-release-check-2026-10-10`, containing the inspected landscape screenshot, final dependency audit and coverage totals.
+- The localhost preview was restarted with existing storage. Captain level 3, five discovered species and 53 XP to the next level remain present. Tests use disposable browser contexts.
+- Dependency fixes were committed and pushed as `741e95c` on `app-v2`. Runtime/layout/tests and this evidence follow on the same branch. No PR, merge or deployment is included.
+
+Physical phone GPUs, native Safari on macOS/iOS, sustained FPS/battery behavior, real WAN room capacity and player retention have not been measured. Browser-engine checks on this Windows machine do not establish those results. Existing fish artwork is reused with corrected runtime motion; this pass does not generate replacement sprite collections.

@@ -13,6 +13,12 @@ export default defineConfig({
 	build: {
 		outDir: path.resolve(rootDir, "dist/web"),
 		emptyOutDir: true,
+		rolldownOptions: {
+			output: {
+				// Cache the stable scene/math core separately from renderer and gameplay changes.
+				codeSplitting: { groups: [{ name: "three-core", test: /node_modules[\\/]three[\\/]build[\\/]three\.core\.js$/ }] },
+			},
+		},
 	},
 	resolve: {
 		alias: {

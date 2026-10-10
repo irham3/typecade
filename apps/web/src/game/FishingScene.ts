@@ -56,6 +56,7 @@ export class FishingScene {
 	private lastCritical = -1
 	private currentFish?: FishSpecies
 	private fishState: FishVisualState = "idle"
+	private stateSince = 0
 	private fishWidth = 160
 	private fishHeight = 108
 	private endTime = -1
@@ -202,6 +203,7 @@ export class FishingScene {
 	}
 
 	private syncAudio(): void { this.audio.setActive(!this.paused && this.screen === "game" && !document.hidden && !this.contextLost) }
+	private setFishState(state: FishVisualState): void { this.fishState = state; this.stateSince = this.time }
 	private subscribe(): void {
 		this.cleanups.push(
 			this.bridge.on("screen:changed", ({ screen }) => { this.screen = screen; this.syncAudio(); this.updateWorld(0) }),
@@ -216,12 +218,12 @@ export class FishingScene {
 				this.progress = encounter.progress; this.tension = encounter.tension; this.durability = encounter.durability
 				const frame = fish.assetKey === "fish_pebble_goby" ? { w: 128, h: 96 } : this.assets.frames[`${fish.assetKey}_swim_0.png`].frame
 				this.fishWidth = frame.w; this.fishHeight = frame.h
-				this.fishState = "bite"; this.stateUntil = this.time + .36; this.endTime = -1; this.lastTexture = ""
+				this.setFishState("bite"); this.stateUntil = this.time + .36; this.endTime = -1; this.lastTexture = ""
 				this.water.material.uniforms.zone.value.set(fish.habitat === "zone_3" ? 0x5753a1 : fish.habitat === "zone_2" ? 0x159c91 : 0x159cbd)
 				this.audio.setBoss(fish.rarity === "boss"); this.updateWorld(0); this.burst(18, 0x9ae7ff, true)
 				if (fish.rarity === "rare" || fish.rarity === "boss") { this.ring(0xf5c240, 1.5); this.audio.play("sfx_rare_sting_a", "gameplay") }
 			}),
-			this.bridge.on("fish:hooked", () => { this.fishState = "bite"; this.stateUntil = this.time + .36; this.burst(18, 0x9ae7ff, true); this.audio.play("sfx_splash_a", "gameplay") }),
+			this.bridge.on("fish:hooked", () => { if (this.endTime >= 0) return; this.setFishState("bite"); this.stateUntil = this.time + .36; this.burst(18, 0x9ae7ff, true); this.audio.play("sfx_splash_a", "gameplay") }),
 			this.bridge.on("character:correct", () => {
 				this.trauma = Math.min(.5, this.trauma + .06)
 				if (this.time - this.lastTick > .048) { this.lastTick = this.time; this.audio.play("sfx_correct_tick_a", "typing", .38) }
@@ -232,7 +234,8 @@ export class FishingScene {
 				else this.audio.play("sfx_word_complete_a", "typing")
 			}),
 			this.bridge.on("typo:occurred", ({ ignoredBySteelLine }) => {
-				this.fishState = ignoredBySteelLine ? "stunned" : "struggle"; this.stateUntil = this.time + .42
+				if (this.endTime >= 0) return
+				this.setFishState(ignoredBySteelLine ? "stunned" : "struggle"); this.stateUntil = this.time + .42
 				this.trauma = ignoredBySteelLine ? .2 : .6; this.ring(ignoredBySteelLine ? 0x73e39a : 0xf05a5e, .8)
 				this.audio.play(ignoredBySteelLine ? "sfx_skill_ready_a" : "sfx_typo_thud_a", "typing")
 			}),
@@ -249,7 +252,7 @@ export class FishingScene {
 				this.audio.play(skillId === "cast_net" ? "sfx_cast_net_a" : "sfx_skill_activate_a", "gameplay")
 			}),
 			this.bridge.on("catch:resolved", ({ result }) => {
-				this.fishState = result.caught ? "caught" : "escape"
+				this.setFishState(result.caught ? "caught" : "escape")
 				this.endTime = this.time; this.endX = this.fish.position.x; this.endY = -this.fish.position.y
 				this.hitStop = this.reduced ? 0 : .06
 				this.burst(40, result.caught ? 0xf5c240 : 0xf05a5e, result.caught); this.ring(result.caught ? 0xf5c240 : 0xf05a5e, 2)
@@ -319,7 +322,10 @@ export class FishingScene {
 
 	private updateFish(): void {
 		const fish = this.currentFish!
-		if (this.endTime < 0 && this.stateUntil <= this.time) this.fishState = "swim"
+		if (this.endTime < 0 && this.stateUntil <= this.time) {
+			const state = this.tension >= 82 ? "struggle" : "swim"
+			if (this.fishState !== state) this.setFishState(state)
+		}
 		const layout = fishLayout(fish, this.width, this.height, this.time, this.progress, this.tension, this.reduced, this.fishWidth, this.fishHeight)
 		const breath = this.reduced ? 0 : Math.sin(this.time * 3)
 		this.fish.position.set(layout.x, -layout.y, 20)
@@ -335,7 +341,10 @@ export class FishingScene {
 		}
 		const goby = fish.assetKey === "fish_pebble_goby"
 		const frameCount = goby ? gobyFrames[this.fishState] : fish.rarity === "rare" || fish.rarity === "boss" ? 6 : 4
-		const frameIndex = Math.floor(this.time * (this.fishState === "struggle" ? 12 : 8)) % frameCount
+		const fps = { idle: 8, swim: 10, bite: 12, struggle: 12, stunned: 6, caught: 10, escape: 14 }[this.fishState]
+		const elapsedFrame = Math.floor((this.time - this.stateSince) * fps)
+		const frameIndex = this.fishState === "bite" || this.fishState === "caught" || this.fishState === "escape"
+			? Math.min(elapsedFrame, frameCount - 1) : elapsedFrame % frameCount
 		const key = `${fish.assetKey}_${this.fishState}_${frameIndex}.png`
 		if (key !== this.lastTexture) {
 			if (goby) {

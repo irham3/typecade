@@ -4,12 +4,13 @@ import { fishLayout, surfaceY } from "./ocean-motion"
 
 describe("ocean camera framing", () => {
 	it("keeps all ten species below water and above the typing area at every reel stage", () => {
-		for (const [width, height] of [[1366, 768], [1024, 768], [390, 844], [320, 640]]) {
+		for (const [width, height] of [[1366, 768], [1024, 768], [390, 844], [320, 640], [800, 360], [667, 375]]) {
 			for (const fish of fishSpecies) for (const time of [0, .7, 2, 5]) for (const progress of [0, .5, 1]) {
 				const layout = fishLayout(fish, width, height, time, progress, 90, false)
 				expect(layout.y - layout.frameHeight * layout.size * 1.06 / 2).toBeGreaterThan(height * .3 + 2)
 				expect(layout.y + layout.frameHeight * layout.size * 1.06 / 2).toBeLessThan(layout.waterBottom)
 				expect(layout.x).toBeLessThan(width)
+				if (height <= 500) expect(layout.x + layout.frameWidth * layout.size / 2).toBeLessThan(width * .32)
 			}
 		}
 	})

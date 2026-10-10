@@ -2674,3 +2674,46 @@ button, select, textarea { font: inherit; }
  .game-shell .hud .practice-keyboard button { height: 26px; min-height: 26px; }
  .hud .practice-keyboard { gap: 3px; }
 }
+
+@media (min-width: 600px) and (max-height: 500px) {
+ .hud { grid-template-columns: minmax(0, 32fr) minmax(0, 48fr) minmax(0, 20fr); grid-template-rows: 44px 28px minmax(0, 1fr) 122px; gap: 4px; padding: 6px; overflow: hidden; }
+ .hud .topbar { grid-column: 1 / -1; grid-row: 1; }
+ .hud .topbar .logo-mark-image, .hud .avatar { display: none; }
+ .hud .player-badge { min-height: 40px; padding: 3px 6px; }
+ .hud .route-strip { grid-column: 1; grid-row: 2; padding: 3px; gap: 2px; font-size: .55rem; flex-wrap: wrap; justify-content: start; }
+ .hud .encounter-stage { grid-column: 1; grid-row: 3; min-height: 0; align-content: end; }
+ .hud .icon-rail { grid-column: 1; grid-row: 4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: end; padding: 2px; gap: 2px; }
+ .hud .rail-button { min-height: 44px; padding: 0; gap: 2px; font-size: .6rem; }
+ .hud .rail-button em { display: none; }
+ .hud .bottom-console { grid-column: 2; grid-row: 2 / 4; gap: 2px; align-self: start; transform: none !important; }
+ .hud .tension-wrap { grid-template-columns: 16px 1fr; padding: 0; gap: 3px; }
+ .hud .meter-icon { width: 16px; height: 16px; }
+ .hud .meter-label { font-size: .55rem; gap: 4px; }
+ .hud .meter-label strong { font-size: .65rem; }
+ .hud .meter-block { display: grid; grid-template-columns: auto 1fr; gap: 4px; align-items: center; }
+ .hud .meter-track { height: 10px; padding: 2px; }
+ .hud .typing-panel { padding: 4px; gap: 1px; }
+ .hud .adventure-target-label, .hud .typing-help { margin: 0; font-size: .55rem; gap: 2px; }
+ .hud .typing-help kbd { display: none; }
+ .hud .typing-target { font-size: .875rem; }
+ .hud .stat-row { min-height: 26px; padding: 1px 4px; gap: 2px; }
+ .hud .stat { gap: 3px; }
+ .hud .stat .pixel-icon { width: 14px; height: 14px; }
+ .hud .stat strong { font-size: .65rem; }
+ .hud .stat span { font-size: .5rem; }
+ .hud .progress-stack { gap: 3px; }
+ .hud .small-meter { min-height: 18px; padding: 0 3px; grid-template-columns: 25px 1fr 24px; gap: 2px; font-size: .55rem; }
+ .hud .skill-dock { grid-column: 3; grid-row: 2 / 4; grid-template-columns: minmax(0, 1fr); padding: 2px; gap: 2px; align-self: start; }
+ .hud .skill-dock-help { font-size: .5rem; padding: 0; gap: 1px; }
+ .hud .skill-button { min-height: 42px; padding: 0; grid-template-columns: 16px minmax(0, 1fr); grid-template-rows: auto auto; gap: 1px; font-size: .6rem; }
+ .hud .skill-button img { width: 16px; height: 16px; grid-row: 1; }
+ .hud .skill-button .skill-key { display: none; }
+ .hud .skill-button .skill-cost { grid-column: 1 / -1; grid-row: 2; font-size: .5rem; }
+ .hud .practice-keyboard { display: grid; position: absolute; right: 6px; bottom: 6px; width: calc(68% - 14px); height: 118px; gap: 2px; }
+ .game-shell .hud .practice-keyboard button { min-height: 28px; height: 28px; }
+ .hud .encounter-stage > .boss-phase-callout { display: none; }
+ .hud .boss-phase-inline { display: inline; }
+ .hud .typing-help:has(.boss-phase-inline) > span:first-child { display: none; }
+ .hud .encounter-stage > .feedback-banner, .hud .encounter-stage > .result-toast { width: 100%; padding: 4px; font-size: .6rem; }
+ .hud:has(.complete-panel) .encounter-stage { grid-column: 1 / -1; grid-row: 2 / -1; align-content: center; }
+}

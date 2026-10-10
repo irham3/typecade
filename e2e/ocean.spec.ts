@@ -262,6 +262,7 @@ test.describe("Ocean Typing RPG shell", () => {
 		{ name: "compact desktop", width: 1024, height: 768 },
 		{ name: "mobile", width: 390, height: 844 },
 		{ name: "small mobile", width: 320, height: 640 },
+		{ name: "phone landscape", width: 800, height: 360 },
 	]) {
 		test(`renders a nonblank Three.js scene without HUD overlap on ${viewport.name}`, async ({ page }, testInfo) => {
 			const consoleErrors: string[] = []
@@ -433,6 +434,9 @@ async function sampleCanvas(page: import("@playwright/test").Page): Promise<{ co
 }
 
 async function expectHudDoesNotOverlap(page: import("@playwright/test").Page): Promise<void> {
+	for (const selector of ["[data-testid='topbar']", ".icon-rail", "[data-testid='route-strip']", "[data-testid='typing-console']", "[data-testid='skill-dock']"]) {
+		await expect(page.locator(selector)).toBeInViewport({ ratio: 1 })
+	}
 	await expect.poll(() => page.evaluate(() => {
 		const selectors = [
 			"[data-testid='topbar']",
@@ -442,6 +446,7 @@ async function expectHudDoesNotOverlap(page: import("@playwright/test").Page): P
 			"[data-testid='skill-dock']",
 			"[data-testid='boss-phase-callout']",
 		]
+		if (innerWidth >= 600 && innerHeight <= 500) selectors.push(".hud .practice-keyboard")
 		const rects = selectors
 			.map((selector) => {
 				const element = document.querySelector(selector)

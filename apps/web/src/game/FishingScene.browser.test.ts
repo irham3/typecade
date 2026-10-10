@@ -10,7 +10,7 @@ import { surfaceY } from "./ocean-motion"
 type PixelMesh = Mesh<PlaneGeometry, MeshBasicMaterial>
 interface Inspection {
 	tick(time: number): void; resize(): void; updateWorld(delta: number): void
-	time: number; endTime: number; stateUntil: number; fishState: string
+	time: number; endTime: number; stateUntil: number; fishState: string; lastTexture: string
 	boat: PixelMesh; fish: Group; fishBody: PixelMesh; fishTail: PixelMesh; eyelid: PixelMesh; eyeLine: PixelMesh; gill: PixelMesh
 	line: Line; lure: PixelMesh; water: Mesh<PlaneGeometry, ShaderMaterial>
 	pool: Array<{ x: number; y: number; life: number; bubble: boolean }>
@@ -59,27 +59,56 @@ describe("Three.js ocean renderer with a real WebGL context", () => {
 	it("keeps every fish underwater, animates eyes and tails, and anchors the hull to its wave", async () => {
 		const { bridge, view, host } = await setup()
 		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		for (const [width, height] of [[1366, 768], [390, 844], [320, 640]]) {
+		for (const [width, height] of [[1366, 768], [390, 844], [320, 640], [800, 360]]) {
 			host.style.width = `${width}px`; host.style.height = `${height}px`; view.resize()
 			for (const fish of fishSpecies) {
 				encounter(bridge, fish)
+				const start = view.time
 				for (const t of [.2, .8, 2]) {
-					view.time = t; view.updateWorld(.016)
+					view.time = start + t; view.updateWorld(.016)
 					const box = new Box3().setFromObject(view.fish)
 					expect(-box.max.y).toBeGreaterThan(height * .3 + 2)
-					expect(-box.min.y).toBeLessThan(height * (width <= 640 ? .38 : .46))
+					expect(-box.min.y).toBeLessThan(height * (height <= 500 ? .65 : width <= 640 ? .38 : .46))
+					if (height <= 500) expect(box.max.x).toBeLessThan(width * .32)
 					const hullY = -view.boat.position.y + view.boat.scale.y * .18
-					expect(hullY).toBeCloseTo(surfaceY(view.boat.position.x, width, height, t, false))
+					expect(hullY).toBeCloseTo(surfaceY(view.boat.position.x, width, height, view.time, false))
 				}
 				// Blink landmarks have a fixed phase for each species.
 				let sawBlink = false
-				for (let t = 0; t < 4; t += .05) { view.time = t; view.updateWorld(0); sawBlink ||= view.eyelid.visible }
+				const blinkStart = view.time
+				for (let t = 0; t < 4; t += .05) { view.time = blinkStart + t; view.updateWorld(0); sawBlink ||= view.eyelid.visible }
 				expect(sawBlink).toBe(true)
 				bridge.emit("settings:effects", { reducedMotion: true })
-				view.time = 5; view.updateWorld(0)
+				view.time += 1; view.updateWorld(0)
 				expect(view.eyelid.visible).toBe(false); expect(view.fishTail.rotation.y).toBe(0); expect(view.boat.rotation.z).toBe(0)
 				bridge.emit("settings:effects", { reducedMotion: false })
 			}
+		}
+	})
+	it("starts fish animations at frame zero, loops danger and holds terminal frames despite late events", async () => {
+		const { bridge, view } = await setup()
+		bridge.emit("screen:changed", { screen: "game" })
+		view.time = 17
+		const state = encounter(bridge, getFish("reef_minnow"))
+		expect(view.lastTexture).toBe("fish_pebble_goby_bite_0.png")
+		view.time += .25; view.updateWorld(0)
+		expect(view.lastTexture).toBe("fish_pebble_goby_bite_3.png")
+		view.time += .25; view.updateWorld(0)
+		expect(view.lastTexture).toBe("fish_pebble_goby_swim_0.png")
+		view.time += .5; view.updateWorld(0)
+		expect(view.lastTexture).toBe("fish_pebble_goby_swim_5.png")
+		bridge.emit("line:changed", { tension: 90, durability: 100, progress: .1, timeRemainingMs: 5000 })
+		view.updateWorld(0); expect(view.lastTexture).toBe("fish_pebble_goby_struggle_0.png")
+		view.time += .5; view.updateWorld(0)
+		expect(view.lastTexture).toBe("fish_pebble_goby_struggle_0.png")
+		for (const caught of [true, false]) {
+			bridge.emit("catch:resolved", { result: resolveCatchResult({ ...state, status: caught ? "caught" : "escaped" }, getFish("reef_minnow"), metrics) })
+			view.updateWorld(0)
+			expect(view.lastTexture).toBe(`fish_pebble_goby_${caught ? "caught" : "escape"}_0.png`)
+			bridge.emit("fish:hooked", { fish: getFish("reef_minnow") })
+			bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
+			view.time += 2; view.updateWorld(0)
+			expect(view.lastTexture).toBe(`fish_pebble_goby_${caught ? "caught_3" : "escape_5"}.png`)
 		}
 	})
 	it("freezes world and effects on pause, colors line danger and delivers every domain effect", async () => {
