@@ -1,6 +1,6 @@
 # Ocean Typing RPG Art Bible
 
-Status: current runtime direction, updated 2026-10-09
+Status: current runtime direction, updated 2026-10-10
 Reference: `docs/reference/typecade-ui-reference.jpg`
 
 ## Visual Identity
@@ -14,7 +14,7 @@ Ocean Typing RPG uses bright fantasy-ocean environments behind compact, dark-nav
 - Navigation, statistics, equipment, and skill icons use the existing `reference-derived-pixel-pack`. Do not mix vector icon libraries into the active shell.
 - Use the main-menu ship for the gameplay boat and multiplayer competitors. Player names, ranks, and progress stay live UI text.
 - Nine former procedural fish silhouettes are replaced by selected catalog/reference sprites. Pebble Goby keeps its existing state animation strips. `apps/web/scripts/refresh-ocean-art.mjs` lists the exact source mapping and writes fixed atlas cells using nearest-neighbor resizing.
-- Reused poses fill the nine replacement fish's atlas states; Phaser supplies drift, stretch, rotation, catch/escape movement, and bounded particles. These replacements are not nine new hand-animated sprite sets.
+- Reused poses fill the nine replacement fish's atlas states. Phaser articulates the final 30% of each sprite as a tail, with a small overlapping joint, a gentle body pulse and behavior-specific drift. Body and tail share the same frame, scale, rotation, underwater tint and catch/escape alpha; they freeze together on Pause. Reduced Effects removes tail flick and idle body deformation. Pebble Goby keeps its authored frame strips and is not split. These replacements are not nine newly drawn animation sets.
 - Adventure uses bg_shallow_coast_cutaway.webp: a side-on underwater cross section with a clear surface at 30% viewport height. Boat sits at that surface; active fish remains below it. Main menu and multiplayer keep their existing coast compositions. Fallback layers remain available when the cutaway texture fails to load.
 - HUD controls, callouts, typing, and results occupy separate flow rows. A dialog uses the browser's modal layer and restores focus on close. Mobile layout must fit at 320×640 and 390×844.
 - Rarity callouts use a monospace font sized to the viewport. Text effects stay clear of the fish and typing panel; reduced effects disable camera shake and hit stop.

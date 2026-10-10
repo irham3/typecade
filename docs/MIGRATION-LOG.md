@@ -444,3 +444,68 @@ The 100% source coverage gate measures the active Vite/workspace source, not his
 - npm run build, npm run lint, npx tsc --noEmit, npm run typecheck:rooms and git diff --check passed. The renderer-retirement audit returned no matches.
 - The lazy Phaser chunk remains about 1.399 MB raw / 365 KB gzip and emits the existing Vite advisory. No new renderer dependency was introduced.
 - Final CSS/copy follow-up: six relevant production scenarios passed after the selected-skill contrast and shared form-accent changes. The five UI proof images were refreshed from that build.
+
+
+## Endless Adventure and living underwater fish, 2026-10-10
+
+### User direction and scope
+
+The user requested an arcade Adventure that continues after its boss, with leveling, skills and changing challenges. They also requested fish that visibly remain underwater and look alive. This revision supersedes the finite expedition ending in the earlier Milestone 1 design. It reuses the existing three zones, ten species, six skills, pixel asset family, typed bridge and local account save. No runtime dependency or backend was added.
+
+### Arcade loop
+
+- One voyage contains nine regular catches followed by Leviathan. A successful boss wraps to the next voyage, restores one spare line up to three, secures the zone checkpoint and opens a paused harbor refit.
+- Continue voyage keeps the expedition seed, account, collection and selected skills. The player can equip one to three unlocked skills and choose the next route. Double-clicking Continue cannot start two encounters.
+- A failed boss uses the same spare-line retry rule as other fish. Game over occurs only when an encounter is lost with no spare line remaining. Earned account rewards remain banked.
+- The first three encounters are an unmodified tutorial. Subsequent conditions use a deterministic offset per voyage. Regular fish are shuffled within their own zone from voyage two; Leviathan remains last.
+- Later passages combine the fish's vocabulary profile with seeded Indonesian content. Treasure Shoal adds another passage. Every visible character is required; neither skills nor boss phase effects skip text.
+
+| Condition | Rule | Counterplay |
+| --- | --- | --- |
+| Calm Water | Standard encounter | Keep a steady rhythm; correct the highlighted typo. |
+| Rough Current | 45% more idle pressure, 25% more rewards | Perfect words and Calm Current reduce pressure. |
+| Fragile Line | 50% more typo damage, 25% more rewards | Steel Line shields the first typo; Reel Mastery repairs the line. |
+| Quick Bite | 20% less time, 25% more rewards | Stay accurate and finish the complete passage. |
+| Treasure Shoal | Extra passage, 70% more time, 50% more rewards | Longer clean combos build energy and trigger passive skills. |
+
+For depth d = min(voyage - 1, 12): base difficulty is multiplied by 1 + 0.025d; idle pressure by 1 + 0.04d; time by 1 - 0.015d; rewards by 1 + 0.12d. Condition multipliers apply separately. Voyage two onward also gets 40% more base time for the extra content. Bosses retain authored guard/final-pull phases with the Calm Water condition. The cap prevents a mathematically impossible escalation while later seeds continue to vary fish/condition/passages.
+
+### Saves and state boundaries
+
+- Saves without voyage migrate to voyage one. The old completed boss position migrates to the start of voyage two without removing collection records or currency. Invalid voyage values are rejected.
+- Restored progress opens a paused refit for its saved zone. Missing route IDs fall back to that zone's first route. Starting again after game over returns to a valid coast loadout.
+- Each encounter seed contains the global encounter index across voyages, so later catches of the same species receive distinct idempotency keys. Checkpoints clear secured pending results and retain only the last three checkpoint summaries; the account grant ledger remains intact.
+- Returning to the menu and reopening Adventure resumes the paused encounter in the current session. Phaser retains the current fish while hiding it outside gameplay, then restores its visibility on return.
+
+### Underwater animation and layout
+
+- Nine existing pose sprites now have an articulated tail: the final 30% of the same frame is rendered around a tail joint with a 2% overlap. Body and tail share frame, scale, underwater tint, alpha and catch/escape movement. Pebble Goby keeps its authored sprite strips.
+- Gentle body pulses and behavior-specific horizontal drift make idle fish move before typing. Tail flick speeds up in struggle. Pause freezes body and tail; Reduced Effects removes idle deformation and tail flick.
+- Encounter startup lays out the fish immediately below the 30% water surface. Tests check body bounds and transformed tail corners for every species at 1366×768, 390×844 and 320×640.
+- Condition instructions use shorter copy and normal letter spacing. The production regression exposed skills below the 320×640 viewport: mobile typing-panel gaps and input margin are now smaller, the passage has a scrolling 64px height cap, and keyboard shortcut badges are hidden on mobile to remove their extra skill-button row. Skill names, charge/passive status, icons and touch targets remain visible. Mobile boss callouts use a narrow left card and short phase rules, leaving space for the fish on the right. Existing menu plates and pixel icons remain unchanged.
+
+### Verification record
+
+- `npm run test`: 138 tests passed across 13 files.
+- `npm run test:coverage`: 100% statements (2191/2191), branches (1642/1642), functions (462/462) and lines (1925/1925) across 17 active production files. No coverage threshold or source exclusion changed.
+- Rules tests simulate 100 voyages / 1,000 distinct catches. A 45 WPM simulation covers ten seeds, every fish and voyages 1, 2, 13 and 1,000, applying actual ticks, typing and defensive skills. Difficulty caps at voyage 13; final characters remain mandatory.
+- Phaser browser tests inspect all ten species at desktop, mobile and small-mobile sizes, including transformed tail bounds, idle movement, pause, reduced effects and visibility after returning from the menu.
+- `npm run test:e2e`: all 23 Chromium production scenarios passed in 7.4 minutes. The final scenario plays twenty catches, refits after both bosses, changes skill/route, reloads the saved third voyage and resumes after visiting the main menu. Navigation, Practice, multiplayer variants and a live 100-participant room also passed.
+- `npm run build`, `npm run lint`, `npx tsc --noEmit`, `npm run typecheck:rooms` and `git diff --check` passed. The recorded renderer-retirement search returned no matches.
+- The earlier production runs exposed small-mobile skill buttons below the viewport. The final run verifies the compact typing panel and skill rows on 320×640, including Leviathan. The twenty-catch E2E scenario has a five-minute budget; assertions and gameplay rules were not relaxed.
+- Stable build: CSS 55.19 KB / 12.34 KB gzip, shell JS 355.75 KB / 115.00 KB gzip, lazy Phaser chunk 1,399.99 KB / 365.16 KB gzip. The existing large-chunk advisory remains.
+
+Proofs in `docs/reference/ocean-audit-2026-10-10`, captured from the final passing production build:
+
+- `underwater-gameplay-small-mobile.png`
+- `underwater-boss-desktop.png`
+- `underwater-boss-small-mobile.png`
+- `harbor-voyage-2.png`
+- `harbor-voyage-3.png`
+- `voyage-3-resumed.png`
+
+Desktop and small-mobile boss screenshots were inspected directly: fish remain below the surface, the phase card stays left of the fish and the typing/skill controls remain on screen. The user's existing local account was preserved through the preview reload and left on the main menu.
+
+### Practical limits
+
+The generated variation uses a finite roster and content pack. It does not create new species or vocabulary forever. Source coverage establishes exercised code paths, not measured retention or every physical device. The local reward ledger grows with successful catches; browser storage capacity still limits very long-lived local accounts. WAN capacity and physical mobile frame rates were not benchmarked. The existing lazy Phaser bundle size advisory remains.

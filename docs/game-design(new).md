@@ -92,7 +92,13 @@ Ocean Typing RPG
 
 ### 5.1 Run format
 
-A Fishing Expedition is a branching roguelite run with three ocean zones. A normal run targets 12-15 minutes. Strong players may extend a run to roughly 20 minutes by selecting optional encounters.
+Current Adventure behavior, revised at the user’s request on 2026-10-10: an expedition is an endless sequence of voyages. Each voyage uses the three Shallow Coast zones, nine regular fish and one Leviathan. Catching the boss opens a paused harbor refit, then continues the same expedition into the next voyage. There is no victory ending. A run ends only when the player loses an encounter with no spare lines remaining.
+
+The first three encounters introduce typing without an environmental modifier. Later encounters rotate seeded Calm Water, Rough Current, Fragile Line, Quick Bite and Treasure Shoal conditions. From voyage two, regular fish order is shuffled within each zone and passages combine a fish vocabulary profile with seeded Indonesian content. Boss encounters keep their authored phases without an extra environmental modifier.
+
+Depth increases pressure and typo risk through the conditions, reduces time gradually and raises rewards. The depth multiplier stops increasing after voyage 13. Each boss restores one spare line, capped at three. At harbor the captain may equip one to three unlocked skills and choose the next route; the timer is stopped. Account XP, collection records and currencies persist through voyages and failed runs. The six existing skills remain the complete loadout roster.
+
+The details below describe the broader design. Where they conflict with this implemented arcade loop, this revision takes precedence.
 
 Each zone contains:
 
@@ -104,7 +110,7 @@ Each zone contains:
 
 The third zone ends with a boss fish.
 
-At each checkpoint, catches and resources from completed zones are secured. If the player fails in the next zone, only unsecured rewards from that zone are lost. The player may leave voluntarily at a checkpoint.
+In the current arcade implementation, each successful catch grants its rewards immediately. Zone boundaries record a checkpoint without granting the same catch again. Leaving from a paused run preserves its encounter and voyage for the current session; reloading resumes the saved encounter from a paused harbor refit. Collection and earned rewards are never removed by a failed encounter.
 
 ### 5.2 Before a run
 
