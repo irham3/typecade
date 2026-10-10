@@ -372,6 +372,14 @@ export const shallowCoastRouteNodes: RouteNode[] = [
 
 export const shallowCoastZoneOrder: ZoneId[] = ["zone_1", "zone_2", "zone_3"]
 
+export const adventureConditions = [
+	{ id: "calm", name: "Calm Water", description: "Finish all text. Retype a typo to continue.", time: 1, pressure: 1, typoDamage: 1, reward: 1, passages: 1 },
+	{ id: "surge", name: "Rough Current", description: "+45% idle pressure. Calm Current helps.", time: 1, pressure: 1.45, typoDamage: 1, reward: 1.25, passages: 1 },
+	{ id: "fragile", name: "Fragile Line", description: "+50% typo damage. Steel Line shields one typo.", time: 1, pressure: 1, typoDamage: 1.5, reward: 1.25, passages: 1 },
+	{ id: "quick", name: "Quick Bite", description: "-20% time. Finish every character.", time: 0.8, pressure: 1, typoDamage: 1, reward: 1.25, passages: 1 },
+	{ id: "shoal", name: "Treasure Shoal", description: "Longer text, +70% time, +50% rewards.", time: 1.7, pressure: 1, typoDamage: 1, reward: 1.5, passages: 2 },
+] as const
+
 export const starterSkillIds = ["steel_line", "reel_mastery", "calm_current"] as const
 
 export function getFish(id: string): FishSpecies {

@@ -12,7 +12,7 @@ import type {
 import { CONTENT_VERSION } from "@typecade/contracts"
 import {
 	fishingSkills,
-	getIndonesianPassage,
+	shallowCoastZoneOrder,
 	getRouteNodesForZone,
 	getSkill,
 } from "@typecade/content"
@@ -26,6 +26,7 @@ import {
 	getFishingSkillUnlockLevel,
 	getEncounterIndexInRun,
 	getFishByEncounter,
+	getExpeditionPassage,
 	getSkillDraft,
 	grantCatchResult,
 	resolveCatchResult,
@@ -61,6 +62,7 @@ export interface OceanRunView {
 	lastSkillId?: string
 	feedback?: OceanUiFeedback
 	skillOffers: typeof fishingSkills
+	isRefitting: boolean
 	isPaused: boolean
 	lastKeyWasTypo?: boolean
 }
@@ -89,6 +91,7 @@ export interface OceanRunControls {
 	useSkill(skillId: string): boolean
 	setVolume(category: keyof VolumeState, value: number): void
 	setReducedMotion(value: boolean): void
+	continueVoyage(): void
 	startFreshRun(): void
 	togglePause(): void
 	typeKey(key: string): void
@@ -118,15 +121,16 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	)
 
 	useEffect(() => {
-		controlsActiveRef.current = controlsActive
+		const active = controlsActive && !view.isRefitting
+		controlsActiveRef.current = active
 		lastTickRef.current = performance.now()
-		bridge.emit("game:paused", { paused: !controlsActive || pausedRef.current })
-		if (controlsActive && !pausedRef.current && pendingTransitionRef.current) {
+		bridge.emit("game:paused", { paused: !active || pausedRef.current })
+		if (active && !pausedRef.current && pendingTransitionRef.current) {
 			const advance = pendingTransitionRef.current
 			pendingTransitionRef.current = null
 			advance()
 		}
-	}, [controlsActive, bridge])
+	}, [controlsActive, view.isRefitting, bridge])
 	useEffect(() => () => window.clearTimeout(transitionRef.current), [])
 
 	const persist = useCallback((expedition: ExpeditionState, collection: CollectionState) => {
@@ -173,29 +177,34 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			const metrics = sessionRef.current?.getSnapshot().metrics
 			if (metrics && metrics.correctKeystrokes + metrics.incorrectKeystrokes > 0) return
 		}
-		const choices = getRouteNodesForZone(inPrep ? "zone_1" : fish.habitat)
+		const choices = getRouteNodesForZone(inPrep ? (view.isRefitting ? shallowCoastZoneOrder[expeditionRef.current!.currentZoneIndex]! : "zone_1") : fish.habitat)
 		const selected = choices.find((node) => node.id === nodeId)
 		if (!selected) return
 		selectedRouteRef.current = selected
 		if (inPrep) {
 			pendingRouteIdRef.current = selected.id
+			if (view.isRefitting) {
+				expeditionRef.current = { ...expeditionRef.current!, selectedRouteId: selected.id }
+				persist(expeditionRef.current, collectionRef.current!)
+			}
 		} else {
 			const expedition = { ...expeditionRef.current!, selectedRouteId: selected.id }
 			expeditionRef.current = expedition
 			persist(expedition, collectionRef.current!)
 		}
 		syncView({ routeChoices: choices, selectedRoute: selected, log: [`Route selected: ${selected.name}`, ...viewLogTail(view.log)] })
-	}, [persist, syncView, view.log])
+	}, [persist, syncView, view.log, view.isRefitting])
 
-	const startEncounterFromExpedition = useCallback((expedition: ExpeditionState, collection: CollectionState, logLine: string) => {
+	const startEncounterFromExpedition = useCallback((expedition: ExpeditionState, collection: CollectionState, logLine: string, isRefitting = false) => {
 		const fish = getFishByEncounter(expedition)
 		const encounterIndex = getEncounterIndexInRun(expedition)
-		const passage = getIndonesianPassage(encounterIndex, fish.typingProfile)
+		const passage = getExpeditionPassage(expedition)
 		const startMs = performance.now()
 		const session = new TypingSession(passage)
 		const encounter = startEncounter(fish, `${expedition.seed}:${encounterIndex}`, expedition.selectedSkillIds)
 		const routeChoices = getRouteNodesForZone(fish.habitat)
 		const selectedRoute = routeChoices.find((route) => route.id === expedition.selectedRouteId) ?? routeChoices[0]!
+		expedition = { ...expedition, selectedRouteId: selectedRoute.id }
 
 		sessionRef.current = session
 		expeditionRef.current = expedition
@@ -207,6 +216,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 		const snapshot = session.getSnapshot()
 		const nextView = {
+			isRefitting,
 			isPaused: pausedRef.current,
 			expedition,
 			collection,
@@ -276,9 +286,15 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		encounterRef.current = encounter
 		persist(nextExpedition, nextCollection)
 
+		const atHarbor = nextExpedition.voyage > expedition.voyage
+		if (atHarbor) {
+			pausedRef.current = true
+			bridge.emit("game:paused", { paused: true })
+		}
 		const outcome = result.caught ? `Caught ${fish.name} (${result.sizeKg} kg)` : `${fish.name} escaped`
 		syncView({
-			expedition: nextExpedition.complete ? nextExpedition : expedition,
+			expedition: nextExpedition.complete || atHarbor ? nextExpedition : expedition,
+			...(atHarbor ? { isRefitting: true, isPaused: true, skillOffers: getSkillDraft(nextExpedition.seed, nextLevel, 6) } : {}),
 			lastResult: result,
 			feedback: leveledUp
 				? {
@@ -295,6 +311,8 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			bridge.emit("run:completed", { expedition: nextExpedition, collection: nextCollection })
 			return
 		}
+
+		if (atHarbor) return
 
 		transitionRef.current = window.setTimeout(() => {
 			const advance = () => startEncounterFromExpedition(nextExpedition, nextCollection, result.caught ? "Sailing to the next mark" : "Spare line tied, retrying")
@@ -450,10 +468,11 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			return
 		}
 		pendingSkillLoadoutRef.current = nextSkillIds
-		const nextExpedition = { ...view.expedition, selectedSkillIds: nextSkillIds }
+		const nextExpedition = { ...expeditionRef.current!, selectedSkillIds: nextSkillIds }
 		expeditionRef.current = nextExpedition
+		persist(nextExpedition, collectionRef.current!)
 		setView((previous) => ({ ...previous, expedition: nextExpedition }))
-	}, [view.expedition, view.skillOffers])
+	}, [persist, view.skillOffers])
 
 	const startFreshRun = useCallback(() => {
 		window.clearTimeout(transitionRef.current)
@@ -470,6 +489,18 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		persist(expedition, collection)
 		startEncounterFromExpedition(expedition, collection, "New Shallow Coast expedition")
 	}, [bridge, persist, startEncounterFromExpedition])
+
+	const continueVoyage = useCallback(() => {
+		if (!view.isRefitting || !pausedRef.current) return
+		const expedition = { ...expeditionRef.current! }
+		if (pendingRouteIdRef.current) expedition.selectedRouteId = pendingRouteIdRef.current
+		pendingRouteIdRef.current = null
+		pendingSkillLoadoutRef.current = null
+		pausedRef.current = false
+		persist(expedition, collectionRef.current!)
+		bridge.emit("game:paused", { paused: false })
+		startEncounterFromExpedition(expedition, collectionRef.current!, `Voyage ${expedition.voyage} underway`)
+	}, [bridge, persist, startEncounterFromExpedition, view.isRefitting])
 
 	const togglePause = useCallback(() => {
 		if (!controlsActiveRef.current) {
@@ -492,7 +523,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		const restored = restoreFromLocalStorage()
 		const expedition = restored?.expedition ?? createShallowCoastExpedition(starterSeed)
 		const collection = restored?.collection ?? createInitialCollection()
-		startEncounterFromExpedition(expedition, collection, restored ? "Restored Shallow Coast expedition" : "New Shallow Coast expedition")
+		startEncounterFromExpedition(expedition, collection, restored ? "Restored Shallow Coast expedition" : "New Shallow Coast expedition", restored !== null && getEncounterIndexInRun(expedition) > 0)
 		bridge.emit("settings:volumes", view.volumes)
 		bridge.emit("settings:effects", { reducedMotion: view.reducedMotion })
 	}, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -564,6 +595,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		useSkill: triggerSkill,
 		setVolume,
 		setReducedMotion,
+		continueVoyage,
 		startFreshRun,
 		togglePause,
 		typeKey,
@@ -575,7 +607,7 @@ function createInitialView(): OceanRunView {
 	const collection = createInitialCollection()
 	const fish = getFishByEncounter(expedition)
 	const encounter = startEncounter(fish, `${expedition.seed}:0`, expedition.selectedSkillIds)
-	const session = new TypingSession(getIndonesianPassage(0, fish.typingProfile), { startTimestampMs: 0 })
+	const session = new TypingSession(getExpeditionPassage(expedition), { startTimestampMs: 0 })
 	const snapshot = session.getSnapshot()
 	const routeChoices = getRouteNodesForZone(fish.habitat)
 
@@ -600,6 +632,7 @@ function createInitialView(): OceanRunView {
 		},
 		reducedMotion: false,
 		sonarRevealed: false,
+		isRefitting: false,
 		isPaused: true,
 	}
 }

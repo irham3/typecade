@@ -68,6 +68,56 @@ describe("FishingScene in Chromium", () => {
 		expect(() => bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })).not.toThrow()
 	})
 
+	it("animates each fish beneath the surface on desktop and phones, with safe pause and reduced motion", async () => {
+		host = document.createElement("div")
+		host.style.cssText = "position:fixed;inset:0;width:1366px;height:768px"
+		document.body.append(host)
+		const bridge = new GameEventBridge()
+		game = createFishingGame(host, bridge)
+		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
+		const scene = game.scene.getScene("FishingScene") as FishingScene
+		const visual = scene as unknown as { fish: Phaser.GameObjects.Sprite; fishTail: Phaser.GameObjects.Image }
+		expect(() => bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })).not.toThrow()
+		bridge.emit("screen:changed", { screen: "game" })
+		bridge.emit("game:paused", { paused: false })
+		for (const [width, height] of [[1366, 768], [390, 844], [320, 640]]) {
+			scene.scale.resize(width!, height!)
+			for (const species of fishSpecies) {
+				bridge.emit("encounter:started", { encounter: startEncounter(species, species.id, []), fish: species, targetText: "laut" })
+				scene.tweens.killTweensOf(visual.fish)
+				const positions = new Set<string>()
+				for (let time = 1500; time < 2300; time += 100) {
+					sceneUpdate(game, time)
+					positions.add(`${visual.fish.x}:${visual.fish.y}:${visual.fish.scaleY}`)
+					expect(visual.fish.getBounds().top, `${species.id}:${width}`).toBeGreaterThan(scene.scale.height * 0.3)
+					if (visual.fishTail.visible) {
+						const tail = visual.fishTail
+						const matrix = tail.getWorldTransformMatrix()
+						for (const x of [0, tail.width * 0.3]) for (const y of [-tail.height / 2, tail.height / 2]) {
+							expect(matrix.transformPoint(x, y).y, `${species.id}:tail:${width}`).toBeGreaterThan(scene.scale.height * 0.3)
+						}
+					}
+				}
+				expect(positions.size).toBeGreaterThan(1)
+				expect(visual.fishTail.visible).toBe(species.assetKey !== "fish_pebble_goby")
+			}
+		}
+		const position = [visual.fish.x, visual.fish.y, visual.fishTail.rotation]
+		bridge.emit("game:paused", { paused: true })
+		sceneUpdate(game, 5000)
+		expect([visual.fish.x, visual.fish.y, visual.fishTail.rotation]).toEqual(position)
+		bridge.emit("game:paused", { paused: false })
+		bridge.emit("settings:effects", { reducedMotion: true })
+		sceneUpdate(game, 6000)
+		expect(visual.fishTail.rotation).toBe(visual.fish.rotation)
+		bridge.emit("screen:changed", { screen: "prep" })
+		expect(visual.fishTail.visible).toBe(false)
+		bridge.emit("screen:changed", { screen: "game" })
+		sceneUpdate(game, 6500)
+		expect(visual.fish.visible).toBe(true)
+		expect(visual.fishTail.visible).toBe(true)
+	})
+
 	it("releases bridge listeners when the game is destroyed without scene shutdown", async () => {
 		host = document.createElement("div")
 		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
@@ -376,7 +426,7 @@ describe("FishingScene in Chromium", () => {
 		}
 		Object.defineProperties(scene, {
 			anims: { configurable: true, value: { create, exists: () => false, generateFrameNames: () => [] } },
-			fish: { configurable: true, value: { play: vi.fn(), setTexture: vi.fn() } },
+			fish: { configurable: true, value: { play: vi.fn(), setTexture: vi.fn(), setCrop: vi.fn().mockReturnThis(), setTint: vi.fn().mockReturnThis() } },
 		})
 		probe.playFishAnimation(getFish("kelp_darter"), "struggle")
 		expect(create).toHaveBeenCalledWith(expect.objectContaining({ frameRate: 12, repeat: -1 }))

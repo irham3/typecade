@@ -64,6 +64,7 @@ export class FishingScene extends Phaser.Scene {
 	private bgLayers: Phaser.GameObjects.Image[] = []
 	private gameplayBackdrop?: Phaser.GameObjects.Image
 	private ambientSprites: Phaser.GameObjects.Image[] = []
+	private fishTail?: Phaser.GameObjects.Image
 	private fish?: Phaser.GameObjects.Sprite
 	private fishShadow?: Phaser.GameObjects.Image
 	private hookGlow?: Phaser.GameObjects.Image
@@ -185,6 +186,7 @@ export class FishingScene extends Phaser.Scene {
 		this.lure = this.add.image(760, 530, "ocean", "ui_skill_cast_net_default.png").setDepth(29).setScale(0.22).setVisible(false)
 		this.fishShadow = this.add.image(970, 562, "ocean", "vfx_soft_circle_default.png").setDepth(21).setScale(3.1, 0.68).setAlpha(0.34)
 		this.fishShadow.setTint(0x042238).setVisible(false)
+		this.fishTail = this.add.image(0, 0, "ocean", "fish_kelp_darter_swim_0.png").setDepth(26).setOrigin(0.7, 0.5).setVisible(false)
 		this.fish = this.add.sprite(970, 515, "pebble_goby_idle_4f", 0).setDepth(25).setScale(1.35).setVisible(false)
 
 		this.createEmitters()
@@ -223,18 +225,35 @@ export class FishingScene extends Phaser.Scene {
 			const progressPull = this.lineProgress * (this.currentFish.id === bossFish ? 0.12 : 0.21)
 			const tensionPush = Math.max(0, this.lineTension - 54) / 100 * (behavior === "predator" || behavior === "boss" ? 54 : 30)
 			const swimSpeed = behavior === "darting" ? 260 : behavior === "boss" ? 620 : 760
+			const motion = this.reducedMotion ? 0 : 1
+			const breath = Math.sin(time / swimSpeed) * motion
 			const driftY = Math.sin(time / swimSpeed) * getFishDrift(this.currentFish)
-			const driftX = Math.sin(time / (behavior === "predator" ? 390 : 820)) * (behavior === "swarm" ? 34 : 16)
+			const driftX = Math.sin(time / (behavior === "darting" ? 260 : behavior === "predator" ? 390 : 820)) * (behavior === "swarm" ? 34 : 16) * motion
 			const snap = Math.sin(time / 42) * this.pullTrauma * 18
 			const targetX = width * (0.73 - progressPull) + driftX + tensionPush + snap
-			const halfHeight = this.fish.height * fishScale / 2
+			const halfHeight = this.fish.height * fishScale * 1.025 / 2
 			const targetY = Math.min(height * 0.46 - halfHeight - 4, Math.max(height * 0.3 + halfHeight + 4, height * 0.4 + (this.reducedMotion ? 0 : driftY + Math.sin(time / 118) * this.pullTrauma * 8)))
 			this.fish.setPosition(targetX, targetY)
-			this.fish.setScale(fishScale * (1 + this.pullTrauma * 0.08), fishScale * (1 - this.pullTrauma * 0.035))
-			this.fish.setRotation(Math.sin(time / 760) * 0.035 + this.pullTrauma * 0.055)
+			this.fish.setScale(fishScale * (1 + breath * 0.018 + this.pullTrauma * 0.08), fishScale * (1 - breath * 0.025 - this.pullTrauma * 0.035))
+			this.fish.setRotation((Math.sin(time / 760) * 0.035 + this.pullTrauma * 0.055) * motion)
 			this.fishShadow?.setPosition(targetX + 6, targetY + this.fish.displayHeight * 0.36)
 			this.fishShadow?.setScale(Math.max(1, this.fish.displayWidth / 92), 0.5 + this.lineProgress * 0.22)
 			this.fishShadow?.setAlpha(0.18 + this.lineProgress * 0.22)
+		}
+
+		if (this.fish && this.fishTail) {
+			const fish = this.fish
+			const tail = this.fishTail
+			tail.setVisible(fish.visible && this.currentFish !== undefined && this.currentFish.assetKey !== animatedFishAssetKey)
+			if (tail.visible) {
+				// Reuse the sprite's tail pixels; overlap the joint to keep its outline closed.
+				fish.setCrop(0, 0, fish.width * 0.72, fish.height)
+				tail.setTexture(fish.texture.key, fish.frame.name).setOrigin(0.7, 0.5).setCrop(fish.width * 0.7, 0, fish.width * 0.3, fish.height)
+				const joint = fish.displayWidth * 0.2
+				const flick = this.reducedMotion ? 0 : Math.sin(time / (this.currentFishState === "struggle" ? 100 : 210)) * 0.09
+				tail.setPosition(fish.x + Math.cos(fish.rotation) * joint, fish.y + Math.sin(fish.rotation) * joint)
+				tail.setScale(fish.scaleX, fish.scaleY).setRotation(fish.rotation + flick).setAlpha(fish.alpha).setTint(0xe0f5ff)
+			}
 		}
 
 		if (this.lure) {
@@ -380,11 +399,9 @@ export class FishingScene extends Phaser.Scene {
 				this.hookGlow?.setVisible(isGame)
 				this.line?.setVisible(isGame)
 
-				if (!isGame) {
-					this.fish?.setVisible(false)
-					this.fishShadow?.setVisible(false)
-					this.currentFish = undefined
-				}
+				this.fish?.setVisible(isGame && this.currentFish !== undefined)
+				this.fishShadow?.setVisible(isGame && this.currentFish !== undefined)
+				if (!isGame) this.fishTail?.setVisible(false)
 			}),
 			bridge.on("encounter:started", ({ encounter, fish }) => {
 				if (this.fish) this.tweens.killTweensOf(this.fish)
@@ -398,6 +415,7 @@ export class FishingScene extends Phaser.Scene {
 				this.fishShadow?.setVisible(true)
 				this.fish?.setScale(getFishScale(fish) * Math.min(1, this.scale.width / 900, this.scale.height / 1100))
 				this.playFishAnimation(fish, "bite")
+				this.layout()
 				this.floatText(fish.rarity === "boss" ? "BOSS HOOKED" : `${fish.rarity.toUpperCase()} BITE`, this.scale.width * 0.6, this.scale.height * 0.28, fish.rarity === "common" ? 0x9ae7ff : 0xf5c240)
 				this.time.delayedCall(360, () => {
 					if (this.currentFish === fish && this.currentFishState === "bite") this.playFishAnimation(fish, "swim")
@@ -580,6 +598,7 @@ export class FishingScene extends Phaser.Scene {
 		if (!this.fish) {
 			return
 		}
+		this.fish.setCrop().setTint(0xe0f5ff)
 		this.currentFishState = state
 		if (fish.assetKey === animatedFishAssetKey) {
 			const frameCount = pebbleGobyFrameCounts[state]

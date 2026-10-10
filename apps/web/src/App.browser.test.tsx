@@ -376,12 +376,14 @@ describe("application browser coverage", () => {
 		await click('[data-testid="prep-screen"] .prep-header button.secondary-action')
 	})
 
-	it("starts prep from its safe first route when a restored run is already in another zone", async () => {
-		const expedition = { ...createShallowCoastExpedition("later-zone-prep"), currentZoneIndex: 1, currentEncounterIndex: 3 }
+	it("resumes the saved zone from harbor instead of restarting at the coast", async () => {
+		const expedition = { ...createShallowCoastExpedition("later-zone-prep"), currentZoneIndex: 1, currentEncounterIndex: 1, selectedRouteId: "reef_shelf" }
 		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))
 		await mount()
 		await click('button[aria-label="Adventure"]')
-		expect(host.querySelector('[data-testid="prep-screen"] .route-choice-grid button.selected')?.textContent).toContain("Lagoon Gate")
+		expect(host.querySelector('[data-testid="prep-screen"] .route-choice-grid button.selected')?.textContent).toContain("Coral Pass")
+		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
+		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 5/10")
 	})
 
 	it("offers all unlocked skills and keeps a loadout between one and three choices", async () => {
@@ -396,6 +398,20 @@ describe("application browser coverage", () => {
 		await click('.prep-skill[aria-pressed="false"]')
 		await click('.prep-skill[aria-pressed="false"]:not(:disabled)')
 		expect([...host.querySelectorAll<HTMLButtonElement>('.prep-skill[aria-pressed="false"]')].every((button) => button.disabled)).toBe(true)
+	})
+
+	it("returns to a valid first-zone loadout after losing the final line to the boss", async () => {
+		const expedition = { ...createShallowCoastExpedition("last-line-boss"), currentZoneIndex: 2, currentEncounterIndex: 3, selectedRouteId: "crown_wake", spareLines: 0 }
+		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))
+		await mount()
+		await sail()
+		await act(() => { for (let typo = 0; typo < 50; typo++) host.querySelector(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "~", bubbles: true })) })
+		expect(host.querySelector('[data-testid="complete-panel"]')?.textContent).toContain("Expedition ended")
+		await click('[data-testid="complete-panel"] button.secondary')
+		await click('button[aria-label="Adventure"]')
+		expect(host.querySelector('.prep-routes button.selected')?.textContent).toContain("Lagoon Gate")
+		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
+		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Voyage 1")
 	})
 
 	it("ends a failed expedition honestly and allows a fresh run with its collection", async () => {
@@ -515,7 +531,7 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="pause-panel"]')).toBeNull()
 	})
 
-	it("completes every expedition zone and the boss, then sails again", async () => {
+	it("completes a voyage, refits skills at harbor and continues the same endless expedition", async () => {
 		await mount()
 		await click('button[aria-label="Adventure"]')
 		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
@@ -539,12 +555,15 @@ describe("application browser coverage", () => {
 					for (const key of target) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
 				})
 			}
-			expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Catch secured")
+			if (encounter < 10) expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Catch secured")
 			if (encounter < 10) await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1850)) })
 		}
-		expect(host.querySelector('[data-testid="complete-panel"]')?.textContent).toContain("Shallow Coast cleared")
-		expect(JSON.parse(localStorage.getItem("typecade:ocean-typing-rpg:m1") ?? "{}").expedition.complete).toBe(true)
-		await click('[data-testid="complete-panel"] button')
+		expect(host.querySelector('[data-testid="complete-panel"]')).toBeNull()
+		expect(host.querySelector('[data-testid="prep-screen"]')?.textContent).toContain("Harbor refit · Voyage 2")
+		const saved = JSON.parse(localStorage.getItem("typecade:ocean-typing-rpg:m1") ?? "{}")
+		expect(saved.expedition).toMatchObject({ complete: false, voyage: 2 })
+		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
+		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Voyage 2")
 		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 1/10")
 	}, 40000)
 
@@ -559,6 +578,8 @@ describe("application browser coverage", () => {
 	it("closes settings with Escape and reaches the menu from a paused run", async () => {
 		await mount()
 		await sail()
+		const firstKey = host.querySelector('[data-testid="typing-target"]')!.textContent![0]!
+		await act(() => host.querySelector(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: firstKey, bubbles: true })))
 		await click('button[aria-label="Settings"]')
 		await act(() => host.querySelector("dialog")!.dispatchEvent(new Event("cancel", { cancelable: true })))
 		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
@@ -568,5 +589,8 @@ describe("application browser coverage", () => {
 		await click('button[aria-label="Settings"]')
 		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Settings")
 		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
+		await click('button[aria-label="Adventure"]')
+		expect(host.querySelector('[data-testid="pause-panel"]')).not.toBeNull()
+		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1)
 	})
 })

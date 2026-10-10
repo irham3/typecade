@@ -13,7 +13,7 @@ import type {
 	TypingMetrics,
 } from "@typecade/contracts"
 import { CONTENT_VERSION } from "@typecade/contracts"
-import { fishSpecies, fishingSkills, getFish, getRouteNodesForZone, getSkill, shallowCoastZoneOrder } from "@typecade/content"
+import { adventureConditions, fishSpecies, fishingSkills, getFish, getIndonesianPassage, getRouteNodesForZone, getSkill, languagePacks, shallowCoastZoneOrder } from "@typecade/content"
 
 export interface SeededRng {
 	nextFloat(): number
@@ -176,6 +176,7 @@ export function createShallowCoastExpedition(
 	validateSkills(selectedSkillIds)
 	return {
 		seed,
+		voyage: 1,
 		contentVersion: CONTENT_VERSION,
 		selectedRouteId: getRouteNodesForZone("zone_1")[0]!.id,
 		currentZoneIndex: 0,
@@ -193,11 +194,20 @@ export function getCurrentFishId(expedition: ExpeditionState): string {
 	if (!zone) {
 		return "crown_leviathan"
 	}
-	return zone[Math.min(expedition.currentEncounterIndex, zone.length - 1)]!
+	const order: string[] = [...zone]
+	if (expedition.voyage > 1) {
+		const regularCount = order.filter((id) => id !== "crown_leviathan").length
+		const rng = createSeededRng(`${expedition.seed}:voyage:${expedition.voyage}:zone:${expedition.currentZoneIndex}`)
+		for (let index = regularCount - 1; index > 0; index -= 1) {
+			const other = rng.nextInt(0, index + 1)
+			;[order[index], order[other]] = [order[other]!, order[index]!]
+		}
+	}
+	return order[Math.min(expedition.currentEncounterIndex, order.length - 1)]!
 }
 
 export function getEncounterIndexInRun(expedition: ExpeditionState): number {
-	return expeditionFishOrder
+	return (expedition.voyage - 1) * 10 + expeditionFishOrder
 		.slice(0, expedition.currentZoneIndex)
 		.reduce((total, zone) => total + zone.length, 0) + expedition.currentEncounterIndex
 }
@@ -422,9 +432,8 @@ export function resolveCatchResult(
 export function advanceExpedition(expedition: ExpeditionState, result: CatchResult): ExpeditionState {
 	const currentZone = expeditionFishOrder[expedition.currentZoneIndex]
 	const nextPending = result.caught ? [...expedition.pendingResults, result] : [...expedition.pendingResults]
-	const failedMandatoryBoss = !result.caught && result.fishId === "crown_leviathan"
 
-	if ((!result.caught && expedition.spareLines <= 0) || failedMandatoryBoss) {
+	if (!result.caught && expedition.spareLines <= 0) {
 		return {
 			...expedition,
 			spareLines: Math.max(0, expedition.spareLines - 1),
@@ -454,9 +463,12 @@ export function advanceExpedition(expedition: ExpeditionState, result: CatchResu
 	if (nextZoneIndex >= expeditionFishOrder.length) {
 		return {
 			...expedition,
-			currentEncounterIndex: nextEncounterIndex,
+			voyage: expedition.voyage + 1,
+			currentZoneIndex: 0,
+			currentEncounterIndex: 0,
+			selectedRouteId: getRouteNodesForZone("zone_1")[0]!.id,
+			spareLines: Math.min(3, expedition.spareLines + 1),
 			pendingResults: nextPending,
-			complete: true,
 		}
 	}
 
@@ -474,7 +486,7 @@ export function secureCheckpoint(expedition: ExpeditionState, collection: Collec
 	collection: CollectionState
 	checkpoint: ExpeditionCheckpoint
 } {
-	const checkpointZoneIndex = expedition.complete ? expedition.currentZoneIndex : Math.max(0, expedition.currentZoneIndex - 1)
+	const checkpointZoneIndex = expedition.complete ? expedition.currentZoneIndex : (expedition.currentZoneIndex + 2) % 3
 	const zoneId = shallowCoastZoneOrder[checkpointZoneIndex] ?? "zone_3"
 	const securedKeys = new Set(collection.grantedResultKeys)
 	let nextCollection: CollectionState = {
@@ -503,8 +515,8 @@ export function secureCheckpoint(expedition: ExpeditionState, collection: Collec
 	return {
 		expedition: {
 			...expedition,
-			pendingResults: securedResults,
-			checkpoints: [...expedition.checkpoints, checkpoint],
+			pendingResults: [],
+			checkpoints: [...expedition.checkpoints, checkpoint].slice(-3),
 		},
 		collection: nextCollection,
 		checkpoint,
@@ -566,6 +578,11 @@ export function restoreOceanSave(raw: string | null): SerializedOceanSave | null
 		if (parsed.contentVersion !== CONTENT_VERSION || parsed.expedition.contentVersion !== CONTENT_VERSION) {
 			return null
 		}
+		parsed.expedition.voyage ??= 1
+		if (!Number.isSafeInteger(parsed.expedition.voyage) || parsed.expedition.voyage < 1) return null
+		if (parsed.expedition.complete && parsed.expedition.currentZoneIndex === 2 && parsed.expedition.currentEncounterIndex === 4) {
+			parsed.expedition = { ...parsed.expedition, voyage: 2, currentZoneIndex: 0, currentEncounterIndex: 0, selectedRouteId: "lagoon_gate", complete: false }
+		}
 		return parsed
 	} catch {
 		return null
@@ -583,7 +600,34 @@ export function getBossPhaseForProgress(progress: number): 1 | 2 | 3 {
 }
 
 export function getFishByEncounter(expedition: ExpeditionState): FishSpecies {
-	return getFish(getCurrentFishId(expedition))
+	const fish = getFish(getCurrentFishId(expedition))
+	const condition = getAdventureCondition(expedition)
+	const depth = Math.min(expedition.voyage - 1, 12)
+	return {
+		...fish,
+		baseDifficulty: fish.baseDifficulty * (1 + depth * 0.025),
+		baseTimeMs: Math.round(fish.baseTimeMs * condition.time * (expedition.voyage > 1 ? 1.4 : 1) * (1 - depth * 0.015)),
+		idlePressurePerSecond: fish.idlePressurePerSecond * condition.pressure * (1 + depth * 0.04),
+		durabilityOnTypo: fish.durabilityOnTypo * condition.typoDamage,
+		reward: scaleRewards(fish.reward, condition.reward * (1 + depth * 0.12)),
+	}
+}
+
+export function getAdventureCondition(expedition: ExpeditionState): typeof adventureConditions[number] {
+	if ((expedition.voyage === 1 && expedition.currentZoneIndex === 0) || getCurrentFishId(expedition) === "crown_leviathan") return adventureConditions[0]
+	const offset = createSeededRng(`${expedition.seed}:voyage:${expedition.voyage}:conditions`).nextInt(0, adventureConditions.length)
+	return adventureConditions[(getEncounterIndexInRun(expedition) + offset) % adventureConditions.length]!
+}
+
+export function getExpeditionPassage(expedition: ExpeditionState): string {
+	const fish = getFishByEncounter(expedition)
+	const index = getEncounterIndexInRun(expedition)
+	const condition = getAdventureCondition(expedition)
+	const passages = [getIndonesianPassage(index, fish.typingProfile)]
+	const offset = createSeededRng(`${expedition.seed}:${index}:passages`).nextInt(0, languagePacks.id.passages.length)
+	const count = condition.passages + (expedition.voyage > 1 ? 1 : 0)
+	for (let part = 1; part < count; part += 1) passages.push(getIndonesianPassage((offset + part * 7) % languagePacks.id.passages.length))
+	return passages.join(". ")
 }
 
 export function getFishRosterForMilestone(): FishSpecies[] {

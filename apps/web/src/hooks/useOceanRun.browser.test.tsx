@@ -173,6 +173,31 @@ describe("ocean run browser controls", () => {
 		return controls
 	}
 
+	 it("pauses at harbor, equips newly unlocked skills and resumes without resetting the voyage", async () => {
+		const expedition = { ...createShallowCoastExpedition("harbor"), currentZoneIndex: 2, currentEncounterIndex: 3, selectedRouteId: "leviathan_trench" }
+		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, { ...createInitialCollection(), xp: 500 }))
+		await mount()
+		expect(controls!.view.isRefitting).toBe(true)
+		await act(() => controls!.chooseRoute("missing"))
+		await act(() => controls!.continueVoyage())
+		expect(controls!.view.fish.id).toBe("crown_leviathan")
+		await act(() => { for (const key of controls!.view.targetText) controls!.typeKey(key) })
+		expect(controls!.view.expedition.voyage).toBe(2)
+		expect(controls!.view.isRefitting).toBe(true)
+		await act(() => { controls!.togglePause(); controls!.typeKey("x") })
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1900)) })
+		expect(controls!.view.lastResult?.caught).toBe(true)
+		await act(() => controls!.setSkillLoadout(["calm_current", "steel_line", "reel_mastery"]))
+		await act(() => controls!.chooseRoute("reef_shelf"))
+		await act(() => { controls!.continueVoyage(); controls!.continueVoyage() })
+		expect(controls!.view).toMatchObject({ isRefitting: false, isPaused: false, cursor: 0 })
+		expect(controls!.view.expedition).toMatchObject({ voyage: 2, seed: "harbor", selectedRouteId: "reef_shelf", selectedSkillIds: ["calm_current", "steel_line", "reel_mastery"] })
+		await act(() => controls!.continueVoyage())
+		expect(controls!.view.expedition.voyage).toBe(2)
+		await act(() => { for (const key of controls!.view.targetText) controls!.typeKey(key) })
+		expect(controls!.view.collection.grantedResultKeys).toHaveLength(2)
+	 })
+
 	it("restores a saved expedition and restarts completed saves with their collection", async () => {
 		const expedition = createShallowCoastExpedition("saved-run")
 		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))

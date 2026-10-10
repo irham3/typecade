@@ -182,6 +182,7 @@ export interface ExpeditionCheckpoint {
 
 export interface ExpeditionState {
 	seed: string
+	voyage: number
 	contentVersion: typeof CONTENT_VERSION
 	selectedRouteId: string
 	currentZoneIndex: number

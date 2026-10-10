@@ -221,33 +221,74 @@ test.describe("Ocean Typing RPG shell", () => {
 		})
 	}
 
-	test("completes the full Shallow Coast run including the Leviathan", async ({ page }, testInfo) => {
-		test.setTimeout(120000)
+	test("plays two endless voyages, refits after each Leviathan and resumes the saved third voyage", async ({ page }, testInfo) => {
+		test.setTimeout(300000)
 		await page.goto("/")
 		await page.getByRole("button", { name: "Adventure", exact: true }).click()
 		await page.getByRole("button", { name: "Set Sail" }).click()
-		for (let encounter = 1; encounter <= 10; encounter += 1) {
-			await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter}/10`)
-			if (encounter === 10) {
-				await expect(page.getByTestId("boss-phase-callout")).toContainText("Crown Wake")
-				await page.waitForTimeout(1000)
-				await page.screenshot({ path: testInfo.outputPath("boss-gameplay.png") })
+		for (let voyage = 1; voyage <= 2; voyage += 1) {
+			for (let encounter = 1; encounter <= 10; encounter += 1) {
+				await expect(page.getByTestId("route-strip")).toContainText(`Voyage ${voyage}`)
+				await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter}/10`)
+				if (encounter === 10) {
+					await expect(page.getByTestId("boss-phase-callout")).toContainText("Crown Wake")
+					await page.waitForTimeout(1000)
+					await page.screenshot({ path: testInfo.outputPath(`boss-voyage-${voyage}.png`) })
+					if (voyage === 1) {
+						await page.setViewportSize({ width: 320, height: 640 })
+						await expectHudDoesNotOverlap(page)
+						await page.screenshot({ path: testInfo.outputPath("boss-small-mobile.png") })
+						await page.setViewportSize({ width: 1366, height: 768 })
+					}
+				}
+				const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
+				await page.getByLabel("Adventure typing input").focus()
+				const cursor = await page.getByTestId("typing-target").locator(".done").count()
+				await page.keyboard.type(target.slice(cursor, -1), { delay: encounter === 10 ? 2 : 0 })
+				await expect(page.getByTestId("result-toast")).toHaveCount(0)
+				await page.keyboard.type(target.slice(-1))
+				if (encounter < 10) {
+					await expect(page.getByTestId("result-toast"), `Voyage ${voyage}, encounter ${encounter}`).toContainText("Catch secured")
+					await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter + 1}/10`, { timeout: 5000 })
+				}
 			}
-			const target = (await page.getByTestId("typing-target").textContent())?.replace(/\u00a0/g, " ") ?? ""
-			await page.keyboard.type(target, { delay: encounter === 10 ? 12 : 1 })
-			await expect(page.getByTestId("result-toast"), `Encounter ${encounter}: ${target}`).toContainText("Catch secured")
-			if (encounter < 10) {
-				await expect(page.getByTestId("route-strip")).toContainText(`Encounter ${encounter + 1}/10`, { timeout: 5000 })
+			await expect(page.getByTestId("complete-panel")).toHaveCount(0)
+			await expect(page.getByTestId("prep-screen")).toContainText(`Harbor refit · Voyage ${voyage + 1}`)
+			await page.waitForTimeout(2000)
+			await page.screenshot({ path: testInfo.outputPath(`harbor-voyage-${voyage + 1}.png`) })
+			if (voyage === 1) {
+				await page.locator('.prep-skill').filter({ hasText: "Cast Net" }).click()
+				await page.locator('.prep-skill').filter({ hasText: "Calm Current" }).click()
+				await expect(page.locator('.prep-skill').filter({ hasText: "Calm Current" })).toHaveAttribute("aria-pressed", "true")
+				await page.getByRole("button", { name: /Reef Shelf/ }).click()
+				await expect(page.getByRole("button", { name: /Reef Shelf/ })).toHaveClass("selected")
+			} else {
+				await page.reload()
+				await page.getByRole("button", { name: "Adventure", exact: true }).click()
+				await expect(page.getByTestId("prep-screen")).toContainText("Harbor refit · Voyage 3")
+			}
+			await page.getByRole("button", { name: "Continue voyage" }).click()
+			await expect(page.getByTestId("route-strip")).toContainText(`Voyage ${voyage + 1}`)
+			await expect(page.getByTestId("route-strip")).toContainText("Encounter 1/10")
+			await expectHudDoesNotOverlap(page)
+			if (voyage === 1) {
+				const target = (await page.getByTestId("typing-target").textContent())!.replace(/\u00a0/g, " ")
+				const prefix = target.indexOf(" ", target.indexOf(" ") + 1) + 1
+				await page.getByLabel("Adventure typing input").focus()
+				await page.keyboard.type(target.slice(0, prefix))
+				await page.getByRole("button", { name: /Calm Current/ }).click()
+				await expect(page.getByTestId("skill-feedback")).toContainText("Calm Current")
 			}
 		}
-		await expect(page.getByTestId("boss-phase-callout")).toHaveCount(0)
-		await expect(page.getByTestId("complete-panel")).toContainText("Shallow Coast cleared")
-		await expectHudDoesNotOverlap(page)
-		await page.getByRole("button", { name: "Sail Again" }).click()
-		await expect(page.getByTestId("route-strip")).toContainText("Encounter 1/10")
 		await page.getByRole("button", { name: "Pause game" }).click()
 		await page.getByRole("button", { name: "Main menu" }).click()
 		await expect(page.getByTestId("main-menu")).toBeVisible()
+		await page.getByRole("button", { name: "Adventure", exact: true }).click()
+		await expect(page.getByTestId("pause-panel")).toBeVisible()
+		await page.getByRole("button", { name: "Resume fishing" }).click()
+		await expect(page.getByTestId("route-strip")).toContainText("Voyage 3")
+		await expectCanvasNonBlank(page)
+		await page.screenshot({ path: testInfo.outputPath("voyage-3-resumed.png") })
 	})
 })
 

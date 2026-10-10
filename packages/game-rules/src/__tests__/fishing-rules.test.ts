@@ -16,6 +16,8 @@ import {
 	getCurrentFishId,
 	getEncounterIndexInRun,
 	getFishByEncounter,
+	getAdventureCondition,
+	getExpeditionPassage,
 	getFishRosterForMilestone,
 	getSkillRosterForMilestone,
 	getSkillDraft,
@@ -26,7 +28,7 @@ import {
 	secureCheckpoint,
 	startEncounter,
 	tickEncounter,
-	useFishingSkill,
+	useFishingSkill as activateFishingSkill,
 } from "../index"
 
 const metrics = {
@@ -55,6 +57,89 @@ function typingEvent(type: TypingEvent["type"], overrides: Partial<TypingEvent> 
 }
 
 describe("fishing rules", () => {
+
+	it("continues 100 voyages with unique rewards, bounded checkpoints and repeatable encounters", () => {
+		let expedition = createShallowCoastExpedition("endless-sweep")
+		let collection = createInitialCollection()
+		const conditions = new Set<string>()
+		const orders: string[][] = []
+		for (let voyage = 1; voyage <= 100; voyage += 1) {
+			const order: string[] = []
+			for (let index = 0; index < 10; index += 1) {
+				expect(getEncounterIndexInRun(expedition)).toBe((voyage - 1) * 10 + index)
+				const fish = getFishByEncounter(expedition)
+				order.push(fish.id)
+				conditions.add(getAdventureCondition(expedition).id)
+				expect(getFishByEncounter({ ...expedition })).toEqual(fish)
+				expect(getExpeditionPassage({ ...expedition })).toBe(getExpeditionPassage(expedition))
+				const encounter = startEncounter(fish, `${expedition.seed}:${getEncounterIndexInRun(expedition)}`, [])
+				const result = resolveCatchResult({ ...encounter, status: "caught", progress: 1 }, fish, metrics)
+				collection = grantCatchResult(collection, result)
+				const beforeZone = expedition.currentZoneIndex
+				expedition = advanceExpedition(expedition, result)
+				if (expedition.currentZoneIndex !== beforeZone) {
+					const secured = secureCheckpoint(expedition, collection)
+					expedition = secured.expedition
+					collection = secured.collection
+					expect(expedition.pendingResults).toHaveLength(0)
+				}
+				expect(expedition.complete).toBe(false)
+				expect(expedition.checkpoints.length).toBeLessThanOrEqual(3)
+			}
+			expect(order[9]).toBe("crown_leviathan")
+			expect(new Set(order).size).toBe(10)
+			orders.push(order)
+		}
+		expect(expedition.voyage).toBe(101)
+		expect(new Set(orders.map((order) => order.join(","))).size).toBeGreaterThan(10)
+		expect(conditions).toEqual(new Set(["calm", "surge", "fragile", "quick", "shoal"]))
+		expect(collection.grantedResultKeys).toHaveLength(1000)
+		expect(new Set(collection.grantedResultKeys).size).toBe(1000)
+		expect(collection.records.crown_leviathan.count).toBe(100)
+		expect(getAccountLevelProgress(collection.xp).level).toBeGreaterThan(3)
+	})
+
+	it("keeps late voyages beatable at 45 WPM with a defensive loadout and requires every character", () => {
+		const skills = ["calm_current", "steel_line", "reel_mastery"]
+		for (const voyage of [1, 2, 13, 1000]) {
+			for (let seed = 0; seed < 10; seed += 1) {
+				let expedition = { ...createShallowCoastExpedition(`balance-${seed}`, skills), voyage }
+				for (let index = 0; index < 10; index += 1) {
+					const fish = getFishByEncounter(expedition)
+					const passage = getExpeditionPassage(expedition)
+					const session = new TypingSession(passage, { startTimestampMs: 0 })
+					let encounter = startEncounter(fish, `${seed}:${voyage}:${index}`, skills)
+					for (let char = 0; char < passage.length; char += 1) {
+						encounter = tickEncounter(encounter, fish, 60000 / (45 * 5), skills).encounter
+						if (encounter.tension > 55 && canUseFishingSkill(encounter, getSkill("calm_current"))) encounter = activateFishingSkill(encounter, fish, "calm_current").encounter
+						expect(encounter.status, `${voyage}:${index}:${getAdventureCondition(expedition).id}:${char}`).toBe("active")
+						encounter = applyTypingEvents(encounter, fish, session.processKey(passage[char]!, encounter.elapsedMs), skills).encounter
+						if (char < passage.length - 1) expect(encounter.status).toBe("active")
+					}
+					expect(encounter.status).toBe("caught")
+					const result = resolveCatchResult(encounter, fish, session.getSnapshot().metrics)
+					expedition = advanceExpedition(expedition, result)
+				}
+			}
+		}
+		const late = { ...createShallowCoastExpedition("capped"), voyage: 1000, currentZoneIndex: 2, currentEncounterIndex: 3 }
+		expect(getFishByEncounter(late)).toEqual(getFishByEncounter({ ...late, voyage: 13 }))
+	})
+
+	it("migrates finished legacy voyages without losing account rewards and rejects invalid voyage values", () => {
+		const expedition = createShallowCoastExpedition("legacy")
+		const legacy = JSON.parse(serializeOceanSave(expedition, { ...createInitialCollection(), xp: 500, coins: 900 }))
+		delete legacy.expedition.voyage
+		expect(restoreOceanSave(JSON.stringify(legacy))?.expedition.voyage).toBe(1)
+		legacy.expedition = { ...legacy.expedition, complete: true, currentZoneIndex: 2, currentEncounterIndex: 4 }
+		const restored = restoreOceanSave(JSON.stringify(legacy))!
+		expect(restored.expedition).toMatchObject({ voyage: 2, complete: false, currentZoneIndex: 0, currentEncounterIndex: 0 })
+		expect(restored.collection).toMatchObject({ xp: 500, coins: 900 })
+		for (const voyage of [0, -1, 1.5, "2"]) expect(restoreOceanSave(JSON.stringify({ ...legacy, expedition: { ...legacy.expedition, voyage } }))).toBeNull()
+		legacy.expedition.currentEncounterIndex = 3
+		expect(restoreOceanSave(JSON.stringify(legacy))?.expedition.complete).toBe(true)
+	})
+
 	it("creates deterministic random streams for identical seeds", () => {
 		const left = createSeededRng("same-seed")
 		const right = createSeededRng("same-seed")
@@ -103,7 +188,7 @@ describe("fishing rules", () => {
 	it("applies Calm Current before idle pressure", () => {
 		const fish = getFish("reef_shark")
 		const start = { ...startEncounter(fish, "calm-test", ["calm_current"]), skillEnergy: 50 }
-		const calm = useFishingSkill(start, fish, "calm_current").encounter
+		const calm = activateFishingSkill(start, fish, "calm_current").encounter
 		const pressured = tickEncounter(start, fish, 3000, ["calm_current"]).encounter
 		const slowed = tickEncounter(calm, fish, 3000, ["calm_current"]).encounter
 
@@ -196,35 +281,35 @@ describe("fishing rules", () => {
 		const bossStart = { ...startEncounter(boss, "boss-net", []), skillEnergy: 50, progress: 0.7 }
 		expect(canUseFishingSkill(smallStart, net)).toBe(false)
 		expect(canUseFishingSkill(bossStart, net)).toBe(false)
-		expect(useFishingSkill(bossStart, boss, "cast_net").events).toHaveLength(0)
+		expect(activateFishingSkill(bossStart, boss, "cast_net").events).toHaveLength(0)
 		const ready = { ...smallStart, progress: 0.45 }
 		expect(canUseFishingSkill(ready, net)).toBe(true)
-		expect(useFishingSkill(ready, small, "cast_net").encounter.status).toBe("active")
+		expect(activateFishingSkill(ready, small, "cast_net").encounter.status).toBe("active")
 	})
 
 	it("uses Calm Current and Sonar once their active conditions are met", () => {
 		const fish = getFish("reef_minnow")
 		const calmStart = { ...startEncounter(fish, "calm", ["calm_current"]), skillEnergy: 40, tension: 75 }
-		const calm = useFishingSkill(calmStart, fish, "calm_current")
+		const calm = activateFishingSkill(calmStart, fish, "calm_current")
 		expect(calm.encounter.calmCurrentRemainingMs).toBe(8000)
 		expect(calm.encounter.skillEnergy).toBe(10)
 		expect(calm.events.map(({ type }) => type)).toEqual(["skill-used", "tension"])
 		const sonarStart = { ...startEncounter(fish, "sonar", ["sonar"]), skillEnergy: 30 }
-		expect(useFishingSkill(sonarStart, fish, "sonar").encounter.skillEnergy).toBe(15)
-		expect(useFishingSkill(sonarStart, fish, "steel_line").events).toEqual([])
+		expect(activateFishingSkill(sonarStart, fish, "sonar").encounter.skillEnergy).toBe(15)
+		expect(activateFishingSkill(sonarStart, fish, "steel_line").events).toEqual([])
 	})
 
-	it("covers expedition failure, final completion, save recovery, and rosters", () => {
+	it("covers expedition failure, voyage continuation, save recovery, and rosters", () => {
 		const fish = getFish("reef_minnow")
 		const expedition = createShallowCoastExpedition("edges")
 		const escaped = resolveCatchResult({ ...startEncounter(fish, "edges", []), status: "escaped" }, fish, metrics)
 		expect(advanceExpedition(expedition, escaped).spareLines).toBe(1)
 		expect(advanceExpedition({ ...expedition, spareLines: 0 }, escaped).complete).toBe(true)
 		const bossFailure = resolveCatchResult({ ...startEncounter(getFish("crown_leviathan"), "edges-boss", []), status: "escaped" }, getFish("crown_leviathan"), metrics)
-		expect(advanceExpedition(expedition, bossFailure).complete).toBe(true)
+		expect(advanceExpedition(expedition, bossFailure).complete).toBe(false)
 		const boss = getFish("crown_leviathan")
 		const bossCatch = resolveCatchResult({ ...startEncounter(boss, "last-fish", []), status: "caught" }, boss, metrics)
-		expect(advanceExpedition({ ...expedition, currentZoneIndex: 2, currentEncounterIndex: 3 }, bossCatch).complete).toBe(true)
+		expect(advanceExpedition({ ...expedition, currentZoneIndex: 2, currentEncounterIndex: 3 }, bossCatch)).toMatchObject({ complete: false, voyage: 2, currentZoneIndex: 0, currentEncounterIndex: 0, spareLines: 3 })
 
 		const saved = serializeOceanSave(expedition, createInitialCollection())
 		expect(restoreOceanSave(saved)?.expedition.seed).toBe("edges")
@@ -297,7 +382,7 @@ describe("fishing rules", () => {
 	it("skills preserve passage progress while protecting a damaged line", () => {
 		const fish = getFish("reef_minnow")
 		const damaged = { ...startEncounter(fish, "net-help", []), progress: 0.6, tension: 60, durability: 40, skillEnergy: 70 }
-		const net = useFishingSkill(damaged, fish, "cast_net").encounter
+		const net = activateFishingSkill(damaged, fish, "cast_net").encounter
 		expect(net).toMatchObject({ progress: 0.6, status: "active", tension: 42, durability: 60, skillEnergy: 35 })
 		const mastery = applyTypingEvents({ ...damaged, combo: 4 }, fish, [typingEvent("word-complete", { perfect: true })], ["reel_mastery"]).encounter
 		expect(mastery.progress).toBe(0.6)

@@ -5,8 +5,8 @@ import gsap from "gsap"
 
 gsap.registerPlugin(useGSAP)
 import type { AccountLevelProgress, CatchResult, FishingSkill, Rarity } from "@typecade/contracts"
-import { fishSpecies, fishingSkills, getRouteNodesForZone } from "@typecade/content"
-import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost, getFishingSkillUnlockLevel } from "@typecade/game-rules"
+import { fishSpecies, fishingSkills, getRouteNodesForZone, shallowCoastZoneOrder } from "@typecade/content"
+import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost, getFishingSkillUnlockLevel, getAdventureCondition, getEncounterIndexInRun } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
 import { RaceScreen } from "./multiplayer/RaceScreen"
 import { PracticeScreen } from "./practice/PracticeScreen"
@@ -47,10 +47,12 @@ export function App() {
 		useSkill,
 		setVolume,
 		setReducedMotion,
+		continueVoyage,
 		startFreshRun,
 		togglePause,
 		typeKey,
 	} = useOceanRun(screen === "game" && panel === null)
+	const visualScreen = screen === "game" && view.isRefitting ? "prep" : screen
 	const rendererEnabled = screen !== "race" && screen !== "practice"
 	const levelProgress = getAccountLevelProgress(view.collection.xp)
 
@@ -77,8 +79,8 @@ export function App() {
 	}, [bridge, rendererEnabled])
 
 	useEffect(() => {
-		bridge.emit("screen:changed", { screen })
-	}, [screen, bridge])
+		bridge.emit("screen:changed", { screen: visualScreen })
+	}, [visualScreen, bridge])
 
 	const caughtCount = Object.keys(view.collection.records).length
 	const totalCount = fishSpecies.length
@@ -90,10 +92,10 @@ export function App() {
 	}
 
 	return (
-		<main className={`game-shell screen-${screen}`} data-testid="ocean-game-shell">
+		<main className={`game-shell screen-${visualScreen}`} data-testid="ocean-game-shell">
 			<div ref={hostRef} className="game-canvas" data-testid="phaser-gameplay" />
 
-			{screen === "game" ? (
+			{visualScreen === "game" ? (
 				<GameHud
 					view={view}
 					activeSkills={activeSkills}
@@ -117,20 +119,20 @@ export function App() {
 				<MainMenu
 					view={view}
 					onStart={() => setScreen("practice")}
-					onAdventure={() => setScreen("prep")}
+					onAdventure={() => setScreen(!view.isRefitting && !view.expedition.complete && (view.cursor > 0 || getEncounterIndexInRun(view.expedition) > 0) ? "game" : "prep")}
 					onRankedDuel={() => setScreen("race")}
 					onCollection={() => setPanel("collection")}
 					onSettings={() => setPanel("settings")}
 				/>
 			) : null}
 
-			{screen === "prep" ? (
+			{visualScreen === "prep" ? (
 				<PreparationScreen
 					view={view}
 					skillOffers={skillOffers}
 					levelProgress={levelProgress}
 					onBack={() => setScreen("menu")}
-					onStart={beginRun}
+					onStart={view.isRefitting ? () => { continueVoyage(); setScreen("game") } : beginRun}
 					onChooseRoute={chooseRoute}
 					onSetSkillLoadout={setSkillLoadout}
 				/>
@@ -198,6 +200,7 @@ function GameHud({
 		gsap.from(".fish-card", { x: 50, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
 	}, { scope: containerRef, dependencies: [view.reducedMotion] })
 
+	const condition = getAdventureCondition(view.expedition)
 	const timeLeft = formatTime(view.encounter.timeRemainingMs)
 	const tensionPercent = Math.round(view.encounter.tension)
 	const progressPercent = Math.floor(view.encounter.progress * 100)
@@ -205,9 +208,9 @@ function GameHud({
 	const routeProgress = `${view.expedition.currentZoneIndex + 1}/3`
 	const encounterLabel = `${getEncounterNumber(view.expedition.currentZoneIndex, view.expedition.currentEncounterIndex)}/10`
 	const bossPhaseDetails = [
-		{ title: "Crown Wake", detail: "Reel steadily and learn the Leviathan's pull." },
-		{ title: "Crown Guard", detail: "Three perfect words break the guard and release its extra line pressure." },
-		{ title: "Final Pull", detail: "Every third consecutive perfect word eases tension by 8. Finish the passage to land it." },
+		{ title: "Crown Wake", detail: "Keep your rhythm. Finish every character." },
+		{ title: "Crown Guard", detail: "Three perfect words break the guard." },
+		{ title: "Final Pull", detail: "Every third perfect word: -8 tension." },
 	] as const
 	const bossPhaseDetail = bossPhaseDetails[view.encounter.bossPhase - 1]
 
@@ -231,7 +234,7 @@ function GameHud({
 			</nav>
 
 			<section className="route-strip panel-chrome" data-testid="route-strip">
-				<strong>Zone {routeProgress}</strong>
+				<strong>Voyage {view.expedition.voyage} · Zone {routeProgress}</strong>
 				<span>{view.selectedRoute.name}</span>
 				<span>Encounter {encounterLabel}</span>
 			</section>
@@ -257,7 +260,7 @@ function GameHud({
 			{view.expedition.complete ? (
 				<section className="complete-panel panel-chrome" data-testid="complete-panel">
 					<PixelIcon file="icon_nav_collection.png" />
-					<strong>{view.lastResult?.caught && view.fish.id === "crown_leviathan" ? "Shallow Coast cleared" : "Expedition ended"}</strong>
+					<strong>Expedition ended</strong>
 					<span>{caughtCount}/{totalCount} species recorded · Rewards and XP saved</span>
 					<button onClick={startFreshRun}>Sail Again</button>
 					<button className="secondary" onClick={goToMenu}>Main Menu</button>
@@ -282,7 +285,7 @@ function GameHud({
 
 				<div className="typing-panel panel-chrome">
 					<div className="typing-help">
-						<span>Retype the highlighted character after a typo</span>
+						<span title={condition.description}>{condition.name} · {condition.description}</span>
 						<kbd>Esc pause</kbd>
 					</div>
 					<TypingPassage text={view.targetText} cursor={view.cursor} className="typing-target" testId="typing-target" mistake={view.lastKeyWasTypo} />
@@ -467,12 +470,14 @@ function PreparationScreen({
 			<header className="prep-header">
 				<button className="secondary-action small" onClick={onBack}>Back</button>
 				<LogoMark />
-				<button className="primary-action small" onClick={onStart}>Set Sail</button>
+				<button className="primary-action small" onClick={onStart}>{view.isRefitting ? "Continue voyage" : "Set Sail"}</button>
 			</header>
 
 			<div className="prep-grid">
 				<section className="prep-card panel-chrome">
-					<h2>Captain Loadout</h2>
+					<h2>{view.isRefitting ? `Harbor refit · Voyage ${view.expedition.voyage}` : "Endless Adventure"}</h2>
+					<p className="prep-hint">{view.isRefitting ? "Progress saved. Refit your skills and route, then sail on. The next voyage brings stronger currents and new conditions." : "Catch ten fish, face the Leviathan, then sail into the next voyage. Each boss restores one spare line, up to three. Rewards and levels stay with your captain."}</p>
+					{view.isRefitting ? <p className="prep-hint" role="status">{view.lastResult ? `Leviathan landed · +${view.lastResult.rewards.xp} XP · +${view.lastResult.rewards.coins} coins · ` : ""}{view.expedition.spareLines} spare lines ready. No timer runs in harbor.</p> : null}
 					<div className="prep-profile">
 						<div className="avatar large">
 							<PixelIcon file="icon_nav_fish.png" />
@@ -493,8 +498,8 @@ function PreparationScreen({
 				<section className="prep-card panel-chrome">
 					<h2>Branching Route</h2>
 					<div className="route-choice-grid prep-routes">
-						{getRouteNodesForZone("zone_1").map((choice) => (
-							<button key={choice.id} className={choice.id === (view.selectedRoute.zoneId === "zone_1" ? view.selectedRoute.id : "lagoon_gate") ? "selected" : ""} onClick={() => onChooseRoute(choice.id)}>
+						{getRouteNodesForZone(view.isRefitting ? shallowCoastZoneOrder[view.expedition.currentZoneIndex]! : "zone_1").map((choice) => (
+							<button key={choice.id} className={choice.id === (view.isRefitting ? view.expedition.selectedRouteId : view.selectedRoute.zoneId === "zone_1" ? view.selectedRoute.id : "lagoon_gate") ? "selected" : ""} onClick={() => onChooseRoute(choice.id)}>
 								<strong>{choice.name}</strong>
 								<span>Risk {Math.round(choice.risk * 100)}%</span>
 								<span>Reward x{choice.rewardMultiplier.toFixed(2)}</span>

@@ -2463,7 +2463,7 @@ button, select, textarea { font: inherit; }
 .hud .fish-card { display: none; }
 .hud .bottom-console { position: static; grid-row: 5; transform: none; min-width: 0; width: min(850px, 100%); margin: 0 auto; gap: 5px; }
 .hud .typing-panel { min-height: 0; padding: 10px 14px; }
-.hud .typing-help { margin: 0 0 5px; font-size: .7rem; }
+.hud .typing-help { margin: 0 0 5px; font-size: .7rem; line-height: 1.35; letter-spacing: 0; text-transform: none; }
 .typing-passage { position: relative; white-space: pre-wrap; overflow: auto; overflow-wrap: anywhere; scrollbar-width: thin; line-height: 1.65; color: #87a9bd; }
 .typing-word { display: inline; }
 .typing-passage .done { color: #80ddaf; }
@@ -2581,3 +2581,18 @@ button, select, textarea { font: inherit; }
 .hud .encounter-stage > .complete-panel { position: static; width: min(480px, 100%); margin: 0; transform: none; padding: 18px; }
 .hud:has(.complete-panel) .bottom-console, .hud:has(.complete-panel) .skill-dock { display: none; }
 .hud:has(.complete-panel) .icon-button:disabled { display: none; }
+
+@media (max-width: 700px) {
+ .hud .typing-panel { gap: 4px; }
+ .hud .typing-help { margin-bottom: 0; }
+ .hud .typing-target { max-height: 64px; }
+ .hud .typing-native-input { margin-top: 0; }
+ .hud .skill-key { display: none; }
+ .hud .skill-button { grid-template-rows: auto auto; }
+ .hud .encounter-stage > .boss-phase-callout { width: 150px; justify-self: start; gap: 5px; padding: 6px; }
+ .hud .boss-phase-callout span { font-size: .55rem; letter-spacing: 0; }
+ .hud .boss-phase-callout strong { font-size: .7rem; }
+ .hud .boss-phase-callout p { font-size: .6rem; line-height: 1.35; }
+ .hud .boss-guard-pips { gap: 2px; }
+ .hud .boss-guard-pips i { width: 5px; height: 14px; }
+}
