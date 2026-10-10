@@ -1,499 +1,163 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { fishSpecies, getFish } from "@typecade/content"
-import { resolveCatchResult, startEncounter } from "@typecade/game-rules"
-import type { FishSpecies } from "@typecade/contracts"
+import { Box3, Group, InstancedMesh, Line, Mesh, MeshBasicMaterial, PlaneGeometry, ShaderMaterial } from "three"
+import { fishSpecies, getFish, fishingSkills } from "@typecade/content"
+import { startEncounter, resolveCatchResult } from "@typecade/game-rules"
 import { GameEventBridge } from "../bridge/game-event-bridge"
 import { createFishingGame } from "./createFishingGame"
-import { FishingScene } from "./FishingScene"
+import { OceanAssets } from "./OceanAssets"
+import { surfaceY } from "./ocean-motion"
 
-describe("FishingScene in Chromium", () => {
-	let game: ReturnType<typeof createFishingGame> | undefined
-	let host: HTMLDivElement | undefined
+type PixelMesh = Mesh<PlaneGeometry, MeshBasicMaterial>
+interface Inspection {
+	tick(time: number): void; resize(): void; updateWorld(delta: number): void
+	time: number; endTime: number; stateUntil: number; fishState: string
+	boat: PixelMesh; fish: Group; fishBody: PixelMesh; fishTail: PixelMesh; eyelid: PixelMesh; eyeLine: PixelMesh; gill: PixelMesh
+	line: Line; lure: PixelMesh; water: Mesh<PlaneGeometry, ShaderMaterial>
+	pool: Array<{ x: number; y: number; life: number; bubble: boolean }>
+	rings: Array<{ life: number }>; particles: InstancedMesh
+}
+const metrics = { wpm: 40, rawWpm: 40, accuracy: 100, combo: 1, maxCombo: 1, consistency: 100, correctKeystrokes: 5, incorrectKeystrokes: 0, progress: 1, elapsedMs: 1500 }
+let game: ReturnType<typeof createFishingGame> | undefined
+let host: HTMLDivElement | undefined
+afterEach(() => { game?.destroy(); host?.remove(); vi.restoreAllMocks(); game = undefined })
 
-	afterEach(async () => {
-		if (game) {
-			game.destroy(true)
-			await vi.waitFor(() => expect(host?.querySelector("canvas")).toBeNull(), { timeout: 10000 })
-		}
-		game = undefined
-		host?.remove()
-		host = undefined
-	})
+async function setup(bridge = new GameEventBridge()) {
+	host = document.createElement("div")
+	host.style.cssText = "width:1366px;height:768px;position:fixed;inset:0"
+	document.body.append(host)
+	game = createFishingGame(host, bridge)
+	await game.ready
+	await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+	game.renderer.setAnimationLoop(null)
+	const view = game as unknown as Inspection
+	return { bridge, view, game, host }
+}
+function encounter(bridge: GameEventBridge, fish = fishSpecies[0]) {
+	const state = startEncounter(fish, "three-renderer-tests", [])
+	bridge.emit("encounter:started", { encounter: state, fish, targetText: "ombak" })
+	return state
+}
 
-	it("keeps fish underwater and lets catch and escape movement finish", async () => {
-		host = document.createElement("div")
-		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
-		document.body.append(host)
+describe("Three.js ocean renderer with a real WebGL context", () => {
+	it("replays state before assets load, compiles shaders and renders a nonblank ocean", async () => {
 		const bridge = new GameEventBridge()
-		game = createFishingGame(host, bridge)
-		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
-		const scene = game.scene.getScene("FishingScene") as FishingScene
-		const visual = scene as unknown as { fish?: Phaser.GameObjects.Sprite; rod?: Phaser.GameObjects.Image; updateLine(): void }
-		const audio = scene as unknown as { startLoops(): void; ensureBossLayer(): void; loopsStarted: boolean; bossLoop?: Phaser.Sound.BaseSound }
-		for (const key of ["sfx_ambient_ocean_loop", "sfx_music_expedition_loop"]) {
-			const data = scene.cache.audio.get(key)
-			scene.cache.audio.remove(key)
-			expect(() => audio.startLoops()).not.toThrow()
-			expect(audio.loopsStarted).toBe(false)
-			scene.cache.audio.add(key, data)
-		}
-		audio.startLoops()
-		const bossAudio = scene.cache.audio.get("sfx_music_boss_layer")
-		scene.cache.audio.remove("sfx_music_boss_layer")
-		expect(() => audio.ensureBossLayer()).not.toThrow()
-		expect(audio.bossLoop).toBeUndefined()
-		scene.cache.audio.add("sfx_music_boss_layer", bossAudio)
-		const species = getFish("reef_minnow")
-		const encounter = startEncounter(species, "underwater-lifecycle", [])
-		bridge.emit("screen:changed", { screen: "game" })
-		bridge.emit("game:paused", { paused: false })
-		bridge.emit("settings:effects", { reducedMotion: true })
-		bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })
-		await new Promise((resolve) => setTimeout(resolve, 400))
-		const sprite = visual.fish!
-		expect(sprite.y - sprite.displayHeight / 2).toBeGreaterThan(scene.scale.height * 0.3)
-		const startX = sprite.x
-		const metrics = { wpm: 40, rawWpm: 40, accuracy: 100, combo: 1, maxCombo: 1, consistency: 100, correctKeystrokes: 5, incorrectKeystrokes: 0, progress: 1, elapsedMs: 1500 }
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, species, metrics) })
-		await vi.waitFor(() => expect(sprite.alpha).toBe(0))
-		expect(sprite.x).toBeLessThan(startX)
-		bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })
-		expect(sprite.alpha).toBe(1)
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, species, metrics) })
-		await vi.waitFor(() => expect(sprite.alpha).toBe(0))
-		expect(sprite.x).toBeGreaterThan(scene.scale.width)
-		visual.rod = undefined
-		expect(() => visual.updateLine()).not.toThrow()
-		visual.fish = undefined
-		expect(() => bridge.emit("encounter:started", { encounter, fish: species, targetText: "ombak" })).not.toThrow()
+		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
+		bridge.emit("settings:effects", { reducedMotion: false })
+		bridge.emit("settings:volumes", { music: 0, typing: 0, gameplay: 0, environment: 0 })
+		encounter(bridge)
+		const { game, view } = await setup(bridge)
+		view.tick(100); view.tick(116)
+		expect(view.fish.visible).toBe(true)
+		const canvas = document.createElement("canvas"); canvas.width = 64; canvas.height = 64
+		const context = canvas.getContext("2d")!
+		context.drawImage(game.renderer.domElement, 0, 0, 64, 64)
+		const pixels = context.getImageData(0, 0, 64, 64).data
+		expect(pixels.some((value, index) => index % 4 !== 3 && value > 80)).toBe(true)
+		expect(game.renderer.info.render.calls).toBeGreaterThan(5)
+		expect(game.renderer.domElement.style.imageRendering).toBe("pixelated")
 	})
-
-	it("animates each fish beneath the surface on desktop and phones, with safe pause and reduced motion", async () => {
-		host = document.createElement("div")
-		host.style.cssText = "position:fixed;inset:0;width:1366px;height:768px"
-		document.body.append(host)
-		const bridge = new GameEventBridge()
-		game = createFishingGame(host, bridge)
-		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
-		const scene = game.scene.getScene("FishingScene") as FishingScene
-		const visual = scene as unknown as { fish: Phaser.GameObjects.Sprite; fishTail: Phaser.GameObjects.Image; fishDetails: Phaser.GameObjects.Graphics; boat: Phaser.GameObjects.Image; boatWake: Phaser.GameObjects.Graphics }
-		expect(() => bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })).not.toThrow()
-		bridge.emit("screen:changed", { screen: "game" })
-		bridge.emit("game:paused", { paused: false })
+	it("keeps every fish underwater, animates eyes and tails, and anchors the hull to its wave", async () => {
+		const { bridge, view, host } = await setup()
+		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
 		for (const [width, height] of [[1366, 768], [390, 844], [320, 640]]) {
-			host.style.width = `${width}px`
-			host.style.height = `${height}px`
-			scene.scale.getParentBounds()
-			scene.scale.resize(width!, height!)
-			await vi.waitFor(() => expect(scene.scale.height).toBe(height))
-			expect(visual.boat.originY).toBe(0.68)
-			for (const species of fishSpecies) {
-				bridge.emit("encounter:started", { encounter: startEncounter(species, species.id, []), fish: species, targetText: "laut" })
-				sceneUpdate(game, 1500)
-				const hull = visual.boat.getWorldTransformMatrix().transformPoint(0, 0)
-				expect(Math.abs(hull.y - height! * 0.3)).toBeLessThan(2)
-				scene.tweens.killTweensOf(visual.fish)
-				const positions = new Set<string>()
-				for (let time = 1500; time < 2300; time += 100) {
-					sceneUpdate(game, time)
-					positions.add(`${visual.fish.x}:${visual.fish.y}:${visual.fish.scaleY}`)
-					expect(visual.fish.getBounds().top, `${species.id}:${width}`).toBeGreaterThan(scene.scale.height * 0.3)
-					expect(visual.fish.getBounds().bottom, `${species.id}:hud:${width}`).toBeLessThan(scene.scale.height * (width! <= 640 ? 0.38 : 0.46))
-					if (visual.fishTail.visible) {
-						const tail = visual.fishTail
-						const matrix = tail.getWorldTransformMatrix()
-						for (const x of [0, tail.width * 0.3]) for (const y of [-tail.height / 2, tail.height / 2]) {
-							expect(matrix.transformPoint(x, y).y, `${species.id}:tail:${width}`).toBeGreaterThan(scene.scale.height * 0.3)
-						}
-					}
+			host.style.width = `${width}px`; host.style.height = `${height}px`; view.resize()
+			for (const fish of fishSpecies) {
+				encounter(bridge, fish)
+				for (const t of [.2, .8, 2]) {
+					view.time = t; view.updateWorld(.016)
+					const box = new Box3().setFromObject(view.fish)
+					expect(-box.max.y).toBeGreaterThan(height * .3 + 2)
+					expect(-box.min.y).toBeLessThan(height * (width <= 640 ? .38 : .46))
+					const hullY = -view.boat.position.y + view.boat.scale.y * .18
+					expect(hullY).toBeCloseTo(surfaceY(view.boat.position.x, width, height, t, false))
 				}
-				expect(positions.size).toBeGreaterThan(1)
-				expect(visual.boat.displayWidth, `${species.id}:boat:${width}`).toBeGreaterThan(visual.fish.displayWidth)
-				expect(visual.fishDetails.visible).toBe(true)
-				expect(visual.fishDetails.x).toBe(visual.fish.x)
-				const openCommands = visual.fishDetails.commandBuffer.length
-				let blinkCommands = openCommands
-				for (let time = 0; time < 3900; time += 50) {
-					sceneUpdate(game, time)
-					blinkCommands = Math.max(blinkCommands, visual.fishDetails.commandBuffer.length)
-				}
-				expect(blinkCommands, `${species.id}:blink`).toBeGreaterThan(openCommands)
-				expect(visual.fishTail.visible).toBe(species.assetKey !== "fish_pebble_goby")
-				bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
-				sceneUpdate(game, 2222)
-				if (visual.fishTail.visible) expect(visual.fishTail.rotation - visual.fish.rotation).toBeCloseTo(Math.sin(2222 / 100) * 0.09, 5)
+				// Blink landmarks have a fixed phase for each species.
+				let sawBlink = false
+				for (let t = 0; t < 4; t += .05) { view.time = t; view.updateWorld(0); sawBlink ||= view.eyelid.visible }
+				expect(sawBlink).toBe(true)
+				bridge.emit("settings:effects", { reducedMotion: true })
+				view.time = 5; view.updateWorld(0)
+				expect(view.eyelid.visible).toBe(false); expect(view.fishTail.rotation.y).toBe(0); expect(view.boat.rotation.z).toBe(0)
+				bridge.emit("settings:effects", { reducedMotion: false })
 			}
 		}
-		const position = [visual.fish.x, visual.fish.y, visual.fishTail.rotation, visual.boat.y, visual.fishDetails.commandBuffer.length]
-		bridge.emit("game:paused", { paused: true })
-		sceneUpdate(game, 5000)
-		expect([visual.fish.x, visual.fish.y, visual.fishTail.rotation, visual.boat.y, visual.fishDetails.commandBuffer.length]).toEqual(position)
-		bridge.emit("game:paused", { paused: false })
-		bridge.emit("settings:effects", { reducedMotion: true })
-		sceneUpdate(game, 6000)
-		expect(visual.fishTail.rotation).toBe(visual.fish.rotation)
-		expect(visual.boat.y).toBe(scene.scale.height * 0.3)
-		bridge.emit("screen:changed", { screen: "prep" })
-		expect(visual.fishTail.visible).toBe(false)
-		expect(visual.fishDetails.visible).toBe(false)
+	})
+	it("freezes world and effects on pause, colors line danger and delivers every domain effect", async () => {
+		const { bridge, view, game } = await setup()
+		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
+		window.dispatchEvent(new Event("pointerdown")); window.dispatchEvent(new Event("keydown"))
+		encounter(bridge, getFish("crown_leviathan"))
+		view.tick(100); view.tick(140)
+		bridge.emit("fish:hooked", { fish: fishSpecies[0] })
+		bridge.emit("character:correct", { key: "a", expected: "a", combo: 1, progress: .1 })
+		bridge.emit("character:correct", { key: "b", expected: "b", combo: 2, progress: .2 })
+		for (const [perfect, combo] of [[true, 5], [false, 0], [true, 1]] as const) bridge.emit("word:completed", { word: "air", perfect, combo })
+		for (const ignoredBySteelLine of [false, true]) {
+			bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine }); view.updateWorld(.016)
+			expect(view.fishState).toBe(ignoredBySteelLine ? "stunned" : "struggle")
+		}
+		for (const [tension, durability, expected] of [[90, 100, 0xf05a5e], [90, 100, 0xf05a5e], [60, 100, 0xf5c240], [28, 20, 0xf05a5e], [28, 100, 0xe7fbff]]) {
+			bridge.emit("line:changed", { tension, durability, progress: .5, timeRemainingMs: 1000 }); view.updateWorld(.016)
+			expect((view.line.material as MeshBasicMaterial).color.getHex()).toBe(expected)
+		}
+		bridge.emit("phase:changed", { phase: 2 }); bridge.emit("phase:changed", { phase: 3 })
+		bridge.emit("boss:guard-broken", { tensionRelief: 15 }); bridge.emit("boss:final-pull", { tensionRelief: 15 })
+		for (const skill of fishingSkills) bridge.emit("skill:used", { skillId: skill.id, label: skill.name })
+		bridge.emit("level:up", { fromLevel: 1, toLevel: 2, xp: 100 })
+		bridge.emit("audio:play", { key: "sfx_splash_a", category: "gameplay" })
+		expect(view.pool.filter(p => p.life > 0).length).toBeLessThanOrEqual(128)
+		expect(view.rings.filter(r => r.life > 0)).toHaveLength(6)
+		const before = view.time, position = view.fish.position.clone()
+		bridge.emit("game:paused", { paused: true }); view.tick(300); view.tick(340)
+		expect(view.time).toBe(before); expect(view.fish.position).toEqual(position)
+		bridge.emit("screen:changed", { screen: "prep" }); expect(view.fish.visible).toBe(false)
+		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
+		const render = vi.spyOn(game.renderer, "render")
+		vi.spyOn(document, "hidden", "get").mockReturnValue(true)
+		document.dispatchEvent(new Event("visibilitychange")); view.tick(400)
+		expect(render).not.toHaveBeenCalled()
+		vi.restoreAllMocks(); document.dispatchEvent(new Event("visibilitychange")); view.tick(500)
+		view.pool[0].y = 0; view.pool[0].life = .5; view.pool[0].bubble = true
+		view.pool[1].life = .5; view.pool[1].bubble = false
+		view.updateWorld(.02); expect(view.pool[0].life).toBe(0)
+		view.updateWorld(2); expect(view.pool.every(p => p.life === 0)).toBe(true)
+	})
+	it("finishes catch and escape animations, resets for the next encounter and cleans GPU resources", async () => {
+		const { bridge, view, game, host } = await setup()
+		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
+		const geometryDisposals: number[] = []
+		game.scene.traverse(object => { if (object instanceof Mesh || object instanceof Line) object.geometry.addEventListener("dispose", () => geometryDisposals.push(1)) })
+		for (const reducedMotion of [false, true]) for (const fish of [fishSpecies[0], getFish("reef_shark")]) for (const caught of [true, false]) {
+			bridge.emit("settings:effects", { reducedMotion }); const state = encounter(bridge, fish)
+			view.time += 1; view.updateWorld(.016)
+			const x = view.fish.position.x
+			bridge.emit("catch:resolved", { result: resolveCatchResult({ ...state, status: caught ? "caught" : "escaped" }, fish, metrics) })
+			view.tick(1000); view.tick(1016); view.tick(1116)
+			view.time += 1; view.updateWorld(1)
+			// End pose stays terminal; events cannot change it back into idle swimming.
+			expect(view.fishBody.material.opacity).toBe(0)
+			expect(caught ? view.fish.position.x < x : view.fish.position.x > 1366).toBe(true)
+			encounter(bridge, fish); expect(view.fishBody.material.opacity).toBe(1)
+		}
+		host.style.width = "0px"; host.style.height = "0px"; view.resize()
+		expect(game.renderer.domElement.width).toBe(1)
+		game.destroy(); game.destroy(); view.tick(5000)
+		expect(geometryDisposals.length).toBeGreaterThan(10); expect(host.querySelector("canvas")).toBeNull()
 		bridge.emit("screen:changed", { screen: "game" })
-		sceneUpdate(game, 6500)
-		expect(visual.fish.visible).toBe(true)
-		expect(visual.fishTail.visible).toBe(true)
 	})
-
-	it("releases bridge listeners when the game is destroyed without scene shutdown", async () => {
-		host = document.createElement("div")
-		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
-		document.body.append(host)
-		const bridge = new GameEventBridge()
-		game = createFishingGame(host, bridge)
-		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
-		const scene = game.scene.getScene("FishingScene") as FishingScene
-		const visuals = scene as unknown as { setZoneBackground(zone: string): void; hitStop(duration: number): void }
-		const setBackground = vi.spyOn(visuals, "setZoneBackground")
-		visuals.hitStop(200)
-		game.destroy(true)
-		await vi.waitFor(() => expect(host?.querySelector("canvas")).toBeNull(), { timeout: 10000 })
-		game = undefined
-		const fish = getFish("reef_minnow")
-		expect(() => bridge.emit("encounter:started", { encounter: startEncounter(fish, "after-destroy", []), fish, targetText: "ombak" })).not.toThrow()
-		expect(setBackground).not.toHaveBeenCalled()
-	})
-
-	it("renders the coast and responds to a complete boss encounter event stream", async () => {
-		const assetResponse = await fetch("/assets/ocean/atlases/atlas_ocean.json")
-		expect(assetResponse.status).toBe(200)
-		host = document.createElement("div")
-		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
-		document.body.append(host)
-		const bridge = new GameEventBridge()
-		game = createFishingGame(host, bridge)
-		await vi.waitFor(() => expect(host?.querySelector("canvas")).not.toBeNull(), { timeout: 10000 })
-		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
-		const phaserScene = game.scene.getScene("FishingScene")
-		expect(phaserScene.children.list.some((child) => (child as { texture?: { key: string } }).texture?.key === "bg_gameplay_ai")).toBe(true)
-		const loadError = vi.spyOn(console, "error").mockImplementation(() => undefined)
-		phaserScene.load.emit("loaderror", { key: "missing-test-asset", src: "/missing.webp" })
-		expect(loadError).toHaveBeenCalledWith("[typecade] asset load failed", "missing-test-asset", "/missing.webp")
-		const openingFish = getFish("crown_leviathan")
-		const quietFish = getFish("reef_minnow")
-		bridge.emit("encounter:started", { encounter: startEncounter(openingFish, "scene-before-audio", []), fish: openingFish, targetText: "arus" })
-		bridge.emit("encounter:started", { encounter: startEncounter(quietFish, "scene-before-audio-common", []), fish: quietFish, targetText: "laut" })
-		phaserScene.input.emit("pointerdown")
-		phaserScene.input.keyboard?.emit("keydown")
-		const audio = phaserScene as unknown as { ambientLoop?: { volume?: number; setVolume?: (value: number) => void } }
-		if (audio.ambientLoop) {
-			let fallbackVolume = 1
-			Object.defineProperty(audio.ambientLoop, "setVolume", { configurable: true, value: undefined })
-			Object.defineProperty(audio.ambientLoop, "volume", { configurable: true, get: () => fallbackVolume, set: (value: number) => { fallbackVolume = value } })
-			bridge.emit("settings:volumes", { music: 0.25, environment: 0.3, gameplay: 0.4, typing: 0.5 })
-			expect(fallbackVolume).toBe(0.3)
-		}
-
-		const fish = getFish("crown_leviathan")
-		const encounter = startEncounter(fish, "scene-smoke", [])
-		bridge.emit("settings:volumes", { music: 0, environment: 0.2, gameplay: 0.4, typing: 0.6 })
-		bridge.emit("settings:effects", { reducedMotion: true })
-		bridge.emit("screen:changed", { screen: "game" })
-		bridge.emit("game:paused", { paused: false })
-		bridge.emit("encounter:started", { encounter, fish, targetText: "arus" })
-		bridge.emit("fish:hooked", { fish })
-		bridge.emit("character:correct", { key: "a", expected: "a", progress: 0.1, combo: 5 })
-		bridge.emit("character:correct", { key: "r", expected: "r", progress: 0.2, combo: 6 })
-		const clock = phaserScene.time
-		const originalNow = clock.now
-		const sceneAudio = phaserScene as unknown as { lastTickSfxAt: number; playAudio(key: string, category: string, volume?: number): void }
-		const tickAudio = vi.spyOn(sceneAudio, "playAudio")
-		sceneAudio.lastTickSfxAt = 0
-		Reflect.set(clock, "now", 100)
-		bridge.emit("character:correct", { key: "u", expected: "u", progress: 0.3, combo: 2 })
-		expect(tickAudio).toHaveBeenCalledWith("sfx_correct_tick_a", "typing", 0.38)
-		Reflect.set(clock, "now", 151)
-		bridge.emit("character:correct", { key: "s", expected: "s", progress: 0.4, combo: 3 })
-		expect(tickAudio).toHaveBeenCalledWith("sfx_correct_tick_b", "typing", 0.38)
-		Reflect.set(clock, "now", originalNow)
-		tickAudio.mockRestore()
-		bridge.emit("word:completed", { word: "arus", perfect: true, combo: 5 })
-		bridge.emit("word:completed", { word: "arus", perfect: false, combo: 0 })
-		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: true })
-		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
-		bridge.emit("line:changed", { tension: 88, durability: 32, progress: 0.5, timeRemainingMs: 1000 })
-		bridge.emit("line:changed", { tension: 50, durability: 45, progress: 0.6, timeRemainingMs: 800 })
-		bridge.emit("line:changed", { tension: 70, durability: 80, progress: 0.7, timeRemainingMs: 700 })
-		sceneUpdate(game, 1200)
-		await new Promise((resolve) => window.setTimeout(resolve, 500))
-		bridge.emit("phase:changed", { phase: 2 })
-		bridge.emit("settings:effects", { reducedMotion: false })
-		bridge.emit("phase:changed", { phase: 3 })
-		await new Promise((resolve) => window.setTimeout(resolve, 70))
-		bridge.emit("character:correct", { key: "u", expected: "u", progress: 0.3, combo: 2 })
-		bridge.emit("character:correct", { key: "s", expected: "s", progress: 0.4, combo: 3 })
-		bridge.emit("boss:guard-broken", { tensionRelief: 0.08 })
-		bridge.emit("boss:final-pull", { tensionRelief: 0.1 })
-		for (const skillId of ["cast_net", "calm_current", "sonar", "steel_line", "perfect_bait", "reel_mastery", "unknown"]) bridge.emit("skill:used", { skillId, label: skillId })
-		bridge.emit("audio:play", { key: "sfx_correct_tick_a", category: "typing" })
-		bridge.emit("audio:play", { key: "missing-sound", category: "typing" })
-		bridge.emit("level:up", { fromLevel: 1, toLevel: 2, xp: 90 })
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, fish, { wpm: 50, rawWpm: 55, accuracy: 98, combo: 8, maxCombo: 8, consistency: 90, correctKeystrokes: 80, incorrectKeystrokes: 2, progress: 1, elapsedMs: 10000 }, 1) })
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, fish, { wpm: 0, rawWpm: 0, accuracy: 0, combo: 0, maxCombo: 0, consistency: 0, correctKeystrokes: 0, incorrectKeystrokes: 1, progress: 0, elapsedMs: 10000 }, 1) })
-		const commonFish = getFish("reef_minnow")
-		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-common", []), fish: commonFish, targetText: "laut" })
-		bridge.emit("screen:changed", { screen: "game" })
-		bridge.emit("game:paused", { paused: false })
-		for (const [index, species] of fishSpecies.entries()) {
-			bridge.emit("encounter:started", { encounter: startEncounter(species, `scene-${species.id}`, []), fish: species, targetText: "laut" })
-			bridge.emit("line:changed", { tension: index % 2 ? 90 : 20, durability: index % 2 ? 28 : 100, progress: index / fishSpecies.length, timeRemainingMs: 1000 })
-			bridge.emit("word:completed", { word: "laut", perfect: index % 2 === 0, combo: index * 5 })
-			const sprite = (phaserScene as unknown as { fish: Phaser.GameObjects.Sprite }).fish
-			phaserScene.tweens.killTweensOf(sprite)
-			sceneUpdate(game, index * 900 + 2500)
-			expect(sprite.y - sprite.displayHeight / 2, species.id).toBeGreaterThanOrEqual(phaserScene.scale.height * 0.3)
-			expect(sprite.y + sprite.displayHeight / 2, species.id).toBeLessThanOrEqual(phaserScene.scale.height * 0.46)
-		}
-		bridge.emit("screen:changed", { screen: "race" })
-		bridge.emit("settings:effects", { reducedMotion: false })
-		bridge.emit("screen:changed", { screen: "prep" })
-		bridge.emit("screen:changed", { screen: "menu" })
-		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
-		sceneUpdate(game, 1500)
-		bridge.emit("game:paused", { paused: true })
-		const restartedSceneCreated = new Promise<void>((resolve) => phaserScene.events.once("create", () => resolve()))
-		phaserScene.scene.restart({ bridge })
-		await restartedSceneCreated
-		bridge.emit("screen:changed", { screen: "game" })
-		bridge.emit("game:paused", { paused: false })
-		bridge.emit("settings:effects", { reducedMotion: false })
-		bridge.emit("fish:hooked", { fish: commonFish })
-		const scheduledCallbacks: Array<{ timer: Phaser.Time.TimerEvent; run: () => void }> = []
-		const originalDelayedCall = phaserScene.time.delayedCall.bind(phaserScene.time)
-		const delayedCall = vi.spyOn(phaserScene.time, "delayedCall").mockImplementation((delay, callback, args, scope) => {
-			const timer = originalDelayedCall(delay, callback, args, scope)
-			scheduledCallbacks.push({ timer, run: () => callback.apply(scope ?? phaserScene, args ?? []) })
-			return timer
-		})
-		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-restarted", []), fish: commonFish, targetText: "laut" })
-		bridge.emit("skill:used", { skillId: "calm_current", label: "Calm Current" })
-		bridge.emit("skill:used", { skillId: "sonar", label: "Sonar" })
-		bridge.emit("typo:occurred", { key: "x", expected: "l", ignoredBySteelLine: false })
-		for (const callback of scheduledCallbacks) {
-			callback.timer.remove(false)
-			callback.run()
-		}
-		delayedCall.mockRestore()
-		bridge.emit("word:completed", { word: "laut", perfect: true, combo: 10 })
-		bridge.emit("encounter:started", { encounter: startEncounter(openingFish, "scene-boss-audio", []), fish: openingFish, targetText: "arus" })
-		phaserScene.input.emit("pointerdown")
-		bridge.emit("encounter:started", { encounter: startEncounter(commonFish, "scene-boss-audio-fade", []), fish: commonFish, targetText: "laut" })
-		await new Promise((resolve) => window.setTimeout(resolve, 800))
-		bridge.emit("settings:effects", { reducedMotion: false })
-		bridge.emit("phase:changed", { phase: 2 })
-		bridge.emit("phase:changed", { phase: 3 })
-		await new Promise((resolve) => window.setTimeout(resolve, 260))
-
-		expect(host.querySelector("canvas")).not.toBeNull()
-		const objects = phaserScene as unknown as { fish?: Phaser.GameObjects.Sprite; currentFish?: FishSpecies }
-		const animationScene = phaserScene as unknown as { playFishAnimation(species: FishSpecies, state: "caught" | "idle" | "struggle"): void }
-		animationScene.playFishAnimation(commonFish, "caught")
-		animationScene.playFishAnimation(commonFish, "idle")
-		animationScene.playFishAnimation(commonFish, "struggle")
-		animationScene.playFishAnimation(openingFish, "idle")
-		objects.currentFish = undefined
-		bridge.emit("word:completed", { word: "laut", perfect: false, combo: 0 })
-		objects.fish = undefined
-		const impact = vi.spyOn((phaserScene as unknown as { bubbleEmitter: Phaser.GameObjects.Particles.ParticleEmitter }).bubbleEmitter, "explode")
-		const ring = vi.spyOn(phaserScene as unknown as { ringBurst(x: number, y: number, tint: number, scale?: number): void }, "ringBurst")
-		bridge.emit("word:completed", { word: "laut", perfect: false, combo: 5 })
-		expect(impact).toHaveBeenCalledWith(18, phaserScene.scale.width * 0.62, phaserScene.scale.height * 0.4)
-		expect(ring).toHaveBeenCalledWith(phaserScene.scale.width * 0.61, phaserScene.scale.height * 0.5, 0xf5c240)
-		impact.mockRestore()
-		ring.mockRestore()
-		const typoCallbacks: Array<{ timer: Phaser.Time.TimerEvent; run: () => void }> = []
-		const typoOriginalDelayedCall = phaserScene.time.delayedCall.bind(phaserScene.time)
-		const typoDelayedCall = vi.spyOn(phaserScene.time, "delayedCall").mockImplementation((delay, callback, args, scope) => {
-			const timer = typoOriginalDelayedCall(delay, callback, args, scope)
-			typoCallbacks.push({ timer, run: () => callback.apply(scope ?? phaserScene, args ?? []) })
-			return timer
-		})
-		objects.currentFish = commonFish
-		bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
-		objects.currentFish = undefined
-		for (const callback of typoCallbacks) {
-			callback.timer.remove(false)
-			callback.run()
-		}
-		typoDelayedCall.mockRestore()
-		sceneUpdate(game, 3000)
-		bridge.emit("phase:changed", { phase: 2 })
-		bridge.emit("boss:guard-broken", { tensionRelief: 0.08 })
-		bridge.emit("boss:final-pull", { tensionRelief: 0.1 })
-		bridge.emit("skill:used", { skillId: "unknown", label: "Unknown skill" })
-		bridge.emit("level:up", { fromLevel: 2, toLevel: 3, xp: 200 })
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, fish, { wpm: 50, rawWpm: 55, accuracy: 98, combo: 8, maxCombo: 8, consistency: 90, correctKeystrokes: 80, incorrectKeystrokes: 2, progress: 1, elapsedMs: 10000 }, 1) })
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, fish, { wpm: 0, rawWpm: 0, accuracy: 0, combo: 0, maxCombo: 0, consistency: 0, correctKeystrokes: 0, incorrectKeystrokes: 1, progress: 0, elapsedMs: 10000 }, 1) })
-		bridge.emit("settings:effects", { reducedMotion: true })
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "caught" }, fish, { wpm: 50, rawWpm: 55, accuracy: 98, combo: 8, maxCombo: 8, consistency: 90, correctKeystrokes: 80, incorrectKeystrokes: 2, progress: 1, elapsedMs: 10000 }, 1) })
-		bridge.emit("catch:resolved", { result: resolveCatchResult({ ...encounter, status: "escaped" }, fish, { wpm: 0, rawWpm: 0, accuracy: 0, combo: 0, maxCombo: 0, consistency: 0, correctKeystrokes: 0, incorrectKeystrokes: 1, progress: 0, elapsedMs: 10000 }, 1) })
-		bridge.emit("level:up", { fromLevel: 3, toLevel: 4, xp: 300 })
-		phaserScene.textures.remove("water_distortion")
-		const filters = phaserScene.cameras.main.filters.external
-		vi.spyOn(filters, "addDisplacement").mockImplementation(() => { throw new Error("WebGL filter unavailable") })
-		const fallbackScene = phaserScene as unknown as { createWaterPostFx(): void; waterDisplacement?: unknown; waterVignette?: unknown }
-		fallbackScene.createWaterPostFx()
-		expect(fallbackScene.waterDisplacement).toBeUndefined()
-		expect(fallbackScene.waterVignette).toBeUndefined()
-		bridge.emit("game:paused", { paused: true })
-		sceneUpdate(game, 4000)
-	})
-
-	it("keeps the procedural coast visible if the hero backdrop texture is unavailable", async () => {
-		host = document.createElement("div")
-		host.style.cssText = "position:fixed;inset:0;width:1280px;height:720px"
-		document.body.append(host)
-		game = createFishingGame(host, new GameEventBridge())
-		await vi.waitFor(() => expect(host?.querySelector("canvas")).not.toBeNull(), { timeout: 10000 })
-		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
-		const scene = game.scene.getScene("FishingScene")
-		const textureExists = scene.textures.exists.bind(scene.textures)
-		vi.spyOn(scene.textures, "exists").mockImplementation((key) => key === "bg_gameplay_ai" ? false : textureExists(key))
-		for (const child of scene.children.list) {
-			if ((child as { texture?: { key: string } }).texture?.key === "bg_gameplay_ai") child.destroy()
-		}
-		const internals = scene as unknown as { gameplayBackdrop?: Phaser.GameObjects.Image; bgLayers: Phaser.GameObjects.Image[] }
-		internals.gameplayBackdrop = undefined
-		internals.bgLayers = []
-		;(scene as FishingScene).create()
-		expect(scene.children.list.some((child) => (child as { texture?: { key: string } }).texture?.key === "bg_gameplay_ai")).toBe(false)
-		expect(scene.children.list.some((child) => (child as Phaser.GameObjects.Image).texture?.key === "bg_zone1_sky" && (child as Phaser.GameObjects.Image).visible)).toBe(true)
-	})
-
-	it("safely skips visual updates before scene objects and bridge are ready", () => {
-		const scene = new FishingScene()
-		const methods = scene as unknown as {
-			animateWaterPostFx(time: number): void
-			bossEntrance(): void
-			drawSaggingLine(from: { x: number; y: number }, to: { x: number; y: number }, jitter: number, time: number, segments: number): void
-			emitLinePulse(tint: number): void
-			playFishAnimation(fish: FishSpecies, state: "idle"): void
-			popFish(amount: number): void
-			setZoneBackground(habitat: FishSpecies["habitat"]): void
-			subscribeToBridge(): void
-			updateLine(time: number): void
-		}
-		const updateState = scene as unknown as { gamePaused: boolean; update(time: number, delta: number): void }
-
-		expect(() => {
-			scene.init({})
-			updateState.update(0, 16)
-			Object.defineProperty(scene, "scale", { configurable: true, value: { width: 1280, height: 720 } })
-			updateState.gamePaused = false
-			updateState.update(16, 16)
-			methods.animateWaterPostFx(0)
-			methods.bossEntrance()
-			methods.drawSaggingLine({ x: 0, y: 0 }, { x: 10, y: 10 }, 0, 0, 2)
-			methods.emitLinePulse(0xffffff)
-			methods.playFishAnimation(getFish("reef_minnow"), "idle")
-			methods.popFish(1)
-			methods.setZoneBackground("zone_2")
-			methods.subscribeToBridge()
-			methods.updateLine(0)
-		}).not.toThrow()
-	})
-
-	it("routes every skill through its matching visual effect with missing sprites", () => {
-		const scene = new FishingScene()
-		const emit = vi.fn()
-		const delayedCall = vi.fn((_delay: number, callback: () => void) => callback())
-		const probe = scene as unknown as {
-			bubbleEmitter: { explode: typeof emit }
-			cameras: { main: { setBackgroundColor: typeof emit; shake: typeof emit } }
-			emitLinePulse: typeof emit
-			emitSkillVfx(skillId: string, label: string): void
-			emitWaterImpact: typeof emit
-			floatText: typeof emit
-			playAudio: typeof emit
-			reducedMotion: boolean
-			ringBurst: typeof emit
-			scale: { width: number; height: number }
-			sparkEmitter: { explode: typeof emit }
-			time: { delayedCall: typeof delayedCall }
-		}
-		Object.defineProperties(scene, {
-			scale: { configurable: true, value: { width: 1280, height: 720 } },
-			time: { configurable: true, value: { delayedCall } },
-			cameras: { configurable: true, value: { main: { setBackgroundColor: emit, shake: emit } } },
-		})
-		probe.bubbleEmitter = { explode: emit }
-		probe.sparkEmitter = { explode: emit }
-		probe.emitLinePulse = emit
-		probe.emitWaterImpact = emit
-		probe.floatText = emit
-		probe.playAudio = emit
-		probe.ringBurst = emit
-		for (const skillId of ["cast_net", "calm_current", "sonar", "steel_line", "perfect_bait", "reel_mastery", "unknown"]) {
-			probe.reducedMotion = false
-			probe.emitSkillVfx(skillId, skillId)
-		}
-		probe.reducedMotion = true
-		probe.emitSkillVfx("reel_mastery", "Reel Mastery")
-		expect(emit).toHaveBeenCalled()
-		expect(delayedCall).toHaveBeenCalledTimes(4)
-	})
-
-	it("plays common fish struggle animations at the faster frame rate", () => {
-		const scene = new FishingScene()
-		const create = vi.fn()
-		const probe = scene as unknown as {
-			anims: { create: typeof create; exists(key: string): boolean; generateFrameNames(key: string, range: { prefix: string; start: number; end: number; suffix: string }): string[] }
-			fish: { play(key: string, ignoreIfPlaying?: boolean): void; setTexture(key: string, frame?: string | number): void }
-			playFishAnimation(fish: FishSpecies, state: "struggle"): void
-		}
-		Object.defineProperties(scene, {
-			anims: { configurable: true, value: { create, exists: () => false, generateFrameNames: () => [] } },
-			fish: { configurable: true, value: { play: vi.fn(), setTexture: vi.fn(), setCrop: vi.fn().mockReturnThis(), setTint: vi.fn().mockReturnThis() } },
-		})
-		probe.playFishAnimation(getFish("kelp_darter"), "struggle")
-		expect(create).toHaveBeenCalledWith(expect.objectContaining({ frameRate: 12, repeat: -1 }))
-	})
-
-	it("retries hit-stop release after the hold window is extended", async () => {
-		const scene = new FishingScene()
-		const controls = scene as unknown as { hitStop(duration: number): void }
-		const pause = vi.fn()
-		const resume = vi.fn()
-		const isActive = vi.fn(() => false)
-		Object.defineProperty(scene, "scene", { configurable: true, value: { pause, resume } })
-		Object.defineProperty(scene, "sys", { configurable: true, value: { isActive } })
-		vi.useFakeTimers()
-		const now = vi.spyOn(performance, "now").mockReturnValue(1000)
-		try {
-			controls.hitStop(100)
-			expect(pause).not.toHaveBeenCalled()
-			isActive.mockReturnValue(true)
-			controls.hitStop(100)
-			isActive.mockReturnValue(false)
-			controls.hitStop(250)
-			vi.setSystemTime(1100)
-			now.mockReturnValue(1100)
-			await vi.advanceTimersByTimeAsync(100)
-			expect(pause).toHaveBeenCalledTimes(1)
-			vi.setSystemTime(1300)
-			now.mockReturnValue(1300)
-			await vi.advanceTimersByTimeAsync(150)
-			expect(resume).toHaveBeenCalledOnce()
-			isActive.mockReturnValue(true)
-			controls.hitStop(50)
-			now.mockReturnValue(1400)
-			await vi.advanceTimersByTimeAsync(50)
-			expect(resume).toHaveBeenCalledOnce()
-		} finally {
-			now.mockRestore()
-			vi.useRealTimers()
-		}
+	it("handles context loss and interrupted or failed asset loading without leaked canvases", async () => {
+		const run = await setup()
+		const failed = vi.fn(); run.host.addEventListener("renderer:error", failed)
+		run.game.renderer.domElement.dispatchEvent(new Event("webglcontextlost", { cancelable: true }))
+		run.view.tick(100); expect(failed).toHaveBeenCalledOnce(); run.game.destroy()
+		let release!: () => void
+		const realLoad = OceanAssets.prototype.load
+		vi.spyOn(OceanAssets.prototype, "load").mockImplementation(async function(this: OceanAssets) { await new Promise<void>(resolve => { release = resolve }); await realLoad.call(this) })
+		game = createFishingGame(run.host, run.bridge); game.destroy(); release(); await game.ready
+		expect(run.host.querySelector("canvas")).toBeNull()
+		vi.restoreAllMocks()
+		vi.spyOn(OceanAssets.prototype, "load").mockRejectedValue(new Error("offline"))
+		game = createFishingGame(run.host, run.bridge)
+		await expect(game.ready).rejects.toThrow("offline"); expect(run.host.querySelector("canvas")).toBeNull()
 	})
 })
-
-function sceneUpdate(game: ReturnType<typeof createFishingGame>, time: number): void {
-	const scene = game.scene.getScene("FishingScene") as unknown as { update(time: number, delta: number): void }
-	scene.update(time, 16)
-}

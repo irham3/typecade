@@ -14,10 +14,10 @@ Ocean Typing RPG uses bright fantasy-ocean environments behind compact, dark-nav
 - Navigation, statistics, equipment, and skill icons use the existing `reference-derived-pixel-pack`. Do not mix vector icon libraries into the active shell.
 - Use the main-menu ship for the gameplay boat and multiplayer competitors. Player names, ranks, and progress stay live UI text.
 - Nine former procedural fish silhouettes are replaced by selected catalog/reference sprites. Pebble Goby keeps its existing state animation strips. `apps/web/scripts/refresh-ocean-art.mjs` lists the exact source mapping and writes fixed atlas cells using nearest-neighbor resizing.
-- Reused poses fill the nine replacement fish's atlas states. Phaser articulates the final 30% of each sprite as a tail, with a small overlapping joint, a gentle body pulse and behavior-specific drift. Body and tail share the same frame, scale, rotation, underwater tint and catch/escape alpha; they freeze together on Pause. Reduced Effects removes tail flick and idle body deformation. Pebble Goby keeps its authored frame strips and is not split. These replacements are not nine newly drawn animation sets.
+- Reused poses fill the nine replacement fish's atlas states. Three.js articulates the final 30% of each sprite as a tail, with a small overlapping joint, a gentle body pulse and behavior-specific drift. Body and tail share the same frame, scale, rotation, underwater tint and catch/escape alpha; they freeze together on Pause. Reduced Effects removes tail flick and idle body deformation. Pebble Goby keeps its authored frame strips and is not split. These replacements are not nine newly drawn animation sets.
 - Adventure uses bg_shallow_coast_cutaway.webp: a side-on underwater cross section with a clear surface at 30% viewport height. Boat sits at that surface; active fish remains below it. Main menu and multiplayer keep their existing coast compositions. Fallback layers remain available when the cutaway texture fails to load.
 - The current boat atlas cell uses origin `(0.5, 0.68)`: the contact point is the hull, not the bottom of its foam or transparent padding. Responsive scale is `2.4 × min(1, viewportWidth / 900, viewportHeight / 1100)`. Its hull stays at the surface with at most 1.5 px of idle bob; a small wake marks contact. Regular fish remain smaller than the boat. Pause freezes motion and Reduced Effects removes boat bob and tilt.
-- All ten fish have eye landmarks measured in their existing source frames. Phaser adds a short pixel blink and a small gill movement in the same sprite coordinate system; details inherit body position, scale, rotation, visibility and alpha. These are runtime details on the existing assets, not new authored sprite sheets. Reduced Effects disables blinking and gill movement.
+- All ten fish have eye landmarks measured in their existing source frames. Three.js adds a short pixel blink and a small gill movement in the same sprite coordinate system; details inherit body position, scale, rotation, visibility and alpha. These are runtime details on the existing assets, not new authored sprite sheets. Reduced Effects disables blinking and gill movement.
 - Practice keeps the shared pixel plates and icons. Modern text uses three fixed rows; Classic uses two. The inner text shifts up as typing advances, with clipped overflow and no scrollbar. The touch keyboard uses the same pixel plates and supports letters, Shift, numbers, punctuation and symbols.
 - HUD controls, callouts, typing, and results occupy separate flow rows. A dialog uses the browser's modal layer and restores focus on close. Mobile layout must fit at 320×640 and 390×844.
 - Rarity callouts use a monospace font sized to the viewport. Text effects stay clear of the fish and typing panel; reduced effects disable camera shake and hit stop.
@@ -30,7 +30,7 @@ Equipment uses chunky, readable forms: one boat/platform, rods with distinct ree
 
 ## Outline Thickness
 
-Sprites use a dark marine outline equivalent to 2-3 px at 128 px export size and 1-2 px at 64 px display size. UI panels use a light border plus a darker outer edge to match the reference chrome. VFX textures are grayscale masks without colored outlines so Phaser can tint them per event.
+Sprites use a dark marine outline equivalent to 2-3 px at 128 px export size and 1-2 px at 64 px display size. UI panels use a light border plus a darker outer edge to match the reference chrome. VFX textures are grayscale masks without colored outlines so the renderer can tint them per event.
 
 ## Shading Method
 
@@ -47,7 +47,9 @@ Fish and equipment use cel-shaded pixel-inspired forms: two main value bands, on
 
 ## Camera Angle
 
-Gameplay is a side-on 2D fishing cutaway with a visible water surface: boat/rod on the left, water body mid-screen, active fish right-center, HUD on screen-space overlays. Fish sprites face left when hooked, with pivots near body center so swim/struggle tweens read naturally.
+Gameplay uses a side-on pixel 2.5D fishing cutaway rendered by Three.js: boat/rod on the left, water body mid-screen, active fish right-center, React HUD in screen-space overlays. The orthographic camera keeps typing stable. Fish sprites are atlas-backed meshes with shallow Z depth and a small Y-axis turn, rather than newly modeled 3D creatures.
+
+The surface ribbon is lit geometry; boat hull and ribbon sample the same bounded wave function at 30% viewport height. A translucent water material in front of fish adds depth color and quantized light bands. This is an artistic cutaway, with no physical refraction or reflection simulation. Render at half CSS resolution with nearest texture sampling and pixelated canvas scaling. Background and nine replacement fish poses remain the existing authored assets; Pebble Goby retains its state strips.
 
 ## Texture Density
 

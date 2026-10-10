@@ -93,7 +93,7 @@ test.describe("Ocean Typing RPG shell", () => {
 			await expectCanvasNonBlank(page)
 			await page.getByRole("button", { name: destination, exact: true }).click()
 			await expect(page.getByTestId(destination === "Practice" ? "practice-screen" : "race-screen")).toBeVisible()
-			await expect(page.getByTestId("phaser-gameplay").locator("canvas")).toHaveCount(0)
+			await expect(page.getByTestId("three-gameplay").locator("canvas")).toHaveCount(0)
 			await page.getByRole("button", { name: "Main menu", exact: true }).click()
 			await page.getByRole("button", { name: "Adventure", exact: true }).click()
 			await page.getByRole("button", { name: "Set Sail", exact: true }).click()
@@ -263,7 +263,7 @@ test.describe("Ocean Typing RPG shell", () => {
 		{ name: "mobile", width: 390, height: 844 },
 		{ name: "small mobile", width: 320, height: 640 },
 	]) {
-		test(`renders a nonblank Phaser scene without HUD overlap on ${viewport.name}`, async ({ page }, testInfo) => {
+		test(`renders a nonblank Three.js scene without HUD overlap on ${viewport.name}`, async ({ page }, testInfo) => {
 			const consoleErrors: string[] = []
 			page.on("console", (message) => {
 				if (message.type() === "error") {
@@ -274,7 +274,8 @@ test.describe("Ocean Typing RPG shell", () => {
 
 			await page.setViewportSize({ width: viewport.width, height: viewport.height })
 			await page.goto("/")
-			await expect(page.getByTestId("phaser-gameplay").locator("canvas")).toHaveCount(1)
+			await expect(page.getByTestId("three-gameplay").locator("canvas")).toHaveCount(1)
+			await expect(page.getByTestId("three-gameplay")).toHaveAttribute("data-renderer-state", "ready")
 			await expect(page.getByTestId("main-menu")).toBeVisible()
 			await expect(page.locator(".menu-layer .logo-mark")).toHaveCount(0)
 			await expect(page.locator(".mainmenu-dock")).toBeVisible()
@@ -406,7 +407,7 @@ async function expectCanvasNonBlank(page: import("@playwright/test").Page): Prom
 }
 
 async function sampleCanvas(page: import("@playwright/test").Page): Promise<{ colored: number; variance: number }> {
-	return page.locator("[data-testid='phaser-gameplay'] canvas").evaluate((canvas: HTMLCanvasElement) => {
+	return page.locator("[data-testid='three-gameplay'] canvas").evaluate((canvas: HTMLCanvasElement) => {
 		const probe = document.createElement("canvas")
 		probe.width = 64
 		probe.height = 64

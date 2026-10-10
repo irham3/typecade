@@ -38,6 +38,8 @@ export function App() {
 	const hostRef = useRef<HTMLDivElement | null>(null)
 	const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(location.search).has("race") ? "race" : "menu")
 	const [panel, setPanel] = useState<Panel>(null)
+	const [rendererState, setRendererState] = useState<"loading" | "ready" | "error">("loading")
+	const [rendererAttempt, setRendererAttempt] = useState(0)
 	const {
 		bridge,
 		view,
@@ -52,7 +54,7 @@ export function App() {
 		startFreshRun,
 		togglePause,
 		typeKey,
-	} = useOceanRun(screen === "game" && panel === null)
+	} = useOceanRun(screen === "game" && panel === null && rendererState === "ready")
 	const visualScreen = screen === "game" && view.isRefitting ? "prep" : screen
 	const rendererEnabled = screen !== "race" && screen !== "practice"
 	const levelProgress = getAccountLevelProgress(view.collection.xp)
@@ -65,19 +67,25 @@ export function App() {
 		let disposed = false
 		let destroyGame: (() => void) | undefined
 
-		void import("./game/createFishingGame").then(({ createFishingGame }) => {
+		const fail = () => { if (!disposed) setRendererState("error") }
+		host.addEventListener("renderer:error", fail)
+		void import("./game/createFishingGame").then(async ({ createFishingGame }) => {
 			if (disposed) {
 				return
 			}
 			const game = createFishingGame(host, bridge)
-			destroyGame = () => game.destroy(true)
-		})
+			setRendererState("loading")
+			destroyGame = () => game.destroy()
+			await game.ready
+			if (!disposed) setRendererState("ready")
+		}).catch(fail)
 
 		return () => {
 			disposed = true
+			host.removeEventListener("renderer:error", fail)
 			destroyGame?.()
 		}
-	}, [bridge, rendererEnabled])
+	}, [bridge, rendererEnabled, rendererAttempt])
 
 	useEffect(() => {
 		bridge.emit("screen:changed", { screen: visualScreen })
@@ -94,10 +102,17 @@ export function App() {
 
 	return (
 		<main className={`game-shell screen-${visualScreen}`} data-testid="ocean-game-shell">
-			<div ref={hostRef} className="game-canvas" data-testid="phaser-gameplay" />
+			<div ref={hostRef} className="game-canvas" data-testid="three-gameplay" data-renderer-state={rendererState} />
+			{visualScreen === "game" && rendererState !== "ready" ? (
+				<div className="renderer-status" role="status">
+					<p>{rendererState === "error" ? "The ocean could not load. Your voyage is paused." : "Preparing the ocean…"}</p>
+					{rendererState === "error" ? <button onClick={() => { setRendererState("loading"); setRendererAttempt(attempt => attempt + 1) }}>Retry</button> : null}
+					<button className="secondary-action" onClick={() => setScreen("menu")}>Main Menu</button>
+				</div>
+			) : null}
 
 			{visualScreen === "game" ? (
-				<GameHud
+				<div inert={rendererState !== "ready"}><GameHud
 					view={view}
 					activeSkills={activeSkills}
 					levelProgress={levelProgress}
@@ -113,7 +128,7 @@ export function App() {
 					togglePause={togglePause}
 					typeKey={typeKey}
 					goToMenu={() => setScreen("menu")}
-				/>
+				/></div>
 			) : null}
 
 			{screen === "menu" ? (

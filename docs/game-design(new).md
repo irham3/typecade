@@ -286,10 +286,10 @@ For ranked, players are matched inside the same language queue and progress is b
 
 - React and TypeScript for menus, profile, collection, settings, and accessibility.
 - Vite for a lightweight development and build workflow.
-- Phaser for the 2D game scene, sprite animation, particles, camera effects, tweens, and WebGL/Canvas rendering.
-- A typed bridge between React UI and the Phaser scene. The bridge emits domain events rather than directly manipulating scene internals.
+- Three.js for the Adventure ocean scene, orthographic camera, atlas meshes, water surface geometry and shading, and pooled particles. Native audio follows the renderer lifecycle.
+- A typed bridge between React UI and the renderer. The bridge emits domain events rather than directly manipulating scene internals.
 
-Phaser is recommended over building the game scene directly in React because it is designed for browser games and supports WebGL and Canvas rendering, animation, particles, input, and scene management.
+The user approved replacing Phaser with Three.js on 2026-10-10. The renderer uses a pixel 2.5D cutaway: sprites remain atlas-backed meshes, with shallow Z depth, a lit water ribbon and a depth-colored water overlay. Typing, fishing rules, progression and saves remain independent of rendering. WebGL failure pauses Adventure and offers Retry. A Canvas renderer is not included.
 
 ### 10.2 Multiplayer server
 
@@ -313,7 +313,7 @@ Supabase Realtime can support social presence and notifications. Competitive mat
 
 ```text
 apps/web
-  UI shell, Phaser host, input, presentation
+  UI shell, Three.js host, input, presentation
 
 apps/game-server
   matchmaking, race rooms, validation, rating results
@@ -393,7 +393,7 @@ Not every species needs unique animation data for every state. Procedural modifi
 
 ### 12.3 Procedural life
 
-Phaser can add inexpensive continuous motion:
+The Three.js renderer adds continuous motion to the existing sprite assets:
 
 - Sine-wave vertical drift.
 - Tail oscillation tied to swimming speed.
@@ -446,7 +446,7 @@ The MVP only needs a small library of reusable grayscale textures:
 - Smoke or underwater cloud.
 - Lightning or tension line.
 
-Tint, scale, rotation, blend mode, lifetime, and emission curves turn these textures into many effects. Phaser's particle emitters are suitable for bubbles, foam, glints, trails, and reward bursts.
+Tint, scale, rotation and lifetime turn these textures into many effects. Three.js uses a fixed pool of 128 instanced pixel particles and six reusable rings for bubbles, skill feedback and reward bursts.
 
 ### 13.2 Restraint rules
 
@@ -528,7 +528,7 @@ Reference board
   -> Export transparent PNG frames
   -> Pack into texture atlas
   -> Attach metadata and animation states
-  -> Test in Phaser at target size
+  -> Test in the Three.js scene at target size
   -> Profile memory and draw calls
 ```
 
@@ -552,9 +552,9 @@ Each fish has a content record containing its asset key, rarity, habitat, behavi
 
 - Krita or Photoshop: painting backgrounds and fish illustrations.
 - Aseprite: small sprite animations and sprite-sheet export.
-- TexturePacker: atlas packing, trimming, pivots, and Phaser JSON export.
+- Atlas JSON and image: keep the existing frame metadata, select frames through mesh UV coordinates. TexturePacker is optional; the checked-in asset script remains available without a paid tool.
 - Figma: interface layout, icons, component states, and handoff.
-- Phaser: final animation composition, procedural movement, particles, tweens, and camera feedback.
+- Three.js: animation composition, procedural movement, instanced particles, water and camera. No additional paid runtime is required.
 
 This approach has the lowest pipeline risk and does not require every fish to be fully rigged.
 
@@ -568,7 +568,7 @@ Use Spine later if production quality requires many large, reusable skeletal cre
 
 ### 16.4 Custom asset generation
 
-Codex can help generate original concept sheets, fish illustrations, backgrounds, icons, VFX texture masks, and implementation-ready prompts. The reliable workflow is generation followed by cleanup, layer separation, animation setup, and in-game testing. Codex can also build the Phaser scenes, typing engine, skill logic, collection screens, and multiplayer server.
+Codex can help generate original concept sheets, fish illustrations, backgrounds, icons, VFX texture masks, and implementation-ready prompts. The reliable workflow is generation followed by cleanup, layer separation, animation setup, and in-game testing. Codex can also build the Three.js scene, typing engine, skill logic, collection screens, and multiplayer server.
 
 ## 17. Asset Sources and Licensing
 
@@ -598,7 +598,7 @@ The desktop-first target should still run on ordinary integrated graphics.
 
 Recommended initial budgets:
 
-- One main Phaser canvas.
+- One main Three.js Adventure canvas, lazy-loaded; Practice and Multiplayer release the Adventure renderer.
 - Prefer texture atlases over many independent image requests.
 - Keep active particle counts bounded and pool emitters.
 - Load only the current location and common shared UI.
@@ -607,7 +607,7 @@ Recommended initial budgets:
 - Avoid multiple simultaneous Rive or Spine scenes during gameplay.
 - Provide 60 FPS as the target and a reduced-effects mode for weaker devices.
 
-Aseprite can export sprite sheets directly. TexturePacker can generate Phaser atlas data and compressed texture variants, which can reduce requests and GPU memory pressure when configured carefully.
+Aseprite can export sprite sheets directly. The renderer reads the existing atlas JSON through UV coordinates, so the current atlas requires no asset conversion. Export and packing tools remain optional.
 
 ## 19. Audio Direction
 
@@ -788,8 +788,10 @@ After this design is approved, create an implementation plan for Milestone 0 and
 
 ## 27. Official References
 
-- Phaser documentation: https://docs.phaser.io/
-- Phaser particles: https://docs.phaser.io/phaser/concepts/gameobjects/particles
+- Three.js scene setup: https://threejs.org/manual/pages/fundamentals.html
+- Three.js textures: https://threejs.org/manual/pages/textures.html
+- Three.js orthographic camera: https://threejs.org/docs/pages/OrthographicCamera.html
+- Three.js cleanup: https://threejs.org/manual/pages/cleanup.html
 - Colyseus documentation: https://docs.colyseus.io/
 - Colyseus rooms: https://docs.colyseus.io/room
 - Supabase Auth: https://supabase.com/docs/guides/auth

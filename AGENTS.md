@@ -30,10 +30,10 @@ Do not implement Milestone 2+ work in this branch:
 
 ## Architecture Rules
 
-1. Headless typing and fishing logic stays in packages with zero React, DOM, or Phaser imports.
+1. Headless typing and fishing logic stays in packages with zero React, DOM, or renderer imports.
 2. React owns shell UI, HUD state, menus, collection, settings, local persistence, and accessibility controls.
-3. Phaser owns the game canvas, sprites, animation, particles, tweens, camera effects, and audio playback.
-4. React and Phaser communicate through typed domain events only; React must not reach into Phaser scene internals.
+3. Three.js owns the Adventure canvas, pixel meshes, water geometry/materials, animation, particles, and camera. Native audio is managed by the renderer lifecycle. Multiplayer retains its existing DOM presentation.
+4. React and the renderer communicate through typed domain events only; React must not reach into scene internals.
 5. Random gameplay decisions must use seeded deterministic RNG. `Math.random()` is banned in game logic.
 6. Indonesian words/passages belong in content packs; UI copy and identifiers stay English.
 7. New source must stay inside the Vite/workspace structure: `apps/web` and `packages/*`.
@@ -41,9 +41,9 @@ Do not implement Milestone 2+ work in this branch:
 
 ## Stack
 
-React + TypeScript + Vite for the web shell, Phaser 4 for rendering, Vitest for package tests, Playwright for browser/visual smoke checks.
+React + TypeScript + Vite for the web shell, Three.js for rendering, Vitest for package tests, Playwright for browser/visual smoke checks. The user authorized replacing Phaser on 2026-10-10.
 
-The previous canvas renderer is retired for this branch. Do not add its dependency or source back.
+The previous canvas renderers, including Phaser, are retired for this branch. Do not add their dependencies or runtime source back.
 
 ## Verification
 

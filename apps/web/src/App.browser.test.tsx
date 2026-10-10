@@ -8,14 +8,16 @@ import { PracticeSession } from "@typecade/typing-engine"
 import { App, FeedbackBanner } from "./App"
 import { PracticeScreen } from "./practice/PracticeScreen"
 import { PracticeKeyboard } from "./practice/PracticeKeyboard"
+import { createFishingGame } from "./game/createFishingGame"
 
-vi.mock("./game/createFishingGame", () => ({ createFishingGame: () => ({ destroy: vi.fn() }) }))
+vi.mock("./game/createFishingGame", () => ({ createFishingGame: vi.fn() }))
 
 describe("application browser coverage", () => {
 	let host: HTMLDivElement
 	let root: Root
 
 	beforeEach(() => {
+		vi.mocked(createFishingGame).mockReset().mockImplementation(() => ({ ready: Promise.resolve(), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 		host = document.createElement("div")
 		document.body.append(host)
@@ -679,6 +681,46 @@ describe("application browser coverage", () => {
 		expect(host.querySelector(".race-screen")).not.toBeNull()
 		await click('.race-header button.secondary-action:last-child')
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
+	})
+
+	it("pauses Adventure during loading, explains render failure and retries without resetting the voyage", async () => {
+		let release!: () => void
+		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: new Promise<void>(resolve => { release = resolve }), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
+		await mount(); await sail()
+		expect(host.querySelector('.renderer-status')?.textContent).toContain("Preparing the ocean")
+		const input = host.querySelector(".typing-native-input")!
+		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "o", bubbles: true })))
+		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(0)
+		await act(async () => { release(); await Promise.resolve() })
+		expect(host.querySelector('.renderer-status')).toBeNull()
+		await act(() => host.querySelector('.game-canvas')!.dispatchEvent(new CustomEvent("renderer:error")))
+		expect(host.querySelector('.renderer-status')?.textContent).toContain("voyage is paused")
+		await click('.renderer-status button:first-of-type')
+		expect(host.querySelector('.renderer-status')).toBeNull()
+		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 1/10")
+	})
+
+	it("recovers from initialization rejection and ignores promises settled after renderer removal", async () => {
+		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: Promise.reject(new Error("offline")), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
+		await mount(); await sail()
+		expect(host.querySelector('.renderer-status')?.textContent).toContain("could not load")
+		await click('.renderer-status button:first-of-type'); expect(host.querySelector('.renderer-status')).toBeNull()
+		let reject!: (reason: Error) => void
+		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: new Promise<void>((_, fail) => { reject = fail }), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
+		await act(() => host.querySelector('.game-canvas')!.dispatchEvent(new CustomEvent("renderer:error")))
+		await click('.renderer-status button:first-of-type')
+		await click('.renderer-status button.secondary-action')
+		await click('button[aria-label="Practice"]')
+		await act(async () => { reject(new Error("late failure")); await Promise.resolve() })
+		expect(host.querySelector('.practice-screen')).not.toBeNull()
+	})
+
+	it("ignores late readiness after leaving for Practice", async () => {
+		let release!: () => void
+		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: new Promise<void>(resolve => { release = resolve }), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
+		await mount(); await act(async () => { await vi.waitFor(() => expect(release).toBeTypeOf("function")) }); await click('button[aria-label="Practice"]')
+		await act(async () => { release(); await Promise.resolve() })
+		expect(host.querySelector('.game-canvas')?.getAttribute('data-renderer-state')).toBe("loading")
 	})
 
 	it("closes settings with Escape and reaches the menu from a paused run", async () => {

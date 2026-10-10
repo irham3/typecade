@@ -56,6 +56,19 @@ input:focus-visible {
 	height: 100% !important;
 }
 
+.renderer-status {
+	position: absolute;
+	top: 30%;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 8;
+	width: min(90%, 420px);
+	padding: 16px;
+	background: #051326;
+	border: 2px solid #d9b660;
+	text-align: center;
+}
+
 .screen-race .game-canvas,
 .screen-practice .game-canvas { visibility: hidden; }
 
