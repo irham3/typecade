@@ -452,6 +452,7 @@ describe("application browser coverage", () => {
 		await act(async () => { await userEvent.fill(range, "0.2") })
 		const reducedEffects = host.querySelector<HTMLInputElement>('.settings-grid input[type="checkbox"]')!
 		await act(() => reducedEffects.click())
+		expect(host.querySelector('[data-testid="ocean-hud"]')?.getAttribute("data-reduced-effects")).toBe("true")
 		expect(reducedEffects.checked).toBe(true)
 		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
 		await click('button[aria-label="Pause game"]')
@@ -558,13 +559,13 @@ describe("application browser coverage", () => {
 		const sonar = [...host.querySelectorAll<HTMLButtonElement>(".skill-button")].find((button) => button.title.startsWith("Sonar:"))
 		expect(sonar?.disabled).toBe(false)
 		await act(() => sonar!.click())
-		const hiddenSpeciesIndex = fishSpecies.findIndex((species) => species.id === "reef_minnow")
+		const hiddenSpeciesIndex = fishSpecies.findIndex((species) => species.id === "kelp_darter")
 		const hiddenSpecies = fishSpecies[hiddenSpeciesIndex]!
 		await act(() => { fishSpecies.splice(hiddenSpeciesIndex, 1) })
 		try {
 			await click('button[aria-label="Route"]')
 			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Sonar sweep active")
-			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("reef_minnow")
+			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("kelp_darter")
 		} finally {
 			await act(() => { fishSpecies.splice(hiddenSpeciesIndex, 0, hiddenSpecies) })
 		}
@@ -603,6 +604,17 @@ describe("application browser coverage", () => {
 	it("uses an earned skill, blocks typing while paused, and resumes the same encounter", async () => {
 		await mount()
 		await sail()
+		const input = host.querySelector<HTMLInputElement>('[data-testid="typing-input"]')!
+		input.blur()
+		await click('.typing-panel')
+		expect(document.activeElement).toBe(input)
+		expect(host.querySelector('[data-testid="typing-target"]')?.classList.contains("rolling-passage")).toBe(true)
+		expect(host.querySelector('.typing-help')?.textContent).toContain("Type here to start")
+		expect(host.querySelector('.skill-button.passive')?.tagName).toBe("ARTICLE")
+		expect(host.querySelector('.skill-button.passive')?.textContent).toContain("Automatic")
+		expect(host.querySelector('.skill-dock-help')?.textContent).toContain("Perfect word +14")
+		await click('.hud .practice-keyboard button[aria-label="o"]')
+		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1)
 		await click('button[aria-label="Settings"]')
 		const reducedEffects = host.querySelector<HTMLInputElement>('.settings-grid input[type="checkbox"]')!
 		await act(() => reducedEffects.click())
@@ -610,11 +622,12 @@ describe("application browser coverage", () => {
 		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
 		const prefixLength = target.split(" ").slice(0, 3).join(" ").length + 1
 		await act(async () => {
-			for (const key of target.slice(0, prefixLength)) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
+			for (const key of target.slice(1, prefixLength)) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
 		})
 		const activeSkill = [...host.querySelectorAll<HTMLButtonElement>('[data-testid="skill-dock"] .skill-button.active:enabled')].find((button) => button.textContent?.includes("Sonar"))
 		expect(activeSkill).not.toBeNull()
 		await act(() => activeSkill!.click())
+		expect(document.activeElement).toBe(input)
 		expect(host.querySelector('[data-testid="skill-feedback"]')).not.toBeNull()
 		await click('button[aria-label="Pause game"]')
 		const cursor = host.querySelectorAll('[data-testid="typing-target"] .done').length

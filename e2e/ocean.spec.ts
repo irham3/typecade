@@ -1,6 +1,48 @@
 import { expect, test } from "@playwright/test"
 
 test.describe("Ocean Typing RPG shell", () => {
+	for (const [name, width, height] of [["desktop", 1366, 768], ["small mobile", 320, 640]] as const) {
+		test(`Adventure has one typing surface and readable skills on ${name}`, async ({ page }, testInfo) => {
+			await page.setViewportSize({ width, height })
+			await page.goto("/")
+			await page.getByRole("button", { name: "Adventure", exact: true }).click()
+			await page.getByRole("button", { name: "Set Sail", exact: true }).click()
+			const input = page.getByLabel("Adventure typing input")
+			const timer = page.locator('.stat').filter({ hasText: "TIME LEFT" })
+			const timeBefore = await timer.textContent()
+			await expect(page.locator('.typing-help')).toContainText("Type here to start")
+			await page.waitForTimeout(1100)
+			await expect(timer).toHaveText(timeBefore!)
+			const bounds = await input.boundingBox()
+			expect(bounds!.width).toBeLessThanOrEqual(1)
+			expect(bounds!.height).toBeLessThanOrEqual(1)
+			await expect(page.locator('.skill-button.passive')).toContainText("Automatic")
+			await expect(page.locator('button.skill-button.passive')).toHaveCount(0)
+			await expect(page.locator('.skill-dock-help')).toContainText("Perfect word +14")
+			if (width > 640) expect(await page.locator('.skill-button.active .skill-key').evaluateAll((keys) => keys.every((key) => key.scrollWidth <= key.clientWidth))).toBe(true)
+			await expect(page.locator('.skill-button').filter({ hasText: "Cast Net" })).toContainText("Reel 45% first")
+			const passage = page.getByTestId("typing-target")
+			const target = await passage.textContent()
+			await passage.click()
+			await expect(input).toBeFocused()
+			if (width <= 640) {
+				await expect(page.locator('.hud .practice-keyboard')).toBeInViewport({ ratio: 1 })
+				await page.getByRole("button", { name: target![0], exact: true }).click()
+			} else await page.keyboard.type(target![0])
+			await page.keyboard.type(target!.slice(1, Math.ceil(target!.length * 0.85)))
+			await expect(page.locator('.typing-help')).toContainText("Type to reel")
+			await expect(passage).toHaveCSS("overflow", "clip")
+			if (width <= 640) await expect.poll(() => passage.evaluate((element) => element.firstElementChild!.getAttribute("style"))).toMatch(/translateY\(-[1-9]/)
+			expect(await passage.evaluate((element) => element.scrollTop)).toBe(0)
+			await expect(page.getByRole("button", { name: /Cast Net/ })).toBeEnabled()
+			await page.getByRole("button", { name: /Cast Net/ }).click()
+			await expect(input).toBeFocused()
+			await expect(page.getByTestId("skill-feedback")).toContainText("Cast Net")
+			await expect(page.getByTestId("result-toast")).toHaveCount(0)
+			await expectHudDoesNotOverlap(page)
+			await page.screenshot({ path: testInfo.outputPath(`adventure-typing-skills-${name.replace(" ", "-")}.png`) })
+		})
+	}
 	for (const viewport of [
 		{ name: "desktop", width: 1366, height: 768 },
 		{ name: "mobile", width: 390, height: 844 },
@@ -298,6 +340,8 @@ test.describe("Ocean Typing RPG shell", () => {
 					await page.screenshot({ path: testInfo.outputPath(`boss-voyage-${voyage}.png`) })
 					if (voyage === 1) {
 						await page.setViewportSize({ width: 320, height: 640 })
+						await expect(page.getByTestId("boss-phase-callout")).toBeHidden()
+						await expect(page.getByTestId("boss-phase-inline")).toContainText("P1 · Finish every character")
 						await expectHudDoesNotOverlap(page)
 						await page.screenshot({ path: testInfo.outputPath("boss-small-mobile.png") })
 						await page.setViewportSize({ width: 1366, height: 768 })
@@ -393,7 +437,6 @@ async function expectHudDoesNotOverlap(page: import("@playwright/test").Page): P
 			"[data-testid='topbar']",
 			".icon-rail",
 			"[data-testid='route-strip']",
-			"[data-testid='fish-card']",
 			"[data-testid='typing-console']",
 			"[data-testid='skill-dock']",
 			"[data-testid='boss-phase-callout']",

@@ -142,10 +142,20 @@ export function getDefaultSkillLoadout(seed: string, accountLevel: number): stri
 }
 
 export function canUseFishingSkill(encounter: EncounterState, skill: FishingSkill): boolean {
-	if (skill.type !== "active" || encounter.status !== "active" || encounter.skillEnergy < getFishingSkillCost(skill.id)) return false
-	if (skill.id !== "cast_net") return true
-	const fish = getFish(encounter.fishId)
-	return fish.rarity === "common" && fish.baseSizeKg <= 2.2 && encounter.progress >= 0.45
+	return getFishingSkillBlockReason(encounter, skill) === null
+}
+
+export function getFishingSkillBlockReason(encounter: EncounterState, skill: FishingSkill): string | null {
+	if (skill.type !== "active") return "Automatic"
+	if (encounter.status !== "active") return "Encounter ended"
+	if (skill.id === "calm_current" && encounter.calmCurrentRemainingMs > 0) return `Active ${Math.ceil(encounter.calmCurrentRemainingMs / 1000)}s`
+	if (skill.id === "cast_net") {
+		const fish = getFish(encounter.fishId)
+		if (fish.rarity !== "common" || fish.baseSizeKg > 2.2) return "Common ≤2.2kg only"
+		if (encounter.progress < 0.45) return "Reel 45% first"
+	}
+	const missingEnergy = getFishingSkillCost(skill.id) - encounter.skillEnergy
+	return missingEnergy > 0 ? `Need ${Math.ceil(missingEnergy)}E` : null
 }
 
 export function getAccountLevelProgress(xp: number): AccountLevelProgress {
@@ -393,7 +403,9 @@ export function useFishingSkill(encounter: EncounterState, fish: FishSpecies, sk
 		next = {
 			...next,
 			skillEnergy: next.skillEnergy - getFishingSkillCost(skill.id),
+			tension: clamp(next.tension - 5, 0, 100),
 		}
+		events.push({ type: "tension", value: next.tension })
 	}
 
 	next = applyBossPhase(next, events)

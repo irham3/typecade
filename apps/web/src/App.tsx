@@ -6,10 +6,11 @@ import gsap from "gsap"
 gsap.registerPlugin(useGSAP)
 import type { AccountLevelProgress, CatchResult, FishingSkill, Rarity } from "@typecade/contracts"
 import { fishSpecies, fishingSkills, getRouteNodesForZone, shallowCoastZoneOrder } from "@typecade/content"
-import { canUseFishingSkill, getAccountLevelProgress, getFishingSkillCost, getFishingSkillUnlockLevel, getAdventureCondition, getEncounterIndexInRun } from "@typecade/game-rules"
+import { getFishingSkillBlockReason, getAccountLevelProgress, getFishingSkillCost, getFishingSkillUnlockLevel, getAdventureCondition, getEncounterIndexInRun } from "@typecade/game-rules"
 import { useOceanRun, type OceanRunView, type OceanUiFeedback, type VolumeState } from "./hooks/useOceanRun"
 import { RaceScreen } from "./multiplayer/RaceScreen"
 import { PracticeScreen } from "./practice/PracticeScreen"
+import { PracticeKeyboard } from "./practice/PracticeKeyboard"
 import { TypingInput, TypingPassage } from "./TypingField"
 
 type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | null
@@ -197,7 +198,6 @@ function GameHud({
 		gsap.from(".icon-rail button", { x: -30, opacity: 0, duration: 0.4, stagger: 0.08, ease: "power2.out", delay: 0.2 })
 		gsap.from(".bottom-console", { y: 60, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
 		gsap.from(".route-strip", { y: -20, opacity: 0, duration: 0.5, ease: "power2.out", delay: 0.2 })
-		gsap.from(".fish-card", { x: 50, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
 	}, { scope: containerRef, dependencies: [view.reducedMotion] })
 
 	const condition = getAdventureCondition(view.expedition)
@@ -208,14 +208,14 @@ function GameHud({
 	const routeProgress = `${view.expedition.currentZoneIndex + 1}/3`
 	const encounterLabel = `${getEncounterNumber(view.expedition.currentZoneIndex, view.expedition.currentEncounterIndex)}/10`
 	const bossPhaseDetails = [
-		{ title: "Crown Wake", detail: "Keep your rhythm. Finish every character." },
-		{ title: "Crown Guard", detail: "Three perfect words break the guard." },
-		{ title: "Final Pull", detail: "Every third perfect word: -8 tension." },
+		{ title: "Crown Wake", detail: "Keep your rhythm. Finish every character.", compact: "Finish every character" },
+		{ title: "Crown Guard", detail: "Three perfect words break the guard.", compact: "Clean words break guard" },
+		{ title: "Final Pull", detail: "Every third perfect word: -8 tension.", compact: "Every third clean word: -8 tension" },
 	] as const
 	const bossPhaseDetail = bossPhaseDetails[view.encounter.bossPhase - 1]
 
 	return (
-		<div className="hud" data-testid="ocean-hud" ref={containerRef}>
+		<div className="hud" data-testid="ocean-hud" data-reduced-effects={view.reducedMotion} ref={containerRef}>
 			<TopBar
 				view={view}
 				levelProgress={levelProgress}
@@ -254,7 +254,6 @@ function GameHud({
 				</section>
 			) : null}
 
-			<FishInfoCard fish={view.fish} record={view.collection.records[view.fish.id]} />
 			{!view.lastResult && view.feedback?.kind === "skill" ? <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
 			{view.lastResult ? <ResultToast view={view} result={view.lastResult} /> : null}
 			{view.expedition.complete ? (
@@ -283,13 +282,18 @@ function GameHud({
 					</div>
 				</div>
 
-				<div className="typing-panel panel-chrome">
+				<div className="typing-panel panel-chrome" onClick={() => typingInputRef.current?.focus()}>
+					<div className="adventure-target-label">
+						<strong>{view.fish.name} · {view.fish.rarity} ({rarityStars[view.fish.rarity]}*)</strong>
+						<span title={condition.description}>{condition.name}</span>
+					</div>
 					<div className="typing-help">
-						<span title={condition.description}>{condition.name} · {condition.description}</span>
+						<span>{view.metrics.correctKeystrokes + view.metrics.incorrectKeystrokes === 0 ? "Type here to start · Finish every character" : "Type to reel · Retype wrong keys"}</span>
+						{view.fish.id === "crown_leviathan" && bossPhaseDetail ? <span className="boss-phase-inline" data-testid="boss-phase-inline" aria-live="polite">P{view.encounter.bossPhase} · {bossPhaseDetail.compact}{view.encounter.bossPhase === 2 ? ` (${view.encounter.bossGuard} left)` : ""}</span> : null}
 						<kbd>Esc pause</kbd>
 					</div>
-					<TypingPassage text={view.targetText} cursor={view.cursor} className="typing-target" testId="typing-target" mistake={view.lastKeyWasTypo} />
-					<TypingInput inputRef={typingInputRef} label="Adventure typing input" testId="typing-input" onType={typeKey} onEscape={togglePause} disabled={view.isPaused || panel !== null || view.encounter.status !== "active"} />
+					<TypingPassage text={view.targetText} cursor={view.cursor} className="typing-target" testId="typing-target" mistake={view.lastKeyWasTypo} rollingLines={2} />
+					<TypingInput inputRef={typingInputRef} label="Adventure typing input" testId="typing-input" inputMode="none" onType={typeKey} onEscape={togglePause} disabled={view.isPaused || panel !== null || view.encounter.status !== "active"} />
 				</div>
 
 				<div className="stat-row panel-chrome">
@@ -301,11 +305,12 @@ function GameHud({
 				<div className="progress-stack">
 					<SmallMeter label="REEL" value={progressPercent} />
 					<SmallMeter label="LINE" value={durabilityPercent} danger={durabilityPercent < 35} />
-					<SmallMeter label="SKILL" value={Math.round(view.encounter.skillEnergy)} />
 				</div>
+				<PracticeKeyboard onKey={(key) => { typingInputRef.current!.focus(); typeKey(key) }} />
 			</section>
 
 			<section className="skill-dock panel-chrome" data-testid="skill-dock">
+				<div className="skill-dock-help"><strong>Energy {Math.round(view.encounter.skillEnergy)}/100</strong><span>Perfect word +14 · Click skill / Alt + slot</span></div>
 				{activeSkills.map((skill, index) => (
 					<SkillButton
 						key={skill.id}
@@ -575,27 +580,6 @@ function RailButton({
 	)
 }
 
-function FishInfoCard({
-	fish,
-	record,
-}: {
-	fish: { name: string; rarity: Rarity; lore: string; assetKey: string }
-	record?: { largestSizeKg: number; bestQuality: number; count: number }
-}) {
-	return (
-		<aside className={`fish-card panel-chrome rarity-${fish.rarity}`} data-testid="fish-card">
-			<h2>{fish.name}</h2>
-			<strong>{fish.rarity.toUpperCase()}</strong>
-			<StarRow rarity={fish.rarity} />
-			<div className="fish-frame">
-				<FishArtwork assetKey={fish.assetKey} />
-			</div>
-			<p>{fish.lore}</p>
-			{record ? <span className="record-chip">Best {Math.round(record.bestQuality * 100)}% / {record.largestSizeKg} kg</span> : null}
-		</aside>
-	)
-}
-
 function StarRow({ rarity }: { rarity: Rarity }) {
 	const filled = rarityStars[rarity]
 	return (
@@ -645,21 +629,27 @@ function SkillButton({
 	onUse: (skillId: string) => boolean
 }) {
 	const cost = getFishingSkillCost(skill.id)
-	const usable = canUseFishingSkill(encounter, skill)
+	const blockReason = getFishingSkillBlockReason(encounter, skill)
+	const usable = blockReason === null
 	const charge = skill.type === "active" && cost > 0 ? Math.min(100, Math.round(encounter.skillEnergy / cost * 100)) : 100
 	const style = { "--skill-charge": `${charge}%` } as CSSProperties
+	const contents = <>
+		<span className="skill-key">{skill.type === "active" ? `Alt+${index}` : "AUTO"}</span>
+		<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
+		<span>{skill.name}</span>
+		<span className="skill-cost">{blockReason ?? `Ready · ${cost}E`}</span>
+	</>
+	const title = `${skill.name}: ${skill.description}${cost ? ` Cost ${cost} energy.` : ""}`
+	if (skill.type === "passive") return <article className={`skill-button passive ${activePulse ? "pulse" : ""}`} style={style} title={title}>{contents}</article>
 	return (
 		<button
 			className={`skill-button ${skill.type} ${usable ? "ready" : ""} ${activePulse ? "pulse" : ""}`}
 			style={style}
 			onClick={() => usable && onUse(skill.id)}
-			disabled={skill.type === "passive" || !usable}
-			title={`${skill.name}: ${skill.description}${cost ? ` Cost ${cost} energy.` : ""}`}
+			disabled={!usable}
+			title={title}
 		>
-			<span className="skill-key">{skill.type === "active" ? `Alt+${index}` : "P"}</span>
-			<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
-			<span>{skill.name}</span>
-			<span className="skill-cost">{skill.type === "active" ? `${charge}%` : "PASSIVE"}</span>
+			{contents}
 		</button>
 	)
 }
@@ -735,6 +725,7 @@ function RoutePanel({
 function SkillsPanel({ skills, energy, onClose }: { skills: readonly FishingSkill[]; energy: number; onClose: () => void }) {
 	return (
 		<OverlayPanel title="Skills" onClose={onClose}>
+			<p>Close this panel, then click a ready skill or press Alt + its slot number. Passive skills work automatically. Perfect words earn 14 energy; other completed words earn 7.</p>
 			<div className="skill-list">
 				{skills.map((skill) => {
 					const cost = getFishingSkillCost(skill.id)

@@ -12,6 +12,7 @@ import {
 	getAccountLevelProgress,
 	getBossPhaseForProgress,
 	getFishingSkillCost,
+	getFishingSkillBlockReason,
 	getFishingSkillUnlockLevel,
 	getCurrentFishId,
 	getEncounterIndexInRun,
@@ -296,7 +297,26 @@ describe("fishing rules", () => {
 		expect(calm.events.map(({ type }) => type)).toEqual(["skill-used", "tension"])
 		const sonarStart = { ...startEncounter(fish, "sonar", ["sonar"]), skillEnergy: 30 }
 		expect(activateFishingSkill(sonarStart, fish, "sonar").encounter.skillEnergy).toBe(15)
+		expect(activateFishingSkill(sonarStart, fish, "sonar").encounter.tension).toBe(sonarStart.tension - 5)
+		expect(activateFishingSkill({ ...sonarStart, tension: 2 }, fish, "sonar").encounter.tension).toBe(0)
 		expect(activateFishingSkill(sonarStart, fish, "steel_line").events).toEqual([])
+	})
+
+	it("explains skill gates and prevents spending energy on an effect already running", () => {
+		const fish = getFish("reef_minnow")
+		const start = { ...startEncounter(fish, "skill-gates", []), skillEnergy: 100 }
+		expect(getFishingSkillBlockReason(start, getSkill("steel_line"))).toBe("Automatic")
+		expect(getFishingSkillBlockReason({ ...start, status: "caught" }, getSkill("sonar"))).toBe("Encounter ended")
+		expect(getFishingSkillBlockReason(start, getSkill("cast_net"))).toBe("Reel 45% first")
+		expect(getFishingSkillBlockReason({ ...start, fishId: "crown_leviathan" }, getSkill("cast_net"))).toBe("Common ≤2.2kg only")
+		expect(getFishingSkillBlockReason({ ...start, fishId: "shellback_puffer" }, getSkill("cast_net"))).toBe("Common ≤2.2kg only")
+		expect(getFishingSkillBlockReason({ ...start, skillEnergy: 3 }, getSkill("sonar"))).toBe("Need 12E")
+		expect(getFishingSkillBlockReason({ ...start, progress: 0.45 }, getSkill("cast_net"))).toBeNull()
+		const calm = activateFishingSkill(start, fish, "calm_current").encounter
+		expect(getFishingSkillBlockReason(calm, getSkill("calm_current"))).toBe("Active 8s")
+		expect(activateFishingSkill(calm, fish, "calm_current")).toEqual({ encounter: calm, events: [] })
+		const expired = tickEncounter(calm, fish, 8000, ["calm_current"]).encounter
+		expect(canUseFishingSkill(expired, getSkill("calm_current"))).toBe(true)
 	})
 
 	it("covers expedition failure, voyage continuation, save recovery, and rosters", () => {

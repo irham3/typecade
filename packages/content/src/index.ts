@@ -270,7 +270,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "common",
 		effect: "steady_small_fish",
 		rankedAllowed: false,
-		description: "At 45% on a small fish, ease tension by 18 and repair 20% line. Finish typing to land it.",
+		description: "Tension -18, line +20%. Requires 45% reel and a common fish up to 2.2 kg. Finish every character to land it.",
 	},
 	{
 		id: "steel_line",
@@ -279,7 +279,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "common",
 		effect: "ignore_first_typo_per_encounter",
 		rankedAllowed: false,
-		description: "Prevents line damage and tension from the first typo.",
+		description: "First typo shielded. Prevents line damage and tension once per fish.",
 	},
 	{
 		id: "sonar",
@@ -288,7 +288,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "common",
 		effect: "reveal_route_fish",
 		rankedAllowed: false,
-		description: "Reveals the fish in each route for 12 seconds.",
+		description: "Tension -5, route preview 12s. Choose your route before typing.",
 	},
 	{
 		id: "calm_current",
@@ -297,7 +297,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "uncommon",
 		effect: "slow_fish_pressure",
 		rankedAllowed: false,
-		description: "Slows fish pressure briefly, not the typing timer.",
+		description: "Tension -10, pressure -65% for 8s. The typing timer keeps running.",
 	},
 	{
 		id: "perfect_bait",
@@ -306,7 +306,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "uncommon",
 		effect: "perfect_streak_tension_recovery",
 		rankedAllowed: false,
-		description: "After four perfect words on uncommon or rarer fish, slowly eases tension.",
+		description: "Tension recovery after four perfect words. Uncommon or rarer fish only.",
 	},
 	{
 		id: "reel_mastery",
@@ -315,7 +315,7 @@ export const fishingSkills: FishingSkill[] = [
 		rarity: "rare",
 		effect: "fifth_perfect_word_line_recovery",
 		rankedAllowed: false,
-		description: "Every fifth consecutive perfect word eases tension by 8 and repairs 5% line.",
+		description: "Tension -8, line +5%. Every five consecutive perfect words.",
 	},
 ]
 

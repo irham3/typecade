@@ -100,6 +100,27 @@ describe("ocean run browser controls", () => {
 		expect(controls!.view.lastSkillId).not.toBe("cast_net")
 	})
 
+	it("waits for the first keystroke before applying time and idle pressure", async () => {
+		await mount()
+		await act(() => controls!.startFreshRun())
+		const initial = controls!.view.encounter
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1100)) })
+		expect(controls!.view.encounter.timeRemainingMs).toBe(initial.timeRemainingMs)
+		expect(controls!.view.encounter.tension).toBe(initial.tension)
+		await act(() => expect(controls!.useSkill("sonar")).toBe(true))
+		expect(controls!.view.sonarRevealed).toBe(true)
+		const future = Date.now() + 13000
+		const date = vi.spyOn(Date, "now").mockReturnValue(future)
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 300)) })
+		expect(controls!.view.sonarRevealed).toBe(false)
+		expect(controls!.view.encounter.timeRemainingMs).toBe(initial.timeRemainingMs)
+		date.mockRestore()
+		await act(() => controls!.typeKey(controls!.view.targetText[0]!))
+		expect(controls!.view.metrics.elapsedMs).toBeLessThan(100)
+		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 600)) })
+		expect(controls!.view.encounter.timeRemainingMs).toBeLessThan(initial.timeRemainingMs - 250)
+	})
+
 	it("keeps the completed passage frozen while its next encounter is paused", async () => {
 		await mount()
 		await act(() => controls!.startFreshRun())

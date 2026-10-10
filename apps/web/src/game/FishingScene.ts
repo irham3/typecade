@@ -238,7 +238,8 @@ export class FishingScene extends Phaser.Scene {
 		this.animateWaterPostFx(time)
 
 		if (this.fish && this.currentFish && this.currentFishState !== "caught" && this.currentFishState !== "escape" && !this.tweens.isTweening(this.fish)) {
-			const fishScale = getFishScale(this.currentFish) * Math.min(1, width / 900, height / 1100)
+			const waterBottom = height * (width <= 640 ? 0.38 : 0.46)
+			const fishScale = Math.min(getFishScale(this.currentFish) * Math.min(1, width / 900, height / 1100), (waterBottom - height * 0.3 - 10) / (this.fish.height * 1.025))
 			const behavior = this.currentFish.behavior
 			const progressPull = this.lineProgress * (this.currentFish.id === bossFish ? 0.12 : 0.21)
 			const tensionPush = Math.max(0, this.lineTension - 54) / 100 * (behavior === "predator" || behavior === "boss" ? 54 : 30)
@@ -250,7 +251,7 @@ export class FishingScene extends Phaser.Scene {
 			const snap = Math.sin(time / 42) * this.pullTrauma * 18
 			const targetX = width * (0.73 - progressPull) + driftX + tensionPush + snap
 			const halfHeight = this.fish.height * fishScale * 1.025 / 2
-			const targetY = Math.min(height * 0.46 - halfHeight - 4, Math.max(height * 0.3 + halfHeight + 4, height * 0.4 + (this.reducedMotion ? 0 : driftY + Math.sin(time / 118) * this.pullTrauma * 8)))
+			const targetY = Math.min(waterBottom - halfHeight - 4, Math.max(height * 0.3 + halfHeight + 4, height * (width <= 640 ? 0.345 : 0.4) + (this.reducedMotion ? 0 : driftY + Math.sin(time / 118) * this.pullTrauma * 8)))
 			this.fish.setPosition(targetX, targetY)
 			this.fish.setScale(fishScale * (1 + breath * 0.018 + this.pullTrauma * 0.08), fishScale * (1 - breath * 0.025 - this.pullTrauma * 0.035))
 			this.fish.setRotation((Math.sin(time / 760) * 0.035 + this.pullTrauma * 0.055) * motion)

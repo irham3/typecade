@@ -98,6 +98,7 @@ describe("FishingScene in Chromium", () => {
 					sceneUpdate(game, time)
 					positions.add(`${visual.fish.x}:${visual.fish.y}:${visual.fish.scaleY}`)
 					expect(visual.fish.getBounds().top, `${species.id}:${width}`).toBeGreaterThan(scene.scale.height * 0.3)
+					expect(visual.fish.getBounds().bottom, `${species.id}:hud:${width}`).toBeLessThan(scene.scale.height * (width! <= 640 ? 0.38 : 0.46))
 					if (visual.fishTail.visible) {
 						const tail = visual.fishTail
 						const matrix = tail.getWorldTransformMatrix()

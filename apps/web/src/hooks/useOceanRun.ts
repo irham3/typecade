@@ -368,7 +368,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 				id: ++feedbackSequenceRef.current,
 				kind: "skill",
 				title: eventLabel(lastSkillId),
-				detail: "Passive skill triggered",
+				detail: (fishingSkills.find((skill) => skill.id === lastSkillId)?.description ?? "Passive skill triggered").split(". ")[0]!,
 			},
 			log: [`${eventLabel(lastSkillId)} triggered`, ...viewLogTail(view.log)],
 		} : undefined)
@@ -441,7 +441,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 				id: ++feedbackSequenceRef.current,
 				kind: "skill",
 				title: skill.name,
-				detail: skill.description,
+				detail: skill.description.split(". ")[0]!,
 			},
 			log: [`${skill.name} used`, ...viewLogTail(view.log)],
 		})
@@ -530,6 +530,8 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 	const typeKey = useCallback((key: string) => {
 		if (!controlsActiveRef.current || pausedRef.current || !encounterRef.current || encounterRef.current.status !== "active") return
+		const metrics = sessionRef.current!.getSnapshot().metrics
+		if (metrics.correctKeystrokes + metrics.incorrectKeystrokes === 0) lastTickRef.current = performance.now()
 		handleTypingEvents(sessionRef.current!.processKey(key, encounterRef.current!.elapsedMs + Math.max(0, performance.now() - lastTickRef.current)))
 	}, [handleTypingEvents])
 
@@ -575,6 +577,12 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 			if (!encounter || !fish || !expedition || encounter.status !== "active") {
 				return
 			}
+			if (sonarRevealedUntilRef.current > 0 && sonarRevealedUntilRef.current <= Date.now()) {
+				sonarRevealedUntilRef.current = 0
+				syncView()
+			}
+			const metrics = sessionRef.current!.getSnapshot().metrics
+			if (metrics.correctKeystrokes + metrics.incorrectKeystrokes === 0) return
 			const now = performance.now()
 			const delta = Math.min(500, now - lastTickRef.current)
 			lastTickRef.current = now
@@ -583,7 +591,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		}, 250)
 
 		return () => window.clearInterval(interval)
-	}, [applyRuleEvents])
+	}, [applyRuleEvents, syncView])
 
 	return {
 		bridge,
