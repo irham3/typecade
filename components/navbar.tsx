@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Keyboard, Trophy, Users, GraduationCap, ChevronDown, Menu, X, Zap } from "@/components/icons";
+import { Keyboard, Trophy, Users, GraduationCap, ChevronDown, Menu, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -22,9 +22,6 @@ import { useStore } from "@/lib/store";
 
 const navItems = [
     { path: "/", icon: Keyboard, label: "Practice" },
-    ...(process.env.NEXT_PUBLIC_OVERDRIVE === "true"
-        ? [{ path: "/overdrive", icon: Zap, label: "Overdrive" }]
-        : []),
     { path: "/arena", icon: Users, label: "Arena" },
     { path: "/learn", icon: GraduationCap, label: "Learn" },
     { path: "/board", icon: Trophy, label: "Board" },
