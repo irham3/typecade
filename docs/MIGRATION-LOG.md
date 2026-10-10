@@ -606,3 +606,50 @@ Screenshots inspected directly and saved in `docs/reference/ocean-audit-2026-10-
 - `adventure-skills-boss-small-mobile.png`: boss below the waterline, visible boat and inline phase instructions.
 
 The preview was reloaded on the main menu. Its existing Captain level 3, 5/10 discovered species and XP progress remained intact after save restoration. Research was pushed first; gameplay and audit evidence follow as separate commits on `app-v2`. No PR, merge or deployment is included.
+
+## Three.js renderer migration, 2026-10-10
+
+### Authorization and scope
+
+The user approved replacing Phaser after reviewing the proposed pixel 2.5D ocean direction. This overrides the former renderer requirement in AGENTS.md and section 10 of the product design; both are updated. The migration replaces the Adventure renderer. React menus/HUD, headless typing and fishing packages, progression, saves and the room protocol retain their existing implementation. Practice and Multiplayer retain their DOM presentation and release the Adventure canvas when entered.
+
+### Runtime changes
+
+- Three.js 0.186.1 replaces Phaser; matching 0.186 typings are a development dependency. The old runtime dependency and factory tests tied to Phaser configuration are removed. The replacement browser tests use a real WebGL renderer.
+- Orthographic camera in CSS-pixel world coordinates, half-resolution drawing buffer, nearest atlas sampling, no mipmaps and pixelated canvas scaling. The current pixel sprites and coast art are reused. This pass does not generate new models, sprite sheets or paid assets.
+- Atlas meshes share one texture and select frames by UV coordinates. Nine catalog fish have separate body/tail articulation and measured eye/gill details. Pebble Goby keeps its seven authored state strips. Fish turn slightly in depth; pause freezes the scene, and Reduced Effects removes drift, turns, blink, tail motion and boat tilt.
+- A lit water ribbon and the boat's hull contact point share the same two-harmonic surface function. A translucent material in front of the fish adds depth color and quantized light. The scene is an artistic cutaway; it does not simulate physical reflections, refraction or boat buoyancy.
+- The existing underwater background stays behind live fish. Active fish and their details stay inside the responsive water band: below 30% viewport height, above 38% on phones or 46% on desktop. Tests cover every species at desktop, 390x844 and 320x640, including early and full reel positions.
+- Fishing line begins at the transformed rod tip, follows the fish mouth and changes color for tension or durability danger. Character, word, typo, all six skills, boss phases, guard break, final pull, catch, escape and level-up events drive visual/audio feedback.
+- Effects use a fixed pool of 128 instanced pixel particles and six rings; no object creation per burst. Catch/escape interpolation and brief catch hit stop use the renderer clock and freeze when gameplay is paused.
+- Native audio uses three bounded loops and at most eight effect voices. It unlocks after a user gesture, respects the four volume categories, pauses when gameplay or the tab is inactive, and releases its sources on teardown. Autoplay rejection is handled.
+- Typed domain events remain the only React-to-renderer interface. Asset requests settle before error cleanup so late images cannot retain GPU resources. Teardown disconnects observers/listeners, stops the animation loop/audio, disposes geometry/materials/textures/instance buffers, releases the context and removes the canvas.
+- The first frame is rendered before readiness resolves. Adventure is gated during loading and failure; its HUD is inert and the voyage clock does not advance. Failure offers Retry and Main Menu without resetting the saved voyage. Context loss follows the same recovery path. Late readiness/failure after leaving the renderer is ignored.
+- Static menus and paused scenes render on demand rather than redrawing the same frame continuously. Hidden documents do not advance or render the scene.
+
+### Verification on the final production source
+
+- `npm run test`: 153 tests across 16 files passed. The new cases include real shader rendering, state replay before asset load, all ten underwater species, wave/hull contact, blink, pause, reduced effects, event VFX, bounded audio/effects, asset failures, late loads and cleanup.
+- `npm run test:coverage`: 100% statements (2,363/2,363), branches (1,693/1,693), functions (504/504) and lines (1,886/1,886) across all 22 active production source files. Coverage includes and thresholds are unchanged.
+- `npm run test:e2e`: rebuilt production and passed all 27 Chromium scenarios in 3.9 minutes. Includes a live 100-player room, host transfer, rematch, elimination/time variants, all menu destinations, Practice configuration and rolling rows, return-to-Adventure navigation, every HUD panel, renderer nonblank/overlap checks at four sizes, and two complete voyages with boss/refit/save/resume into voyage three.
+- `npm run lint`, `npx tsc --noEmit`, `npm run typecheck:rooms` and `git diff --check` passed.
+- Renderer-retirement audit returned no matches for the original retired renderer:
+
+  `rg -n 'pixi|PIXI|@pixi|Pixi|pixi-gameplay|data-pixi-host' package.json package-lock.json apps packages features e2e lib AGENTS.md .gitignore`
+
+- The Phaser runtime retirement audit also returned no matches:
+
+  `rg -n '"phaser"|from.+phaser|phaser-gameplay|Phaser\.' package.json package-lock.json apps/web/src packages e2e`
+
+- Final build: shell JS 364.61 KB / 117.78 KB gzip; lazy renderer 557.38 KB / 140.46 KB gzip; CSS 59.84 KB / 13.15 KB gzip. Previous lazy Phaser chunk was 1,401.67 KB / 365.71 KB gzip. This is a measured bundle reduction, not a device FPS benchmark. Vite's existing 500 KB chunk advisory still applies to the renderer.
+- The local preview loaded with renderer state `ready` and no captured console errors. Existing Captain level 3, 5/10 species and 53 XP to the next level remained present. The earlier in-app tab entered a network error page during reload; a fresh tab on the same localhost origin loaded successfully and was retained as the preview.
+
+### Visual evidence and limitations
+
+Inspected final Playwright screenshots are saved under `docs/reference/three-ocean-2026-10-10`: `adventure-desktop.png`, `adventure-small-mobile.png` and `boss-small-mobile.png`.
+
+No physical phone GPU, Safari/Firefox, real WAN capacity or sustained device FPS benchmark is claimed. Context-loss testing dispatches the browser lifecycle event and verifies failure/retry handling; a hardware GPU reset is not part of this suite. No Canvas fallback is supplied when WebGL is unavailable.
+
+`npm audit` reports 12 repository dependency findings (11 high, one critical), with the same count before and after adding Three.js. Reported packages are the existing Next/ESLint and Wrangler/Miniflare dependency trees, including proxy-addr, sharp, undici, braces, fast-glob, micromatch and source-map-js. Three.js is not named in the report. These findings remain a separate release risk; passing game tests is not a security audit clearance.
+
+Runtime and architecture changes were pushed as `675fd66` on `app-v2`; this evidence follows in a documentation commit. No PR, merge or deployment is included.
