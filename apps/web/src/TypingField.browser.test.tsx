@@ -73,3 +73,48 @@ it("renders codepoint cursors, readable spaces, typo feedback, and follows long 
 	await act(() => root.render(<TypingPassage text="done" cursor={4} className="test-passage" testId="passage" />))
 	expect(host.querySelector(".next")).toBeNull()
 })
+
+it("moves complete rows in a clipped two/three-line window and recomputes after resizing", async () => {
+	const text = "wave ".repeat(80)
+	for (const rollingLines of [2, 3] as const) {
+		await act(() => root.render(<TypingPassage text={text} cursor={0} className="test-passage" testId="passage" fontSize={24} rollingLines={rollingLines} typedText="xave" />))
+		const box = host.querySelector<HTMLElement>('.typing-passage')!
+		box.style.cssText = `position:relative;width:180px;height:${rollingLines * 48}px;overflow:clip;font:24px/2 monospace`
+		const content = box.firstElementChild as HTMLElement
+		content.style.position = "relative"
+		await act(() => root.render(<TypingPassage text={text} cursor={120} className="test-passage" testId="passage" fontSize={24} rollingLines={rollingLines} typedText="xave" />))
+		expect(host.querySelectorAll('.incorrect').length).toBeGreaterThan(0)
+		expect(box.scrollTop).toBe(0)
+		const first = content.style.transform
+		expect(first).not.toBe("translateY(-0px)")
+		box.style.width = "100px"
+		await vi.waitFor(() => expect(content.style.transform).not.toBe(first))
+		const next = host.querySelector<HTMLElement>('.next')!
+		const translate = Number(content.style.transform.match(/-([\d.]+)/)![1])
+		expect(next.offsetTop - translate).toBeLessThan(rollingLines * 48)
+		expect(box.scrollTop).toBe(0)
+	}
+})
+
+it("supports editable practice input, restarts, shuffle, IME deletion and focus callbacks", async () => {
+	const onType = vi.fn()
+	const onRestart = vi.fn()
+	const onShuffle = vi.fn()
+	const onFocusChange = vi.fn()
+	await act(() => root.render(<TypingInput label="Practice" onType={onType} displayValue="ab" onRestart={onRestart} onShuffle={onShuffle} onFocusChange={onFocusChange} />))
+	const input = host.querySelector<HTMLInputElement>('input')!
+	for (const options of [{key:"Tab"}, {key:"Tab",shiftKey:true}, {key:"Tab",ctrlKey:true}, {key:"Enter",shiftKey:true}, {key:"ArrowDown"}, {key:"Backspace",ctrlKey:true}, {key:"Backspace",altKey:true}, {key:"x",metaKey:true}]) await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { bubbles:true, cancelable:true, ...options })))
+	expect(onRestart).toHaveBeenCalledOnce()
+	expect(onShuffle).toHaveBeenCalledOnce()
+	expect(onType.mock.calls.map(([key])=>key)).toEqual(["DeleteWord","DeleteWord"])
+	const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!
+	await act(() => { setValue.call(input,"a"); input.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"deleteContentBackward"})) })
+	expect(onType).toHaveBeenLastCalledWith("Backspace")
+	await act(() => { input.dispatchEvent(new CompositionEvent("compositionstart",{bubbles:true})); setValue.call(input,"ab漢"); input.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",bubbles:true})); input.dispatchEvent(new CompositionEvent("compositionend",{bubbles:true,data:"漢"})) })
+	expect(onType).toHaveBeenLastCalledWith("漢")
+	await act(() => input.blur())
+	expect(onFocusChange).toHaveBeenCalledWith(false)
+	await act(() => root.render(<TypingInput label="Practice" onType={onType} displayValue="ab" onRestart={onRestart} />))
+	await act(() => input.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",shiftKey:true,bubbles:true})))
+	expect(onShuffle).toHaveBeenCalledOnce()
+})

@@ -403,9 +403,9 @@ function MainMenu({
 }) {
 	const containerRef = useRef<HTMLElement>(null)
 	const menuItems = [
-		{ label: "Practice", icon: "icon_nav_fish.png", onClick: onStart, primary: true },
-		{ label: "Adventure", icon: "icon_nav_tasks.png", onClick: onAdventure },
+		{ label: "Adventure", icon: "icon_nav_tasks.png", onClick: onAdventure, primary: true },
 		{ label: "Multiplayer", icon: "icon_stat_combo.png", onClick: onRankedDuel },
+		{ label: "Practice", icon: "icon_nav_fish.png", onClick: onStart },
 		{ label: "Collection", icon: "icon_nav_collection.png", onClick: onCollection },
 		{ label: "Settings", icon: "icon_utility_settings.png", onClick: onSettings },
 	]

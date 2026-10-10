@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { defaultRaceConfig, generateRaceText, parseRaceConfig, type RaceConfig } from "@typecade/race-rules"
-import { TypingSession, type TypingSessionSnapshot } from "@typecade/typing-engine"
+import { PracticeSession, type PracticeStyle, type TypingSessionSnapshot } from "@typecade/typing-engine"
 import { TypingInput, TypingPassage } from "../TypingField"
 import { readStorage, writeStorage } from "../storage"
+import { PracticeKeyboard } from "./PracticeKeyboard"
 
 type PracticePhase = "setup" | "racing" | "finished" | "out"
 
@@ -22,33 +23,45 @@ function recordBestWpm(run: TypingSessionSnapshot): number {
 
 export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	const [config, setConfig] = useState<RaceConfig>({ ...defaultRaceConfig })
-	const [phase, setPhase] = useState<PracticePhase>("setup")
-	const [passage, setPassage] = useState("")
-	const [snapshot, setSnapshot] = useState<TypingSessionSnapshot | null>(null)
+	const [phase, setPhase] = useState<PracticePhase>("racing")
+	const [passage, setPassage] = useState(() => generateRaceText(defaultRaceConfig, `${Date.now()}:practice`))
+	const [initialSession] = useState(() => new PracticeSession(passage))
+	const session = useRef(initialSession)
+	const [snapshot, setSnapshot] = useState<TypingSessionSnapshot | null>(() => initialSession.getSnapshot())
 	const [remaining, setRemaining] = useState(0)
 	const [lives, setLives] = useState(3)
 	const [error, setError] = useState("")
 	const [fontSize, setFontSize] = useState(28)
 	const [monospace, setMonospace] = useState(false)
 	const [bestWpm, setBestWpm] = useState(storedBestWpm)
-	const session = useRef<TypingSession | null>(null)
+	const [style, setStyle] = useState<PracticeStyle>("modern")
+	const [focused, setFocused] = useState(true)
+	const inputRef = useRef<HTMLInputElement>(null)
 	const sessionEnded = useRef(false)
 	const endAt = useRef(0)
+	const pausedAt = useRef(0)
+	const seed = useRef("")
+	const extension = useRef(0)
 
-	const start = (event: React.SyntheticEvent) => {
-		event.preventDefault()
+	const start = (event?: React.SyntheticEvent, reuse = false) => {
+		event?.preventDefault()
 		try {
 			const rules = parseRaceConfig(config)
-			const text = generateRaceText(rules, `${Date.now()}:practice`)
+			seed.current = `${Date.now()}:practice`
+			extension.current = 0
+			const text = reuse ? passage : generateRaceText(rules.format === "time" ? { ...rules, format: "words", wordCount: 50 } : rules, seed.current)
 			setError("")
 			setPassage(text)
-			session.current = new TypingSession(text)
+			session.current = new PracticeSession(text, style)
 			sessionEnded.current = false
 			setSnapshot(session.current.getSnapshot())
 			setLives(rules.variant === "perfect" ? 1 : 3)
 			setRemaining(rules.format === "time" ? rules.timeSeconds : 0)
 			endAt.current = 0
+			pausedAt.current = 0
+			setFocused(true)
 			setPhase("racing")
+			inputRef.current?.focus()
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : "Check the practice settings.")
 		}
@@ -66,27 +79,33 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	useEffect(() => {
 		if (phase !== "racing" || config.format !== "time") return
 		const update = () => {
-			if (!endAt.current) return
+			if (!endAt.current || pausedAt.current) return
 			const seconds = Math.max(0, Math.ceil((endAt.current - Date.now()) / 1000))
 			setRemaining(seconds)
 			if (seconds === 0) finishTimedSession()
+			else setSnapshot(session.current!.getSnapshot(Date.now() - (endAt.current - config.timeSeconds * 1000)))
 		}
 		const interval = window.setInterval(update, 100)
 		return () => window.clearInterval(interval)
-	}, [config.format, finishTimedSession, phase])
+	}, [config.format, config.timeSeconds, finishTimedSession, phase])
 
 	const typeKey = (key: string) => {
-		if (sessionEnded.current || key === "Backspace") return
+		if (sessionEnded.current || ((key === "Backspace" || key === "DeleteWord") && !endAt.current)) return
+		if (Array.from(key).length !== 1 && key !== "Backspace" && key !== "DeleteWord") return
 		if (!endAt.current) endAt.current = Date.now() + config.timeSeconds * 1000
 		const active = session.current!
 		if (config.format === "time" && Date.now() >= endAt.current) {
 			finishTimedSession()
 			return
 		}
-		const events = active.processKey(key, Date.now() - (endAt.current - config.timeSeconds * 1000))
-		const next = active.getSnapshot()
+		const result = active.processKey(key, Date.now() - (endAt.current - config.timeSeconds * 1000))
+		let next = active.getSnapshot()
+		if (config.format === "time" && next.targetText.slice(next.cursor).split(" ").length < 20) {
+			active.appendText(generateRaceText({ ...config, format: "words", wordCount: 30 }, `${seed.current}:${++extension.current}`))
+			next = active.getSnapshot()
+		}
 		setSnapshot(next)
-		if (events.some((item) => item.type === "typo")) {
+		if (result.typo) {
 			if (config.variant === "perfect") { sessionEnded.current = true; setLives(0); setPhase("out") }
 			if (config.variant === "three-hulls") {
 				const nextLives = Math.max(0, 3 - next.metrics.incorrectKeystrokes)
@@ -94,7 +113,7 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 				if (nextLives === 0) { sessionEnded.current = true; setPhase("out") }
 			}
 		}
-		if (next.complete) {
+		if (next.complete && config.format !== "time" && !sessionEnded.current) {
 			sessionEnded.current = true
 			setBestWpm(recordBestWpm(next))
 			setPhase("finished")
@@ -104,6 +123,12 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	const updateConfig = <K extends keyof RaceConfig>(key: K, value: RaceConfig[K]) => setConfig((current) => ({ ...current, [key]: value }))
 	const currentText = snapshot?.targetText ?? passage
 	const cursor = snapshot?.cursor ?? 0
+	const inputText = snapshot?.currentInput ?? ""
+	const changeFocus = (isFocused: boolean) => {
+		setFocused(isFocused)
+		if (!isFocused && endAt.current && !pausedAt.current) pausedAt.current = Date.now()
+		if (isFocused && pausedAt.current) { endAt.current += Date.now() - pausedAt.current; pausedAt.current = 0 }
+	}
 
 	return (
 		<main className="practice-screen" data-testid="practice-screen">
@@ -130,6 +155,7 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 						{config.format === "custom" && <label className="pixel-check practice-wide"><input type="checkbox" checked={config.shuffle} onChange={(e) => updateConfig("shuffle", e.target.checked)} /> Shuffle words</label>}
 						<label>Challenge<select aria-label="Practice challenge" value={config.variant} onChange={(e) => updateConfig("variant", e.target.value as RaceConfig["variant"])}><option value="classic">Classic Current</option><option value="perfect">Perfect Tide · first typo ends run</option><option value="three-hulls">Three Hulls · three mistakes</option></select></label>
 						<label>Text size <span>{fontSize}px</span><input aria-label="Text size" type="range" min="20" max="40" step="2" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} /></label>
+						<label>Typing style<select aria-label="Practice typing style" value={style} onChange={(e) => setStyle(e.target.value as PracticeStyle)}><option value="modern">Modern · three lines</option><option value="classic">Classic · two lines</option></select></label>
 						<label className="pixel-check"><input type="checkbox" checked={monospace} onChange={(e) => setMonospace(e.target.checked)} /> Monospace text</label>
 					</div>
 					{error && <p className="practice-error" role="alert">{error}</p>}
@@ -138,11 +164,15 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 			) : phase === "racing" ? (
 				<section className="practice-racing pixel-panel" data-testid="practice-racing">
 					<div className="practice-run-meta"><span>{config.language === "id" ? "Bahasa Indonesia" : "English"} · {config.format} · {config.variant.replaceAll("-", " ")}</span>{config.variant !== "classic" && <span>{lives} hulls</span>}</div>
-					<TypingPassage text={currentText} cursor={cursor} className="practice-passage" testId="practice-passage" fontSize={fontSize} monospace={monospace} mistake={snapshot?.eventLog.at(-1)?.ok === 0} />
-					<TypingInput label="Practice typing input" onType={typeKey} onEscape={() => setPhase("setup")} />
-					<p className="practice-focus-hint">Timer starts with your first key. After a typo, retype the highlighted character. Esc opens settings.</p>
-					<button className="pixel-action secondary" onClick={() => setPhase("setup")}>Typing settings</button>
+					<div className={`practice-typing ${style}`} onClick={() => inputRef.current!.focus()}>
+						<TypingPassage text={currentText} cursor={cursor} className="practice-passage" testId="practice-passage" fontSize={fontSize} monospace={monospace} rollingLines={style === "modern" ? 3 : 2} typedText={inputText} />
+						<TypingInput inputRef={inputRef} label="Practice typing input" inputMode="none" onType={typeKey} onEscape={() => start(undefined, true)} onRestart={() => start(undefined, true)} onShuffle={() => start()} onFocusChange={changeFocus} displayValue={style === "classic" ? inputText.split(" ").at(-1)! : inputText} />
+						{!focused && <button className="practice-refocus pixel-action secondary" onClick={() => inputRef.current!.focus()}>Paused · click to focus</button>}
+					</div>
+					<p className="practice-focus-hint">Type to start. Backspace fixes a typo. Tab / Esc restarts; Shift + Enter shuffles. The timer pauses when focus leaves the input.</p>
+					<div className="practice-actions"><button className="pixel-action secondary" onClick={() => setPhase("setup")}>Typing settings</button><button className="pixel-action secondary" onClick={() => start(undefined, true)}>Restart text</button><button className="pixel-action secondary" onClick={() => start()}>Shuffle text</button></div>
 					<div className="practice-stats"><span><strong>{snapshot?.metrics.wpm ?? 0}</strong> WPM</span><span><strong>{snapshot?.metrics.accuracy ?? 100}%</strong> accuracy</span><span><strong>{snapshot?.metrics.maxCombo ?? 0}</strong> best streak</span></div>
+					<PracticeKeyboard onKey={(key) => { inputRef.current!.focus(); typeKey(key) }} />
 				</section>
 			) : (
 				<section className="practice-result pixel-panel" data-testid="practice-result">

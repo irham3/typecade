@@ -4,9 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
 import { fishSpecies } from "@typecade/content"
 import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
-import { TypingSession } from "@typecade/typing-engine"
+import { PracticeSession } from "@typecade/typing-engine"
 import { App, FeedbackBanner } from "./App"
 import { PracticeScreen } from "./practice/PracticeScreen"
+import { PracticeKeyboard } from "./practice/PracticeKeyboard"
 
 vi.mock("./game/createFishingGame", () => ({ createFishingGame: () => ({ destroy: vi.fn() }) }))
 
@@ -34,11 +35,28 @@ describe("application browser coverage", () => {
 		const button = host.querySelector<HTMLElement>(selector)
 		if (!button) throw new Error(`Missing control: ${selector}`)
 		await act(() => button.click())
+		if (selector === 'button[aria-label="Practice"]') await click('.practice-actions button:first-child')
+	}
+	async function practice(onBack = vi.fn()) {
+		await act(() => root.render(<PracticeScreen onBack={onBack} />))
+		await click('.practice-actions button:first-child')
 	}
 	async function sail() {
 		await click('button[aria-label="Adventure"]')
 		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
 	}
+
+	it("opens Practice ready to type and accepts its on-screen keyboard without an extra start screen", async () => {
+		await act(() => root.render(<PracticeScreen onBack={vi.fn()} />))
+		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
+		expect(host.querySelector('[data-testid="practice-passage"]')!.textContent!.split(' ')).toHaveLength(50)
+		await act(() => host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})))
+		expect(host.querySelector('.practice-clock')!.textContent).toBe('0%')
+		await click('button[aria-label="q"]')
+		expect(host.querySelectorAll('.done,.incorrect')).toHaveLength(1)
+		await click('button[aria-label="Backspace"]')
+		expect(host.querySelectorAll('.done,.incorrect')).toHaveLength(0)
+	})
 
 	it("disposes a pending renderer import when the application unmounts", async () => {
 		await act(() => root.render(<App />))
@@ -49,7 +67,8 @@ describe("application browser coverage", () => {
 	it("opens menu panels and renders their meaningful content", async () => {
 		await mount()
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-		for (const label of ["Practice", "Adventure", "Multiplayer", "Collection", "Settings"]) expect(host.querySelector(`button[aria-label="${label}"]`)).not.toBeNull()
+		expect(Array.from(host.querySelectorAll('.mainmenu-button')).map((button) => button.getAttribute('aria-label'))).toEqual(["Adventure", "Multiplayer", "Practice", "Collection", "Settings"])
+		expect(host.querySelector('button[aria-label="Adventure"]')?.classList.contains("primary")).toBe(true)
 		await click('button[aria-label="Settings"]')
 		expect(host.textContent).toContain("Reduced effects")
 		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
@@ -91,13 +110,14 @@ describe("application browser coverage", () => {
 	})
 
 	it("shows readable spaces and a settings error when a practice passage cannot be built", async () => {
-		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
 		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "a b") })
 		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
 		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent).toBe("a b")
 
 		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		await click(".practice-actions button:first-child")
 		const now = vi.spyOn(Date, "now").mockImplementation(() => { throw "clock unavailable" })
 		try {
 			await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
@@ -108,7 +128,7 @@ describe("application browser coverage", () => {
 	})
 
 	it("marks each correctly typed practice character as complete", async () => {
-		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
 		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "abc") })
 		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
@@ -133,11 +153,13 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="practice-racing"]')?.textContent).toContain("English · words")
 		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent?.length).toBeGreaterThan(0)
 		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
+		await click(".practice-actions button:first-child")
 		expect(host.querySelector('[aria-label="Practice word count"]')).not.toBeNull()
 	})
 
 	it("finishes timed practice at its configured deadline", async () => {
-		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
 		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
 		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
@@ -154,12 +176,12 @@ describe("application browser coverage", () => {
 	})
 
 	it("rejects input at the practice deadline before the display timer runs", async () => {
-		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
 		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
 		await click('[data-testid="practice-screen"] button[type="submit"]')
 		const passage = host.querySelector('[data-testid="practice-passage"]')!.textContent!
-		const process = vi.spyOn(TypingSession.prototype, "processKey")
+		const process = vi.spyOn(PracticeSession.prototype, "processKey")
 		let now = Date.now()
 		vi.spyOn(Date, "now").mockImplementation(() => now)
 		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: passage[0], bubbles: true })))
@@ -170,8 +192,8 @@ describe("application browser coverage", () => {
 	})
 
 	it("keeps practice readable when the typing engine has no initial metrics snapshot", async () => {
-		const snapshots = vi.spyOn(TypingSession.prototype, "getSnapshot").mockReturnValueOnce(null as never)
-		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		const snapshots = vi.spyOn(PracticeSession.prototype, "getSnapshot").mockReturnValueOnce(null as never)
+		await practice()
 		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
 		expect(host.querySelector(".practice-clock")?.textContent).toBe("0%")
 		expect(host.querySelector(".practice-stats")?.textContent).toContain("100% accuracy")
@@ -179,7 +201,7 @@ describe("application browser coverage", () => {
 		await act(async () => root.unmount())
 		root = createRoot(host)
 		snapshots.mockRestore()
-		await act(async () => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
 		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
 		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
@@ -209,13 +231,14 @@ describe("application browser coverage", () => {
 		await act(async () => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "x", ctrlKey: true, bubbles: true })))
 		expect(host.querySelector('[data-testid="practice-passage"] .next')?.textContent).toBe("a")
 		await act(async () => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		await click(".practice-actions button:first-child")
 		expect(host.querySelector('[data-testid="practice-screen"] button[type="submit"]')).not.toBeNull()
 		await click(".practice-header button.pixel-action.secondary")
 		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
 	})
 
 	it("stops a challenge at its first fatal typo even when mobile input commits multiple characters", async () => {
-		await act(() => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
 		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "abc") })
 		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice challenge"]')!, "perfect") })
@@ -232,12 +255,12 @@ describe("application browser coverage", () => {
 
 	it("plays practice with blocked storage and ignores corrupt best scores", async () => {
 		localStorage.setItem("typecade:practice:best", "broken")
-		await act(() => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		expect(host.textContent).toContain("Best 0 WPM")
 		localStorage.setItem("typecade:practice:best", "-5")
 		await act(() => root.unmount())
 		root = createRoot(host)
-		await act(() => root.render(<PracticeScreen onBack={vi.fn()} />))
+		await practice()
 		expect(host.textContent).toContain("Best 0 WPM")
 		vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked") })
 		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked") })
@@ -294,7 +317,7 @@ describe("application browser coverage", () => {
 	it("runs quote practice with monospace text and rejects modified or navigation keys", async () => {
 		localStorage.setItem("typecade:practice:best", "999")
 		const onBack = vi.fn()
-		await act(async () => root.render(<PracticeScreen onBack={onBack} />))
+		await practice(onBack)
 		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
 		await act(async () => { await userEvent.selectOptions(format, "quote") })
 		const difficulty = host.querySelector<HTMLSelectElement>('[aria-label="Quote difficulty"]')!
@@ -318,6 +341,76 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="practice-racing"]')).toBeNull()
 		expect(host.querySelector('[aria-label="Quote difficulty"]')).not.toBeNull()
 		expect(onBack).not.toHaveBeenCalled()
+	})
+
+	it("edits practice mistakes, restarts the same text and shuffles through buttons and shortcuts", async () => {
+		await practice()
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom"); await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "one two three") })
+		await click('[data-testid="practice-screen"] button[type="submit"]')
+		const key = async (key: string, options = {}) => act(() => host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,...options})))
+		await key("x")
+		expect(host.querySelector('.incorrect')?.textContent).toBe("o")
+		await key("Backspace")
+		expect(host.querySelector('.incorrect')).toBeNull()
+		await key("o")
+		await key("Tab")
+		expect(host.querySelectorAll('.done')).toHaveLength(0)
+		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent).toBe("one two three")
+		await key("Enter",{shiftKey:true})
+		await click('.practice-actions button:nth-child(2)')
+		await click('.practice-actions button:last-child')
+		expect(document.activeElement).toBe(host.querySelector('.typing-native-input'))
+		await click('.practice-actions button:first-child')
+		await act(async () => userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice typing style"]')!, "classic"))
+		await click('[data-testid="practice-screen"] button[type="submit"]')
+		expect(host.querySelector<HTMLElement>('.rolling-passage')!.style.height).toBe("4em")
+		await act(() => { for (const key of "one two three") host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true})) })
+		expect(host.querySelector('[data-testid="practice-result"]')).toBeNull()
+		await key(" ")
+		expect(host.querySelector('[data-testid="practice-result"]')).not.toBeNull()
+	})
+
+	it("extends timed practice and pauses its deadline while input focus is elsewhere", async () => {
+		await practice()
+		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time"); await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "10") })
+		await click('[data-testid="practice-screen"] button[type="submit"]')
+		let now = 10000
+		vi.spyOn(Date,'now').mockImplementation(()=>now)
+		const target = host.querySelector('[data-testid="practice-passage"]')!.textContent!
+		await act(() => { for (const key of target) host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true})) })
+		expect(host.querySelector('[data-testid="practice-passage"]')!.textContent!.length).toBeGreaterThan(target.length)
+		await act(() => host.querySelector<HTMLInputElement>('.typing-native-input')!.blur())
+		now += 20000
+		await act(async () => { await new Promise((resolve)=>setTimeout(resolve,150)) })
+		expect(host.querySelector('[data-testid="practice-result"]')).toBeNull()
+		await click('.practice-refocus')
+		expect(host.querySelector('.practice-refocus')).toBeNull()
+		now += 10000
+		await act(async () => { await new Promise((resolve)=>setTimeout(resolve,150)) })
+		expect(host.querySelector('[data-testid="practice-result"]')).not.toBeNull()
+	})
+
+	it("types with the pixel keyboard including shift, numbers, symbols and backspace", async () => {
+		const onKey = vi.fn()
+		await act(() => root.render(<PracticeKeyboard onKey={onKey} />))
+		await click('button[aria-label="Shift"]')
+		await click('button[aria-label="Backspace"]')
+		const pointer = new PointerEvent('pointerdown',{bubbles:true,cancelable:true})
+		await act(() => host.querySelector('button[aria-label="q"]')!.dispatchEvent(pointer))
+		expect(pointer.defaultPrevented).toBe(true)
+		await click('button[aria-label="q"]')
+		await click('button[aria-label="q"]')
+		await click('button[aria-label="Space"]')
+		await click('button[aria-label="Backspace"]')
+		await click('button[aria-label="123"]')
+		await click('button[aria-label="1"]')
+		await click('button[aria-label="More"]')
+		await click('button[aria-label="€"]')
+		await click('button[aria-label="123"]')
+		await click('button[aria-label="ABC"]')
+		await click('button[aria-label="Shift"]')
+		await click('button[aria-label="Shift"]')
+		expect(onKey.mock.calls.map(([key])=>key)).toEqual(["Backspace","Q","q"," ","Backspace","1","€"])
 	})
 
 	it("runs preparation choices, HUD panels, settings, and pause navigation", async () => {

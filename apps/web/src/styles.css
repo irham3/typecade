@@ -2566,6 +2566,33 @@ button, select, textarea { font: inherit; }
  .menu-progress { grid-column: 1; margin: 0; width: 100%; align-self: start; }
 }
 .typing-word { display: inline-block; max-width: 100%; }
+.typing-lines { position: relative; }
+.practice-screen .rolling-passage { overflow: clip; max-height: none; line-height: 2; }
+.rolling-passage .typing-lines { transition: transform 300ms ease-out; }
+.typing-passage .incorrect { color: #ff8082; text-decoration: underline; }
+.practice-typing { position: relative; cursor: text; min-width: 0; }
+.practice-typing.modern .typing-native-input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; padding: 0; margin: 0; bottom: 0; }
+.practice-refocus { position: absolute; inset: 0; margin: auto; height: fit-content; width: fit-content; }
+.practice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.practice-keyboard { display: none; gap: 4px; min-width: 0; }
+.practice-keyboard > div { display: flex; gap: 3px; }
+.game-shell .practice-keyboard button { flex: 1; min-width: 0; padding: 2px; border-width: 4px; border-image-width: 4px; font-size: .7rem; }
+.practice-keyboard .space-key { flex: 4; }
+@media (max-width: 640px), (pointer: coarse) { .practice-keyboard { display: grid; } .practice-racing { gap: 12px; } }
+@media (max-width: 640px) {
+ .practice-racing { min-width: 0; grid-template-columns: minmax(0, 1fr); padding: 10px; }
+ .practice-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+ .practice-actions .pixel-action { min-width: 0; padding: 4px; font-size: .65rem; }
+}
+@media (max-width: 640px) and (max-height: 700px) {
+ .practice-screen:has(.practice-racing) { padding: 6px; gap: 6px; }
+ .practice-header { padding: 4px; }
+ .practice-racing { gap: 8px; padding: 8px; }
+ .practice-focus-hint { display: none; }
+ .game-shell .practice-keyboard button { min-height: 36px; font-size: .6rem; }
+ .practice-stats { gap: 4px; font-size: .72rem; }
+}
+.hud .encounter-stage:has(.boss-phase-callout) { align-content: end; }
 .hud .skill-button span { background: none; border: 0; }
 .hud .skill-button span { color: inherit; text-shadow: inherit; }
 .hud .skill-button:disabled { opacity: .75; }
@@ -2583,6 +2610,9 @@ button, select, textarea { font: inherit; }
 .hud:has(.complete-panel) .icon-button:disabled { display: none; }
 
 @media (max-width: 700px) {
+ .hud .encounter-stage > .feedback-banner { width: 150px; justify-self: end; padding: 6px; gap: 5px; }
+ .hud .encounter-stage > .feedback-banner strong { font-size: .7rem; letter-spacing: 0; }
+ .hud .encounter-stage > .feedback-banner span { font-size: .6rem; }
  .hud .typing-panel { gap: 4px; }
  .hud .typing-help { margin-bottom: 0; }
  .hud .typing-target { max-height: 64px; }

@@ -27,7 +27,12 @@ test.describe("Ocean Typing RPG shell", () => {
 			}
 			await page.getByRole("button", { name: "Practice", exact: true }).click()
 			await expect(page.getByTestId("practice-screen")).toBeVisible()
-			await expect(page.getByRole("button", { name: "Start practice" })).toBeVisible()
+			await expect(page.getByTestId("practice-racing")).toBeVisible()
+			await expect(page.getByTestId("practice-passage")).not.toHaveText("")
+			if (viewport.name === "small mobile") {
+				await expect(page.getByTestId("practice-passage")).toBeInViewport({ ratio: 1 })
+				await expect(page.locator('.practice-keyboard')).toBeInViewport({ ratio: 1 })
+			}
 			await page.getByRole("button", { name: "Main menu" }).click()
 			await expect(page.getByTestId("main-menu")).toBeVisible()
 			await page.getByRole("button", { name: "Adventure", exact: true }).click()
@@ -64,6 +69,7 @@ test.describe("Ocean Typing RPG shell", () => {
 	test("configures an English custom Perfect Tide practice and completes it", async ({ page }) => {
 		await page.goto("/")
 		await page.getByRole("button", { name: "Practice", exact: true }).click()
+		await page.getByRole("button", { name: "Typing settings", exact: true }).click()
 		await page.getByLabel("Practice language").selectOption("en")
 		await page.getByLabel("Practice text format").selectOption("custom")
 		await page.getByLabel("Custom passage").fill("tide")
@@ -78,6 +84,57 @@ test.describe("Ocean Typing RPG shell", () => {
 		await page.getByRole("button", { name: "Main menu" }).click()
 		await expect(page.getByTestId("main-menu")).toBeVisible()
 	})
+
+	for (const [style, width, height, lines] of [["modern", 1366, 768, 3], ["classic", 320, 640, 2]] as const) {
+		test(`Practice ${style} rolls ${lines} rows without a scrollbar`, async ({ page }, testInfo) => {
+			await page.setViewportSize({ width, height })
+			await page.goto("/")
+			await page.getByRole("button", { name: "Practice", exact: true }).click()
+			await expect(page.getByTestId("practice-racing")).toBeVisible()
+			await page.getByRole("button", { name: "Typing settings", exact: true }).click()
+			await page.getByLabel("Practice text format").selectOption("custom")
+			await page.getByLabel("Custom passage").fill("wave reef tide coral ".repeat(60).trim())
+			await page.getByLabel("Practice typing style").selectOption(style)
+			await page.getByRole("button", { name: "Start practice" }).click()
+			await expect(page.getByLabel("Practice typing input")).toHaveAttribute("inputmode", "none")
+			const passage = page.getByTestId("practice-passage")
+			await page.getByLabel("Practice typing input").focus()
+			await page.keyboard.type("x")
+			await expect(passage.locator('.incorrect')).toHaveCount(1)
+			await page.keyboard.press("Backspace")
+			await expect(passage.locator('.incorrect')).toHaveCount(0)
+			if (style === "classic") {
+				await page.keyboard.type("waveXX ")
+				await expect(passage.locator('.next')).toHaveText("r")
+				await expect(page.locator('.practice-stats')).not.toContainText("100%")
+				await page.keyboard.press("Tab")
+				await expect(passage.locator('.next')).toHaveText("w")
+			}
+			await page.keyboard.insertText("wave reef tide coral ".repeat(10))
+			await expect.poll(() => passage.evaluate((box) => {
+				const next = box.querySelector<HTMLElement>('.next')!
+				const rect = next.getBoundingClientRect()
+				const bounds = box.getBoundingClientRect()
+				return rect.top >= bounds.top && rect.bottom <= bounds.bottom
+			})).toBe(true)
+			const sizing = await passage.evaluate((box) => ({ height: box.clientHeight, line: parseFloat(getComputedStyle(box).lineHeight), overflow: getComputedStyle(box).overflowY, scroll: box.scrollTop }))
+			expect(sizing.height).toBeCloseTo(sizing.line * lines, 0)
+			expect(sizing.overflow).toBe("clip")
+			expect(sizing.scroll).toBe(0)
+			await expect(passage.locator('.typing-lines')).not.toHaveCSS('transform', 'none')
+			await expect(passage).toBeInViewport({ ratio: 1 })
+			if (style === "classic") {
+				await expect(page.getByRole('button', { name: 'Main menu', exact: true })).toBeInViewport({ ratio: 1 })
+				await expect(page.locator('.practice-keyboard')).toBeInViewport({ ratio: 1 })
+				const keyboard = await page.locator('.practice-keyboard').boundingBox()
+				expect(keyboard!.x + keyboard!.width).toBeLessThanOrEqual(width)
+			}
+			await page.screenshot({ path: testInfo.outputPath(`practice-${style}-rolling.png`) })
+			await page.keyboard.press("Tab")
+			await expect(passage.locator('.done')).toHaveCount(0)
+			await expect(passage.locator('.next')).toHaveText("w")
+		})
+	}
 
 	test("holds the completed encounter behind Collection and resumes once it closes", async ({ page }) => {
 		await page.goto("/")
@@ -186,7 +243,7 @@ test.describe("Ocean Typing RPG shell", () => {
 				await expect(page.getByRole("button", { name: label, exact: true })).toBeVisible()
 			}
 			await page.keyboard.press("Tab")
-			await expect(page.getByRole("button", { name: "Practice", exact: true })).toBeFocused()
+			await expect(page.getByRole("button", { name: "Adventure", exact: true })).toBeFocused()
 			await page.getByRole("button", { name: "Adventure", exact: true }).click()
 			await expect(page.getByTestId("prep-screen")).toBeVisible()
 			await page.getByTestId("prep-screen").getByRole("button", { name: /Reef Shelf/ }).click()
@@ -204,6 +261,11 @@ test.describe("Ocean Typing RPG shell", () => {
 			await expect(activeSkill).toBeEnabled()
 			await activeSkill.click()
 			await expect(page.getByTestId("skill-feedback")).toBeVisible()
+			if (viewport.width <= 700) {
+				const feedback = await page.getByTestId("skill-feedback").boundingBox()
+				expect(feedback!.width).toBeLessThanOrEqual(viewport.width / 2)
+				expect(feedback!.x).toBeGreaterThanOrEqual(viewport.width / 2)
+			}
 
 			await expectCanvasNonBlank(page)
 			await expectHudDoesNotOverlap(page)

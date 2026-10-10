@@ -14,6 +14,19 @@ const zones = ["zone1", "zone2", "zone3"] as const
 const rareOrBossFish = new Set(["moonfin_snapper", "glass_eel", "reef_shark", "crown_leviathan"])
 const bossFish = "crown_leviathan"
 const animatedFishAssetKey = "fish_pebble_goby"
+// Eye landmarks are measured in each existing source frame, before runtime scaling.
+const fishEyes: Record<string, { x: number; y: number; width: number; height: number; color: number }> = {
+	fish_kelp_darter: { x: 23, y: 53, width: 13, height: 11, color: 0xb1cb59 },
+	fish_sunny_guppy: { x: 30, y: 61, width: 16, height: 17, color: 0xffd145 },
+	fish_shellback_puffer: { x: 42, y: 57, width: 14, height: 14, color: 0xbcdcca },
+	fish_tide_skipper: { x: 14, y: 54, width: 9, height: 6, color: 0x57bde0 },
+	fish_coral_fry: { x: 43, y: 62, width: 17, height: 17, color: 0xf9b7af },
+	fish_glass_eel: { x: 40, y: 51, width: 8, height: 6, color: 0xe7c861 },
+	fish_moonfin_snapper: { x: 29, y: 51, width: 12, height: 10, color: 0x8c83b0 },
+	fish_reef_shark: { x: 24, y: 56, width: 9, height: 4, color: 0x8cb6bf },
+	fish_crown_leviathan: { x: 30, y: 76, width: 10, height: 4, color: 0x258da9 },
+	fish_pebble_goby: { x: 35, y: 55, width: 7, height: 6, color: 0xb9a864 },
+}
 const pebbleGobyFrameCounts: Record<FishVisualState, number> = {
 	idle: 4,
 	swim: 6,
@@ -65,6 +78,8 @@ export class FishingScene extends Phaser.Scene {
 	private gameplayBackdrop?: Phaser.GameObjects.Image
 	private ambientSprites: Phaser.GameObjects.Image[] = []
 	private fishTail?: Phaser.GameObjects.Image
+	private fishDetails?: Phaser.GameObjects.Graphics
+	private boatWake?: Phaser.GameObjects.Graphics
 	private fish?: Phaser.GameObjects.Sprite
 	private fishShadow?: Phaser.GameObjects.Image
 	private hookGlow?: Phaser.GameObjects.Image
@@ -178,7 +193,9 @@ export class FishingScene extends Phaser.Scene {
 
 		this.createAmbientLife()
 		this.line = this.add.graphics().setDepth(27)
-		this.boat = this.add.image(118, 746, "ocean", "ui_equipment_boat_default.png").setDepth(23).setOrigin(0.38, 0.82).setScale(1.42)
+		// The hull waterline is at 68% of the padded frame; 82% anchored the foam instead.
+		this.boat = this.add.image(118, 746, "ocean", "ui_equipment_boat_default.png").setDepth(23).setOrigin(0.5, 0.68)
+		this.boatWake = this.add.graphics().setDepth(24)
 		this.rod = this.add.image(126, 770, "ocean", "ui_equipment_rod_bamboo.png").setDepth(28).setOrigin(0.12, 0.9)
 		this.rod.setScale(1.3).setRotation(-0.82).setVisible(false)
 		this.hookGlow = this.add.image(760, 530, "ocean", "vfx_glow_ring_default.png").setDepth(24).setScale(0.45).setAlpha(0.5)
@@ -188,6 +205,7 @@ export class FishingScene extends Phaser.Scene {
 		this.fishShadow.setTint(0x042238).setVisible(false)
 		this.fishTail = this.add.image(0, 0, "ocean", "fish_kelp_darter_swim_0.png").setDepth(26).setOrigin(0.7, 0.5).setVisible(false)
 		this.fish = this.add.sprite(970, 515, "pebble_goby_idle_4f", 0).setDepth(25).setScale(1.35).setVisible(false)
+		this.fishDetails = this.add.graphics().setDepth(26).setVisible(false)
 
 		this.createEmitters()
 		this.subscribeToBridge()
@@ -255,6 +273,20 @@ export class FishingScene extends Phaser.Scene {
 				tail.setScale(fish.scaleX, fish.scaleY).setRotation(fish.rotation + flick).setAlpha(fish.alpha).setTint(0xe0f5ff)
 			}
 		}
+		if (this.fish && this.currentFish && this.fishDetails) {
+			const fish = this.fish
+			const details = this.fishDetails
+			const eye = fishEyes[this.currentFish.assetKey]!
+			const x = eye.x - fish.width / 2
+			const y = eye.y - fish.height / 2
+			details.clear().setVisible(fish.visible).setPosition(fish.x, fish.y).setScale(fish.scaleX, fish.scaleY).setRotation(fish.rotation).setAlpha(fish.alpha)
+			if (!this.reducedMotion && (time + eye.x * 113) % 3900 < 140) {
+				details.fillStyle(eye.color).fillRect(x - eye.width / 2, y - eye.height / 2, eye.width, eye.height)
+				details.fillStyle(0x142d39).fillRect(x - eye.width / 2, y, eye.width, 2)
+			}
+			const breath = this.reducedMotion ? 0 : Math.sin(time / 360)
+			details.lineStyle(2, 0x234653, 0.5).lineBetween(x + eye.width + 5, y + 3, x + eye.width + 7 + breath * 2, y + 12)
+		}
 
 		if (this.lure) {
 			if (this.fish) {
@@ -271,8 +303,12 @@ export class FishingScene extends Phaser.Scene {
 
 		const bend = (this.lineTension - 30) / 100 * 0.22 + this.pullTrauma * 0.08
 		this.rod?.setRotation(-0.86 + bend + Math.sin(time / 80) * this.pullTrauma * 0.035)
-		this.boat?.setY(height * 0.3 + Math.sin(time / 720) * 2)
-		this.boat?.setRotation(Math.sin(time / 900) * 0.014 - this.pullTrauma * 0.012)
+		this.boat?.setY(height * 0.3 + (this.reducedMotion ? 0 : Math.sin(time / 720) * 1.5))
+		this.boat?.setRotation(this.reducedMotion ? 0 : Math.sin(time / 900) * 0.008 - this.pullTrauma * 0.006)
+		if (this.boat && this.boatWake) {
+			this.boatWake.clear().lineStyle(2, 0xb4eff3, 0.75).strokeEllipse(this.boat.x, height * 0.3 + 3, this.boat.displayWidth * 0.82, 6)
+			this.rod?.setPosition(this.boat.x + this.boat.displayWidth * 0.26, this.boat.y - this.boat.displayHeight * 0.12)
+		}
 		this.updateLine(time)
 	}
 
@@ -402,6 +438,7 @@ export class FishingScene extends Phaser.Scene {
 				this.fish?.setVisible(isGame && this.currentFish !== undefined)
 				this.fishShadow?.setVisible(isGame && this.currentFish !== undefined)
 				if (!isGame) this.fishTail?.setVisible(false)
+				if (!isGame) this.fishDetails?.setVisible(false)
 			}),
 			bridge.on("encounter:started", ({ encounter, fish }) => {
 				if (this.fish) this.tweens.killTweensOf(this.fish)
@@ -695,7 +732,7 @@ export class FishingScene extends Phaser.Scene {
 		this.gameplayBackdrop?.setPosition(width / 2, -height * 0.107).setDisplaySize(Math.max(width + 20, height * 1.1 * 16 / 9), height * 1.1)
 		this.bgLayers.forEach((image) => image.setDisplaySize(width + 20, height))
 		this.sceneTint?.setSize(width, height)
-		this.boat?.setPosition(width * 0.09, height * 0.3).setScale(Math.min(1.05, Math.max(0.65, width / 900)))
+		this.boat?.setPosition(width * 0.12, height * 0.3).setScale(2.4 * Math.min(1, width / 900, height / 1100))
 		this.rod?.setPosition(width * 0.115, height * 0.28).setScale(Math.min(0.65, width / 1100))
 		this.lure?.setPosition(width * 0.5, height * 0.57)
 		this.hookGlow?.setPosition(width * 0.5, height * 0.57)

@@ -1,4 +1,5 @@
 import type { CompactInputLogEntry, TypingEvent, TypingMetrics } from "@typecade/contracts"
+export { PracticeSession, type PracticeStyle } from "./practice"
 
 export interface TypingSessionSnapshot {
 	targetText: string

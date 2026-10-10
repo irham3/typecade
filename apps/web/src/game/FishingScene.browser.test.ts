@@ -76,14 +76,22 @@ describe("FishingScene in Chromium", () => {
 		game = createFishingGame(host, bridge)
 		await vi.waitFor(() => expect(game?.scene.isActive("FishingScene")).toBe(true), { timeout: 10000 })
 		const scene = game.scene.getScene("FishingScene") as FishingScene
-		const visual = scene as unknown as { fish: Phaser.GameObjects.Sprite; fishTail: Phaser.GameObjects.Image }
+		const visual = scene as unknown as { fish: Phaser.GameObjects.Sprite; fishTail: Phaser.GameObjects.Image; fishDetails: Phaser.GameObjects.Graphics; boat: Phaser.GameObjects.Image; boatWake: Phaser.GameObjects.Graphics }
 		expect(() => bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })).not.toThrow()
 		bridge.emit("screen:changed", { screen: "game" })
 		bridge.emit("game:paused", { paused: false })
 		for (const [width, height] of [[1366, 768], [390, 844], [320, 640]]) {
+			host.style.width = `${width}px`
+			host.style.height = `${height}px`
+			scene.scale.getParentBounds()
 			scene.scale.resize(width!, height!)
+			await vi.waitFor(() => expect(scene.scale.height).toBe(height))
+			expect(visual.boat.originY).toBe(0.68)
 			for (const species of fishSpecies) {
 				bridge.emit("encounter:started", { encounter: startEncounter(species, species.id, []), fish: species, targetText: "laut" })
+				sceneUpdate(game, 1500)
+				const hull = visual.boat.getWorldTransformMatrix().transformPoint(0, 0)
+				expect(Math.abs(hull.y - height! * 0.3)).toBeLessThan(2)
 				scene.tweens.killTweensOf(visual.fish)
 				const positions = new Set<string>()
 				for (let time = 1500; time < 2300; time += 100) {
@@ -99,19 +107,34 @@ describe("FishingScene in Chromium", () => {
 					}
 				}
 				expect(positions.size).toBeGreaterThan(1)
+				expect(visual.boat.displayWidth, `${species.id}:boat:${width}`).toBeGreaterThan(visual.fish.displayWidth)
+				expect(visual.fishDetails.visible).toBe(true)
+				expect(visual.fishDetails.x).toBe(visual.fish.x)
+				const openCommands = visual.fishDetails.commandBuffer.length
+				let blinkCommands = openCommands
+				for (let time = 0; time < 3900; time += 50) {
+					sceneUpdate(game, time)
+					blinkCommands = Math.max(blinkCommands, visual.fishDetails.commandBuffer.length)
+				}
+				expect(blinkCommands, `${species.id}:blink`).toBeGreaterThan(openCommands)
 				expect(visual.fishTail.visible).toBe(species.assetKey !== "fish_pebble_goby")
+				bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
+				sceneUpdate(game, 2222)
+				if (visual.fishTail.visible) expect(visual.fishTail.rotation - visual.fish.rotation).toBeCloseTo(Math.sin(2222 / 100) * 0.09, 5)
 			}
 		}
-		const position = [visual.fish.x, visual.fish.y, visual.fishTail.rotation]
+		const position = [visual.fish.x, visual.fish.y, visual.fishTail.rotation, visual.boat.y, visual.fishDetails.commandBuffer.length]
 		bridge.emit("game:paused", { paused: true })
 		sceneUpdate(game, 5000)
-		expect([visual.fish.x, visual.fish.y, visual.fishTail.rotation]).toEqual(position)
+		expect([visual.fish.x, visual.fish.y, visual.fishTail.rotation, visual.boat.y, visual.fishDetails.commandBuffer.length]).toEqual(position)
 		bridge.emit("game:paused", { paused: false })
 		bridge.emit("settings:effects", { reducedMotion: true })
 		sceneUpdate(game, 6000)
 		expect(visual.fishTail.rotation).toBe(visual.fish.rotation)
+		expect(visual.boat.y).toBe(scene.scale.height * 0.3)
 		bridge.emit("screen:changed", { screen: "prep" })
 		expect(visual.fishTail.visible).toBe(false)
+		expect(visual.fishDetails.visible).toBe(false)
 		bridge.emit("screen:changed", { screen: "game" })
 		sceneUpdate(game, 6500)
 		expect(visual.fish.visible).toBe(true)
