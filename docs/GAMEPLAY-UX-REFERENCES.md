@@ -29,7 +29,7 @@ Pengembang membahas keterbatasan keyboard sistem pada layar kecil, kebutuhan fee
 
 **Sumber:** [repositori resmi](https://github.com/monkeytypegame/monkeytype).
 
-Repositori mendeskripsikan fokus pada tampilan minimal, konfigurasi latihan, dan feedback ketika mengetik. Ini adalah referensi interaksi, bukan acuan visual Ocean.
+Repositori mendeskripsikan fokus pada tampilan minimal, konfigurasi latihan, dan feedback ketika mengetik. Referensi ini digunakan untuk interaksi. Identitas visual mengikuti art-bible Ocean.
 
 **Penerapan Typecade:** Adventure memakai dua baris tetap yang mengikuti karakter aktif. Teks bergeser ke atas; pemain tidak perlu menggulir passage. Klik passage mengembalikan fokus. Practice tetap mempertahankan Modern tiga baris, Classic dua baris, dan pengaturan yang sudah dipulihkan dari versi awal.
 

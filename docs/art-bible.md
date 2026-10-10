@@ -76,3 +76,13 @@ All transparent sprites are exported as PNG with trimmed content inside a fixed 
 ## Prototype Asset Policy
 
 Milestone 0/1 may use CC0 Kenney base fish shapes that are recolored, renamed, and wrapped in the project content manifest. Generated-image API output is preferred for final production art, but missing credentials must not block this implementation.
+
+## Adventure HUD and mobile swimming bounds
+
+The active Adventure passage is the typing surface, with two clipped rolling rows. Its native input is visually hidden and retains focus, IME and accessibility support. Small screens reuse the Practice pixel keyboard; Adventure omits its Backspace key because incorrect characters must be retyped.
+
+Active skill buttons and automatic passive cards use the existing main-menu blue plate and Ocean icons. Show the energy requirement or blocking condition instead of a charge percentage alone. The popup gives the short action result; Skills and preparation retain the full explanation. Readiness does not pulse forever; use feedback ends after 350 ms and respects reduced motion.
+
+Keep fish bodies, tails and eye/gill details beneath the water surface. At widths up to 640 px, bound swimming above 38% of canvas height so the keyboard and typing panel can occupy the lower screen. Scale within that water band and keep the boat anchored at its hull. This responsive rule is verified for the ten-species roster at the recorded desktop and phone sizes.
+
+On phone layouts, show the boss phase and remaining guard in the passage hint row. The desktop phase card stays outside the typing console; its phone equivalent must leave the boat and fish visible. Custom Reduced Effects disables HUD CSS animation and transitions as well as renderer motion.

@@ -556,3 +556,53 @@ Desktop and 320x640 screenshots were inspected directly. The boat hull meets the
 ### Limits
 
 The fish use the existing pose assets with runtime articulation and detail; they are not ten newly drawn animation sets. Source coverage does not measure player retention or guarantee every physical keyboard/browser combination. Mobile frame rates and WAN room capacity still need hardware/network measurement. The lazy Phaser bundle retains its existing size advisory. No deployment, PR or merge is included.
+
+## Adventure typing surface, skill clarity and gameplay references, 2026-10-10
+
+### Scope and references
+
+The user requested a complete usability pass: remove the redundant Adventure input box, explain skill activation, improve stiff feedback and layout, and research lessons from other games. Changes reach Adventure HUD/CSS, the existing shared passage and pixel keyboard callers, the Ocean run hook, headless skill eligibility, content descriptions, responsive Phaser fish placement and their package/browser/E2E checks. Account rewards, content roster, save schema and the multiplayer transport remain unchanged.
+
+Research and concrete adaptations are recorded in [GAMEPLAY-UX-REFERENCES.md](GAMEPLAY-UX-REFERENCES.md). Sources include ZType's developer notes, the official Monkeytype repository, Stardew Valley's fishing wiki, Supergiant's Hades pages and Team17's DREDGE page. No game assets, source code or additional runtime dependency were copied. DREDGE-inspired voyage objectives remain proposals.
+
+### Findings and fixes
+
+| Finding | Change | Verification |
+| --- | --- | --- |
+| Adventure showed a passage and a second visible text input | Keep the native input for focus/IME/accessibility; visually hide it and make the passage panel focus it on click | Browser test and production E2E require focus restoration and an input box at most 1×1 px |
+| Passage could require internal scrolling | Reuse the existing two-row rolling passage | Production E2E requires clipped overflow, upward translation when typing enters the next row, and zero scroll offset |
+| Timer and idle pressure started before the player could read | Start them after the first keystroke; exclude initial waiting from typing metrics | Browser and production tests wait before typing and require unchanged time/tension |
+| Native mobile typing could consume the game view | Reuse the Practice pixel keyboard with a compact phone HUD; omit Adventure Backspace because the strict engine ignores deletion | Component test and production mobile keyboard click test |
+| A skill could show 100% while another gate blocked activation | Share `getFishingSkillBlockReason` between UI eligibility and the existing headless boolean gate | Tests cover energy, encounter status, fish rarity/size, reel threshold and running Calm Current |
+| Passive skills were disabled buttons | Render automatic cards with the same blue plate/icon family | Browser/E2E require automatic cards and no passive buttons |
+| Skill energy and controls were unclear | Show Energy N/100, clean-word +14, skill costs, gating reasons and desktop Alt+slot; keep full explanations in Skills/preparation | Browser tests and gameplay screenshots |
+| Calm Current could be spent again while already running | Block reactivation for the remaining eight-second effect | Rule test requires no energy deduction and allows use after expiry |
+| Sonar lost combat usefulness once the route locked | Add five tension relief, clamped at zero, while preserving the twelve-second preview | Rule tests and browser expiry check, including expiry before the first keystroke |
+| Skill feedback stayed enlarged and used too much text | Use a finite 350 ms CSS pulse and the first, concise effect sentence | Production screenshots; full descriptions stay in skill panels |
+| Mobile typing panel could cover swimming fish | Clamp fish scale and motion within the responsive underwater band | All ten fish are checked at desktop, 390×844 and 320×640, with eye/gill animation, Pause and Reduced Effects |
+| Mobile boss phase card hid the boat | Show phase/guard instructions in the passage hint on phones | Production boss screenshot and inline phase assertion |
+| Desktop shortcut text inherited an 18 px badge width | Reset width/height for the current pixel cards | Production E2E requires the visible shortcut to fit without clipping |
+| Custom Reduced Effects did not govern HUD CSS animation | Add a HUD data attribute and disable CSS animations/transitions in that mode | Browser test checks the active setting; renderer controls are retained |
+
+### Data and practical limits
+
+The user's preview account was preserved. Browser gameplay checks use disposable test contexts. The renderer still uses the existing fish pose assets with articulation; this pass adds no new sprite collection. Source coverage does not establish player retention, physical touch-keyboard accuracy, every browser engine or real WAN room capacity. The lazy Phaser bundle still has its existing size advisory.
+
+### Verification and delivery
+
+- `npm run test`: 150 tests passed across 14 files on the final source.
+- Final `npm run test:coverage`: statements 2408/2408, branches 1871/1871, functions 494/494, lines 2078/2078: 100% across all 19 active production source files. Coverage configuration, thresholds and exclusions were unchanged.
+- `npm run test:e2e`: all 27 Chromium production scenarios passed in 8.3 minutes. This included menu destinations, Practice rolling/configuration, multiplayer variants, a live 100-player room, HUD sizes, two voyages, refits and saved voyage-three resume.
+- After final feedback/card arrangement and inline phone boss phase changes, `npm run test:e2e -- --grep 'one typing surface|nonblank Phaser|two endless voyages'` rebuilt production and passed all seven affected scenarios in 5.2 minutes.
+- Final shortcut-width and custom Reduced Effects follow-up: `npm run test:e2e -- --grep 'one typing surface'` rebuilt production and passed both desktop/mobile regressions in 30.6 seconds. No subsequent production source edits were made.
+- `npm run lint`, `npx tsc --noEmit`, `npm run typecheck:rooms`, `git diff --check` and the recorded renderer-retirement audit passed. The retirement search returned no matches.
+- Final bundle: CSS 59.66 KB / 13.10 KB gzip; shell JS 363.90 KB / 117.58 KB gzip; lazy Phaser 1,401.67 KB / 365.71 KB gzip. The existing large-chunk advisory remains.
+
+Screenshots inspected directly and saved in `docs/reference/ocean-audit-2026-10-10`:
+
+- `adventure-ready-small-mobile.png`: pre-typing state, all phone controls visible, timer ready and no second input box.
+- `adventure-typing-skills-desktop.png`: typing remains incomplete after Cast Net, readable shortcuts, aligned cards and concise feedback.
+- `adventure-typing-skills-small-mobile.png`: rolling passage, pixel keyboard, skill feedback above the fish and all skill controls on screen.
+- `adventure-skills-boss-small-mobile.png`: boss below the waterline, visible boat and inline phase instructions.
+
+The preview was reloaded on the main menu. Its existing Captain level 3, 5/10 discovered species and XP progress remained intact after save restoration. Research was pushed first; gameplay and audit evidence follow as separate commits on `app-v2`. No PR, merge or deployment is included.
