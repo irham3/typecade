@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
 import { RotateCcw, ArrowRight, Download, Twitter, Send, Linkedin, Copy, Check, Share2 } from 'lucide-react';
@@ -194,7 +194,6 @@ export function TypingResults({ wpm, accuracy, mode, limit, typedCharsLength, re
                 {isCapturing && (
                     <div className="w-full flex justify-between items-center mb-6 opacity-80">
                         <div className="flex items-center gap-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src="/typecade-logo.png" alt="Typecade" className="w-6 h-6 object-contain" />
                             <span className="font-bold text-lg tracking-tight">Typecade</span>
                         </div>

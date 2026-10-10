@@ -12,7 +12,6 @@ export default async function AppleIcon() {
 
     return new ImageResponse(
         (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
                 src={logoSrc}
                 alt="Typecade Logo"

@@ -653,3 +653,11 @@ No physical phone GPU, Safari/Firefox, real WAN capacity or sustained device FPS
 `npm audit` reports 12 repository dependency findings (11 high, one critical), with the same count before and after adding Three.js. Reported packages are the existing Next/ESLint and Wrangler/Miniflare dependency trees, including proxy-addr, sharp, undici, braces, fast-glob, micromatch and source-map-js. Three.js is not named in the report. These findings remain a separate release risk; passing game tests is not a security audit clearance.
 
 Runtime and architecture changes were pushed as `675fd66` on `app-v2`; this evidence follows in a documentation commit. No PR, merge or deployment is included.
+
+## 2026-10-10 — Release audit follow-up: dependencies
+
+The user requested resolution of the findings above. A fresh npm audit reproduced 12 findings. The normal, non-force `npm audit fix` updated Next to 16.4.0, Wrangler to 4.149.0, undici to 7.29.1, proxy-addr to 2.0.8 and source-map-js to 1.2.2, and removed Miniflare's vulnerable sharp dependency. The running local preview held Miniflare files open on Windows; only the identified preview processes were stopped for the install, then restarted on port 8787 with the same persistence directory.
+
+Five inherited findings remained in eslint-config-next → @next/eslint-plugin-next → fast-glob → micromatch → braces. [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) lists no patched braces release as of this audit. The active project uses Vite, so its ESLint configuration now declares the existing React, TypeScript, React Hooks, import and JSX accessibility plugins directly. Their existing rule settings and historical Hooks exceptions remain. Next-specific lint rules and three obsolete inline suppression comments were removed; historical Next source remains available.
+
+`npm install` now audits 750 packages with **zero vulnerabilities**, confirmed by a separate `npm audit`. This resolves the reported package findings; it is not a penetration test or a guarantee against undiscovered vulnerabilities. Lint, both TypeScript checks, build, 154 unit/browser tests and the unchanged 100% coverage thresholds pass on the working tree. Gameplay changes and the expanded browser matrix are verified in the following entry.
