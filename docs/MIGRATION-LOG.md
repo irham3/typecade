@@ -509,3 +509,50 @@ Desktop and small-mobile boss screenshots were inspected directly: fish remain b
 ### Practical limits
 
 The generated variation uses a finite roster and content pack. It does not create new species or vocabulary forever. Source coverage establishes exercised code paths, not measured retention or every physical device. The local reward ledger grows with successful catches; browser storage capacity still limits very long-lived local accounts. WAN capacity and physical mobile frame rates were not benchmarked. The existing lazy Phaser bundle size advisory remains.
+
+## Hull waterline and original Practice behavior, 2026-10-10
+
+### Reference and scope
+
+The user requested Adventure as the primary menu destination, Practice in third position, a boat that sits on the water and is larger than ordinary fish, living animation for every species, and Practice typing behavior matching the original app. This repository has no `main` ref. The comparison used the fetched remote default `origin/master`, commit `120ff8a81be06d272b5b8a034b6f30db073804dd`, including both original typing views, their hooks and typing core.
+
+Changes reach the menu, the shared typing passage/input, the Practice screen and keyboard, an exported headless Practice session, Phaser boat/fish rendering, responsive CSS, package tests, browser regressions and production E2E fixtures. The existing strict Adventure and multiplayer typing sessions remain in use. No dependency, account grant rule, content roster or save schema changed.
+
+### Fixes
+
+| Finding | Change | Check |
+| --- | --- | --- |
+| Boat origin followed the foam beneath the hull, leaving a visible air gap | Anchor the hull at 68% of its padded frame, increase responsive scale, constrain bob/tilt and add a surface wake. Rod position follows the boat. | Transformed hull contact stays within 2 px of the waterline at desktop and both mobile sizes; regular fish stay smaller than the boat. |
+| Fish lacked eye and gill detail | Add brief pixel blinks and gill movement at measured landmarks for all ten species, alongside existing body/tail motion. | Details follow the sprite; each species animates, Pause freezes it, Reduced Effects removes motion, and menu transitions restore visibility. |
+| Practice reused strict race input and a scrollable passage | Add a headless editable Practice session and clipped rolling rows: Modern three rows with the active character on the middle row; Classic two rows with the current word on the top row. | Package tests cover typo/edit/word locks; browser and E2E tests check row height, cursor bounds, upward translation and zero scroll offset. |
+| Practice required setup before every first session | Open ready to type, with settings available through a pixel button. Keep Adventure first, Multiplayer second and Practice third. | All menu destinations and Set Sail after returning from Practice/Multiplayer are exercised. |
+| Legacy typing shortcuts and timing differed | Restore typo advancement, smart Backspace, word deletion, correct-word locks, Classic Space confirmation including the last word, Tab/Esc restart and Shift+Enter shuffle. Timed sessions append seeded words and pause on lost input focus. | Tests cover wrong input, IME/input changes, keyboard shortcuts, exact deadlines, focus pause and text extension. |
+| Shift corrupted the touch Backspace command | Capitalize only single-character keys; Backspace keeps its command and does not consume Shift. | Pixel keyboard tests cover shifted deletion, letters, layout switches, symbols and pointer focus retention. |
+| Classic overflow could jump past the following word | Resolve Space from the locked word boundary, retain overflow errors in metrics and cap the visible cursor at that word. | Package and production browser regressions type `waveXX `, require the next word to remain `reef`, and keep accuracy below 100%. |
+| Small-mobile Practice and skill feedback hid game content | Put Practice controls in one responsive row, constrain grid width and shorten the touch deletion label; compact short-screen spacing. Place mobile skill feedback in a half-width card on the right. | Require the whole passage, menu button and keyboard inside the viewport. Require mobile skill feedback to stay on the right half. |
+
+Practice retains language, word count, duration, quotes/difficulty, custom text/shuffle, punctuation, numbers, challenges, text size and monospace controls. Input is validated before text generation. The original Modern/Classic typing behavior is restored within the Ocean shell; historical authentication, result services and global theme screens are not copied. Custom passages finish correctly. Config and appearance remain session settings, as the form states; the best WPM remains locally persisted.
+
+### Verification and proof
+
+- `npm run test:e2e`: all 25 Chromium production scenarios passed in 8.0 minutes after responsive layout fixes. Coverage includes every menu destination, multiplayer variants and a live 100-participant room, gameplay HUD at four sizes, two complete voyages, refits and saved voyage-three resume.
+- Final headless follow-up: `npm run test:e2e -- --grep 'Practice (modern|classic)'` rebuilt production and passed both Practice regressions in 18.3 seconds, including Classic overflow. No Adventure, multiplayer or renderer production source changed after the full run.
+- Final build: CSS 57.00 KB / 12.69 KB gzip, shell JS 362.51 KB / 117.07 KB gzip, lazy Phaser 1,401.60 KB / 365.68 KB gzip. The existing large-chunk advisory remains.
+- `npm run test`: 148 tests passed across 14 files.
+- `npm run test:coverage`: 100% statements (2381/2381), branches (1841/1841), functions (491/491) and lines (2058/2058) across 19 active production source files. Thresholds and source exclusions were not changed. Tail-struggle checks now drive the event and update explicitly rather than relying on an incidental animation frame.
+- `npm run lint`, `npx tsc --noEmit`, `npm run typecheck:rooms` and `git diff --check` passed. The recorded renderer-retirement search returned no matches.
+
+Proof images in `docs/reference/ocean-audit-2026-10-10`:
+
+- `boat-waterline-desktop.png`
+- `boat-waterline-small-mobile.png`
+- `boat-waterline-boss-desktop.png`
+- `boat-waterline-boss-small-mobile.png`
+- `practice-modern-rolling.png`
+- `practice-classic-rolling.png`
+
+Desktop and 320x640 screenshots were inspected directly. The boat hull meets the visible surface; mobile Sonar feedback leaves the boat visible. Practice screenshots show fixed rolling rows, no scrollbar and no keyboard-label overflow. A manual check in the user's preview also opened both Practice styles at 320x640 and exercised typo correction. The account was preserved, the temporary viewport override was removed, and the preview was left on the main menu.
+
+### Limits
+
+The fish use the existing pose assets with runtime articulation and detail; they are not ten newly drawn animation sets. Source coverage does not measure player retention or guarantee every physical keyboard/browser combination. Mobile frame rates and WAN room capacity still need hardware/network measurement. The lazy Phaser bundle retains its existing size advisory. No deployment, PR or merge is included.

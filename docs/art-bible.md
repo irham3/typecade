@@ -16,6 +16,9 @@ Ocean Typing RPG uses bright fantasy-ocean environments behind compact, dark-nav
 - Nine former procedural fish silhouettes are replaced by selected catalog/reference sprites. Pebble Goby keeps its existing state animation strips. `apps/web/scripts/refresh-ocean-art.mjs` lists the exact source mapping and writes fixed atlas cells using nearest-neighbor resizing.
 - Reused poses fill the nine replacement fish's atlas states. Phaser articulates the final 30% of each sprite as a tail, with a small overlapping joint, a gentle body pulse and behavior-specific drift. Body and tail share the same frame, scale, rotation, underwater tint and catch/escape alpha; they freeze together on Pause. Reduced Effects removes tail flick and idle body deformation. Pebble Goby keeps its authored frame strips and is not split. These replacements are not nine newly drawn animation sets.
 - Adventure uses bg_shallow_coast_cutaway.webp: a side-on underwater cross section with a clear surface at 30% viewport height. Boat sits at that surface; active fish remains below it. Main menu and multiplayer keep their existing coast compositions. Fallback layers remain available when the cutaway texture fails to load.
+- The current boat atlas cell uses origin `(0.5, 0.68)`: the contact point is the hull, not the bottom of its foam or transparent padding. Responsive scale is `2.4 × min(1, viewportWidth / 900, viewportHeight / 1100)`. Its hull stays at the surface with at most 1.5 px of idle bob; a small wake marks contact. Regular fish remain smaller than the boat. Pause freezes motion and Reduced Effects removes boat bob and tilt.
+- All ten fish have eye landmarks measured in their existing source frames. Phaser adds a short pixel blink and a small gill movement in the same sprite coordinate system; details inherit body position, scale, rotation, visibility and alpha. These are runtime details on the existing assets, not new authored sprite sheets. Reduced Effects disables blinking and gill movement.
+- Practice keeps the shared pixel plates and icons. Modern text uses three fixed rows; Classic uses two. The inner text shifts up as typing advances, with clipped overflow and no scrollbar. The touch keyboard uses the same pixel plates and supports letters, Shift, numbers, punctuation and symbols.
 - HUD controls, callouts, typing, and results occupy separate flow rows. A dialog uses the browser's modal layer and restores focus on close. Mobile layout must fit at 320×640 and 390×844.
 - Rarity callouts use a monospace font sized to the viewport. Text effects stay clear of the fish and typing panel; reduced effects disable camera shake and hit stop.
 
@@ -68,7 +71,7 @@ Rarity is never color-only: all UI displays include a text rarity label and star
 
 ## Export And Pivot Conventions
 
-All transparent sprites are exported as PNG with trimmed content inside a fixed frame and at least 8 px padding at source size. Fish pivots are center-body (`0.5, 0.55`). Rods pivot near handle base. Boat/platform pivots bottom-center. UI panels use nine-slice-compatible corners. Background layers are opaque WebP. Audio uses OGG naming with silent/generated placeholders recorded in the asset register.
+All transparent sprites are exported as PNG with trimmed content inside a fixed frame and at least 8 px padding at source size. Fish pivots are center-body (`0.5, 0.55`). Rods pivot near handle base. Boat/platform pivots at the hull waterline; the current padded boat cell uses `(0.5, 0.68)`. UI panels use nine-slice-compatible corners. Background layers are opaque WebP. Audio uses OGG naming with silent/generated placeholders recorded in the asset register.
 
 ## Prototype Asset Policy
 
