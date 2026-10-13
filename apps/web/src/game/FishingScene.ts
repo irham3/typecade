@@ -63,6 +63,9 @@ export class FishingScene {
 	private endX = 0
 	private endY = 0
 	private lastTexture = ""
+	private fishVelocityX = 0
+	private fishMotionReady = false
+	private ambientBubbleTimer = 0
 	private backdrop!: PixelMesh
 	private boat!: PixelMesh
 	private rod!: PixelMesh
@@ -215,6 +218,7 @@ export class FishingScene {
 			this.bridge.on("settings:volumes", volumes => this.audio.setVolumes(volumes)),
 			this.bridge.on("encounter:started", ({ fish, encounter }) => {
 				this.currentFish = fish
+				this.fishMotionReady = false; this.fishVelocityX = 0
 				this.progress = encounter.progress; this.tension = encounter.tension; this.durability = encounter.durability
 				const frame = fish.assetKey === "fish_pebble_goby" ? { w: 128, h: 96 } : this.assets.frames[`${fish.assetKey}_swim_0.png`].frame
 				this.fishWidth = frame.w; this.fishHeight = frame.h
@@ -224,7 +228,11 @@ export class FishingScene {
 				if (fish.rarity === "rare" || fish.rarity === "boss") { this.ring(0xf5c240, 1.5); this.audio.play("sfx_rare_sting_a", "gameplay") }
 			}),
 			this.bridge.on("fish:hooked", () => { if (this.endTime >= 0) return; this.setFishState("bite"); this.stateUntil = this.time + .36; this.burst(18, 0x9ae7ff, true); this.audio.play("sfx_splash_a", "gameplay") }),
-			this.bridge.on("character:correct", () => {
+			this.bridge.on("character:correct", ({ combo }) => {
+				if (this.currentFish && this.endTime < 0 && !this.reduced) {
+					const weight = this.currentFish.rarity === "boss" ? .42 : this.currentFish.behavior === "armored" ? .5 : 1
+					this.fishVelocityX = Math.max(-46, this.fishVelocityX - (9 + Math.min(combo, 8)) * weight)
+				}
 				this.trauma = Math.min(.5, this.trauma + .06)
 				if (this.time - this.lastTick > .048) { this.lastTick = this.time; this.audio.play("sfx_correct_tick_a", "typing", .38) }
 			}),
@@ -308,19 +316,22 @@ export class FishingScene {
 		this.rod.position.set(boatX + boatSize * .24, -boatY + boatSize * .12, 24)
 		this.rod.scale.set(Math.min(.65, w / 1100) * 128, Math.min(.65, w / 1100) * 128, 1)
 		this.rod.rotation.z = .82 - Math.max(0, this.tension - 30) * .002
+		const ambientMotion = this.reduced ? 0 : 1
 		this.ambient.forEach((mesh, index) => {
-			mesh.position.set(w * (.19 + index * .31 + (this.reduced ? 0 : Math.sin(t * .12 + index) * .08)), -h * (.5 + index * .13), 10 + index)
-			mesh.scale.set(100 * Math.min(1, w / 900), 60 * Math.min(1, w / 900), 1)
+			const x = index === 0 ? ((t * 26) % (w + 120)) - 60 : w * (.48 + Math.sin(t * .17 + index) * .08)
+			const depth = index === 2 ? h * (.31 + (t * .025) % .16) : h * (.42 + index * .11)
+			mesh.position.set(x, -depth + Math.sin(t * (index === 0 ? .8 : .32) + index) * 5 * ambientMotion, 10 + index)
+			mesh.scale.set((index === 0 ? 116 : 100) * Math.min(1, w / 900), 60 * Math.min(1, w / 900), 1)
 		})
 		this.fish.visible = this.screen === "game" && !!this.currentFish
 		this.line.visible = this.lure.visible = this.fish.visible && this.endTime < 0
-		if (this.currentFish) this.updateFish()
+		if (this.currentFish) this.updateFish(delta)
 		this.rod.updateMatrixWorld()
 		this.rodTip.set(.45, .38, 0).applyMatrix4(this.rod.matrixWorld)
 		this.updateLine(this.rodTip.x, -this.rodTip.y); this.updateEffects(delta)
 	}
 
-	private updateFish(): void {
+	private updateFish(delta = 0): void {
 		const fish = this.currentFish!
 		if (this.endTime < 0 && this.stateUntil <= this.time) {
 			const state = this.tension >= 82 ? "struggle" : "swim"
@@ -328,7 +339,12 @@ export class FishingScene {
 		}
 		const layout = fishLayout(fish, this.width, this.height, this.time, this.progress, this.tension, this.reduced, this.fishWidth, this.fishHeight)
 		const breath = this.reduced ? 0 : Math.sin(this.time * 3)
-		this.fish.position.set(layout.x, -layout.y, 20)
+		if (!this.fishMotionReady) { this.fish.position.x = layout.x; this.fishMotionReady = true }
+		if (!this.reduced && delta > 0) {
+			this.fishVelocityX += ((layout.x - this.fish.position.x) * 38 - this.fishVelocityX * 10) * delta
+			this.fish.position.x += this.fishVelocityX * delta
+		} else if (this.reduced) { this.fish.position.x = layout.x; this.fishVelocityX = 0 }
+		this.fish.position.y = -layout.y; this.fish.position.z = 20
 		this.fish.scale.set(layout.size * (1 + breath * .012), layout.size * (1 - breath * .015), 1)
 		this.fish.rotation.y = this.reduced ? 0 : Math.sin(this.time * 1.2) * .10
 		let alpha = 1
@@ -404,6 +420,21 @@ export class FishingScene {
 		ring.mesh.position.set(this.fish.position.x, this.fish.position.y, 31); ring.mesh.material.color.set(tint)
 	}
 	private updateEffects(delta: number): void {
+		if (this.screen === "game" && !this.reduced) {
+			this.ambientBubbleTimer += Math.min(delta, .048)
+			if (this.ambientBubbleTimer >= 1.15) {
+				this.ambientBubbleTimer %= 1.15
+				const slot = this.pool.findIndex(particle => particle.life <= 0)
+				if (slot >= 0) {
+					const particle = this.pool[slot]!
+					particle.x = this.width * (.12 + this.random.nextFloat() * .76)
+					particle.y = this.height * (.34 + this.random.nextFloat() * .11)
+					particle.vx = (this.random.nextFloat() - .5) * 8; particle.vy = -8 - this.random.nextFloat() * 8
+					particle.life = 3.5 + this.random.nextFloat() * 2; particle.size = 2 + this.random.nextFloat() * 2; particle.bubble = true
+					this.particles.setColorAt(slot, this.color.set(0x9ae7ff)); this.particles.instanceColor!.needsUpdate = true
+				}
+			}
+		}
 		for (let i = 0; i < this.pool.length; i++) {
 			const particle = this.pool[i]; particle.life = Math.max(0, particle.life - delta)
 			if (particle.life > 0) {
@@ -411,7 +442,7 @@ export class FishingScene {
 				if (particle.bubble && particle.y < surfaceY(particle.x, this.width, this.height, this.time, this.reduced)) particle.life = 0
 			}
 			const size = particle.life > 0 ? particle.size * Math.min(1, particle.life * 4) : 0
-			this.matrix.makeScale(size, size, 1).setPosition(particle.x, -particle.y, 31); this.particles.setMatrixAt(i, this.matrix)
+			this.matrix.makeScale(size, size, 1).setPosition(particle.x, -particle.y, particle.bubble ? 29 : 31); this.particles.setMatrixAt(i, this.matrix)
 		}
 		this.particles.instanceMatrix.needsUpdate = true
 		for (const ring of this.rings) {

@@ -15,6 +15,7 @@ interface Inspection {
 	line: Line; lure: PixelMesh; water: Mesh<PlaneGeometry, ShaderMaterial>
 	pool: Array<{ x: number; y: number; life: number; bubble: boolean }>
 	rings: Array<{ life: number }>; particles: InstancedMesh
+	ambient: Mesh[]
 }
 const metrics = { wpm: 40, rawWpm: 40, accuracy: 100, combo: 1, maxCombo: 1, consistency: 100, correctKeystrokes: 5, incorrectKeystrokes: 0, progress: 1, elapsedMs: 1500 }
 let game: ReturnType<typeof createFishingGame> | undefined
@@ -110,6 +111,31 @@ describe("Three.js ocean renderer with a real WebGL context", () => {
 			view.time += 2; view.updateWorld(0)
 			expect(view.lastTexture).toBe(`fish_pebble_goby_${caught ? "caught_3" : "escape_5"}.png`)
 		}
+	})
+	it("reels a struggling fish in with eased momentum and keeps ambient life bounded", async () => {
+		const { bridge, view } = await setup()
+		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
+		const fish = getFish("reef_minnow")
+		encounter(bridge, fish)
+		const startX = view.fish.position.x
+		bridge.emit("character:correct", { key: "o", expected: "o", combo: 1, progress: .1 })
+		for (let i = 0; i < 12; i++) view.updateWorld(.016)
+		expect(view.fish.position.x).toBeLessThan(startX)
+		const pulledX = view.fish.position.x
+		for (let i = 0; i < 120; i++) view.updateWorld(.016)
+		expect(Math.abs(view.fish.position.x - startX)).toBeLessThan(2)
+		expect(pulledX).toBeLessThan(startX)
+		const schoolX = view.ambient[0]!.position.x
+		view.time += 1; view.updateWorld(.016)
+		expect(view.ambient[0]!.position.x).not.toBe(schoolX)
+		for (let i = 0; i < 40; i++) view.updateWorld(.048)
+		expect(view.pool.length).toBe(128)
+		expect(view.pool.filter(particle => particle.life > 0 && particle.bubble).length).toBeLessThan(8)
+		bridge.emit("settings:effects", { reducedMotion: true })
+		const reducedStart = view.fish.position.x
+		bridge.emit("character:correct", { key: "m", expected: "m", combo: 2, progress: .2 })
+		for (let i = 0; i < 12; i++) view.updateWorld(.016)
+		expect(view.fish.position.x).toBe(reducedStart)
 	})
 	it("freezes world and effects on pause, colors line danger and delivers every domain effect", async () => {
 		const { bridge, view, game } = await setup()
