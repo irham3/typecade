@@ -12,9 +12,15 @@ import { RaceScreen } from "./multiplayer/RaceScreen"
 import { PracticeScreen } from "./practice/PracticeScreen"
 import { PracticeKeyboard } from "./practice/PracticeKeyboard"
 import { TypingInput, TypingPassage } from "./TypingField"
+import { oceanAchievements } from "./account/ocean-account"
+import type { OceanAccountState } from "./account/useOceanAccount"
 
 type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | null
 type Screen = "menu" | "practice" | "prep" | "game" | "race"
+
+export function handleAccountCloseKey(key: string, onClose: () => void): void {
+	if (key === "Escape") onClose()
+}
 
 const rarityStars: Record<Rarity, number> = {
 	common: 1,
@@ -38,10 +44,12 @@ export function App() {
 	const hostRef = useRef<HTMLDivElement | null>(null)
 	const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(location.search).has("race") ? "race" : "menu")
 	const [panel, setPanel] = useState<Panel>(null)
+	const [accountOpen, setAccountOpen] = useState(false)
 	const [rendererState, setRendererState] = useState<"loading" | "ready" | "error">("loading")
 	const [rendererAttempt, setRendererAttempt] = useState(0)
 	const {
 		bridge,
+		account,
 		view,
 		activeSkills,
 		skillOffers,
@@ -139,6 +147,7 @@ export function App() {
 					onRankedDuel={() => setScreen("race")}
 					onCollection={() => setPanel("collection")}
 					onSettings={() => setPanel("settings")}
+					onAccount={() => setAccountOpen(true)}
 				/>
 			) : null}
 
@@ -166,8 +175,35 @@ export function App() {
 					onClose={() => setPanel(null)}
 				/>
 			) : null}
+			{screen !== "game" && accountOpen ? <CaptainAccountPanel account={account} onClose={() => setAccountOpen(false)} /> : null}
 		</main>
 	)
+}
+
+function CaptainAccountPanel({ account, onClose }: { account: OceanAccountState; onClose: () => void }) {
+	const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in")
+	const [email, setEmail] = useState("")
+	const [password, setPassword] = useState("")
+	const [name, setName] = useState("")
+	const unlocked = new Set(account.achievements.map(item => item.achievement_id))
+	const submit = async (event: React.FormEvent) => {
+		event.preventDefault()
+		if (mode === "sign-in") await account.signIn(email, password)
+		else await account.signUp(email, password, name)
+	}
+	return <div className="captain-account-overlay" role="presentation" onKeyDown={event => handleAccountCloseKey(event.key, onClose)} onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+		<section className="captain-account-panel pixel-panel" role="dialog" aria-modal="true" aria-labelledby="captain-account-title">
+			<header><div><small>TYPECADE ACCOUNT</small><h2 id="captain-account-title">Captain Ledger</h2></div><button className="account-close" aria-label="Close captain account" autoFocus onClick={onClose}>×</button></header>
+			{account.user ? <div className="captain-account-session"><span>Signed in as <strong>{account.user.email ?? "Ocean Captain"}</strong></span><button onClick={() => void account.signOut()}>Sign out</button></div> : <form className="captain-account-form" onSubmit={event => void submit(event)}>
+				{mode === "sign-up" ? <label>Display name<input aria-label="Display name" autoComplete="nickname" value={name} onChange={event => setName(event.target.value)} minLength={2} maxLength={24} required /></label> : null}
+				<label>Email<input aria-label="Email" type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} required /></label>
+				<label>Password<input aria-label="Password" type="password" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} value={password} onChange={event => setPassword(event.target.value)} minLength={mode === "sign-up" ? 8 : undefined} required /></label>
+				<div className="captain-account-actions"><button className="primary-action" type="submit" disabled={account.loading || !account.client}>{account.loading ? "Please wait…" : mode === "sign-up" ? "Create account" : "Sign in"}</button><button type="button" onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}>{mode === "sign-in" ? "Create account" : "I have an account"}</button></div>
+			</form>}
+			<p className="captain-account-status" role="status">{account.status || (account.user ? "Your Adventure save and achievements sync after each catch." : "Sign in to sync Adventure and unlock account achievements.")}</p>
+			<div className="captain-account-columns"><section><h3>Adventure leaderboard</h3><ol>{account.leaderboard.length ? account.leaderboard.map((captain, index) => <li key={captain.user_id}><span>{index + 1}. {captain.display_name}</span><strong>{captain.xp} XP</strong></li>) : <li className="account-empty">No captains ranked yet.</li>}</ol><small>Ranks use saved Adventure XP.</small></section><section><h3>Achievements</h3><ul>{oceanAchievements.map(item => <li key={item.id} className={unlocked.has(item.id) ? "unlocked" : "locked"}><span aria-hidden="true">{unlocked.has(item.id) ? "✓" : "·"}</span><div><strong>{item.title}</strong><small>{item.detail}</small></div></li>)}</ul></section></div>
+		</section>
+	</div>
 }
 
 function GameHud({
@@ -413,6 +449,7 @@ function MainMenu({
 	onRankedDuel,
 	onCollection,
 	onSettings,
+	onAccount,
 }: {
 	view: OceanRunView
 	onStart: () => void
@@ -420,6 +457,7 @@ function MainMenu({
 	onRankedDuel: () => void
 	onCollection: () => void
 	onSettings: () => void
+	onAccount: () => void
 }) {
 	const containerRef = useRef<HTMLElement>(null)
 	const menuItems = [
@@ -452,7 +490,7 @@ function MainMenu({
 						</button>
 					))}
 				</nav>
-				<aside className="menu-progress panel-chrome" aria-label="Captain progress"><strong>Captain Lv {getAccountLevelProgress(view.collection.xp).level}</strong><XpBar progress={getAccountLevelProgress(view.collection.xp).progress} /><span>{getAccountLevelProgress(view.collection.xp).nextLevelXp - view.collection.xp} XP to next level · {Object.keys(view.collection.records).length}/{fishSpecies.length} fish discovered</span></aside>
+				<aside className="menu-progress panel-chrome" aria-label="Captain progress"><strong>Captain Lv {getAccountLevelProgress(view.collection.xp).level}</strong><XpBar progress={getAccountLevelProgress(view.collection.xp).progress} /><span>{getAccountLevelProgress(view.collection.xp).nextLevelXp - view.collection.xp} XP to next level · {Object.keys(view.collection.records).length}/{fishSpecies.length} fish discovered</span><button className="account-open-button" onClick={onAccount}>{"Captain Account"}</button></aside>
 			</div>
 		</section>
 	)

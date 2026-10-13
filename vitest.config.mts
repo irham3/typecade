@@ -14,6 +14,7 @@ const aliases = {
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: { include: ['@supabase/supabase-js'] },
   publicDir: path.resolve(import.meta.dirname, 'apps/web/public'),
   test: {
     projects: [

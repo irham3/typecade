@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test"
 
 test.describe("Ocean Typing RPG shell", () => {
+	test("opens the pixel-styled account ledger with leaderboard and achievements", async ({ page }, testInfo) => {
+		const errors: string[] = []
+		page.on("pageerror", error => errors.push(error.message))
+		await page.goto("/")
+		await page.getByRole("button", { name: "Captain Account" }).click()
+		const dialog = page.getByRole("dialog", { name: "Captain Ledger" })
+		await expect(dialog).toBeVisible()
+		await expect(dialog).toContainText("Adventure leaderboard")
+		await expect(dialog).toContainText("Achievements")
+		await expect(dialog.getByLabel("Email")).toBeVisible()
+		await page.screenshot({ path: testInfo.outputPath("captain-ledger-desktop.png") })
+		await page.getByRole("button", { name: "Close captain account" }).click()
+		await expect(dialog).toHaveCount(0)
+		expect(errors).toEqual([])
+	})
+
 	for (const [name, width, height] of [["desktop", 1366, 768], ["small mobile", 320, 640]] as const) {
 		test(`Adventure has one typing surface and readable skills on ${name}`, async ({ page }, testInfo) => {
 			await page.setViewportSize({ width, height })

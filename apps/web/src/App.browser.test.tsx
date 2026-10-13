@@ -5,18 +5,39 @@ import { userEvent } from "vitest/browser"
 import { fishSpecies } from "@typecade/content"
 import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
 import { PracticeSession } from "@typecade/typing-engine"
-import { App, FeedbackBanner } from "./App"
+import { App, FeedbackBanner, handleAccountCloseKey } from "./App"
 import { PracticeScreen } from "./practice/PracticeScreen"
 import { PracticeKeyboard } from "./practice/PracticeKeyboard"
 import { createFishingGame } from "./game/createFishingGame"
 
+const accountMock = vi.hoisted(() => ({
+	client: null as object | null,
+	user: null as { id: string; email?: string } | null,
+	loading: false,
+	status: "Account sync is unavailable: Supabase is not configured.",
+	leaderboard: [] as Array<{ user_id: string; display_name: string; xp: number; catches: number; species_discovered: number; best_voyage: number }>,
+	achievements: [] as Array<{ achievement_id: string; unlocked_at: string }>,
+	signIn: vi.fn(async () => true), signUp: vi.fn(async () => true), signOut: vi.fn(async () => {}),
+	syncSave: vi.fn(async () => {}), restoreSave: vi.fn(async () => null), refresh: vi.fn(async () => {}),
+}))
+vi.mock("./account/useOceanAccount", () => ({ useOceanAccount: () => accountMock }))
 vi.mock("./game/createFishingGame", () => ({ createFishingGame: vi.fn() }))
 
 describe("application browser coverage", () => {
+	it("closes the captain ledger for Escape only", () => {
+		const onClose = vi.fn()
+		handleAccountCloseKey("Escape", onClose)
+		handleAccountCloseKey("Tab", onClose)
+		expect(onClose).toHaveBeenCalledOnce()
+	})
 	let host: HTMLDivElement
 	let root: Root
 
 	beforeEach(() => {
+		accountMock.client = null; accountMock.user = null; accountMock.loading = false
+		accountMock.status = "Account sync is unavailable: Supabase is not configured."
+		accountMock.leaderboard = []; accountMock.achievements = []
+		accountMock.signIn.mockClear(); accountMock.signUp.mockClear(); accountMock.signOut.mockClear()
 		vi.mocked(createFishingGame).mockReset().mockImplementation(() => ({ ready: Promise.resolve(), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
 		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 		host = document.createElement("div")
@@ -58,6 +79,60 @@ describe("application browser coverage", () => {
 		expect(host.querySelectorAll('.done,.incorrect')).toHaveLength(1)
 		await click('button[aria-label="Backspace"]')
 		expect(host.querySelectorAll('.done,.incorrect')).toHaveLength(0)
+	})
+
+	it("opens the pixel-styled captain ledger from the main menu", async () => {
+		accountMock.client = {}
+		accountMock.status = ""
+		await mount()
+		await click(".account-open-button")
+		expect(host.querySelector('[role="dialog"][aria-labelledby="captain-account-title"]')).not.toBeNull()
+		expect(host.textContent).toContain("Adventure leaderboard")
+		expect(host.textContent).toContain("Achievements")
+		expect(host.textContent).toContain("Sign in to sync Adventure")
+		accountMock.loading = true
+		await act(async () => root.render(<App />))
+		expect(host.querySelector<HTMLButtonElement>('.captain-account-actions button[type="submit"]')!.textContent).toContain("Please wait")
+		accountMock.loading = false
+		await act(async () => root.render(<App />))
+		await act(async () => { await userEvent.type(host.querySelector<HTMLInputElement>('[aria-label="Email"]')!, "captain@example.test") })
+		await act(async () => { await userEvent.type(host.querySelector<HTMLInputElement>('[aria-label="Password"]')!, "secret") })
+		await act(() => host.querySelector<HTMLFormElement>(".captain-account-form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
+		expect(accountMock.signIn).toHaveBeenCalledWith("captain@example.test", "secret")
+		await click('.captain-account-actions button[type="button"]')
+		expect(host.querySelector('[aria-label="Display name"]')).not.toBeNull()
+		expect(host.querySelector<HTMLInputElement>('[aria-label="Password"]')!.autocomplete).toBe("new-password")
+		await act(async () => { await userEvent.type(host.querySelector<HTMLInputElement>('[aria-label="Display name"]')!, "Deckhand") })
+		await act(() => host.querySelector<HTMLFormElement>(".captain-account-form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
+		expect(accountMock.signUp).toHaveBeenCalledWith("captain@example.test", "secret", "Deckhand")
+		await click('.captain-account-actions button[type="button"]')
+		accountMock.user = { id: "captain", email: "captain@example.test" }
+		accountMock.leaderboard = [{ user_id: "captain", display_name: "Captain", xp: 25, catches: 1, species_discovered: 1, best_voyage: 1 }]
+		accountMock.achievements = [{ achievement_id: "first_catch", unlocked_at: "today" }]
+		accountMock.status = ""
+		await act(async () => root.render(<App />))
+		expect(host.textContent).toContain("Signed in as")
+		expect(host.textContent).toContain("Captain")
+		expect(host.textContent).toContain("25 XP")
+		expect(host.querySelector('.captain-account-columns li.unlocked')).not.toBeNull()
+		await click(".captain-account-session button")
+		expect(accountMock.signOut).toHaveBeenCalledOnce()
+		accountMock.user = { id: "captain" }
+		await act(async () => root.render(<App />))
+		expect(host.textContent).toContain("Ocean Captain")
+		await click('button[aria-label="Close captain account"]')
+		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
+		await click(".account-open-button")
+		await act(() => host.querySelector<HTMLElement>(".captain-account-panel")!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })))
+		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).not.toBeNull()
+		await act(async () => { await userEvent.keyboard("x") })
+		await act(() => host.querySelector<HTMLElement>(".captain-account-overlay")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true })))
+		await act(() => host.querySelector<HTMLElement>(".captain-account-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
+		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
+		await click(".account-open-button")
+		await act(() => host.querySelector<HTMLElement>(".captain-account-overlay")!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })))
+		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
+		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
 	})
 
 	it("disposes a pending renderer import when the application unmounts", async () => {

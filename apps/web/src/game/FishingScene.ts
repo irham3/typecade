@@ -14,6 +14,9 @@ import { fishLayout, surfaceY } from "./ocean-motion"
 type PixelMesh = Mesh<PlaneGeometry, MeshBasicMaterial>
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; size: number; bubble: boolean }
 interface Ring { mesh: Mesh<RingGeometry, MeshBasicMaterial>; life: number; scale: number }
+export function fishPullWeight(fish: FishSpecies): number {
+	return fish.rarity === "boss" ? .42 : fish.behavior === "armored" ? .5 : 1
+}
 const eyes: Record<string, [number, number, number, number, number]> = {
 	fish_kelp_darter: [23, 53, 13, 11, 0xb1cb59], fish_sunny_guppy: [30, 61, 16, 17, 0xffd145],
 	fish_shellback_puffer: [42, 57, 14, 14, 0xbcdcca], fish_tide_skipper: [14, 54, 9, 6, 0x57bde0],
@@ -230,7 +233,7 @@ export class FishingScene {
 			this.bridge.on("fish:hooked", () => { if (this.endTime >= 0) return; this.setFishState("bite"); this.stateUntil = this.time + .36; this.burst(18, 0x9ae7ff, true); this.audio.play("sfx_splash_a", "gameplay") }),
 			this.bridge.on("character:correct", ({ combo }) => {
 				if (this.currentFish && this.endTime < 0 && !this.reduced) {
-					const weight = this.currentFish.rarity === "boss" ? .42 : this.currentFish.behavior === "armored" ? .5 : 1
+					const weight = fishPullWeight(this.currentFish)
 					this.fishVelocityX = Math.max(-46, this.fishVelocityX - (9 + Math.min(combo, 8)) * weight)
 				}
 				this.trauma = Math.min(.5, this.trauma + .06)

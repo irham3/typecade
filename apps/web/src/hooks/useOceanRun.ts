@@ -39,6 +39,8 @@ import {
 } from "@typecade/game-rules"
 import { TypingSession } from "@typecade/typing-engine"
 import { GameEventBridge } from "../bridge/game-event-bridge"
+import { mergeOceanSaves } from "../account/ocean-account"
+import { useOceanAccount, type OceanAccountState } from "../account/useOceanAccount"
 
 const SAVE_KEY = "typecade:ocean-typing-rpg:m1"
 const starterSeed = "shallow-coast-vertical-slice"
@@ -83,6 +85,7 @@ export interface VolumeState {
 
 export interface OceanRunControls {
 	bridge: GameEventBridge
+	account: OceanAccountState
 	view: OceanRunView
 	activeSkills: typeof fishingSkills
 	skillOffers: typeof fishingSkills
@@ -99,6 +102,8 @@ export interface OceanRunControls {
 
 export function useOceanRun(controlsActive = true): OceanRunControls {
 	const bridge = useMemo(() => new GameEventBridge(), [])
+	const account = useOceanAccount()
+	const { syncSave: syncAccountSave, restoreSave: restoreAccountSave, client: accountClient, user: accountUser } = account
 	const sessionRef = useRef<TypingSession | null>(null)
 	const expeditionRef = useRef<ExpeditionState | null>(null)
 	const collectionRef = useRef<CollectionState | null>(null)
@@ -134,12 +139,14 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 	useEffect(() => () => window.clearTimeout(transitionRef.current), [])
 
 	const persist = useCallback((expedition: ExpeditionState, collection: CollectionState) => {
+		const save = serializeOceanSave(expedition, collection, new Date().toISOString())
 		try {
-			window.localStorage.setItem(SAVE_KEY, serializeOceanSave(expedition, collection, new Date().toISOString()))
+			window.localStorage.setItem(SAVE_KEY, save)
 		} catch {
 			// Persistence is best-effort for the local vertical slice.
 		}
-	}, [])
+		void syncAccountSave(save)
+	}, [syncAccountSave])
 
 	const syncView = useCallback((patch: Partial<OceanRunView> = {}) => {
 		const session = sessionRef.current!
@@ -528,6 +535,26 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 		bridge.emit("settings:effects", { reducedMotion: view.reducedMotion })
 	}, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+	useEffect(() => {
+		if (!accountUser || !accountClient) return
+		let active = true
+		void restoreAccountSave().then(cloudSave => {
+			if (!active) return
+			const localSave = window.localStorage.getItem(SAVE_KEY)
+			const mergedSave = mergeOceanSaves(localSave, cloudSave)
+			const restored = restoreOceanSave(mergedSave)
+			if (!restored) {
+				void syncAccountSave(serializeOceanSave(expeditionRef.current!, collectionRef.current!, new Date().toISOString()))
+				return
+			}
+			try { window.localStorage.setItem(SAVE_KEY, mergedSave!) } catch { /* The signed-in cloud copy remains available. */ }
+			pausedRef.current = true
+			startEncounterFromExpedition(restored.expedition, restored.collection, "Captain save linked", getEncounterIndexInRun(restored.expedition) > 0)
+			void syncAccountSave(mergedSave!)
+		}).catch(() => {})
+		return () => { active = false }
+	}, [accountClient, restoreAccountSave, syncAccountSave, accountUser, startEncounterFromExpedition])
+
 	const typeKey = useCallback((key: string) => {
 		if (!controlsActiveRef.current || pausedRef.current || !encounterRef.current || encounterRef.current.status !== "active") return
 		const metrics = sessionRef.current!.getSnapshot().metrics
@@ -595,6 +622,7 @@ export function useOceanRun(controlsActive = true): OceanRunControls {
 
 	return {
 		bridge,
+		account,
 		view,
 		activeSkills: fishingSkills.filter((skill) => view.expedition.selectedSkillIds.includes(skill.id)),
 		skillOffers: view.skillOffers,

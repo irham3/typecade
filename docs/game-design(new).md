@@ -309,6 +309,8 @@ Colyseus is preferred over a collection of custom WebSocket handlers because its
 
 Supabase Realtime can support social presence and notifications. Competitive match authority should remain in Colyseus rather than being based only on database change subscriptions.
 
+For this Ocean migration, the user explicitly authorized a narrower Supabase slice on 2026-10-13: email account sign-in, private Adventure save and achievement persistence, and a public XP leaderboard. This does not authorize Supabase multiplayer or match-result authority. The XP board stores client-reported progression and is not cheat-resistant; competitive rankings need server-verified results.
+
 ### 10.4 Suggested modules
 
 ```text

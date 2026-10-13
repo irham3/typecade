@@ -22,6 +22,11 @@ vi.mock("@typecade/content", async (importOriginal) => {
 let controls: OceanRunControls | undefined
 let preInitControls: { skill: boolean; routeId: string } | undefined
 let initialRouteId: string | undefined
+const accountMock = vi.hoisted(() => ({
+	client: null as unknown, user: null as unknown,
+	restoreSave: vi.fn(async () => null as string | null), syncSave: vi.fn(async () => {}),
+}))
+vi.mock("../account/useOceanAccount", () => ({ useOceanAccount: () => accountMock }))
 
 function Probe({ active = true }: { active?: boolean }) {
 	const run = useOceanRun(active)
@@ -175,6 +180,9 @@ describe("ocean run browser controls", () => {
 		controls = undefined
 		preInitControls = undefined
 		initialRouteId = undefined
+		accountMock.client = null; accountMock.user = null
+		accountMock.restoreSave.mockReset().mockResolvedValue(null)
+		accountMock.syncSave.mockReset().mockResolvedValue(undefined)
 	})
 
 	afterEach(async () => {
@@ -193,6 +201,50 @@ describe("ocean run browser controls", () => {
 		if (!controls) throw new Error("Hook controls were not initialized")
 		return controls
 	}
+
+	it("links local progression to a signed-in captain and restores the newer cloud run", async () => {
+		accountMock.client = {}; accountMock.user = { id: "captain" }
+		const cloudExpedition = { ...createShallowCoastExpedition("cloud-captain"), currentEncounterIndex: 2 }
+		accountMock.restoreSave.mockResolvedValue(serializeOceanSave(cloudExpedition, { ...createInitialCollection(), xp: 300 }, "2026-10-12T00:00:00.000Z"))
+		await mount(false)
+		await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+		expect(controls!.view.expedition.seed).toBe("cloud-captain")
+		expect(controls!.view.expedition.currentEncounterIndex).toBe(2)
+		expect(controls!.view.collection.xp).toBe(300)
+		expect(accountMock.syncSave).toHaveBeenCalledOnce()
+		expect(JSON.parse(localStorage.getItem("typecade:ocean-typing-rpg:m1")!).collection.xp).toBe(300)
+	})
+
+	it("creates the first cloud record, tolerates local storage failure, and cancels a late auth restore", async () => {
+		accountMock.client = {}; accountMock.user = { id: "captain" }
+		await mount(false)
+		await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+		expect(accountMock.syncSave).toHaveBeenCalledOnce()
+
+		await act(async () => root.unmount()); root = createRoot(host); accountMock.syncSave.mockClear()
+		accountMock.restoreSave.mockResolvedValue(serializeOceanSave(createShallowCoastExpedition("cloud-only"), createInitialCollection()))
+		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("storage full") })
+		await mount(false)
+		await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+		expect(controls!.view.expedition.seed).toBe("cloud-only")
+		expect(accountMock.syncSave).toHaveBeenCalledOnce()
+
+		await act(async () => root.unmount()); root = createRoot(host); accountMock.syncSave.mockClear()
+		let resolveSave!: (value: string | null) => void
+		accountMock.restoreSave.mockReturnValue(new Promise(resolve => { resolveSave = resolve }))
+		await act(async () => root.render(<Probe active={false} />))
+		await act(async () => root.unmount())
+		await act(async () => resolveSave(serializeOceanSave(createShallowCoastExpedition("late-cloud"), createInitialCollection())))
+		expect(accountMock.syncSave).not.toHaveBeenCalled()
+	})
+
+	it("ignores cloud restore errors without breaking the local expedition", async () => {
+		accountMock.client = {}; accountMock.user = { id: "captain" }
+		accountMock.restoreSave.mockRejectedValue(new Error("offline"))
+		await mount(false)
+		await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+		expect(controls!.view.expedition.seed).toBe("shallow-coast-vertical-slice")
+	})
 
 	 it("pauses at harbor, equips newly unlocked skills and resumes without resetting the voyage", async () => {
 		const expedition = { ...createShallowCoastExpedition("harbor"), currentZoneIndex: 2, currentEncounterIndex: 3, selectedRouteId: "leviathan_trench" }

@@ -736,3 +736,31 @@ Evidence is saved in `docs/reference/ocean-verification-2026-10-13`: the before/
 This pass uses disposable browser contexts and the separate local E2E Worker on port 8788. It does not clear the user's interactive account storage. Changes and verification evidence are pushed on `app-v2`; no PR, merge or deployment is included.
 
 Physical phone GPUs/touch keyboards, native Safari on macOS/iOS, sustained FPS/battery behavior, WAN capacity and player retention remain unmeasured. This local run does not claim a GitHub-hosted CI result.
+
+## 2026-10-13 — Living ocean feedback and Adventure account sync
+
+### Changes
+
+- Correct keystrokes now give hooked fish a small, damped pull toward the boat. Pull strength follows combo and fish weight: boss and armored fish resist more. Idle pixel fish schools swim across the underwater layer; a seeded, bounded bubble pool adds ambient motion and stops under reduced-motion settings or pause.
+- Added an Adventure account panel in the main menu for email sign-in/sign-up, public XP leaderboard and saved achievements. Signed-in users merge local/cloud saves without discarding discoveries, then sync the save, public progress aggregate and unlocked achievement IDs after progression changes. Local saves remain available after sign-out and when Supabase is unavailable.
+- Added `ocean_progress`, `ocean_saves` and `ocean_achievements` with RLS: leaderboard fields are public read; save JSON and achievement reads are owner-only; writes require the authenticated row owner. Supabase schema checks and RLS advisor were run after applying migration `20261013141438` to the configured project.
+- Supabase public-client configuration is injected from the existing `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; no service-role key is exposed to the browser bundle. The public XP leaderboard reflects client-reported progression and is not cheat-resistant. Competitive rankings require server-authoritative verification.
+- Updated the Ocean scope exception in `AGENTS.md` and this design's Supabase section; no multiplayer backend or ranked match authority was added.
+
+### Fresh verification
+
+| Command/check | Result |
+| --- | --- |
+| `npm run test` | 176/176 tests passed across 19 files. |
+| `npm run test:coverage` | 100% statements (2,628/2,628), branches (1,922/1,922), functions (556/556) and lines (2,074/2,074). Global thresholds and source includes remain unchanged. |
+| `npm run test:e2e` | 90/90 passed in one full run, 15.5 minutes: 30 Chromium, 30 Firefox and 30 WebKit scenarios. Includes account panel, input/skills, full endless voyages and boss refits, save/resume, responsive menus/HUD, 100-player multiplayer visualization and WebGL recovery. |
+| `npm run build` | Passed. Supabase client 162.85 KB / 42.52 KB gzip; Three core 186.59 KB / 50.12 KB; renderer/gameplay 374.08 KB / 92.21 KB; app shell 375.07 KB / 121.16 KB. No chunk-size advisory. |
+| `npm run lint` | Passed with no warnings. |
+| `npx tsc --noEmit`, `npm run typecheck:rooms` | Both passed. |
+| `npm audit` | Zero vulnerabilities. |
+| Renderer-retirement audit | No Pixi dependency/source matches. Phaser matches are limited to the historical manifest notes and explicit retirement rules; no runtime/dependency match. |
+| `git diff --check` | Passed. |
+
+### Limits
+
+The E2E run covers the local app and Worker, not physical devices or a WAN. The sign-in UI and sync logic are tested with browser tests and Supabase schema/policies are verified remotely, but this run did not create a real email account or confirm an email-delivery/redirect flow. Existing account settings must permit the deployed origin. Client-reported leaderboard rows can be forged; save/achievement ownership is protected by RLS, but game-state authenticity is not.

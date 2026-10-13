@@ -18,13 +18,13 @@ Implement Milestone 0 and Milestone 1 only:
 - Three zones, nine regular fish, one boss.
 - Six MVP temporary skills.
 - Typing engine, fishing rules, VFX/audio hooks, checkpoints, permanent collection.
-- Local persistence as the account/cloud-save stand-in.
+- Local persistence, plus the user-authorized Adventure Supabase account save, achievements, and XP leaderboard integration added on 2026-10-13.
 
 Do not implement Milestone 2+ work in this branch:
 
 - No Colyseus server.
 - No ranked matchmaking or Boat Duel.
-- No Supabase Auth/Postgres/RLS.
+- No Supabase-backed multiplayer, match history, or ranked result validation. Adventure account data is the narrow exception documented in `docs/MIGRATION-LOG.md`.
 - No match history backend.
 - No `apps/game-server`.
 

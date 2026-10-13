@@ -2448,6 +2448,37 @@ button, select, textarea { font: inherit; }
 .typing-help kbd, .skill-key { border-radius: 0; }
 .xp-track i { transition: width 300ms ease-out; }
 .avatar { border-radius: 0; background: #163a59; }
+.account-open-button { min-height: 36px !important; padding: 3px 10px; font-size: .7rem; }
+.captain-account-overlay { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 14px; background: #041327dc; }
+.captain-account-panel { width: min(760px, 100%); max-height: min(90dvh, 820px); overflow: auto; padding: clamp(14px, 3vw, 24px); color: #edf7ec; font: 700 .8rem/1.45 Consolas, monospace; }
+.captain-account-panel header, .captain-account-session, .captain-account-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.captain-account-panel header { border-bottom: 2px solid #31536d; padding-bottom: 10px; }
+.captain-account-panel header small, .captain-account-panel h3, .captain-account-panel small { color: #b6d1d2; }
+.captain-account-panel h2 { margin: 3px 0 0; color: #ffdf91; font-size: 1.25rem; }
+.captain-account-panel h3 { margin: 12px 0 6px; color: #ffdf91; font-size: .85rem; }
+.captain-account-panel .account-close { min-height: 38px !important; width: 42px; font-size: 1.4rem; }
+.captain-account-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 12px; }
+.captain-account-form label { display: grid; gap: 4px; color: #d2e2dc; }
+.captain-account-form label:first-child:nth-last-child(3) { grid-column: 1 / -1; }
+.captain-account-form input { width: 100%; padding: 6px 8px; }
+.captain-account-actions { grid-column: 1 / -1; justify-content: flex-start; flex-wrap: wrap; }
+.captain-account-actions button, .captain-account-session button { padding: 4px 10px; font-size: .72rem; }
+.captain-account-session { justify-content: flex-start; flex-wrap: wrap; margin: 12px 0; }
+.captain-account-session span { flex: 1 1 240px; }
+.captain-account-status { min-height: 1.4em; margin: 8px 0; color: #b6d1d2; }
+.captain-account-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border-top: 2px solid #31536d; }
+.captain-account-columns ol, .captain-account-columns ul { display: grid; gap: 5px; padding: 0; margin: 0; list-style: none; }
+.captain-account-columns ol li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid #244563; padding: 4px 2px; }
+.captain-account-columns ol strong, .captain-account-columns .unlocked > span { color: #ffdf91; }
+.captain-account-columns ul li { display: flex; gap: 7px; align-items: flex-start; }
+.captain-account-columns ul li > div { display: grid; }
+.captain-account-columns ul small, .captain-account-panel > section > small { font-size: .65rem; }
+.captain-account-columns .locked { opacity: .58; }
+.account-empty { opacity: .7; }
+@media (max-width: 560px) {
+ .captain-account-form, .captain-account-columns { grid-template-columns: 1fr; }
+ .captain-account-form label:first-child:nth-last-child(3) { grid-column: auto; }
+}
 .prep-layer { background: linear-gradient(#06192d80, #06192dc0), url('/assets/ocean/mainmenu/background-mainmenu.png') center / cover; }
 .hud { display: grid; grid-template-rows: auto auto auto minmax(90px, 1fr) auto auto; gap: 6px; padding: 10px; overflow: auto; }
 .hud .topbar { position: static; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }

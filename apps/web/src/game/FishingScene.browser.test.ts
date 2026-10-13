@@ -4,16 +4,17 @@ import { fishSpecies, getFish, fishingSkills } from "@typecade/content"
 import { startEncounter, resolveCatchResult } from "@typecade/game-rules"
 import { GameEventBridge } from "../bridge/game-event-bridge"
 import { createFishingGame } from "./createFishingGame"
+import { fishPullWeight } from "./FishingScene"
 import { OceanAssets } from "./OceanAssets"
 import { surfaceY } from "./ocean-motion"
 
 type PixelMesh = Mesh<PlaneGeometry, MeshBasicMaterial>
 interface Inspection {
-	tick(time: number): void; resize(): void; updateWorld(delta: number): void
+	tick(time: number): void; resize(): void; updateWorld(delta: number): void; updateFish(delta?: number): void
 	time: number; endTime: number; stateUntil: number; fishState: string; lastTexture: string
 	boat: PixelMesh; fish: Group; fishBody: PixelMesh; fishTail: PixelMesh; eyelid: PixelMesh; eyeLine: PixelMesh; gill: PixelMesh
 	line: Line; lure: PixelMesh; water: Mesh<PlaneGeometry, ShaderMaterial>
-	pool: Array<{ x: number; y: number; life: number; bubble: boolean }>
+	pool: Array<{ x: number; y: number; life: number; bubble: boolean }>; ambientBubbleTimer: number; fishVelocityX: number
 	rings: Array<{ life: number }>; particles: InstancedMesh
 	ambient: Mesh[]
 }
@@ -40,6 +41,12 @@ function encounter(bridge: GameEventBridge, fish = fishSpecies[0]) {
 }
 
 describe("Three.js ocean renderer with a real WebGL context", () => {
+	it("scales the fish pull weight for boss, armored and regular fish", () => {
+		expect(fishPullWeight(getFish("crown_leviathan"))).toBe(.42)
+		expect(fishPullWeight(fishSpecies.find(item => item.behavior === "armored")!)).toBe(.5)
+		expect(fishPullWeight(fishSpecies.find(item => item.behavior === "calm")!)).toBe(1)
+	})
+
 	it("replays state before assets load, compiles shaders and renders a nonblank ocean", async () => {
 		const bridge = new GameEventBridge()
 		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
@@ -125,6 +132,12 @@ describe("Three.js ocean renderer with a real WebGL context", () => {
 		for (let i = 0; i < 120; i++) view.updateWorld(.016)
 		expect(Math.abs(view.fish.position.x - startX)).toBeLessThan(2)
 		expect(pulledX).toBeLessThan(startX)
+		const calmFish = fishSpecies.find(item => item.behavior === "calm")!
+		encounter(bridge, calmFish); bridge.emit("character:correct", { key: "o", expected: "o", combo: 1, progress: .1 })
+		expect(view.fishVelocityX).toBe(-10)
+		encounter(bridge, getFish("crown_leviathan")); bridge.emit("character:correct", { key: "o", expected: "o", combo: 1, progress: .1 })
+		expect(view.fishVelocityX).toBeCloseTo(-4.2)
+		view.updateFish()
 		const schoolX = view.ambient[0]!.position.x
 		view.time += 1; view.updateWorld(.016)
 		expect(view.ambient[0]!.position.x).not.toBe(schoolX)
@@ -176,6 +189,9 @@ describe("Three.js ocean renderer with a real WebGL context", () => {
 		view.pool[1].life = .5; view.pool[1].bubble = false
 		view.updateWorld(.02); expect(view.pool[0].life).toBe(0)
 		view.updateWorld(2); expect(view.pool.every(p => p.life === 0)).toBe(true)
+		view.ambientBubbleTimer = 1.13; view.pool.forEach(particle => { particle.life = 2; particle.bubble = false })
+		view.updateWorld(.048)
+		expect(view.pool.every(particle => particle.life > 0)).toBe(true)
 	})
 	it("finishes catch and escape animations, resets for the next encounter and cleans GPU resources", async () => {
 		const { bridge, view, game, host } = await setup()

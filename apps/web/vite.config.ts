@@ -1,14 +1,20 @@
 import react from "@vitejs/plugin-react"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { defineConfig } from "vite"
+import { defineConfig, loadEnv } from "vite"
 
 const appDir = fileURLToPath(new URL(".", import.meta.url))
 const rootDir = path.resolve(appDir, "../..")
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+	const publicSupabase = loadEnv(mode, rootDir, "NEXT_PUBLIC_SUPABASE_")
+	return {
 	root: appDir,
 	plugins: [react()],
+	define: {
+		"import.meta.env.VITE_SUPABASE_URL": JSON.stringify(publicSupabase.NEXT_PUBLIC_SUPABASE_URL ?? ""),
+		"import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(publicSupabase.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""),
+	},
 	publicDir: "public",
 	build: {
 		outDir: path.resolve(rootDir, "dist/web"),
@@ -16,7 +22,10 @@ export default defineConfig({
 		rolldownOptions: {
 			output: {
 				// Cache the stable scene/math core separately from renderer and gameplay changes.
-				codeSplitting: { groups: [{ name: "three-core", test: /node_modules[\\/]three[\\/]build[\\/]three\.core\.js$/ }] },
+				codeSplitting: { groups: [
+					{ name: "three-core", test: /node_modules[\\/]three[\\/]build[\\/]three\.core\.js$/ },
+					{ name: "supabase-client", test: /node_modules[\\/]@supabase[\\/]/ },
+				] },
 			},
 		},
 	},
@@ -37,4 +46,5 @@ export default defineConfig({
 			"/api": { target: "http://localhost:8787", ws: true },
 		},
 	},
+}
 })
