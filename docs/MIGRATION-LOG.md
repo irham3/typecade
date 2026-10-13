@@ -693,3 +693,46 @@ Final targeted command: `npm run test:e2e -- --grep '100-player|context loss'` r
 - Dependency fixes were committed and pushed as `741e95c` on `app-v2`. Runtime/layout/tests and this evidence follow on the same branch. No PR, merge or deployment is included.
 
 Physical phone GPUs, native Safari on macOS/iOS, sustained FPS/battery behavior, real WAN room capacity and player retention have not been measured. Browser-engine checks on this Windows machine do not establish those results. Existing fish artwork is reused with corrected runtime motion; this pass does not generate replacement sprite collections.
+
+## 2026-10-13 — Full regression and multiplayer visual corrections
+
+### Baseline and findings
+
+Testing resumed on `app-v2` at `633435b` with a clean working tree. The intervening commit removes the historical Overdrive navbar item. The active Ocean application, saved data format and renderer remain governed by the current Three.js rules.
+
+Screenshot review found a visual failure that the previous assertions did not detect: multiplayer placed the first rival boat over the sky portion of the coast background. At extreme relative progress, a rival could also be clipped horizontally, and its name overlapped the Finish marker. Earlier full runs were stopped to resolve these findings before the final matrix.
+
+| Finding | Correction | Regression evidence |
+| --- | --- | --- |
+| Rival boats appeared above the ocean. | Crop the ocean half of the existing coast artwork in the race stage's background layer. Existing ship artwork, pixel plates and icons are reused. | The new two-player regression fails on the old styling with `waterOnly: false`; it passes after the correction. |
+| Lane spacing could overlap sprites/nameplates or clip the bottom lane. | Position boats by their centers, with separate desktop/mobile lane spacing. The compact mobile stage minimum grows from 180 to 184 px. | Computed bounds for all visible boats and their nameplates must remain inside the stage and in separate vertical lanes. |
+| An extreme leader/trailer could leave part of its boat/nameplate outside the stage. | Clamp relative horizontal movement with 56 px of edge clearance. Relative progress still drives movement. | The two-player test checks the mobile scene again after one captain finishes while the other remains at zero progress. |
+| The Finish marker overlapped the leading captain's name. | Reserve a narrow top strip for the marker and place the first lane below it. | Every visible boat must stay below the marker's bounds. The inspected screenshot shows both labels separately. |
+
+The checks run inside the existing 100-participant and two-player/rematch scenarios. They also require at least two visible boats, so an empty stage cannot pass the bounds check. Peer counts, gameplay rules, network protocol and coverage thresholds remain unchanged. No new runtime dependency or generated asset is added.
+
+### Fresh verification on the final production source
+
+| Command/check | Result |
+| --- | --- |
+| `npm run test` | 154/154 tests passed across 16 files. |
+| `npm run test:coverage` | 100% statements (2,376/2,376), branches (1,710/1,710), functions (505/505) and lines (1,895/1,895), across 22 active production source files. Includes and thresholds are unchanged. |
+| `npm run test:e2e` | **87/87 passed in one complete run, 14.4 minutes**: 29 Chromium, 29 Firefox and 29 WebKit cases. No filtered subset or combined earlier result is used for this count. |
+| `npm run build` | Passed, also rebuilt by the final E2E command. Shell 364.79 KB / 117.92 KB gzip; Three core 186.59 KB / 50.12 KB gzip; renderer/gameplay 372.78 KB / 91.84 KB gzip; CSS 62.76 KB / 13.59 KB gzip. No chunk-size advisory. |
+| `npm run lint` | Passed. |
+| `npx tsc --noEmit` | Passed. |
+| `npm run typecheck:rooms` | Passed. |
+| `npm audit` | Zero findings in the fresh 2026-10-13 report. Dependency versions were not changed in this pass. |
+| Renderer-retirement audits recorded above | No Pixi or Phaser runtime/dependency matches. |
+| Headless package checks | No React/Three.js/Phaser imports, `Math.random()` calls, or DOM globals (`document`, `window`, `HTMLElement`, `HTMLAudioElement`, `HTMLCanvasElement`). |
+| `git diff --check` | Passed. |
+
+The E2E matrix covers all menu destinations, Practice configuration and rolling rows, Adventure input/skills/HUD/pause, five gameplay viewport sizes, two full voyages with boss/refit/save/resume, multiplayer variants/host transfer/rematch/100-participant standings, and WebGL context-loss recovery. The 100-participant check uses one browser captain and 99 real platform WebSocket peers against the local Worker; it is not 100 physical devices on a WAN.
+
+### Evidence and limits
+
+Evidence is saved in `docs/reference/ocean-verification-2026-10-13`: the before/after multiplayer screenshots, final coverage totals, dependency audit and the successful E2E last-run status. The before image shows the initial race; the after image shows a finished rival at the screen edge. Full local HTML results are available in the ignored `playwright-report` directory.
+
+This pass uses disposable browser contexts and the separate local E2E Worker on port 8788. It does not clear the user's interactive account storage. Changes and verification evidence are pushed on `app-v2`; no PR, merge or deployment is included.
+
+Physical phone GPUs/touch keyboards, native Safari on macOS/iOS, sustained FPS/battery behavior, WAN capacity and player retention remain unmeasured. This local run does not claim a GitHub-hosted CI result.

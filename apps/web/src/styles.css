@@ -2506,13 +2506,16 @@ button, select, textarea { font: inherit; }
 .race-board-dialog:not([open]), .pause-overlay:not([open]) { display: none; }
 .pause-overlay { inset: 0; margin: auto; padding: 0; border: 0; width: min(480px, calc(100% - 24px)); height: fit-content; background: transparent; pointer-events: auto; }
 .pause-card { width: 100%; }
-.race-screen .race-stage { min-height: 350px; border-radius: 0; background: url('/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp') center / cover; }
-.race-stage::before, .race-stage::after, .race-horizon { display: none; }
-.race-screen .race-boat { width: 100px; }
+.race-screen .race-stage { min-height: 350px; border-radius: 0; background: #095077; }
+/* Crop the existing coast artwork to its ocean half so every race lane stays on water. */
+.race-screen .race-stage::before { display: block; inset: -100% 0 0; height: auto; border: 0; border-radius: 0; transform: none; background: url('/assets/ocean/backgrounds/bg_shallow_coast_gameplay_ai.webp') center bottom / cover; }
+.race-stage::after, .race-horizon { display: none; }
+.race-screen .race-boat { width: 100px; transform: translate(-50%, -50%); }
 .race-screen .race-boat img { width: 90px; height: 50px; }
 .race-screen .race-boat span, .race-buoy { border-radius: 0; }
-.race-screen .race-boat.self { top: 72%; }
-.race-screen .race-boat.rival-0 { top: 6%; }.race-screen .race-boat.rival-1 { top: 25%; }.race-screen .race-boat.rival-2 { top: 44%; }.race-screen .race-boat.rival-3 { top: 61%; display: none; }.race-screen .race-boat.rival-4 { display: none; }
+.race-screen .race-buoy { top: 1px; right: 4px; padding: 1px 6px; font-size: .65rem; line-height: 1; }
+.race-screen .race-boat.self { top: 83%; }
+.race-screen .race-boat.rival-0 { top: 15.5%; }.race-screen .race-boat.rival-1 { top: 37%; }.race-screen .race-boat.rival-2 { top: 60%; }.race-screen .race-boat.rival-3 { display: none; }.race-screen .race-boat.rival-4 { display: none; }
 .race-header, .race-config, .race-join, .race-waiting, .race-results, .race-room-meta, .race-type, .race-side, .race-error { border-radius: 0; }
 .race-side-head { flex-wrap: wrap; }
 .practice-screen .practice-passage { max-height: 240px; }
@@ -2523,10 +2526,10 @@ button, select, textarea { font: inherit; }
  .race-screen:has(.race-play) .race-header > div:first-child { display: none; }
  .race-screen:has(.race-play) .race-room-meta { padding: 8px; margin-bottom: 8px; font-size: .7rem; }
  .race-main { gap: 10px; }
- .race-screen .race-stage { min-height: clamp(180px, 28dvh, 240px); }
- .race-screen .race-boat.self { top: 68%; }
- .race-screen .race-boat.rival-0 { top: 3%; }
- .race-screen .race-boat.rival-1 { top: 35%; }
+ .race-screen .race-stage { min-height: clamp(184px, 28dvh, 240px); }
+ .race-screen .race-boat.self { top: 85%; }
+ .race-screen .race-boat.rival-0 { top: 25%; }
+ .race-screen .race-boat.rival-1 { top: 55%; }
  .race-type { padding: 12px; gap: 8px; }
  .race-passage { min-height: 54px; max-height: 96px; }
  .race-input-label { font-size: .75rem; }

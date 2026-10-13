@@ -37,6 +37,7 @@ test("a live 100-player room renders the fleet, searches standings, and finishes
 		await expect(page.getByRole("button", { name: "Start race" })).toBeEnabled()
 		await page.getByRole("button", { name: "Start race" }).click()
 		await expect(page.getByTestId("race-play")).toBeVisible({ timeout: 10000 })
+		await expectRaceSceneInWater(page)
 		const text = await page.getByTestId("race-passage").textContent()
 		await page.getByLabel("Race typing input").pressSequentially(text!.slice(0, 5))
 		await expect(page.locator(".race-results")).toContainText("Winner: Fleet Host", { timeout: 10000 })
@@ -122,15 +123,19 @@ test("two captains race the same Indonesian passage, see results, and rematch", 
 	})
 	try {
 		await expect(guest.getByTestId("race-passage")).toHaveText(await page.getByTestId("race-passage").textContent() ?? "")
+		await expectRaceSceneInWater(page)
 		for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
 			await guest.setViewportSize(viewport)
 			await guest.getByLabel("Race typing input").focus()
+			await expectRaceSceneInWater(guest)
 			await guest.screenshot({ path: testInfo.outputPath(`race-mobile-${viewport.width}.png`) })
 			await expect(guest.locator(".race-stage")).toBeInViewport({ ratio: 1 })
 			await expect(guest.getByLabel("Race typing input")).toBeInViewport({ ratio: 1 })
 		}
 		await typePassage(page)
 		await expect(page.getByText("Finished. Waiting for the others.")).toBeVisible()
+		await expectRaceSceneInWater(guest)
+		await guest.screenshot({ path: testInfo.outputPath("race-mobile-finished-rival.png") })
 		await typePassage(guest)
 		await expect(page.locator(".race-results")).toContainText("Winner: Alpha")
 		await expect(guest.locator(".race-results")).toContainText("Winner: Alpha")
@@ -148,6 +153,27 @@ test("two captains race the same Indonesian passage, see results, and rematch", 
 		await expect(page.locator(".race-results")).toContainText("Winner: Bravo")
 	} finally { await guestContext.close() }
 })
+
+async function expectRaceSceneInWater(page: Page): Promise<void> {
+	await expect.poll(() => page.locator(".race-stage").evaluate(stage => {
+		const bounds = stage.getBoundingClientRect()
+		const water = getComputedStyle(stage, "::before")
+		const finish = stage.querySelector(".race-buoy")!.getBoundingClientRect()
+		const boats = Array.from(stage.querySelectorAll<HTMLElement>(".race-boat"))
+			.filter(boat => getComputedStyle(boat).display !== "none")
+			.map(boat => {
+				const rect = boat.getBoundingClientRect()
+				const name = boat.querySelector("span")!.getBoundingClientRect()
+				return { top: rect.top, bottom: rect.bottom, left: Math.min(rect.left, name.left), right: Math.max(rect.right, name.right) }
+			})
+		return {
+			waterOnly: water.display !== "none" && parseFloat(water.top) <= -stage.clientHeight && parseFloat(water.height) >= stage.clientHeight * 2,
+			inside: boats.length >= 2 && boats.every(boat => boat.top >= bounds.top && boat.bottom <= bounds.bottom && boat.left >= bounds.left && boat.right <= bounds.right),
+			separate: boats.every((boat, index) => boats.slice(index + 1).every(other => Math.min(boat.bottom, other.bottom) <= Math.max(boat.top, other.top))),
+			finishClear: boats.every(boat => boat.top >= finish.bottom),
+		}
+	})).toEqual({ waterOnly: true, inside: true, separate: true, finishClear: true })
+}
 
 test("Perfect Tide removes a captain after one typo", async ({ browser, page }) => {
 	test.setTimeout(90000)
