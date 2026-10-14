@@ -764,3 +764,26 @@ Physical phone GPUs/touch keyboards, native Safari on macOS/iOS, sustained FPS/b
 ### Limits
 
 The E2E run covers the local app and Worker, not physical devices or a WAN. The sign-in UI and sync logic are tested with browser tests and Supabase schema/policies are verified remotely, but this run did not create a real email account or confirm an email-delivery/redirect flow. Existing account settings must permit the deployed origin. Client-reported leaderboard rows can be forged; save/achievement ownership is protected by RLS, but game-state authenticity is not.
+
+## 2026-10-15 — Repair the default Cloudflare deployment after the Vite migration
+
+The supplied Cloudflare log shows `npm run build:worker` succeeding, followed by `npx wrangler versions upload` failing because the default `wrangler.jsonc` still points at `.open-next/worker.js`. The Ocean configuration was only used by commands that explicitly selected `wrangler.ocean.jsonc`.
+
+- Updated the default configuration to the existing Ocean Worker entry point, `dist/web` SPA assets, `/api/*` routing, `ROOMS` binding and `RaceRoom` SQLite migration. Kept the production Worker name `typecade` and observability. Selected the account that the remote API confirms owns both this Worker and `typecade.com`.
+- Removed the unused `open-next.config.ts`. An actual deploy exposed Wrangler's automatic delegation to OpenNext when both legacy framework configuration files were present; dry runs alone did not exercise that delegation. Historical Next source and dependencies remain outside the active Vite deployment.
+- Corrected `npm run deploy` to build and deploy the default Worker. Kept the separate `typecade-ocean` development commands. Documented the first-deploy migration requirement: `wrangler deploy` applies pending Durable Object migrations; `versions upload` can be used after that migration for preview versions.
+- Switched the existing full Playwright suite to the default production configuration and added Worker bundle validation to CI, so testing no longer bypasses the configuration Cloudflare selects.
+
+No gameplay, save schema, account policy, generated asset or runtime dependency changes are included. Browser checks use disposable contexts and `.wrangler/e2e-state`; interactive account storage is not cleared.
+
+### Verification and delivery
+
+- `npm run test`: all 176 tests passed across 19 files.
+- `npm run test:e2e`: all 90 scenarios passed in one complete 15.7-minute run against the default Worker configuration: 30 Chromium, 30 Firefox and 30 WebKit. The final report records `status: passed` and no failed tests.
+- `npm run lint`, `npx tsc --noEmit` and `npm run typecheck:rooms`: passed.
+- `npm run build` and the exact Cloudflare build alias `npm run build:worker`: passed.
+- `npx wrangler deploy --dry-run` and `npx wrangler versions upload --dry-run`: passed against the default configuration.
+- After the user refreshed the expired Wrangler login, `npm run deploy` successfully uploaded the Ocean assets, provisioned `RaceRoom`, and deployed production version `d010ff96-d540-4a2c-905f-cd92e93b2c6f`. The exact formerly failing command, `npx wrangler versions upload`, then succeeded, creating preview version `e58dec2f-84cf-45a8-b082-9669ed691150` without moving production traffic.
+- Both `https://typecade.com` and `https://typecade.irhamtria.workers.dev` returned 200 for the Ocean HTML, its JS entry bundle and `/api/health`, with JSON 404 for an unknown `/api/*` endpoint. A disposable Chromium context on the production domain opened Adventure, reached renderer `ready`, rendered one canvas and accepted three characters without console/page errors. A separate production smoke created a two-slot room, received Ready over its real WebSocket and left the room.
+- Both recorded renderer-retirement searches returned no matches. `git diff --check` passed.
+- Source/configuration repair committed and pushed to `app-v2` as `3da5722`. The existing Cloudflare Workers Builds Git integration completed successfully for that commit: build `578a8041-abaa-4db1-a444-41891ae90a40`, uploaded version `035b5c34-9d69-46a0-a75f-6cfefe3f1511`, GitHub check conclusion `success`. This verifies the hosted build/upload path, in addition to local dry runs and the direct production deployment.
