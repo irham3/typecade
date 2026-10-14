@@ -25,7 +25,7 @@ export default defineConfig({
 	],
 	webServer: [
 		{
-			command: `npx wrangler dev --config wrangler.ocean.jsonc --port ${serverPort} --persist-to .wrangler/e2e-state`,
+			command: `npx wrangler dev --port ${serverPort} --persist-to .wrangler/e2e-state`,
 			url: baseURL,
 			reuseExistingServer: false,
 			timeout: 120000,

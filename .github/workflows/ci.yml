@@ -27,4 +27,5 @@ jobs:
       - run: npm test
       - run: npm run test:coverage
       - run: npm run build
+      - run: npx wrangler deploy --dry-run
       - run: npm run test:e2e

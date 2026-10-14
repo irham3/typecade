@@ -138,18 +138,24 @@ Vitest covers the headless engine, scoring, RNG, run progression, Shop, items, G
 
 ## Cloudflare Workers deployment
 
-The production target is Cloudflare Workers through OpenNext. A Cloudflare Pages build expects a static `out` directory and cannot deploy this Worker bundle.
+The Ocean application uses React + Vite and Three.js. Production serves the Vite assets from `dist/web` alongside the existing room API Worker at `apps/web/src/server/index.ts`. The earlier Overdrive/Next.js sections above are historical; the current design is in `docs/game-design(new).md`.
 
-Build the Worker bundle:
+Build the frontend assets:
 
 ```bash
 npm run build:worker
 ```
 
-Preview it through the OpenNext adapter:
+Check Worker bundling without uploading or changing production:
 
 ```bash
-npm run preview
+npx wrangler deploy --dry-run
+```
+
+Preview the assets and API locally:
+
+```bash
+npx wrangler dev
 ```
 
 Build and deploy from a configured local Wrangler session:
@@ -164,9 +170,12 @@ Use these commands for Cloudflare Workers Builds:
 | --- | --- |
 | Build command | `npm run build:worker` |
 | Deploy command | `npx wrangler deploy` |
+| Non-production branch deploy command | `npx wrangler versions upload` (after the initial migration below) |
 | Root directory | Repository root |
 
-The Worker reads its entry point, static asset directory, compatibility flags, service binding, and observability settings from `wrangler.jsonc`.
+The default `wrangler.jsonc` targets the existing production Worker named `typecade` in its configured Cloudflare account, with the `ASSETS` and `ROOMS` bindings and the `RaceRoom` SQLite Durable Object migration. Use `npx wrangler deploy` for the first Ocean deployment: `wrangler versions upload` cannot apply a pending Durable Object migration. After that deployment, non-production branches can use `npx wrangler versions upload` to upload preview versions without changing production traffic. Do not use the old `.open-next` output or OpenNext build commands. The obsolete `open-next.config.ts` is removed so Wrangler does not redirect deployment through the historical adapter.
+
+The separate `wrangler.ocean.jsonc` still targets `typecade-ocean` for the existing development commands. Production builds and the browser regression suite use the default configuration. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as build variables for Adventure account sync; these public values are compiled into the Vite bundle.
 
 ## Project documentation
 

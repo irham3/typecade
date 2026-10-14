@@ -1,19 +1,19 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "typecade",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2026-08-09",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "account_id": "7ae7eb833dd0c9cee3dc23d735fa9601",
+  "main": "apps/web/src/server/index.ts",
+  "compatibility_date": "2026-09-28",
   "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "directory": "dist/web",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
   },
-  "services": [
-    {
-      "binding": "WORKER_SELF_REFERENCE",
-      "service": "typecade"
-    }
-  ],
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "RaceRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RaceRoom"] }],
   "observability": {
     "enabled": true
   }

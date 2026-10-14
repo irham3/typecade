@@ -13,7 +13,7 @@
     "preview": "vite preview --config apps/web/vite.config.ts --host 0.0.0.0",
     "dev:rooms": "wrangler dev --config wrangler.ocean.jsonc --port 8787",
     "deploy:ocean": "npm run build && wrangler deploy --config wrangler.ocean.jsonc",
-    "deploy": "npm run build",
+    "deploy": "npm run build:worker && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "start": "vite preview --config apps/web/vite.config.ts --host 0.0.0.0",
     "lint": "eslint",
