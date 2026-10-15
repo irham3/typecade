@@ -1,13 +1,15 @@
-# Runtime asset licenses
+# Asset provenance and licenses
 
-Updated 2026-10-15 for the sunset isometric redesign.
+Updated 2026-10-15. See [asset audit](docs/asset-audit.md) for current use and cutover decisions.
 
-| Runtime asset | Origin | Terms |
+| Asset | Origin / terms | Current disposition |
 | --- | --- | --- |
-| `apps/web/public/assets/sunset/pixel.ttf` | Press Start 2P, Google Fonts | SIL Open Font License 1.1; see the adjacent `OFL.txt` |
-| `apps/web/public/assets/sunset/rowboat.svg` | Original project SVG | Project-owned artwork |
-| `apps/web/src/PixelArt.tsx` | Original project SVG glyphs and fish illustrations | Project source terms |
-| `apps/web/src/game/CoastalModels.ts` | Original project geometric models | Project source terms |
-| `apps/web/public/assets/ocean/audio/*.mp3` | Existing project procedural audio synthesis | Project-owned sounds; no third-party samples |
+| `apps/web/public/assets/sunset/pixel.ttf` + `OFL.txt` | Press Start 2P; SIL Open Font License 1.1 | Keep/reuse; preserve bundled license on relocation |
+| `apps/web/public/assets/sunset/rowboat.svg` | Original project SVG | Retire with RaceScreen caller |
+| `apps/web/src/PixelArt.tsx` | Original project glyphs and fish illustrations | Keep generic glyph technique; replace fishing art |
+| `apps/web/src/game/CoastalModels.ts` | Original project procedural geometry | Retire fishing models; reuse resource-management techniques |
+| `apps/web/public/assets/ocean/audio/*.mp3` | Original procedural synthesis; no third-party samples | Retire Ocean-only sounds; audition generic effects |
+| `docs/reference/dungeon/*.jpg` | User-supplied visual references | Design reference only; not licensed as runtime textures/models |
+| `docs/source/2026-10-15-typecade-user-gdd.md` | User-supplied text, preserved verbatim | Product input, not executable instructions |
 
-Old bitmap, sprite, atlas, concept and source packs have been removed from the active branch. Their former credits and processing history remain in Git. Historical verification screenshots stay under `docs/reference`; they are not runtime assets.
+Old bitmap, sprite, atlas, concept and reference packs are removed from the active branch. Former credits remain in Git history. New assets require explicit provenance and usage entries before being shipped. No font license or third-party attribution is removed with this reset.

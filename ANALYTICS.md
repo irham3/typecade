@@ -1,76 +1,21 @@
-# Analytics & Search Console Setup
+# Dungeon measurement plan
 
-Typecade currently ships with **no analytics** — we are flying blind. This
-guide walks through wiring up privacy-friendly analytics and submitting the
-site to search engines so we can measure and grow.
+Revision: 2026-10-15. Planning only. The previous Next.js/Umami/Search Console setup guide is retired because it refers to removed application paths and environment variables.
 
-## Layer 1 — Umami Analytics (in-app)
+No analytics dependency, remote collection or third-party account is added in this reset. Measure playability first with local test/profile evidence.
 
-Privacy-focused and lightweight, with no cookies by default. Product events
-use the typed adapter in `lib/analytics`; detailed gameplay telemetry stays
-in the existing telemetry boundary.
+## Required local evidence
 
-1. Create an Umami Cloud website for `typecade.com`.
-2. In `.env.local` set
-   ```
-   NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id
-   ```
-   For self-hosting, also set `NEXT_PUBLIC_UMAMI_SCRIPT_URL` to the instance
-   script URL.
-3. The `<UmamiAnalytics />` component in `app/layout.tsx` loads the script
-   automatically.
-4. Verify: open the site in an incognito window — Umami Realtime should show
-   a visitor within ~5 seconds.
+- First-run keyboard start and completion of a kill/cast/level/death/restart loop.
+- Time to first hit and level, HP loss, draft decisions and survival at declared typing profiles.
+- Correct/incorrect accepted input, WPM and accuracy using active real time rather than slow-motion time.
+- Target-label collisions and offscreen/clipped HUD across the supported viewports.
+- Frame-time p50/p95, draw calls and live enemy/loot/projectile counts at cap and boss stagger.
+- Heap and renderer allocation plateau after warmup, repeated navigation and context recovery.
+- Real-client multiplayer starts, finishes, disconnects/reconnects, validation failures and authoritative outcomes.
 
-## Layer 2 — Google Search Console
+Keep samples reproducible with seed, ruleset, input log, viewport, browser and hardware. Do not log raw passwords, auth tokens, custom practice text or personal keystroke streams to a remote service.
 
-Without this, Google will eventually crawl you, but you cannot see
-impressions, click-through, indexing errors, or mobile-usability issues.
+## Later product analytics
 
-1. Sign in at https://search.google.com/search-console with the Google
-   account that owns typecade.com.
-2. **Add property → URL prefix** → enter `https://typecade.com`.
-3. **Verification → HTML tag** — copy the `content="..."` value (a long
-   random string).
-4. Add it to `.env.local`:
-   ```
-   NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=paste-the-content-here
-   ```
-5. Deploy. Verify in Search Console.
-6. Once verified, **Sitemaps → Add sitemap** → submit `https://typecade.com/sitemap.xml`.
-7. **URL Inspection → paste `https://typecade.com`** → **Request indexing**.
-   Repeat for `/arena`, `/learn`, `/board`, `/about`, and at least 3 learn
-   lessons.
-
-## Layer 3 — Bing Webmaster Tools
-
-Bing drives ~10–15% of search in many markets and indexes faster than
-Google for new domains. Worth 5 minutes.
-
-1. Sign in at https://www.bing.com/webmasters with a Microsoft account.
-2. **Add site** → `https://typecade.com`.
-3. **Verify → HTML meta tag** — copy the `content="..."` value.
-4. Add to `.env.local`:
-   ```
-   NEXT_PUBLIC_BING_SITE_VERIFICATION=paste-the-content-here
-   ```
-5. Deploy, verify, then submit the sitemap and request indexing.
-
-## What to monitor weekly
-
-After 2–3 weeks of data, check:
-
-- **Umami → Top pages** — which routes get organic traffic
-- **Umami → Top sources** — where visitors come from
-- **GSC → Performance → Queries** — which keywords trigger impressions
-- **GSC → Coverage → Excluded** — pages Google chose not to index (fix or 410)
-- **GSC → Mobile Usability** — fix any flagged issues
-
-If impressions > 0 but clicks ≈ 0 → title/description isn't compelling.
-If impressions = 0 for everything → indexing is the bottleneck.
-
-## Optional — upgrade later
-
-When product questions need experiments, feature flags, or deeper cohorts,
-evaluate PostHog. Do not add a second analytics vendor until Umami data shows
-that the extra capability is necessary.
+If explicitly requested, define minimal typed events and retention/privacy policy before choosing a provider. Completion, restart and return-session measures need a real implementation and meaningful sample size; no retention claim is inferred from artwork or automated tests. No old analytics variables or deleted adapters are requirements for the dungeon release.

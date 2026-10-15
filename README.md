@@ -1,14 +1,18 @@
-# Typecade Ocean
+# Typecade
 
-A pixel 2.5D typing and fishing game built with React, TypeScript, Vite and Three.js. Adventure starts on a sunset coast with a wooden rowboat, an animated fisherman, a lighthouse island and a living shoal.
+Typecade is being redesigned as a **2.5D action-typing roguelike with endless survival**. A blue knight dashes to enemies as their words are completed, collects XP, chooses upgrades by typing and faces recurring armored bosses in a ruined castle.
 
-Adventure is endless. Each voyage has nine regular encounters across three coastal zones, followed by the Crown Leviathan. Catch the boss to secure a checkpoint and refit for the next voyage. XP, captain levels, six skill unlocks, equipment choices and the permanent collection carry forward.
+**Status — 2026-10-15:** planning reset and asset audit. The web application still runs the previous fishing version. Dungeon combat and its other modes are specified, not implemented. The user requested planning and asset preparation before coding on `refactor/roughlike-survival-2.5d`.
 
-Before the first keystroke, choose one of three local species and a Word, Sentence or Passage challenge. Six fish remain visible in the sea. Short challenges grant proportionally smaller rewards; bosses require a full passage. The target locks when typing starts. Indonesian gameplay text stays in content packs; the interface uses English.
+## Start with the plan
 
-Practice has editable typing, language and challenge settings, and a touch keyboard. Multiplayer keeps its existing room protocol and DOM fleet presentation. Adventure account saves, achievements and an XP leaderboard use the configured Supabase project.
+- [Design index](docs/README.md): authority, reference images and document map.
+- [Game design](docs/game-design.md): endless loop, targeting, Tab skills, level drafting and boss phases.
+- [Requirements](docs/prd.md) and [delivery checklist](docs/todo.md): all five modes and verifiable gates.
+- [Interaction design](docs/design.md), [art bible](docs/art-bible.md) and [asset audit](docs/asset-audit.md).
+- [Architecture decisions](docs/decisions.md) and [historical migration log](docs/MIGRATION-LOG.md).
 
-## Run locally
+## Run the existing application
 
 ```sh
 npm install
@@ -16,9 +20,9 @@ npm run dev:rooms
 npm run dev
 ```
 
-Vite serves the game and proxies `/api` to the local Worker on port 8787. The public Supabase URL and anonymous key use the variables documented in `env.example`. Account features remain unavailable when those variables are not configured; local Adventure saves still work.
+Vite proxies `/api` to the local Cloudflare Worker on port 8787. Optional account configuration is documented in `env.example`. Local saves work without credentials. Deployment identifiers and database schemas remain unchanged during planning.
 
-## Verify
+## Verification commands
 
 ```sh
 npm run test
@@ -30,18 +34,10 @@ npx tsc --noEmit
 npm run typecheck:rooms
 ```
 
-E2E tests run the production Worker in Chromium, Firefox and WebKit. The sunset checks cover target selection, word catches, text format changes, label separation, responsive layouts and repeated renderer teardown. The project retains its 100% unit/browser coverage gate.
+Current tests exercise the legacy application. New combat, input, multiplayer and resource checks are specified in the checklist and must pass against the dungeon implementation before release.
 
-## Architecture
+## Existing foundation
 
-- `packages/typing-engine`: headless typing sessions, metrics and input rules.
-- `packages/game-rules`: seeded fishing encounters, challenge selection, skills, endless progression and saves.
-- `packages/content`: the ten-species roster, routes, skills and text packs.
-- `packages/race-rules`: headless multiplayer race validation.
-- `apps/web/src`: React shell, account services, native audio and lazy Three.js renderer.
+React, TypeScript and Vite own the shell; Three.js supplies the lazy-loaded renderer. Pure TypeScript packages contain typing, content, contracts and rules. Cloudflare Durable Objects provide real WebSocket rooms; Supabase stores previous Adventure account data. Keep those saves safe while introducing separately versioned dungeon data.
 
-The renderer caps its drawing buffer at 640 × 480 and its animation rate at 30 FPS. Static geometry is merged by palette material, foam uses 80 fixed instances and splashes use a pool of 64. Pause and hidden tabs freeze animation; Reduced Effects uses static scenery with discrete gameplay updates. Leaving for Practice or Multiplayer disposes the Adventure context, render target, geometry, materials, instances and audio sources.
-
-The former Next.js application, unused animation/UI dependencies, bitmap environment plates, sprite atlases and obsolete asset-generation scripts are removed. Historical design and verification documents remain in `docs`; their old screenshots are evidence of previous versions and are not shipped with the game.
-
-Current design: [Ocean design](docs/game-design(new).md), [art bible](docs/art-bible.md), [migration log](docs/MIGRATION-LOG.md).
+No Phaser or Pixi runtime is allowed. No new dependency, backend, asset generator or desktop wrapper is introduced by this planning change.

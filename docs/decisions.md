@@ -1,33 +1,55 @@
-# Typecade Overdrive - Decisions & Session Notes
+# Dungeon redesign — architecture and migration decisions
 
-## Milestone 0 (Foundation) - Session 1
+Revision: 2026-10-15. These replace the former Overdrive session notes and Ocean milestone restrictions. Planning only; no runtime change in this reset.
 
-**What was built:**
-- **F-1 (Headless Typing Engine)**: Extracted core typing logic (keystrokes, word boundaries, smart backspace, accuracy/WPM math) into a pure TypeScript class `TypingEngine` (`lib/engine/core.ts`). 
-- **F-4 (Seeded RNG)**: Created a fast, dependency-free deterministic PRNG (Mulberry32) in `lib/engine/rng.ts`, supporting `.next()`, `.pick()`, `.shuffle()`, and independent `.fork()` streams.
-- **F-2 (Feature Flag)**: Added `NEXT_PUBLIC_OVERDRIVE` env var and `/overdrive` placeholder page that 404s when the flag is disabled.
-- **F-5 (Telemetry)**: Implemented a minimal telemetry event bus (`lib/telemetry/index.ts`) with typed payloads for `run_start`, `stage_clear`, `shop_buy`, `death_by_zone`, and `run_end`.
-- **Tests**: Created full Vitest unit tests for scoring math and RNG sequences (`npm run test` passes).
+## D-01 — Product reset
 
-**What was deferred:**
-- **F-3 (Cloudflare Workers Migration)**: Discovered that `@opennextjs/cloudflare` and `wrangler.jsonc` were already configured for the repository. Verified that `npm run build:worker` works. Did not need to touch application code.
+The direct user request cancels fishing. Preserve the supplied GDD verbatim, use normalized [game design](game-design.md) as implementation authority, and remove stale plans/reference packs. Keep the migration log explicitly historical; past passing tests are not dungeon verification. No new branch is needed.
 
-**Open Questions for Next Session:**
-- We are ready to start Milestone 1 (M1). The next step is building the headless run state machine and the UI timer. Should we implement the state machine using a dedicated library like XState, or manage it entirely in a custom Zustand slice?
+## D-02 — Reuse the working stack
 
-## Milestone 3 (Juice & Presentation) - Pixi Combat Update
-Pixi combat presentation selected; headless engine unchanged; procedural vector assets used; multiplayer/daily/auth deferred.
+Keep React/TypeScript/Vite, Three.js and native audio, Vitest/Playwright, existing Worker/Durable Object WebSocket transport and optional Supabase account facilities. No dependency change is required for planning. Phaser, Pixi, Next/OpenNext runtime, GSAP, Framer Motion, Howler and other retired packages stay retired.
 
-## MVP Alignment and Signal Siege Rewrite - 2026-07-25
+The GDD's Colyseus/PartyKit examples are implementation suggestions. Existing server transport already supports real rooms; use it before adding a second server framework. Event-only synchronization does not establish anti-cheat: each mode needs authoritative input/timing/result validation.
 
-**Decisions:**
-- Reconciled `game-design.md`, `prd.md`, and `design.md` around one canonical score lifecycle: dirty words score zero, every 10 clean words adds Mult, and meeting Quota clears immediately with a real remaining-time Token bonus.
-- Locked the implementation to the exact §13 manifest: 15 Keycaps, 4 Macros, and 5 Glitches. Firmware, Switch difficulty, Copycat, KERNEL PANIC, cosmetics, and other v2/P2 systems remain outside the MVP.
-- Replaced the generic cartoon/space presentation with the code-native **Signal Siege** asset language: Keystone player core, Packet Shards, Needle Signals, Null Crown, and one coherent custom Typecade Glyph family. No raster AI assets or third-party stock art were needed.
-- Kept all game randomness inside deterministic, independently forked seeded streams for words, shop offers, and Glitches.
-- Added typed vendor-neutral telemetry events for run, stage, shop, item, Macro, and Glitch lifecycle analysis.
-- Implemented the local UTC Daily Seed entry point and a 1200x630 PNG share-card export. Server-authoritative daily attempt enforcement, Overdrive leaderboard submission, public run URLs/OG rendering, and replay verification remain part of M4 because this repository has no approved Overdrive Supabase migration or server-secret seed endpoint.
+## D-03 — Domain, shell and renderer boundaries
 
-**Verification gates:**
-- TypeScript strict check, ESLint, production Next.js build, Vitest engine/telemetry suite, and Playwright desktop/tablet/mobile flows must all pass before enabling the flag.
-- Practice remains available and is covered by an Overdrive E2E regression check.
+Extend existing headless packages for seeded combat, input, content, progression and snapshots. Reuse typing helpers and seeded RNG without dragging fishing contracts into new domain types. Reuse event bridge patterns; inventory every subscriber and fixture when changing event payloads.
+
+React owns keyboard state, text labels, menus and accessibility. Three.js receives typed snapshots/events and owns models, projections, effects and camera. The renderer never applies combat damage. A bounded fixed-step domain clock is independent of render FPS. Keep key acceptance low latency without allowing duplicate input from the native fallback.
+
+## D-04 — Input accessibility over literal blueprint
+
+Direct keyboard input is scoped to an active game, with native composition/touch/accessibility fallback using the same event path. Do not follow the source's blanket ban on HTML input where that would break IME, forms or assistive access. Tab-to-cast applies only in arena; forms and paused menus retain normal navigation.
+
+## D-05 — Persistence isolation
+
+Do not clear localStorage, rewrite old save versions or reuse Ocean account XP/achievements as dungeon results. New versioned dungeon checkpoints include RNG/simulation/input state and validate at load. Preserve previous valid data on migration errors. Account schema changes require explicit dungeon validation; no database mutation or deployment happens in planning.
+
+## D-06 — Asset deletion follows caller retirement
+
+Remove unused documents/reference art now. All 15 remaining public asset files have active callers or a required font license; record them in [asset audit](asset-audit.md). Keep these files until the matching runtime caller is retired, then delete incompatible files in that same change. This avoids known audio/image 404s between planning and coding.
+
+Reuse the licensed font and audit compatible effects. Do not retain fishing art in the completed dungeon under a renamed file. References stay outside the runtime bundle. No generated/new game asset is claimed in this phase.
+
+## D-07 — Performance supersedes screenshot spectacle
+
+Use low-resolution pixel rendering, shared/instanced geometry, bounded pools and recycled chunks. Start without a global bloom chain or shadow maps. Measure before adding effects; provide Reduced Effects and adaptive resolution/rate. Preserve real actor motion and game feedback within the documented caps.
+
+## D-08 — Delivery and evidence
+
+Deliver in ordered gates without dropping Dojo/PvP/raid from scope. Do not enable a mode as complete until independent real-client validation passes. Keep unfinished features clearly unavailable. Old race capacity checks cannot prove new mode behavior, native mobile performance or WAN stability.
+
+For runtime changes run the documented unit/build/E2E matrix, coverage, lint and both TS checks. For the current docs/assets preparation, verify links, byte-identical inputs, asset references, runtime diff and production build; any additional baseline tests must be labelled legacy.
+
+## Retirement and boundary audits
+
+Run with ripgrep; exit 1 means no matches and is the expected clean result. Exclude tests when checking production logic and distinguish historical documentation from runtime.
+
+```powershell
+rg -n -i 'phaser|pixi' package.json package-lock.json apps/web/src packages
+rg -n -e 'Math\.random\s*\(' -e 'from.*(react|three|phaser)' -e '\b(document|window|HTMLElement|HTMLCanvasElement|HTMLAudioElement)\b' packages --glob '!*.test.*'
+rg -n -i 'fishing|rowboat|lighthouse|leviathan|captain|ocean|sunset' apps/web/src packages apps/web/public
+```
+
+The first two audits must remain clean. The third intentionally finds legacy callers now and must be resolved at M7; review legitimate historical/data-compatibility references explicitly. Check public asset URLs, dynamically assembled audio keys and CSS font paths in addition to literal imports.

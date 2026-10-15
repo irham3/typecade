@@ -1,40 +1,79 @@
-# Typecade Ocean Art Bible
+# Typecade dungeon — art, motion and resource bible
 
-Current direction: sunset pixel 2.5D, authorized 2026-10-15. This replaces the former side-on cutaway and bitmap menu direction. The reference is the user's elevated three-quarter fishing scene with a rowboat, an angler, a lighthouse island and a visible shoal.
+Revision: 2026-10-15. Production target, not evidence of implemented assets or measured performance.
 
-## World
+## Direction
 
-Three.js renders actual low-poly geometry with an elevated orthographic camera. The world includes a red-and-cream lighthouse, tiered pine trees, a wooden pier, faceted rocks, a plank rowboat, a fisherman in a brown hat and warm jacket, a curved rod and its fishing line. All gameplay models are built from small shared primitive geometries; static parts are merged by palette color.
+Use the [supplied dungeon references](README.md#visual-references): elevated 3/4 orthographic castle ruins, blue armored knight, chunky outlined low-poly forms enlarged through a pixel rendering pass, warm torches against cool stone. Preserve silhouettes and depth rather than copying baked text or the reference images into a background.
 
-Water has bounded geometric waves, triangular color facets, moving sunlight glints and foam. Warm sand, ochre wood, muted pine green, coral fish and blue-green water share one sunset light direction. A small render target is enlarged with nearest sampling; a three-sample edge pass reinforces object outlines. There are no bitmap coast plates, sprite atlases or baked-text button assets in the runtime.
+Orthographic azimuth starts at 45 degrees, elevation 35.264 degrees above the ground. Adjust framing for visibility and compact layouts; gameplay readability wins over exact composition. Stone floor planes, broken walls, columns, rubble and moss create depth. Limit foreground wall height/fade so actors and words remain visible. No fishing water, lighthouse, rowboat, pine island, fish or sunset-sea palette in the completed dungeon.
+
+## Palette and UI
+
+| Role | Baseline color |
+| --- | --- |
+| Deep backdrop | `#10151f` |
+| Slate panel | `#1b2230` |
+| Stone midtone | `#4b4d56` |
+| Readable cream | `#f3ead7` |
+| Player / focus | `#55c9ef` |
+| Torch / physical attack | `#f29b45` |
+| Healing / completed input | `#83db75` |
+| Armor / current character | `#edc763` |
+| Damage / danger | `#e96861` |
+| Curse / elite magic | `#b391e8` |
+
+Validate text contrast in the rendered scene. Pixel heading font stays local with its SIL license; small text is readable monospace. UI glyphs share authored shapes/stroke weight. No generic emoji/icon packs, decorative dashboard charts or excessive glows. Dungeon identity reaches all shell pages, not just gameplay.
+
+## Actor and prop manifest
+
+- Blue knight with oversized helm, visor, pauldrons, boots and readable sword; blue/red/green/yellow variants share geometry/material palette for multiplayer.
+- Skeleton with distinct skull/ribs, goblin with ears/green silhouette, shielded variation, bomber with visible fuse, mage with robe/staff/projectile.
+- Elite minotaur and larger Obsidian boss with horns, armor landmarks and staged armor removal.
+- Wooden dummy with layered target body and Sensei with robe/staff for Dojo.
+- Floor/wall/column/rubble modules, torch/candle, explosive barrel, chest, bridge/course obstacle.
+- Green/blue/purple XP gems, gold coin and mana crystal, each identifiable without text.
+
+Prefer procedural shared primitives and small authored geometry; reuse existing palette/merge/resource-lifecycle techniques, not fishing models. If a file-based model/texture becomes necessary, add only the used asset with source/license and tested disposal. Never add entire packs speculatively.
 
 ## Life and feedback
 
-- The hull bobs and rolls with the same wave function used by the sea.
-- The angler breathes and reels; his arm, rod bend and fish lift respond to typing.
-- Six fish swim with articulated tails and independent drift. Armor, predator and long-body profiles alter their silhouettes. The active boss has a crown landmark.
-- Pine trees sway about their trunks; seabird wings flap; shore foam breathes with the tide.
-- Hook, clean-word, typo, skill, guard, catch and level events trigger bounded feedback. Caught fish arc toward the boat; escaping fish leave the scene.
-- Pause freezes the world. Hidden tabs stop work. Reduced Effects stops ambient animation, outlines and splashes while still displaying discrete encounter changes.
+| Element | Required motion / feedback |
+| --- | --- |
+| Knight | Breathing/weight shift, articulated gait, anticipation, dash lean, sword arc, recovery and hit recoil |
+| Trash | Independent gait phase, target pursuit, attack tell, knockback and short death reaction |
+| Shields/elites | Layer crack/shatter, heavy impact, distinct surviving next-layer state |
+| Bomber/mage | Fuse countdown/cast tell, real timed projectile or explosion outcome |
+| Boss | Heavy gait, armor break, kneel/stagger, phantom slash reactions and defeat |
+| World | Torch/candle flicker, restrained embers, occasional local dust; layered parallax through geometry |
+| Loot | Small bob/spin, pickup arc to player, streak magnet sweep |
+| Skills | Local sword ring, readable storm/freeze, healing/aegis with distinct silhouettes |
 
-## UI
+Motion reacts to actual domain events. Avoid identical synchronized loops, constant camera shake or particles covering words. No static screenshot background pretending to be a world. Respect pause, Reduced Effects and hidden-tab suspension.
 
-React owns all live text, input, menus, settings, collection and account dialogs. Every page uses square pixel corners, a dark teal ink border, muted green panels, cream type and ochre selected controls. Headers use the locally bundled Press Start 2P font; passages and small labels use a readable monospace font. Green means completed input and yellow means the active character. Typo feedback retains red and a non-color cue.
+## Sound
 
-UI glyphs and collection illustrations are small authored SVG shapes, not a separate icon library. The Multiplayer rowboat is an authored isometric SVG in the same palette. Practice and Multiplayer retain DOM presentation with a lightly animated sea treatment.
+Reuse compatible short project-owned typing/confirmation effects after listening review. Retire ocean ambience, splash, catch, escape and expedition music with their callers. Dungeon sounds need sword impact, armor break, magic, heal, gem pickup, torch room tone, boss stagger/death and run result. Prefer native Web Audio synthesis where suitable; no new audio library. Sounds unlock after a gesture, have category volume/mute controls and bounded voices, and are released on scene exit.
 
-Three fixed school anchors are shared between the renderer and React. Names are attached to separate buttons and never placed inside the typing passage. A target is selectable before typing starts and locks on the first keystroke. The selected fish name is prominent on desktop. Mobile keeps the shoal visible between navigation and typing controls. Landscape dedicates the left column to the world and the right to typing, skills and the keyboard.
+## Resource budgets to validate
 
-Word mode displays individual letter cells. Sentence and Passage modes use clipped rolling rows. The keyboard highlights the expected letter and keeps touch input and native IME support. Modals retain focus, Escape handling and explicit close buttons. Rarity remains text as well as color.
+These are initial engineering caps, not measured results. Changing them requires recording profiling evidence.
 
-## Production and budgets
+| Resource | Starting budget / policy |
+| --- | --- |
+| Simulation | Fixed 30 Hz; timestamped input applied promptly; clamp catch-up after stalls |
+| Presentation | Target 60 FPS on measured desktop; adaptive 30 FPS fallback, no 120 FPS promise |
+| Drawing buffer | Adaptive pixel target up to 640 × 480, DPR capped at 1 initially |
+| Dungeon | Recycle a 3 × 3 chunk ring; chunk layout starts at 32 × 32 tiles with instanced/merged geometry |
+| Active enemies | 128 including one boss; shared geometry, bounded actor state |
+| Visible target labels | 6 desktop / 4 compact; prioritize active target |
+| Loose loot | 256, merge same-kind nearby value without losing rewards |
+| Projectiles / transient effects | 64 projectiles, 128 particles, 16 damage texts; recycle/drop cosmetic overflow |
+| Materials / textures | Palette-shared; no texture per actor; account explicitly for any new atlas |
+| Draw calls | Target at most 120 crowded desktop / 80 fallback; measure renderer.info |
+| Audio | At most 8 one-shot voices plus 2 ambient/music loops |
+| Post-processing | One small pixel/edge pass by default; selective glow only after profiling |
 
-- Drawing buffer: at most 640 × 480, DPR 1; no multisampling or shadow maps.
-- World animation: at most 30 FPS, with frame-independent elapsed time.
-- Foam: 80 instances; splash pool: 64 entries; fish: six models.
-- Materials and source primitives are shared. Static model parts are merged. GPU allocations are checked after the ten-species warmup and repeated encounters.
-- Renderer and audio resources are disposed when Adventure is unmounted. Browser tests cover context-loss recovery and repeated navigation.
-- Font and authored SVGs live in `apps/web/public/assets/sunset`. Compatible native MP3 effects remain under `assets/ocean/audio`; unused variants and duplicate OGG files are removed.
-- The original image and sprite source packs are removed from the branch. Historical screenshots under `docs` remain verification records and are not runtime assets.
+Screen-space glow, emissive color and short additive effects may supply the look without an expensive global bloom chain. Do not automatically stack RenderPixelatedPass and UnrealBloomPass simply because the source blueprint mentions them. Instancing/pooling must preserve articulated or otherwise readable actor animation.
 
-The 2026-10-15 migration entry records test evidence and any performance limits. Desktop browser measurements are not a substitute for profiling physical low-end phones.
+After warmup, live entities/geometry/material/texture counts must plateau within caps. A repeated-navigation GC check targets less than 8 MiB retained heap growth after six cycles; record browser support and baseline variance. Profile a full 15-minute run, crowded boss phase, reduced-effects mode and WebGL context recovery. Report p50/p95 frame times and hardware; low-end physical phones and WAN capacity remain unproven until measured.

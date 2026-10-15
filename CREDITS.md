@@ -1,10 +1,10 @@
 # Typecade asset credits
 
-Current runtime direction: sunset pixel 2.5D, 2026-10-15.
+Updated 2026-10-15 for dungeon planning. The dungeon references are design input; the existing runtime is still fishing until implementation.
 
-- Low-poly island, lighthouse, pines, rocks, pier, boat, fisherman, articulated fish and seabirds are original procedural models implemented in `apps/web/src/game/CoastalModels.ts`.
-- UI glyphs and collection illustrations are authored SVG paths in `apps/web/src/PixelArt.tsx`. The Multiplayer boat is the authored `apps/web/public/assets/sunset/rowboat.svg`.
-- Press Start 2P is bundled from the [Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/pressstart2p), under the SIL Open Font License. Its complete license is included beside `pixel.ttf` as `OFL.txt`.
-- The twelve retained MP3 sounds were produced by the project's former procedural audio generator. That generator and the removed image/sprite packs remain recoverable through Git history. The effects have no third-party sample dependency.
+- Four reference images supplied by the user are stored unchanged under `docs/reference/dungeon`. They are not bundled runtime art. Their inclusion does not establish rights to redistribute them as game assets.
+- Press Start 2P comes from the [Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/pressstart2p), under SIL Open Font License 1.1. Keep `apps/web/public/assets/sunset/OFL.txt` beside the bundled font, including when relocating it.
+- Existing `PixelArt.tsx` glyphs, `CoastalModels.ts` procedural models and `assets/sunset/rowboat.svg` are original project work. Fishing-specific art is marked for retirement with its callers.
+- Twelve existing MP3 files are project-owned procedural sounds without third-party samples. Ocean-only sounds are marked for removal; generic effects require listening review before dungeon reuse.
 
-No generated bitmap environment, fish sprite atlas, old menu plate or vector icon package is used by the current runtime. Historical production screenshots under `docs/reference` are verification records and are not served as game assets.
+Full inventory and retirement dependencies: [asset audit](docs/asset-audit.md). Old Ocean/Overdrive artwork and production references removed from this branch remain recoverable through Git history. No new dungeon runtime assets or production screenshots are claimed by this planning change.

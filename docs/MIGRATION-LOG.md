@@ -1,4 +1,37 @@
-# Ocean Typing RPG Migration Log
+# Typecade Migration Log
+
+Current direction: Dungeon Typing Roguelike, authorized 2026-10-15. The Ocean/Overdrive entries below are historical records, not current implementation instructions or proof of dungeon playability. Old reference files removed during the planning reset remain available in Git history; historical evidence paths may no longer exist in this checkout.
+
+## 2026-10-15 — Dungeon planning and asset reset
+
+The user explicitly cancelled fishing, selected the supplied real-time 2.5D dungeon GDD, moved to `refactor/roughlike-survival-2.5d`, and requested that planning and assets be prepared before coding.
+
+- Preserved the original supplied GDD and four images unchanged outside public assets.
+- Replaced project rules, README, canonical design, PRD, delivery checklist, interaction/art specifications, architecture decisions, UX review scenarios and asset credits. `game-design(new).md` now redirects readers to `game-design.md`.
+- Retired the old Ocean milestone limit and removed 16 obsolete planning/review documents. Every requested mode remains in the new delivery sequence. Replaced stale release, analytics and database setup guidance without changing database migrations.
+- Removed 56 obsolete reference files totaling 21,031,215 bytes. Added four dungeon reference images totaling 11,489,697 bytes.
+- Audited all 15 public asset files (350,238 bytes). All have active legacy callers or a necessary font license. The boat and five Ocean-only sounds are queued for deletion with caller replacement; seven generic sounds need audition; the font and license are retained. See `asset-audit.md`.
+- No gameplay source, tests, dependencies, save storage, database schema or deployment was changed. The current application remains the legacy fishing runtime until implementation.
+
+### Planning verification
+
+| Check | Result |
+| --- | --- |
+| Active documentation links | 17 documents, 52 local links resolved; historical log/source input excluded from active-link claims |
+| Supplied input integrity | SHA-256 equality for the original GDD and all four copied images |
+| Scope | No changes under apps, packages, E2E tests, database migrations or dependency manifests |
+| Requirement inventory | 23 unique PRD requirements; all five requested modes represented in delivery gates |
+| Public assets | All twelve audio keys resolve; boat, font and required license exist; no confirmed orphan public asset |
+| Unit baseline | `npm run test`: 177 passed across 20 files |
+| Production build | `npm run build` passed as part of `npm run test:e2e` |
+| Static baseline | ESLint, web TypeScript and room-server TypeScript passed |
+| Retirement/boundary audits | No Phaser/Pixi runtime/dependency matches; no framework, DOM or Math.random matches in headless production packages |
+| Browser baseline | `npm run test:e2e`: 103 passed, 2 skipped, no failures; complete Chromium/Firefox/WebKit run, 14.7 minutes. The two skips are the Chromium-CDP heap test on Firefox/WebKit |
+| Whitespace checks | `git diff --check` and `git diff --cached --check` passed |
+
+All tests above exercise the existing fishing application. No old or fresh baseline count is used to claim dungeon implementation, calibrated balance or measured new-renderer performance.
+
+## Historical Ocean migration baseline
 
 Status: complete for Milestone 0/1 vertical slice
 Checkpoint branch: `refactor/ocean-typing-rpg`
