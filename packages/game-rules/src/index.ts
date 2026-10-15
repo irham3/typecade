@@ -611,8 +611,10 @@ export function getBossPhaseForProgress(progress: number): 1 | 2 | 3 {
 	return 1
 }
 
-export function getFishByEncounter(expedition: ExpeditionState): FishSpecies {
-	const fish = getFish(getCurrentFishId(expedition))
+export function getFishByEncounter(expedition: ExpeditionState, selectedFishId?: string): FishSpecies {
+	const scheduled = getFish(getCurrentFishId(expedition))
+	const selected = fishSpecies.find(fish => fish.id === selectedFishId && fish.habitat === scheduled.habitat && fish.rarity !== "boss")
+	const fish = scheduled.rarity === "boss" ? scheduled : selected ?? scheduled
 	const condition = getAdventureCondition(expedition)
 	const depth = Math.min(expedition.voyage - 1, 12)
 	return {
@@ -631,8 +633,8 @@ export function getAdventureCondition(expedition: ExpeditionState): typeof adven
 	return adventureConditions[(getEncounterIndexInRun(expedition) + offset) % adventureConditions.length]!
 }
 
-export function getExpeditionPassage(expedition: ExpeditionState): string {
-	const fish = getFishByEncounter(expedition)
+export function getExpeditionPassage(expedition: ExpeditionState, selectedFishId?: string): string {
+	const fish = getFishByEncounter(expedition, selectedFishId)
 	const index = getEncounterIndexInRun(expedition)
 	const condition = getAdventureCondition(expedition)
 	const passages = [getIndonesianPassage(index, fish.typingProfile)]
@@ -640,6 +642,19 @@ export function getExpeditionPassage(expedition: ExpeditionState): string {
 	const count = condition.passages + (expedition.voyage > 1 ? 1 : 0)
 	for (let part = 1; part < count; part += 1) passages.push(getIndonesianPassage((offset + part * 7) % languagePacks.id.passages.length))
 	return passages.join(". ")
+}
+
+export type FishingTextMode = "word" | "sentence" | "passage"
+
+export function getFishingChallenge(expedition: ExpeditionState, mode: FishingTextMode = "passage", selectedFishId?: string) {
+	const fish = getFishByEncounter(expedition, selectedFishId)
+	const passage = getExpeditionPassage(expedition, fish.id)
+	if (fish.rarity === "boss" || mode === "passage") return { fish, text: passage }
+	const words = passage.split(/\s+/)
+	const rng = createSeededRng(`${expedition.seed}:${getEncounterIndexInRun(expedition)}:${fish.id}:word`)
+	const text = mode === "word" ? rng.pick(words).replace(/[.,!?;:]+$/g, "") : words.slice(0, 12).join(" ")
+	const ratio = text.length / passage.length
+	return { text, fish: { ...fish, baseTimeMs: Math.max(8000, Math.round(fish.baseTimeMs * ratio)), reward: scaleRewards(fish.reward, Math.max(.10, ratio)) } }
 }
 
 export function getFishRosterForMilestone(): FishSpecies[] {

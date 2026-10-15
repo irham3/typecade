@@ -43,6 +43,7 @@ function PreInitProbe() {
 		const routeId = run.view.selectedRoute.id
 		const skill = run.useSkill("sonar")
 		run.chooseRoute("reef_shelf")
+		run.chooseTarget("kelp_darter")
 		preInitControls = { skill, routeId: controls?.view.selectedRoute.id ?? routeId }
 	}, [run])
 	return null
@@ -485,4 +486,16 @@ describe("ocean run browser controls", () => {
 		await act(async () => run.startFreshRun())
 		expect(run.view.encounter.status).toBe("active")
 	})
+ it("selects a pristine shoal target, scales word rewards and locks target changes after input or results",async()=>{
+  await mount();await act(()=>controls!.startFreshRun());const other=oceanContent.fishSpecies.find(f=>f.habitat==="zone_1"&&f.id!==controls!.view.fish.id)!
+  await act(()=>controls!.chooseTarget(other.id,"word"));expect(controls!.view.fish.id).toBe(other.id);expect(controls!.view.targetText.split(/\s+/)).toHaveLength(1)
+  await act(()=>controls!.chooseTarget(other.id));await act(()=>controls!.typeKey("!"));const before=controls!.view.targetText
+  await act(()=>controls!.chooseTarget("reef_minnow","passage"));expect(controls!.view.targetText).toBe(before)
+  await act(()=>{for(const key of controls!.view.targetText)controls!.typeKey(key)});await act(()=>controls!.chooseTarget("reef_minnow"));expect(controls!.view.lastResult?.fishId).toBe(other.id)
+  await act(()=>controls!.startFreshRun());await act(()=>controls!.typeKey(controls!.view.targetText[0]!));const id=controls!.view.fish.id;await act(()=>controls!.chooseTarget(other.id));expect(controls!.view.fish.id).toBe(id)
+ })
+ it("keeps a pristine boss on its full passage when target selection is requested",async()=>{
+  const expedition={...createShallowCoastExpedition("boss-lock"),currentZoneIndex:2,currentEncounterIndex:3};localStorage.setItem("typecade:ocean-typing-rpg:m1",serializeOceanSave(expedition,createInitialCollection()));await mount();await act(()=>controls!.continueVoyage());await act(()=>controls!.chooseTarget("reef_shark","word"));expect(controls!.view.fish.rarity).toBe("boss");expect(controls!.view.typingMode).toBe("passage")
+ })
+
 })

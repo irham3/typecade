@@ -816,4 +816,13 @@ describe("application browser coverage", () => {
 		expect(host.querySelector('[data-testid="pause-panel"]')).not.toBeNull()
 		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1)
 	})
+ it("selects fish and text format through the HUD, responds to resize and highlights touch input",async()=>{
+  await mount();await sail();await click('.shoal-picker button:nth-child(2)');expect(document.activeElement).toBe(host.querySelector('[aria-label="Adventure typing input"]'));const format=host.querySelector<HTMLSelectElement>('[aria-label="Adventure text format"]')!;await act(()=>{format.focus();format.click()});expect(document.activeElement).toBe(format);await act(()=>userEvent.selectOptions(format,"word"));expect(document.activeElement).toBe(host.querySelector('[aria-label="Adventure typing input"]'));expect(host.querySelector('[data-testid="typing-target"]')!.textContent!.split(/\s+/)).toHaveLength(1)
+  vi.stubGlobal("innerWidth",390);await act(()=>window.dispatchEvent(new Event("resize")));expect(host.querySelector('.shoal-picker button')!.getAttribute("style")).toContain("27.5%");vi.stubGlobal("innerWidth",1366);vi.stubGlobal("innerHeight",768);await act(()=>window.dispatchEvent(new Event("resize")));expect(host.querySelector('.shoal-picker button')!.getAttribute("style")).toContain("39%")
+  const key=host.querySelector('[data-testid="typing-target"]')!.textContent![0]!;await click(`.hud .practice-keyboard button[aria-label="${key}"]`);expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1);vi.unstubAllGlobals()
+ })
+ it("uses the shared skill glyph for every unlocked loadout",async()=>{
+  const expedition=createShallowCoastExpedition("unlocked-icons");localStorage.setItem("typecade:ocean-typing-rpg:m1",serializeOceanSave(expedition,{...createInitialCollection(),xp:500}));await mount();await click('button[aria-label="Adventure"]');await click('.prep-skill.selected');const calm=Array.from(host.querySelectorAll<HTMLButtonElement>('.prep-skill')).find(button=>button.textContent!.includes('Calm Current'))!;await act(()=>calm.click());await click('[data-testid="prep-screen"] .prep-header button.primary-action');await click('button[aria-label="Skills"]');expect(host.querySelector('.skill-list')!.textContent).toContain('Calm Current')
+ })
+
 })

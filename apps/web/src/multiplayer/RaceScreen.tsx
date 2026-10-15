@@ -5,7 +5,7 @@ import { readStorage, writeStorage } from "../storage"
 
 const ticketKey = "typecade:ocean-race:ticket"
 const nameKey = "typecade:ocean-race:name"
-const boatAsset = "/assets/ocean/mainmenu/ship-mainmenu.png"
+const boatAsset = "/assets/sunset/rowboat.svg"
 
 function storedTicket(): RaceTicket | null {
 	try {

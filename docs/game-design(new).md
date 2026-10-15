@@ -5,6 +5,16 @@ Date: 2026-08-17
 Platform: Desktop-first web application, responsive for tablet and mobile viewing  
 Working title: Ocean Typing RPG
 
+## Current runtime revision — 2026-10-15
+
+The user authorized a complete sunset pixel 2.5D redesign on branch `sunset-isometric-redesign`. The current renderer and visual constraints are defined in `docs/art-bible.md`; this revision supersedes older cutaway, bitmap, menu-plate and renderer descriptions below.
+
+Adventure retains the endless three-zone, nine-regular-fish plus boss voyage loop, level scaling, six skill unlocks, checkpoint/refit flow, permanent collection, local saves and the authorized Adventure Supabase account integration. It now displays six fish and offers three selectable same-zone targets before the first keystroke. Word, Sentence and Passage modes use seeded content selection; shorter text scales encounter time and rewards, with an eight-second minimum. Bosses always require their full passage and retain phase/guard rules. Typing or a terminal encounter locks target changes until the next mark.
+
+All pages use the shared sunset palette and square pixel chrome. Adventure and the entry menu use real low-poly Three.js scenery. Practice and Multiplayer retain their DOM presentation. The former Next.js source, unused libraries, sprite/atlas/background packs and obsolete generation scripts are removed from the active branch. Existing documents and screenshot records describe historical versions only.
+
+Animation is bounded to 30 FPS and a render buffer of at most 640 × 480, with shared geometry/materials and fixed instance pools. Pause, reduced effects, visibility handling, context recovery and renderer teardown remain release requirements. See the 2026-10-15 migration entry for verification evidence.
+
 ## 1. Executive Summary
 
 Ocean Typing RPG is a game world in which typing is the main interaction, not the entire product. The player returns because of fishing expeditions, roguelite builds, fish collection, progression, ranked competition, and seasonal events.

@@ -6,7 +6,7 @@ const layouts = {
 	more: ["~ ` | • √ π ÷ × { }", "\\ ^ ° = [ ] < > £ €", "123 ! \" ' : ; / ? Backspace", "ABC , Space . _"],
 }
 
-export function PracticeKeyboard({ onKey }: { onKey: (key: string) => void }) {
+export function PracticeKeyboard({ onKey, expectedKey }: { onKey: (key: string) => void; expectedKey?: string }) {
 	const [mode, setMode] = useState<keyof typeof layouts>("letters")
 	const [shift, setShift] = useState(false)
 	const press = (key: string) => {
@@ -17,5 +17,5 @@ export function PracticeKeyboard({ onKey }: { onKey: (key: string) => void }) {
 		onKey(key === "Space" ? " " : shift && mode === "letters" && key.length === 1 ? key.toUpperCase() : key)
 		if (shift && mode === "letters" && key.length === 1) setShift(false)
 	}
-	return <div className="practice-keyboard" aria-label="On-screen keyboard">{layouts[mode].map((row) => <div key={row}>{row.split(" ").map((key) => <button key={key} type="button" className={key === "Space" ? "space-key" : ""} aria-label={key} aria-pressed={key === "Shift" ? shift : undefined} onPointerDown={(event) => event.preventDefault()} onClick={() => press(key)}>{key === "Backspace" ? "Del" : shift && mode === "letters" ? key.toUpperCase() : key}</button>)}</div>)}</div>
+	return <div className="practice-keyboard" aria-label="On-screen keyboard">{layouts[mode].map((row) => <div key={row}>{row.split(" ").map((key) => <button key={key} type="button" className={`${key === "Space" ? "space-key" : ""} ${(key === "Space" ? " " : key).toLowerCase() === expectedKey?.toLowerCase() ? "expected-key" : ""}`} aria-label={key} aria-pressed={key === "Shift" ? shift : undefined} onPointerDown={(event) => event.preventDefault()} onClick={() => press(key)}>{key === "Backspace" ? "Del" : shift && mode === "letters" ? key.toUpperCase() : key}</button>)}</div>)}</div>
 }

@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from "react"
 import type { CSSProperties, ReactElement, ReactNode } from "react"
-import { useGSAP } from "@gsap/react"
-import gsap from "gsap"
-
-gsap.registerPlugin(useGSAP)
 import type { AccountLevelProgress, CatchResult, FishingSkill, Rarity } from "@typecade/contracts"
 import { fishSpecies, fishingSkills, getRouteNodesForZone, shallowCoastZoneOrder } from "@typecade/content"
 import { getFishingSkillBlockReason, getAccountLevelProgress, getFishingSkillCost, getFishingSkillUnlockLevel, getAdventureCondition, getEncounterIndexInRun } from "@typecade/game-rules"
@@ -14,32 +10,20 @@ import { PracticeKeyboard } from "./practice/PracticeKeyboard"
 import { TypingInput, TypingPassage } from "./TypingField"
 import { oceanAchievements } from "./account/ocean-account"
 import type { OceanAccountState } from "./account/useOceanAccount"
-
+import { FishArtwork, PixelIcon, LogoMark } from "./PixelArt"
+import { shoalLayout } from "./game/ocean-motion"
+import type { FishingTextMode } from "@typecade/game-rules"
 type Panel = "fish" | "collection" | "tasks" | "shop" | "settings" | null
 type Screen = "menu" | "practice" | "prep" | "game" | "race"
-
 export function handleAccountCloseKey(key: string, onClose: () => void): void {
 	if (key === "Escape") onClose()
 }
-
 const rarityStars: Record<Rarity, number> = {
 	common: 1,
 	uncommon: 2,
 	rare: 3,
 	boss: 5,
 }
-
-function getFishArtworkPath(assetKey: string): string {
-	if (assetKey === "fish_pebble_goby") {
-		return "/assets/ocean/concepts/fish-catalog-v2/animation-sets/pebble-goby/pebble_goby_idle_4f.png"
-	}
-	return `/assets/ocean/sprites/fish/${assetKey}_idle_0.png`
-}
-
-function FishArtwork({ assetKey, alt = "" }: { assetKey: string; alt?: string }) {
-	return <img className={assetKey === "fish_pebble_goby" ? "fish-art fish-art-strip" : "fish-art"} src={getFishArtworkPath(assetKey)} alt={alt} />
-}
-
 export function App() {
 	const hostRef = useRef<HTMLDivElement | null>(null)
 	const [screen, setScreen] = useState<Screen>(() => new URLSearchParams(location.search).has("race") ? "race" : "menu")
@@ -54,6 +38,7 @@ export function App() {
 		activeSkills,
 		skillOffers,
 		chooseRoute,
+		chooseTarget,
 		setSkillLoadout,
 		useSkill,
 		setVolume,
@@ -66,7 +51,6 @@ export function App() {
 	const visualScreen = screen === "game" && view.isRefitting ? "prep" : screen
 	const rendererEnabled = screen !== "race" && screen !== "practice"
 	const levelProgress = getAccountLevelProgress(view.collection.xp)
-
 	useEffect(() => {
 		if (!hostRef.current || !rendererEnabled) {
 			return
@@ -74,7 +58,6 @@ export function App() {
 		const host = hostRef.current
 		let disposed = false
 		let destroyGame: (() => void) | undefined
-
 		const fail = () => { if (!disposed) setRendererState("error") }
 		host.addEventListener("renderer:error", fail)
 		void import("./game/createFishingGame").then(async ({ createFishingGame }) => {
@@ -87,29 +70,24 @@ export function App() {
 			await game.ready
 			if (!disposed) setRendererState("ready")
 		}).catch(fail)
-
 		return () => {
 			disposed = true
 			host.removeEventListener("renderer:error", fail)
 			destroyGame?.()
 		}
 	}, [bridge, rendererEnabled, rendererAttempt])
-
 	useEffect(() => {
 		bridge.emit("screen:changed", { screen: visualScreen })
 	}, [visualScreen, bridge])
-
 	const caughtCount = Object.keys(view.collection.records).length
 	const totalCount = fishSpecies.length
-
 	const beginRun = () => {
 		startFreshRun()
 		setPanel(null)
 		setScreen("game")
 	}
-
 	return (
-		<main className={`game-shell screen-${visualScreen}`} data-testid="ocean-game-shell">
+		<main className={`game-shell screen-${visualScreen}`} data-testid="ocean-game-shell" data-reduced-effects={view.reducedMotion}>
 			<div ref={hostRef} className="game-canvas" data-testid="three-gameplay" data-renderer-state={rendererState} />
 			{visualScreen === "game" && rendererState !== "ready" ? (
 				<div className="renderer-status" role="status">
@@ -118,7 +96,6 @@ export function App() {
 					<button className="secondary-action" onClick={() => setScreen("menu")}>Main Menu</button>
 				</div>
 			) : null}
-
 			{visualScreen === "game" ? (
 				<div inert={rendererState !== "ready"}><GameHud
 					view={view}
@@ -129,6 +106,7 @@ export function App() {
 					panel={panel}
 					setPanel={setPanel}
 					chooseRoute={chooseRoute}
+					chooseTarget={chooseTarget}
 					useSkill={useSkill}
 					setVolume={setVolume}
 					setReducedMotion={setReducedMotion}
@@ -138,7 +116,6 @@ export function App() {
 					goToMenu={() => setScreen("menu")}
 				/></div>
 			) : null}
-
 			{screen === "menu" ? (
 				<MainMenu
 					view={view}
@@ -150,7 +127,6 @@ export function App() {
 					onAccount={() => setAccountOpen(true)}
 				/>
 			) : null}
-
 			{visualScreen === "prep" ? (
 				<PreparationScreen
 					view={view}
@@ -164,7 +140,6 @@ export function App() {
 			) : null}
 			{screen === "practice" ? <PracticeScreen onBack={() => setScreen("menu")} /> : null}
 			{screen === "race" ? <RaceScreen onBack={() => { history.replaceState(null, "", location.pathname); setScreen("menu") }} /> : null}
-
 			{screen !== "game" && panel === "collection" ? <CollectionPanel onClose={() => setPanel(null)} collection={view.collection} /> : null}
 			{screen !== "game" && panel === "settings" ? (
 				<SettingsPanel
@@ -179,7 +154,6 @@ export function App() {
 		</main>
 	)
 }
-
 function CaptainAccountPanel({ account, onClose }: { account: OceanAccountState; onClose: () => void }) {
 	const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in")
 	const [email, setEmail] = useState("")
@@ -205,7 +179,6 @@ function CaptainAccountPanel({ account, onClose }: { account: OceanAccountState;
 		</section>
 	</div>
 }
-
 function GameHud({
 	view,
 	activeSkills,
@@ -215,6 +188,7 @@ function GameHud({
 	panel,
 	setPanel,
 	chooseRoute,
+	chooseTarget,
 	useSkill: activateSkill,
 	setVolume,
 	setReducedMotion,
@@ -230,6 +204,7 @@ function GameHud({
 	totalCount: number
 	panel: Panel
 	setPanel: (panel: Panel) => void
+	chooseTarget: (fishId: string, mode?: FishingTextMode) => void
 	chooseRoute: (nodeId: string) => void
 	useSkill: (skillId: string) => boolean
 	setVolume: (category: keyof VolumeState, value: number) => void
@@ -241,16 +216,6 @@ function GameHud({
 }) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const typingInputRef = useRef<HTMLInputElement>(null)
-
-	useGSAP(() => {
-		if (view.reducedMotion) return
-
-		gsap.from(".topbar", { y: -50, opacity: 0, duration: 0.6, ease: "back.out(1.5)", delay: 0.1 })
-		gsap.from(".icon-rail button", { x: -30, opacity: 0, duration: 0.4, stagger: 0.08, ease: "power2.out", delay: 0.2 })
-		gsap.from(".bottom-console", { y: 60, opacity: 0, duration: 0.6, ease: "back.out(1.2)", delay: 0.3 })
-		gsap.from(".route-strip", { y: -20, opacity: 0, duration: 0.5, ease: "power2.out", delay: 0.2 })
-	}, { scope: containerRef, dependencies: [view.reducedMotion] })
-
 	const condition = getAdventureCondition(view.expedition)
 	const timeLeft = formatTime(view.encounter.timeRemainingMs)
 	const tensionPercent = Math.round(view.encounter.tension)
@@ -264,7 +229,6 @@ function GameHud({
 		{ title: "Final Pull", detail: "Every third perfect word: -8 tension.", compact: "Every third clean word: -8 tension" },
 	] as const
 	const bossPhaseDetail = bossPhaseDetails[view.encounter.bossPhase - 1]
-
 	return (
 		<div className="hud" data-testid="ocean-hud" data-reduced-effects={view.reducedMotion} ref={containerRef}>
 			<TopBar
@@ -276,19 +240,19 @@ function GameHud({
 					togglePause()
 				}}
 			/>
-
 			<nav className="icon-rail panel-chrome" aria-label="Ocean navigation">
-				<RailButton label="Fish" active={panel === "fish"} onClick={() => setPanel(panel === "fish" ? null : "fish")} icon={<PixelIcon file="icon_nav_fish.png" />} />
-				<RailButton label="Collection" active={panel === "collection"} onClick={() => setPanel(panel === "collection" ? null : "collection")} icon={<PixelIcon file="icon_nav_collection.png" />} badge={caughtCount} />
-				<RailButton label="Route" active={panel === "tasks"} onClick={() => setPanel(panel === "tasks" ? null : "tasks")} icon={<PixelIcon file="icon_nav_tasks.png" />} badge={view.expedition.spareLines} />
-				<RailButton label="Skills" active={panel === "shop"} onClick={() => setPanel(panel === "shop" ? null : "shop")} icon={<PixelIcon file="icon_nav_shop.png" />} />
+				<RailButton label="Fish" active={panel === "fish"} onClick={() => setPanel(panel === "fish" ? null : "fish")} icon={<PixelIcon file="icon_nav_fish" />} />
+				<RailButton label="Collection" active={panel === "collection"} onClick={() => setPanel(panel === "collection" ? null : "collection")} icon={<PixelIcon file="icon_nav_collection" />} badge={caughtCount} />
+				<RailButton label="Route" active={panel === "tasks"} onClick={() => setPanel(panel === "tasks" ? null : "tasks")} icon={<PixelIcon file="icon_nav_tasks" />} badge={view.expedition.spareLines} />
+				<RailButton label="Skills" active={panel === "shop"} onClick={() => setPanel(panel === "shop" ? null : "shop")} icon={<PixelIcon file="icon_nav_shop" />} />
 			</nav>
-
 			<section className="route-strip panel-chrome" data-testid="route-strip">
 				<strong>Voyage {view.expedition.voyage} · Zone {routeProgress}</strong>
 				<span>{view.selectedRoute.name}</span>
 				<span>Encounter {encounterLabel}</span>
 			</section>
+			<ShoalPicker view={view} chooseTarget={fishId => { chooseTarget(fishId); typingInputRef.current?.focus() }} />
+			<div className="catch-title"><small>{view.fish.rarity.toUpperCase()} · {view.typingMode.toUpperCase()}</small><strong>{view.fish.name}</strong></div>
 			<div className="encounter-stage">
 			{view.fish.id === "crown_leviathan" && bossPhaseDetail && !view.lastResult ? (
 				<section className="boss-phase-callout panel-chrome" aria-live="polite" data-testid="boss-phase-callout">
@@ -304,24 +268,21 @@ function GameHud({
 					) : null}
 				</section>
 			) : null}
-
 			{!view.lastResult && view.feedback?.kind === "skill" ? <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} /> : null}
 			{view.lastResult ? <ResultToast view={view} result={view.lastResult} /> : null}
 			{view.expedition.complete ? (
 				<section className="complete-panel panel-chrome" data-testid="complete-panel">
-					<PixelIcon file="icon_nav_collection.png" />
+					<PixelIcon file="icon_nav_collection" />
 					<strong>Expedition ended</strong>
 					<span>{caughtCount}/{totalCount} species recorded · Rewards and XP saved</span>
 					<button onClick={startFreshRun}>Sail Again</button>
 					<button className="secondary" onClick={goToMenu}>Main Menu</button>
 				</section>
 			) : null}
-
 			</div>
-
 			<section className="bottom-console" data-testid="typing-console">
 				<div className={`tension-wrap ${tensionPercent >= 82 ? "danger" : ""}`}>
-					<PixelIcon file="icon_meter_anchor.png" className="meter-icon" />
+					<PixelIcon file="icon_meter_anchor" className="meter-icon" />
 					<div className="meter-block">
 						<div className="meter-label">
 							<span>LINE TENSION</span>
@@ -332,8 +293,8 @@ function GameHud({
 						</div>
 					</div>
 				</div>
-
-				<div className="typing-panel panel-chrome" onClick={() => typingInputRef.current?.focus()}>
+				<div className="typing-panel panel-chrome" data-text-mode={view.typingMode} onClick={event => { if (!(event.target as HTMLElement).closest("label")) typingInputRef.current?.focus() }}>
+					<div className="typing-mode"><label>Text <select aria-label="Adventure text format" value={view.typingMode} disabled={view.cursor > 0 || view.metrics.incorrectKeystrokes > 0 || view.fish.rarity === "boss" || view.encounter.status !== "active"} onChange={event => { chooseTarget(view.fish.id, event.target.value as FishingTextMode); typingInputRef.current?.focus() }}><option value="word">Word</option><option value="sentence">Sentence</option><option value="passage">Passage</option></select></label><span>{view.fish.rarity === "boss" ? "Boss · full passage" : view.cursor > 0 ? "Target locked until next catch" : "Choose a fish, then type"}</span></div>
 					<div className="adventure-target-label">
 						<strong>{view.fish.name} · {view.fish.rarity} ({rarityStars[view.fish.rarity]}*)</strong>
 						<span title={condition.description}>{condition.name}</span>
@@ -346,20 +307,17 @@ function GameHud({
 					<TypingPassage text={view.targetText} cursor={view.cursor} className="typing-target" testId="typing-target" mistake={view.lastKeyWasTypo} rollingLines={2} />
 					<TypingInput inputRef={typingInputRef} label="Adventure typing input" testId="typing-input" inputMode="none" onType={typeKey} onEscape={togglePause} disabled={view.isPaused || panel !== null || view.encounter.status !== "active"} />
 				</div>
-
 				<div className="stat-row panel-chrome">
-				<Stat icon={<PixelIcon file="icon_stat_combo.png" />} label="COMBO" value={`x${view.encounter.combo}`} hot={view.encounter.combo >= 5} />
-				<Stat icon={<PixelIcon file="icon_stat_accuracy.png" />} label="ACCURACY" value={`${Math.round(view.metrics.accuracy)}%`} hot={view.metrics.accuracy >= 95} />
-				<Stat icon={<PixelIcon file="icon_stat_timer.png" />} label="TIME LEFT" value={timeLeft} hot={view.encounter.timeRemainingMs < 12000} />
+				<Stat icon={<PixelIcon file="icon_stat_combo" />} label="COMBO" value={`x${view.encounter.combo}`} hot={view.encounter.combo >= 5} />
+				<Stat icon={<PixelIcon file="icon_stat_accuracy" />} label="ACCURACY" value={`${Math.round(view.metrics.accuracy)}%`} hot={view.metrics.accuracy >= 95} />
+				<Stat icon={<PixelIcon file="icon_stat_timer" />} label="TIME LEFT" value={timeLeft} hot={view.encounter.timeRemainingMs < 12000} />
 				</div>
-
 				<div className="progress-stack">
 					<SmallMeter label="REEL" value={progressPercent} />
 					<SmallMeter label="LINE" value={durabilityPercent} danger={durabilityPercent < 35} />
 				</div>
-				<PracticeKeyboard onKey={(key) => { typingInputRef.current!.focus(); typeKey(key) }} />
+				<PracticeKeyboard expectedKey={view.targetText[view.cursor]} onKey={(key) => { typingInputRef.current!.focus(); typeKey(key) }} />
 			</section>
-
 			<section className="skill-dock panel-chrome" data-testid="skill-dock">
 				<div className="skill-dock-help"><strong>Energy {Math.round(view.encounter.skillEnergy)}/100</strong><span>Perfect word +14 · Click skill / Alt + slot</span></div>
 				{activeSkills.map((skill, index) => (
@@ -373,10 +331,7 @@ function GameHud({
 					/>
 				))}
 			</section>
-
 			{view.isPaused ? <PausePanel onResume={togglePause} onMainMenu={goToMenu} /> : null}
-
-
 			{panel === "collection" ? <CollectionPanel onClose={() => setPanel(null)} collection={view.collection} /> : null}
 			{panel === "tasks" ? (
 				<RoutePanel
@@ -403,45 +358,41 @@ function GameHud({
 		</div>
 	)
 }
-
 function TopBar({ view, levelProgress, onSettings, onPause }: { view: OceanRunView; levelProgress: AccountLevelProgress; onSettings: () => void; onPause: () => void }) {
 	return (
 		<header className="topbar" data-testid="topbar">
 			<section className="player-badge panel-chrome">
 				<div className="avatar">
-					<PixelIcon file="icon_nav_fish.png" />
+					<PixelIcon file="icon_nav_fish" />
 				</div>
 				<div>
 					<strong>WaveRider</strong>
 					<span>
-						<PixelIcon file="icon_stat_combo.png" /> Lv {levelProgress.level}
+						<PixelIcon file="icon_stat_combo" /> Lv {levelProgress.level}
 					</span>
 					<XpBar progress={levelProgress.progress} />
 				</div>
 			</section>
-
 			<LogoMark />
-
 			<section className="currency-row">
 				<div className="currency-pill panel-chrome">
-					<PixelIcon file="icon_currency_coin.png" />
+					<PixelIcon file="icon_currency_coin" />
 					<span>{view.collection.coins.toLocaleString()}</span>
 				</div>
 				<div className="currency-pill panel-chrome">
-					<PixelIcon file="icon_currency_gem.png" />
+					<PixelIcon file="icon_currency_gem" />
 					<span>{view.collection.materials.toLocaleString()}</span>
 				</div>
 				<button className="icon-button panel-chrome" aria-label={view.isPaused ? "Resume game" : "Pause game"} onClick={onPause} disabled={view.expedition.complete}>
 					<span aria-hidden="true">{view.isPaused ? "▶" : "Ⅱ"}</span>
 				</button>
 				<button className="icon-button panel-chrome" aria-label="Settings" onClick={onSettings}>
-					<PixelIcon file="icon_utility_settings.png" />
+					<PixelIcon file="icon_utility_settings" />
 				</button>
 			</section>
 		</header>
 	)
 }
-
 function MainMenu({
 	view,
 	onStart,
@@ -461,32 +412,21 @@ function MainMenu({
 }) {
 	const containerRef = useRef<HTMLElement>(null)
 	const menuItems = [
-		{ label: "Adventure", icon: "icon_nav_tasks.png", onClick: onAdventure, primary: true },
-		{ label: "Multiplayer", icon: "icon_stat_combo.png", onClick: onRankedDuel },
-		{ label: "Practice", icon: "icon_nav_fish.png", onClick: onStart },
-		{ label: "Collection", icon: "icon_nav_collection.png", onClick: onCollection },
-		{ label: "Settings", icon: "icon_utility_settings.png", onClick: onSettings },
+		{ label: "Adventure", icon: "icon_nav_tasks", onClick: onAdventure, primary: true },
+		{ label: "Multiplayer", icon: "icon_stat_combo", onClick: onRankedDuel },
+		{ label: "Practice", icon: "icon_nav_fish", onClick: onStart },
+		{ label: "Collection", icon: "icon_nav_collection", onClick: onCollection },
+		{ label: "Settings", icon: "icon_utility_settings", onClick: onSettings },
 	]
-
-	useGSAP(() => {
-		if (view.reducedMotion) return
-
-		gsap.from(".mainmenu-logo", { y: -22, scale: 0.96, opacity: 0, duration: 0.45, ease: "back.out(1.4)" })
-		gsap.from(".mainmenu-button", { y: 16, opacity: 0, duration: 0.28, stagger: 0.055, delay: 0.16, ease: "back.out(1.2)" })
-		gsap.from(".mainmenu-dock", { x: -36, opacity: 0, duration: 0.45, ease: "power2.out" })
-		gsap.from(".mainmenu-ship", { x: 24, opacity: 0, duration: 0.45, delay: 0.22, ease: "power2.out" })
-	}, { scope: containerRef, dependencies: [view.reducedMotion] })
-
 	return (
 		<section className="menu-layer" data-testid="main-menu" ref={containerRef}>
-			<img className="mainmenu-dock" src="/assets/ocean/mainmenu/dock-mainmenu.png" alt="" aria-hidden="true" draggable={false} />
-			<img className="mainmenu-ship" src="/assets/ocean/mainmenu/ship-mainmenu.png" alt="" aria-hidden="true" draggable={false} />
 			<div className="mainmenu-center">
-				<img className="mainmenu-logo" src="/assets/ocean/mainmenu/logo-1.png" alt="Typecade" draggable={false} />
+				<LogoMark large />
+				<p className="menu-caption">A sunset sea. An endless voyage.</p>
 				<nav className="mainmenu-stack" aria-label="Main menu">
 					{menuItems.map((item) => (
 						<button key={item.label} className={`mainmenu-button ${item.primary ? "primary" : ""}`} onClick={item.onClick} aria-label={item.label}>
-							<img src={`/assets/ocean/mainmenu/button_${item.primary ? "gold" : "blue"}_empty.png`} alt="" draggable={false} /><span className="mainmenu-button-label"><PixelIcon file={item.icon} />{item.label}</span>
+							<span className="mainmenu-button-label"><PixelIcon file={item.icon} />{item.label}</span>
 						</button>
 					))}
 				</nav>
@@ -495,7 +435,6 @@ function MainMenu({
 		</section>
 	)
 }
-
 function PreparationScreen({
 	view,
 	skillOffers,
@@ -514,15 +453,6 @@ function PreparationScreen({
 	onSetSkillLoadout: (skillIds: string[]) => void
 }) {
 	const containerRef = useRef<HTMLElement>(null)
-
-	useGSAP(() => {
-		if (view.reducedMotion) return
-		gsap.from(".prep-header", { y: -30, opacity: 0, duration: 0.5, ease: "power2.out" })
-		gsap.from(".prep-card", { y: 40, opacity: 0, duration: 0.6, stagger: 0.15, ease: "back.out(1.2)", delay: 0.2 })
-		gsap.from(".prep-skill", { scale: 0.9, opacity: 0, duration: 0.4, stagger: 0.1, delay: 0.4, ease: "back.out(1.5)" })
-		gsap.from(".route-choice-grid button", { x: -20, opacity: 0, duration: 0.4, stagger: 0.1, delay: 0.5, ease: "power2.out" })
-	}, { scope: containerRef, dependencies: [view.reducedMotion] })
-
 	return (
 		<section className="prep-layer" data-testid="prep-screen" ref={containerRef}>
 			<header className="prep-header">
@@ -530,7 +460,6 @@ function PreparationScreen({
 				<LogoMark />
 				<button className="primary-action small" onClick={onStart}>{view.isRefitting ? "Continue voyage" : "Set Sail"}</button>
 			</header>
-
 			<div className="prep-grid">
 				<section className="prep-card panel-chrome">
 					<h2>{view.isRefitting ? `Harbor refit · Voyage ${view.expedition.voyage}` : "Endless Adventure"}</h2>
@@ -538,7 +467,7 @@ function PreparationScreen({
 					{view.isRefitting ? <p className="prep-hint" role="status">{view.lastResult ? `Leviathan landed · +${view.lastResult.rewards.xp} XP · +${view.lastResult.rewards.coins} coins · ` : ""}{view.expedition.spareLines} spare lines ready. No timer runs in harbor.</p> : null}
 					<div className="prep-profile">
 						<div className="avatar large">
-							<PixelIcon file="icon_nav_fish.png" />
+							<PixelIcon file="icon_nav_fish" />
 						</div>
 						<div>
 							<strong>Level {levelProgress.level}</strong>
@@ -547,12 +476,11 @@ function PreparationScreen({
 						</div>
 					</div>
 					<div className="equipment-row">
-						<EquipmentIcon file="ui_equipment_rod_tideglass.png" label="Tideglass Rod" />
-						<EquipmentIcon file="ui_equipment_line_luminous.png" label="Luminous Line" />
-						<EquipmentIcon file="ui_equipment_bait_moon.png" label="Moon Bait" />
+						<EquipmentIcon file="ui_equipment_rod_tideglass" label="Tideglass Rod" />
+						<EquipmentIcon file="ui_equipment_line_luminous" label="Luminous Line" />
+						<EquipmentIcon file="ui_equipment_bait_moon" label="Moon Bait" />
 					</div>
 				</section>
-
 				<section className="prep-card panel-chrome">
 					<h2>Branching Route</h2>
 					<div className="route-choice-grid prep-routes">
@@ -565,7 +493,6 @@ function PreparationScreen({
 						))}
 					</div>
 				</section>
-
 				<section className="prep-card panel-chrome wide">
 					<div className="prep-title-row">
 						<h2>Skill Draft</h2>
@@ -588,7 +515,7 @@ function PreparationScreen({
 									onSetSkillLoadout(next)
 								}}
 							>
-								<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
+								<PixelIcon file={skill.id === "cast_net" ? "collection" : skill.id === "steel_line" ? "anchor" : skill.id === "sonar" ? "accuracy" : "combo"} />
 								<div>
 									<strong>{skill.name}</strong>
 									<span>{skill.description}</span>
@@ -602,15 +529,6 @@ function PreparationScreen({
 		</section>
 	)
 }
-
-function LogoMark() {
-	return <img className="logo-mark-image" src="/assets/ocean/mainmenu/logo-1.png" alt="Typecade" draggable={false} />
-}
-
-function PixelIcon({ file, className = "" }: { file: string; className?: string }) {
-	return <img className={`pixel-icon ${className}`} src={`/assets/ocean/reference-derived-pixel-pack/${file}`} alt="" aria-hidden="true" draggable={false} />
-}
-
 function RailButton({
 	label,
 	icon,
@@ -632,7 +550,6 @@ function RailButton({
 		</button>
 	)
 }
-
 function StarRow({ rarity }: { rarity: Rarity }) {
 	const filled = rarityStars[rarity]
 	return (
@@ -643,7 +560,6 @@ function StarRow({ rarity }: { rarity: Rarity }) {
 		</div>
 	)
 }
-
 function Stat({ icon, label, value, hot }: { icon: ReactElement; label: string; value: string; hot?: boolean }) {
 	return (
 		<div className={`stat ${hot ? "hot" : ""}`}>
@@ -655,7 +571,6 @@ function Stat({ icon, label, value, hot }: { icon: ReactElement; label: string; 
 		</div>
 	)
 }
-
 function SmallMeter({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
 	return (
 		<div className="small-meter">
@@ -667,7 +582,6 @@ function SmallMeter({ label, value, danger = false }: { label: string; value: nu
 		</div>
 	)
 }
-
 function SkillButton({
 	skill,
 	index,
@@ -688,7 +602,7 @@ function SkillButton({
 	const style = { "--skill-charge": `${charge}%` } as CSSProperties
 	const contents = <>
 		<span className="skill-key">{skill.type === "active" ? `Alt+${index}` : "AUTO"}</span>
-		<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
+		<PixelIcon file={skill.id === "cast_net" ? "collection" : skill.id === "steel_line" ? "anchor" : skill.id === "sonar" ? "accuracy" : "combo"} />
 		<span>{skill.name}</span>
 		<span className="skill-cost">{blockReason ?? `Ready · ${cost}E`}</span>
 	</>
@@ -706,12 +620,11 @@ function SkillButton({
 		</button>
 	)
 }
-
 function CollectionPanel({ collection, onClose }: { collection: OceanRunView["collection"]; onClose: () => void }) {
 	return (
 		<OverlayPanel title="Collection" onClose={onClose}>
 			<div className="collection-summary">
-				<PixelIcon file="icon_nav_collection.png" />
+				<PixelIcon file="icon_nav_collection" />
 				<span>{Object.keys(collection.records).length}/{fishSpecies.length} species discovered</span>
 			</div>
 			<div className="collection-grid">
@@ -732,7 +645,6 @@ function CollectionPanel({ collection, onClose }: { collection: OceanRunView["co
 		</OverlayPanel>
 	)
 }
-
 function RoutePanel({
 	choices,
 	selectedId,
@@ -753,7 +665,7 @@ function RoutePanel({
 	return (
 		<OverlayPanel title="Route" onClose={onClose}>
 			<div className={`sonar-banner ${sonarRevealed ? "active" : ""}`}>
-				<PixelIcon file="icon_nav_tasks.png" />
+				<PixelIcon file="icon_nav_tasks" />
 				<span>{locked ? "Route locked after typing starts." : sonarRevealed ? "Sonar sweep active: zone fish revealed." : "Use Sonar to preview the zone fish before choosing."}</span>
 			</div>
 			<div className="route-choice-grid">
@@ -774,7 +686,6 @@ function RoutePanel({
 		</OverlayPanel>
 	)
 }
-
 function SkillsPanel({ skills, energy, onClose }: { skills: readonly FishingSkill[]; energy: number; onClose: () => void }) {
 	return (
 		<OverlayPanel title="Skills" onClose={onClose}>
@@ -784,7 +695,7 @@ function SkillsPanel({ skills, energy, onClose }: { skills: readonly FishingSkil
 					const cost = getFishingSkillCost(skill.id)
 					return (
 						<article key={skill.id}>
-							<img src={`/assets/ocean/ui/ui_skill_${skill.id}_default.png`} alt="" />
+							<PixelIcon file={skill.id === "cast_net" ? "collection" : skill.id === "steel_line" ? "anchor" : skill.id === "sonar" ? "accuracy" : "combo"} />
 							<div>
 								<strong>{skill.name}</strong>
 								<span>{skill.description}</span>
@@ -797,7 +708,6 @@ function SkillsPanel({ skills, energy, onClose }: { skills: readonly FishingSkil
 		</OverlayPanel>
 	)
 }
-
 function FishPanel({
 	fish,
 	record,
@@ -824,7 +734,6 @@ function FishPanel({
 		</OverlayPanel>
 	)
 }
-
 function SettingsPanel({
 	volumes,
 	reducedMotion,
@@ -855,7 +764,6 @@ function SettingsPanel({
 		</OverlayPanel>
 	)
 }
-
 function PausePanel({ onResume, onMainMenu }: { onResume: () => void; onMainMenu: () => void }) {
 	const dialog = useRef<HTMLDialogElement>(null)
 	useEffect(() => { dialog.current!.showModal() }, [])
@@ -874,11 +782,10 @@ function PausePanel({ onResume, onMainMenu }: { onResume: () => void; onMainMenu
 		</dialog>
 	)
 }
-
 function ResultToast({ view, result }: { view: OceanRunView; result: CatchResult }) {
 	return (
 		<section className={`result-toast panel-chrome ${result.caught ? "caught" : "escaped"}`} data-testid="result-toast">
-			{result.caught ? <PixelIcon file="icon_nav_collection.png" /> : <span aria-hidden="true">×</span>}
+			{result.caught ? <PixelIcon file="icon_nav_collection" /> : <span aria-hidden="true">×</span>}
 			<div>
 				<strong>{result.caught ? "Catch secured" : "Line lost"}</strong>
 				{view.feedback?.kind === "level" && <FeedbackBanner key={view.feedback.id} feedback={view.feedback} reducedMotion={view.reducedMotion} />}
@@ -890,49 +797,23 @@ function ResultToast({ view, result }: { view: OceanRunView; result: CatchResult
 		</section>
 	)
 }
-
 export function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiFeedback; reducedMotion: boolean }) {
 	const bannerRef = useRef<HTMLElement>(null)
 	const [visible, setVisible] = useState(true)
-
 	useEffect(() => {
 		const timeout = window.setTimeout(() => setVisible(false), 2600)
 		return () => window.clearTimeout(timeout)
 	}, [])
-
-	useGSAP(() => {
-		if (reducedMotion || !visible) return
-		const timeline = gsap.timeline()
-		timeline.fromTo(bannerRef.current!, {
-			y: -24,
-			opacity: 0,
-			scale: 0.82,
-		}, {
-			y: 0,
-			opacity: 1,
-			scale: 1,
-			duration: 0.42,
-			ease: "back.out(1.7)",
-		}).to(bannerRef.current!, {
-			y: -10,
-			opacity: 0,
-			duration: 0.28,
-			delay: 1.7,
-			ease: "power2.in",
-		})
-		return () => timeline.kill()
-	}, { scope: bannerRef, dependencies: [reducedMotion, visible] })
-
 	return (
 		<aside
 			ref={bannerRef}
 			hidden={!visible}
-			className={`feedback-banner panel-chrome ${feedback.kind}`}
+			className={`feedback-banner panel-chrome ${feedback.kind}`} data-reduced-effects={reducedMotion}
 			data-testid={feedback.kind === "level" ? "level-up-banner" : "skill-feedback"}
 			role="status"
 			aria-live="polite"
 		>
-			<PixelIcon file="icon_stat_combo.png" />
+			<PixelIcon file="icon_stat_combo" />
 			<div>
 				<strong>{feedback.title}</strong>
 				<span>{feedback.detail}</span>
@@ -940,16 +821,14 @@ export function FeedbackBanner({ feedback, reducedMotion }: { feedback: OceanUiF
 		</aside>
 	)
 }
-
 function EquipmentIcon({ file, label }: { file: string; label: string }) {
 	return (
 		<article>
-			<img src={`/assets/ocean/equipment/${file}`} alt="" />
+			<PixelIcon file={file.includes("rod") ? "anchor" : file.includes("line") ? "tasks" : "gem"} />
 			<span>{label}</span>
 		</article>
 	)
 }
-
 function XpBar({ progress }: { progress: number }) {
 	return (
 		<div className="xp-track" aria-label={`XP progress ${Math.round(progress * 100)} percent`}>
@@ -957,11 +836,9 @@ function XpBar({ progress }: { progress: number }) {
 		</div>
 	)
 }
-
 function OverlayPanel({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
 	const containerRef = useRef<HTMLDialogElement>(null)
 	useEffect(() => { containerRef.current!.showModal() }, [])
-
 	return (
 		<dialog className="overlay-panel panel-chrome" data-testid="overlay-panel" ref={containerRef} aria-label={title} onCancel={(event) => { event.preventDefault(); onClose() }}>
 			<header>
@@ -974,14 +851,20 @@ function OverlayPanel({ title, children, onClose }: { title: string; children: R
 		</dialog>
 	)
 }
-
 function formatTime(ms: number): string {
 	const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
 	const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0")
 	const seconds = (totalSeconds % 60).toString().padStart(2, "0")
 	return `${minutes}:${seconds}`
 }
-
 function getEncounterNumber(zoneIndex: number, encounterIndex: number): number {
 	return zoneIndex * 3 + encounterIndex + 1
+}
+function ShoalPicker({ view, chooseTarget }: { view: OceanRunView; chooseTarget: (fishId: string) => void }) {
+ const [viewport, setViewport] = useState(() => ({ width: innerWidth, height: innerHeight }))
+ useEffect(() => { const resize = () => setViewport({ width: innerWidth, height: innerHeight }); window.addEventListener("resize", resize); return () => window.removeEventListener("resize", resize) }, [])
+ const slots = shoalLayout(viewport.width, viewport.height)
+ const school = fishSpecies.filter(fish => fish.habitat === view.fish.habitat && fish.rarity !== "boss").map((fish, index) => view.fish.rarity === "boss" && index === 0 ? view.fish : fish)
+ const locked = view.metrics.correctKeystrokes + view.metrics.incorrectKeystrokes > 0 || view.encounter.status !== "active" || view.isPaused || view.fish.rarity === "boss"
+ return <nav className="shoal-picker" aria-label="Choose a fish" data-testid="shoal-picker">{school.map((fish, index) => <button key={fish.id} aria-label={`Target ${fish.name}`} aria-pressed={fish.id === view.fish.id} disabled={locked} style={{ left: `${slots[index]!.x * 100}%`, top: `${(slots[index]!.y - (viewport.width <= 700 ? .025 : .04)) * 100}%` }} onClick={() => chooseTarget(fish.id)}><span>{fish.name}</span><small>{fish.id === view.fish.id ? "HOOKED" : "SELECT"}</small></button>)}</nav>
 }

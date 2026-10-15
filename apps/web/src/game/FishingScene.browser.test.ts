@@ -1,234 +1,71 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { Box3, Group, InstancedMesh, Line, Mesh, MeshBasicMaterial, PlaneGeometry, ShaderMaterial } from "three"
-import { fishSpecies, getFish, fishingSkills } from "@typecade/content"
+import { fishSpecies, getFish } from "@typecade/content"
 import { startEncounter, resolveCatchResult } from "@typecade/game-rules"
 import { GameEventBridge } from "../bridge/game-event-bridge"
 import { createFishingGame } from "./createFishingGame"
-import { fishPullWeight } from "./FishingScene"
-import { OceanAssets } from "./OceanAssets"
-import { surfaceY } from "./ocean-motion"
-
-type PixelMesh = Mesh<PlaneGeometry, MeshBasicMaterial>
-interface Inspection {
-	tick(time: number): void; resize(): void; updateWorld(delta: number): void; updateFish(delta?: number): void
-	time: number; endTime: number; stateUntil: number; fishState: string; lastTexture: string
-	boat: PixelMesh; fish: Group; fishBody: PixelMesh; fishTail: PixelMesh; eyelid: PixelMesh; eyeLine: PixelMesh; gill: PixelMesh
-	line: Line; lure: PixelMesh; water: Mesh<PlaneGeometry, ShaderMaterial>
-	pool: Array<{ x: number; y: number; life: number; bubble: boolean }>; ambientBubbleTimer: number; fishVelocityX: number
-	rings: Array<{ life: number }>; particles: InstancedMesh
-	ambient: Mesh[]
-}
-const metrics = { wpm: 40, rawWpm: 40, accuracy: 100, combo: 1, maxCombo: 1, consistency: 100, correctKeystrokes: 5, incorrectKeystrokes: 0, progress: 1, elapsedMs: 1500 }
+import type { Group, InstancedMesh } from "three"
+interface Inspection { tick(time: number): void; resize(): void; updateWorld(delta: number): void; time: number; endTime: number; lastFrame: number; render(): void; splash(count: number): void; shoal: Array<{ body: Group; tail: Group }>; pool: Array<{ life: number; y: number; vy: number }>; particles: InstancedMesh; boat: { hull: Group; arm: Group } }
 let game: ReturnType<typeof createFishingGame> | undefined
 let host: HTMLDivElement | undefined
-afterEach(() => { game?.destroy(); host?.remove(); vi.restoreAllMocks(); game = undefined })
-
-async function setup(bridge = new GameEventBridge()) {
-	host = document.createElement("div")
-	host.style.cssText = "width:1366px;height:768px;position:fixed;inset:0"
-	document.body.append(host)
-	game = createFishingGame(host, bridge)
-	await game.ready
-	await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
-	game.renderer.setAnimationLoop(null)
-	const view = game as unknown as Inspection
-	return { bridge, view, game, host }
+afterEach(() => { game?.destroy(); host?.remove() })
+async function setup(live = false) {
+ const bridge=new GameEventBridge();host=document.createElement("div");host.style.cssText="width:1366px;height:768px;position:fixed;inset:0";document.body.append(host)
+ bridge.emit("screen:changed",{screen:"game"});bridge.emit("game:paused",{paused:false})
+ game=createFishingGame(host,bridge);await game.ready;
+ if (live) { await vi.waitFor(()=>expect((game as unknown as Inspection).time).toBeGreaterThan(0),{timeout:2000}) }
+ game.renderer.setAnimationLoop(null)
+ return {bridge,game,host,view:game as unknown as Inspection}
 }
-function encounter(bridge: GameEventBridge, fish = fishSpecies[0]) {
-	const state = startEncounter(fish, "three-renderer-tests", [])
-	bridge.emit("encounter:started", { encounter: state, fish, targetText: "ombak" })
-	return state
-}
+describe("isometric sunset renderer", () => {
+ it("renders actual 3D scenery and six fish with a bounded pixel buffer",async()=>{
+  const {game,view}=await setup(true);view.tick(100);view.tick(140)
+  expect(game.scene.getObjectByName("lighthouse-island")).toBeDefined();expect(game.scene.getObjectByName("fisherman")).toBeDefined();expect(view.shoal).toHaveLength(6)
+  expect(game.renderer.domElement.width).toBeLessThanOrEqual(640);expect(game.renderer.domElement.height).toBeLessThanOrEqual(480)
+  const probe=document.createElement("canvas");probe.width=64;probe.height=64;const ctx=probe.getContext("2d")!;ctx.drawImage(game.renderer.domElement,0,0,64,64)
+  expect(ctx.getImageData(0,0,64,64).data.some((v,i)=>i%4!==3&&v>100)).toBe(true)
+  expect(view.pool).toHaveLength(64)
+ })
+ it("animates fish and reeling, freezes pause/reduced effects and releases the context",async()=>{
+  const {bridge,game,view,host}=await setup()
+  const fish=getFish("reef_minnow");bridge.emit("encounter:started",{fish,encounter:startEncounter(fish,"test",[]),targetText:"ombak"})
+  const start=view.shoal[0]!.tail.rotation.y;view.tick(100);view.tick(140);view.tick(180)
+  expect(view.shoal[0]!.tail.rotation.y).not.toBe(start)
+  bridge.emit("character:correct",{key:"o",expected:"o",combo:1,progress:.1});view.tick(220);expect(view.boat.arm.rotation.x).not.toBe(0)
+  bridge.emit("game:paused",{paused:true});const t=view.time;view.tick(260);expect(view.time).toBe(t)
+  bridge.emit("settings:effects",{reducedMotion:true});bridge.emit("game:paused",{paused:false});const reduced=view.shoal[0]!.body.position.clone();view.tick(300);expect(view.shoal[0]!.body.position).toEqual(reduced)
+  for(const fish of fishSpecies) { bridge.emit("encounter:started",{fish,encounter:startEncounter(fish,"test",[]),targetText:"ombak"});expect(view.shoal.filter(item=>item.body.visible)).toHaveLength(6) }
+  const fail=()=>host.dataset.failed="yes";host.addEventListener("renderer:error",fail);game.renderer.domElement.dispatchEvent(new Event("webglcontextlost",{cancelable:true}));expect(host.dataset.failed).toBe("yes")
+  game.destroy();game.destroy();expect(host.querySelector("canvas")).toBeNull();expect(game.renderer.info.memory.geometries).toBe(0)
+ })
+ it("does not grow GPU allocations across repeated catches and resizes",async()=>{
+  const {bridge,game,view,host}=await setup();view.tick(100);
+  for(let i=0;i<fishSpecies.length;i++) { const fish=fishSpecies[i]!;bridge.emit("encounter:started",{fish,encounter:startEncounter(fish,"warmup",[]),targetText:"ombak"});view.tick(140+i*40) }
+  const baseline=game.renderer.info.memory.geometries
+  for(let i=0;i<30;i++) { const fish=fishSpecies[i%fishSpecies.length]!;bridge.emit("encounter:started",{fish,encounter:startEncounter(fish,"reuse",[]),targetText:"ombak"});bridge.emit("word:completed",{word:"ombak",perfect:true,combo:i});view.tick(600+i*40) }
+  expect(game.renderer.info.memory.geometries).toBe(baseline);expect(view.pool).toHaveLength(64)
+  for(const [w,h] of [[390,844],[320,640],[800,360],[3840,2160]]) { host.style.width=`${w}px`;host.style.height=`${h}px`;view.resize();expect(game.renderer.domElement.width).toBeLessThanOrEqual(640);expect(game.renderer.domElement.height).toBeLessThanOrEqual(480) }
+ })
+ it("responds to domain feedback, terminal outcomes and inactive browser state",async()=>{
+  const {bridge,game,view,host}=await setup();
+  await new Promise(resolve=>setTimeout(resolve,40));window.dispatchEvent(new Event("keydown"));
+  const fish=fishSpecies[0]!;const encounter=startEncounter(fish,"terminal",[])
+  window.dispatchEvent(new Event("pointerdown"));window.dispatchEvent(new Event("keydown"));document.dispatchEvent(new Event("visibilitychange"))
+  bridge.emit("settings:volumes",{music:0,typing:0,gameplay:0,environment:0})
+  bridge.emit("fish:hooked",{fish});bridge.emit("typo:occurred",{key:"x",expected:"o",ignoredBySteelLine:false})
+  bridge.emit("phase:changed",{phase:2});bridge.emit("boss:guard-broken",{tensionRelief:6});bridge.emit("boss:final-pull",{tensionRelief:8})
+  bridge.emit("skill:used",{skillId:"cast_net",label:"Cast Net"});bridge.emit("level:up",{fromLevel:1,toLevel:2,xp:30});bridge.emit("audio:play",{key:"sfx_splash_a",category:"gameplay"})
+  for(const [tension,durability] of [[90,100],[28,20],[28,100]]) { bridge.emit("line:changed",{tension,durability,progress:.4,timeRemainingMs:5000});view.updateWorld(.02) }
+  view.pool[0]!.life=1;view.pool[0]!.y=.05;view.pool[0]!.vy=-2;view.updateWorld(.1);expect(view.pool[0]!.life).toBe(0)
+  for(const reducedMotion of [false,true])for(const caught of [false,true]) {
+   bridge.emit("settings:effects",{reducedMotion});bridge.emit("encounter:started",{fish,encounter,targetText:"ombak"})
+   bridge.emit("catch:resolved",{result:resolveCatchResult({...encounter,status:caught?"caught":"escaped"},fish,{wpm:40,rawWpm:40,accuracy:100,combo:1,maxCombo:1,consistency:100,correctKeystrokes:5,incorrectKeystrokes:0,progress:1,elapsedMs:1000})})
+   view.time+=.4;view.updateWorld(.04);view.time+=1;view.updateWorld(.04);expect(view.shoal[0]!.body.visible).toBe(false)
+  }
+  bridge.emit("settings:effects",{reducedMotion:false});bridge.emit("screen:changed",{screen:"menu"});bridge.emit("screen:changed",{screen:"practice"});bridge.emit("screen:changed",{screen:"race"})
+  vi.spyOn(document,"hidden","get").mockReturnValue(true);view.tick(1000);vi.restoreAllMocks();view.tick(1100);view.tick(1101)
+  bridge.emit("settings:effects",{reducedMotion:true});bridge.emit("line:changed",{tension:90,durability:100,progress:.5,timeRemainingMs:1000});view.tick(1140)
+  host.style.width="0px";host.style.height="0px";view.resize();expect(game.renderer.domElement.width).toBe(1)
+  game.renderer.domElement.dispatchEvent(new Event("webglcontextlost",{cancelable:true}));view.tick(1200);view.render();game.destroy();view.tick(1300)
+ })
 
-describe("Three.js ocean renderer with a real WebGL context", () => {
-	it("scales the fish pull weight for boss, armored and regular fish", () => {
-		expect(fishPullWeight(getFish("crown_leviathan"))).toBe(.42)
-		expect(fishPullWeight(fishSpecies.find(item => item.behavior === "armored")!)).toBe(.5)
-		expect(fishPullWeight(fishSpecies.find(item => item.behavior === "calm")!)).toBe(1)
-	})
-
-	it("replays state before assets load, compiles shaders and renders a nonblank ocean", async () => {
-		const bridge = new GameEventBridge()
-		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		bridge.emit("settings:effects", { reducedMotion: false })
-		bridge.emit("settings:volumes", { music: 0, typing: 0, gameplay: 0, environment: 0 })
-		encounter(bridge)
-		const { game, view } = await setup(bridge)
-		view.tick(100); view.tick(116)
-		expect(view.fish.visible).toBe(true)
-		const canvas = document.createElement("canvas"); canvas.width = 64; canvas.height = 64
-		const context = canvas.getContext("2d")!
-		context.drawImage(game.renderer.domElement, 0, 0, 64, 64)
-		const pixels = context.getImageData(0, 0, 64, 64).data
-		expect(pixels.some((value, index) => index % 4 !== 3 && value > 80)).toBe(true)
-		expect(game.renderer.info.render.calls).toBeGreaterThan(5)
-		expect(game.renderer.domElement.style.imageRendering).toBe("pixelated")
-	})
-	it("keeps every fish underwater, animates eyes and tails, and anchors the hull to its wave", async () => {
-		const { bridge, view, host } = await setup()
-		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		for (const [width, height] of [[1366, 768], [390, 844], [320, 640], [800, 360]]) {
-			host.style.width = `${width}px`; host.style.height = `${height}px`; view.resize()
-			for (const fish of fishSpecies) {
-				encounter(bridge, fish)
-				const start = view.time
-				for (const t of [.2, .8, 2]) {
-					view.time = start + t; view.updateWorld(.016)
-					const box = new Box3().setFromObject(view.fish)
-					expect(-box.max.y).toBeGreaterThan(height * .3 + 2)
-					expect(-box.min.y).toBeLessThan(height * (height <= 500 ? .65 : width <= 640 ? .38 : .46))
-					if (height <= 500) expect(box.max.x).toBeLessThan(width * .32)
-					const hullY = -view.boat.position.y + view.boat.scale.y * .18
-					expect(hullY).toBeCloseTo(surfaceY(view.boat.position.x, width, height, view.time, false))
-				}
-				// Blink landmarks have a fixed phase for each species.
-				let sawBlink = false
-				const blinkStart = view.time
-				for (let t = 0; t < 4; t += .05) { view.time = blinkStart + t; view.updateWorld(0); sawBlink ||= view.eyelid.visible }
-				expect(sawBlink).toBe(true)
-				bridge.emit("settings:effects", { reducedMotion: true })
-				view.time += 1; view.updateWorld(0)
-				expect(view.eyelid.visible).toBe(false); expect(view.fishTail.rotation.y).toBe(0); expect(view.boat.rotation.z).toBe(0)
-				bridge.emit("settings:effects", { reducedMotion: false })
-			}
-		}
-	})
-	it("starts fish animations at frame zero, loops danger and holds terminal frames despite late events", async () => {
-		const { bridge, view } = await setup()
-		bridge.emit("screen:changed", { screen: "game" })
-		view.time = 17
-		const state = encounter(bridge, getFish("reef_minnow"))
-		expect(view.lastTexture).toBe("fish_pebble_goby_bite_0.png")
-		view.time += .25; view.updateWorld(0)
-		expect(view.lastTexture).toBe("fish_pebble_goby_bite_3.png")
-		view.time += .25; view.updateWorld(0)
-		expect(view.lastTexture).toBe("fish_pebble_goby_swim_0.png")
-		view.time += .5; view.updateWorld(0)
-		expect(view.lastTexture).toBe("fish_pebble_goby_swim_5.png")
-		bridge.emit("line:changed", { tension: 90, durability: 100, progress: .1, timeRemainingMs: 5000 })
-		view.updateWorld(0); expect(view.lastTexture).toBe("fish_pebble_goby_struggle_0.png")
-		view.time += .5; view.updateWorld(0)
-		expect(view.lastTexture).toBe("fish_pebble_goby_struggle_0.png")
-		for (const caught of [true, false]) {
-			bridge.emit("catch:resolved", { result: resolveCatchResult({ ...state, status: caught ? "caught" : "escaped" }, getFish("reef_minnow"), metrics) })
-			view.updateWorld(0)
-			expect(view.lastTexture).toBe(`fish_pebble_goby_${caught ? "caught" : "escape"}_0.png`)
-			bridge.emit("fish:hooked", { fish: getFish("reef_minnow") })
-			bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine: false })
-			view.time += 2; view.updateWorld(0)
-			expect(view.lastTexture).toBe(`fish_pebble_goby_${caught ? "caught_3" : "escape_5"}.png`)
-		}
-	})
-	it("reels a struggling fish in with eased momentum and keeps ambient life bounded", async () => {
-		const { bridge, view } = await setup()
-		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		const fish = getFish("reef_minnow")
-		encounter(bridge, fish)
-		const startX = view.fish.position.x
-		bridge.emit("character:correct", { key: "o", expected: "o", combo: 1, progress: .1 })
-		for (let i = 0; i < 12; i++) view.updateWorld(.016)
-		expect(view.fish.position.x).toBeLessThan(startX)
-		const pulledX = view.fish.position.x
-		for (let i = 0; i < 120; i++) view.updateWorld(.016)
-		expect(Math.abs(view.fish.position.x - startX)).toBeLessThan(2)
-		expect(pulledX).toBeLessThan(startX)
-		const calmFish = fishSpecies.find(item => item.behavior === "calm")!
-		encounter(bridge, calmFish); bridge.emit("character:correct", { key: "o", expected: "o", combo: 1, progress: .1 })
-		expect(view.fishVelocityX).toBe(-10)
-		encounter(bridge, getFish("crown_leviathan")); bridge.emit("character:correct", { key: "o", expected: "o", combo: 1, progress: .1 })
-		expect(view.fishVelocityX).toBeCloseTo(-4.2)
-		view.updateFish()
-		const schoolX = view.ambient[0]!.position.x
-		view.time += 1; view.updateWorld(.016)
-		expect(view.ambient[0]!.position.x).not.toBe(schoolX)
-		for (let i = 0; i < 40; i++) view.updateWorld(.048)
-		expect(view.pool.length).toBe(128)
-		expect(view.pool.filter(particle => particle.life > 0 && particle.bubble).length).toBeLessThan(8)
-		bridge.emit("settings:effects", { reducedMotion: true })
-		const reducedStart = view.fish.position.x
-		bridge.emit("character:correct", { key: "m", expected: "m", combo: 2, progress: .2 })
-		for (let i = 0; i < 12; i++) view.updateWorld(.016)
-		expect(view.fish.position.x).toBe(reducedStart)
-	})
-	it("freezes world and effects on pause, colors line danger and delivers every domain effect", async () => {
-		const { bridge, view, game } = await setup()
-		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		window.dispatchEvent(new Event("pointerdown")); window.dispatchEvent(new Event("keydown"))
-		encounter(bridge, getFish("crown_leviathan"))
-		view.tick(100); view.tick(140)
-		bridge.emit("fish:hooked", { fish: fishSpecies[0] })
-		bridge.emit("character:correct", { key: "a", expected: "a", combo: 1, progress: .1 })
-		bridge.emit("character:correct", { key: "b", expected: "b", combo: 2, progress: .2 })
-		for (const [perfect, combo] of [[true, 5], [false, 0], [true, 1]] as const) bridge.emit("word:completed", { word: "air", perfect, combo })
-		for (const ignoredBySteelLine of [false, true]) {
-			bridge.emit("typo:occurred", { key: "x", expected: "a", ignoredBySteelLine }); view.updateWorld(.016)
-			expect(view.fishState).toBe(ignoredBySteelLine ? "stunned" : "struggle")
-		}
-		for (const [tension, durability, expected] of [[90, 100, 0xf05a5e], [90, 100, 0xf05a5e], [60, 100, 0xf5c240], [28, 20, 0xf05a5e], [28, 100, 0xe7fbff]]) {
-			bridge.emit("line:changed", { tension, durability, progress: .5, timeRemainingMs: 1000 }); view.updateWorld(.016)
-			expect((view.line.material as MeshBasicMaterial).color.getHex()).toBe(expected)
-		}
-		bridge.emit("phase:changed", { phase: 2 }); bridge.emit("phase:changed", { phase: 3 })
-		bridge.emit("boss:guard-broken", { tensionRelief: 15 }); bridge.emit("boss:final-pull", { tensionRelief: 15 })
-		for (const skill of fishingSkills) bridge.emit("skill:used", { skillId: skill.id, label: skill.name })
-		bridge.emit("level:up", { fromLevel: 1, toLevel: 2, xp: 100 })
-		bridge.emit("audio:play", { key: "sfx_splash_a", category: "gameplay" })
-		expect(view.pool.filter(p => p.life > 0).length).toBeLessThanOrEqual(128)
-		expect(view.rings.filter(r => r.life > 0)).toHaveLength(6)
-		const before = view.time, position = view.fish.position.clone()
-		bridge.emit("game:paused", { paused: true }); view.tick(300); view.tick(340)
-		expect(view.time).toBe(before); expect(view.fish.position).toEqual(position)
-		bridge.emit("screen:changed", { screen: "prep" }); expect(view.fish.visible).toBe(false)
-		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		const render = vi.spyOn(game.renderer, "render")
-		vi.spyOn(document, "hidden", "get").mockReturnValue(true)
-		document.dispatchEvent(new Event("visibilitychange")); view.tick(400)
-		expect(render).not.toHaveBeenCalled()
-		vi.restoreAllMocks(); document.dispatchEvent(new Event("visibilitychange")); view.tick(500)
-		view.pool[0].y = 0; view.pool[0].life = .5; view.pool[0].bubble = true
-		view.pool[1].life = .5; view.pool[1].bubble = false
-		view.updateWorld(.02); expect(view.pool[0].life).toBe(0)
-		view.updateWorld(2); expect(view.pool.every(p => p.life === 0)).toBe(true)
-		view.ambientBubbleTimer = 1.13; view.pool.forEach(particle => { particle.life = 2; particle.bubble = false })
-		view.updateWorld(.048)
-		expect(view.pool.every(particle => particle.life > 0)).toBe(true)
-	})
-	it("finishes catch and escape animations, resets for the next encounter and cleans GPU resources", async () => {
-		const { bridge, view, game, host } = await setup()
-		bridge.emit("screen:changed", { screen: "game" }); bridge.emit("game:paused", { paused: false })
-		const geometryDisposals: number[] = []
-		game.scene.traverse(object => { if (object instanceof Mesh || object instanceof Line) object.geometry.addEventListener("dispose", () => geometryDisposals.push(1)) })
-		for (const reducedMotion of [false, true]) for (const fish of [fishSpecies[0], getFish("reef_shark")]) for (const caught of [true, false]) {
-			bridge.emit("settings:effects", { reducedMotion }); const state = encounter(bridge, fish)
-			view.time += 1; view.updateWorld(.016)
-			const x = view.fish.position.x
-			bridge.emit("catch:resolved", { result: resolveCatchResult({ ...state, status: caught ? "caught" : "escaped" }, fish, metrics) })
-			view.tick(1000); view.tick(1016); view.tick(1116)
-			view.time += 1; view.updateWorld(1)
-			// End pose stays terminal; events cannot change it back into idle swimming.
-			expect(view.fishBody.material.opacity).toBe(0)
-			expect(caught ? view.fish.position.x < x : view.fish.position.x > 1366).toBe(true)
-			encounter(bridge, fish); expect(view.fishBody.material.opacity).toBe(1)
-		}
-		host.style.width = "0px"; host.style.height = "0px"; view.resize()
-		expect(game.renderer.domElement.width).toBe(1)
-		game.destroy(); game.destroy(); view.tick(5000)
-		expect(geometryDisposals.length).toBeGreaterThan(10); expect(host.querySelector("canvas")).toBeNull()
-		bridge.emit("screen:changed", { screen: "game" })
-	})
-	it("handles context loss and interrupted or failed asset loading without leaked canvases", async () => {
-		const run = await setup()
-		const failed = vi.fn(); run.host.addEventListener("renderer:error", failed)
-		run.game.renderer.domElement.dispatchEvent(new Event("webglcontextlost", { cancelable: true }))
-		run.view.tick(100); expect(failed).toHaveBeenCalledOnce(); run.game.destroy()
-		let release!: () => void
-		const realLoad = OceanAssets.prototype.load
-		vi.spyOn(OceanAssets.prototype, "load").mockImplementation(async function(this: OceanAssets) { await new Promise<void>(resolve => { release = resolve }); await realLoad.call(this) })
-		game = createFishingGame(run.host, run.bridge); game.destroy(); release(); await game.ready
-		expect(run.host.querySelector("canvas")).toBeNull()
-		vi.restoreAllMocks()
-		vi.spyOn(OceanAssets.prototype, "load").mockRejectedValue(new Error("offline"))
-		game = createFishingGame(run.host, run.bridge)
-		await expect(game.ready).rejects.toThrow("offline"); expect(run.host.querySelector("canvas")).toBeNull()
-	})
 })

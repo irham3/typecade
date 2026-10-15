@@ -167,7 +167,7 @@ async function expectRaceSceneInWater(page: Page): Promise<void> {
 				return { top: rect.top, bottom: rect.bottom, left: Math.min(rect.left, name.left), right: Math.max(rect.right, name.right) }
 			})
 		return {
-			waterOnly: water.display !== "none" && parseFloat(water.top) <= -stage.clientHeight && parseFloat(water.height) >= stage.clientHeight * 2,
+			waterOnly: water.display !== "none" && water.backgroundImage.includes("repeating-linear-gradient") && parseFloat(water.top) <= 0 && parseFloat(water.height) >= stage.clientHeight,
 			inside: boats.length >= 2 && boats.every(boat => boat.top >= bounds.top && boat.bottom <= bounds.bottom && boat.left >= bounds.left && boat.right <= bounds.right),
 			separate: boats.every((boat, index) => boats.slice(index + 1).every(other => Math.min(boat.bottom, other.bottom) <= Math.max(boat.top, other.top))),
 			finishClear: boats.every(boat => boat.top >= finish.bottom),
