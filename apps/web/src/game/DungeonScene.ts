@@ -31,6 +31,11 @@ export class DungeonScene {
  private heroAngle = .55
  private heroHitAt = -10
  private lastHp = 6
+ private lastLevel = 1
+ private lastPower = 3
+ private heroHurtAngle = 0
+ private heroMaterial: MeshStandardMaterial
+ private lastEnemyCue = -10
  private lastBossHp = 0
  private partyActions = new Map<string, number>()
  private partyPoses = new Map<string, { x:number;z:number;angle:number;hitAt:number }>()
@@ -111,6 +116,8 @@ export class DungeonScene {
   const sun = new DirectionalLight(0xf5e6ce, 2.1); sun.position.set(-8, 16, 6); this.scene.add(sun)
   const fill = new DirectionalLight(0x75b8e6, 1.15); fill.position.set(8, 8, 12); this.scene.add(fill)
   this.scene.add(this.knight.root, this.dummy.root, this.sensei.root)
+  this.heroMaterial=this.models.material.clone();this.materials.push(this.heroMaterial)
+  for(const part of [this.knight.body,...this.knight.legs,this.knight.arm!,this.knight.weapon!])part.material=this.heroMaterial
   const bridgeParts:Parameters<DungeonModels["geometry"]>[0]=[[0x67626b,0,-.35,0,18,.5,12]]
   for(let z=-5.5;z<6;z++)for(let x=-8;x<9;x+=2)bridgeParts.push([Math.abs(z)<2?(x%4?0x5d465b:0x664e60):(x%4?0x716d73:0x7b777a),x,.01,z,1.86,.18,.90])
   for(const z of [-6,6])for(let x=-8;x<=8;x++)bridgeParts.push([x%2?0x666371:0x78716b,x,.5,z,.94,1.2,.9])
@@ -160,36 +167,59 @@ export class DungeonScene {
   }
   for (let i = 0; i < 4; i++) { const light = new PointLight(0xffa34b, 18, 12, 2); this.lights.push(light); this.scene.add(light) }
   this.post = new ShaderMaterial({
-   uniforms: { image: { value: this.target.texture }, depth: { value: null }, texel: { value: new Vector2(1, 1) }, strength: { value: 1 } },
+   uniforms: { image: { value: this.target.texture }, depth: { value: null }, texel: { value: new Vector2(1, 1) }, strength: { value: 1 }, hurt: {value:0} },
    vertexShader: "varying vec2 p;void main(){p=uv;gl_Position=vec4(position.xy,0.,1.);}",
-   fragmentShader: `varying vec2 p;uniform sampler2D image;uniform sampler2D depth;uniform vec2 texel;uniform float strength;
+   fragmentShader: `varying vec2 p;uniform sampler2D image;uniform sampler2D depth;uniform vec2 texel;uniform float strength;uniform float hurt;
     void main(){vec3 c=texture2D(image,p).rgb;float d=texture2D(depth,p).r;
      float edge=step(.0012,abs(d-texture2D(depth,p+vec2(texel.x,0.)).r)+abs(d-texture2D(depth,p+vec2(0.,texel.y)).r));c=mix(c,c*.38,edge*.60*strength);
-     float vignette=1.-.2*pow(length((p-.5)*1.3),2.);gl_FragColor=vec4(c*vignette,1.);
+     float vignette=1.-.2*pow(length((p-.5)*1.3),2.);c+=vec3(.6,.06,.025)*hurt*smoothstep(.18,.65,length(p-.5));gl_FragColor=vec4(c*vignette,1.);
      #include <colorspace_fragment>
     }`,
   })
   this.target.depthTexture = new DepthTexture(1,1);this.post.uniforms.depth.value=this.target.depthTexture
   this.postScene.add(new Mesh(this.models.keep(new PlaneGeometry(2, 2)), this.post))
   this.cleanup.push(bridge.on("frame", state => {
-   if (state.seed !== this.state?.seed) { this.lastCorrect = state.correct; this.lastEffect = state.nextId-1; this.lastDash=state.player.dashAt;this.lastHp=state.player.hp;this.lastPhase=state.phase;this.actors.clear();this.vfx.clear();this.dashAt=this.swingAt=-10;this.cameraTrauma=0;this.knight.root.position.set(state.player.x, 0, state.player.z); this.focus.set(state.player.x, 0, state.player.z) }
+   if (state.seed !== this.state?.seed) { this.lastEnemyCue=-10;this.lastLevel=state.level;this.lastPower=Object.values(state.skills).reduce((n,s)=>n+s.level,0)+Object.values(state.relics).reduce((n,v)=>n+v,0);this.heroHitAt=-10;this.lastCorrect = state.correct; this.lastEffect = state.nextId-1; this.lastDash=state.player.dashAt;this.lastHp=state.player.hp;this.lastPhase=state.phase;this.actors.clear();this.vfx.clear();this.dashAt=this.swingAt=-10;this.cameraTrauma=0;this.knight.root.position.set(state.player.x, 0, state.player.z); this.focus.set(state.player.x, 0, state.player.z) }
+   this.syncAudio(state)
    this.receive(state)
    this.state = state; this.dirty = true
-   if (["paused", "draft", "dead", "ready"].includes(state.phase)) this.audio.suspend()
-   else {
+   if (!["paused", "ready"].includes(state.phase)) {
     if (state.correct > this.lastCorrect) this.audio.play("tick")
-    for (const fx of state.effects) if (fx.id > this.lastEffect) this.audio.play(fx.kind)
+    for (const fx of state.effects) if (fx.id > this.lastEffect) {
+     const nearHero=Math.hypot(fx.x-state.player.x,fx.z-state.player.z)<.2
+     const kind=fx.kind==="hit"&&fx.value<0?"hurt":fx.kind==="slash"&&nearHero&&state.phase!=="overdrive"?"cleave":fx.kind==="storm"&&(!nearHero||fx.value<0)?"explosion":fx.kind
+     this.audio.play(kind,(fx.x-state.player.x)/12)
+    }
    }
    this.lastCorrect = state.correct; this.lastEffect = state.nextId - 1
-  }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.audio.suspend() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.audio.volume = settings.volume; this.post.uniforms.strength.value = settings.reduced ? 0 : 1; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
-  this.cleanup.push(bridge.on("party",party=>{this.receiveParty(party);this.party=party;this.partyElapsedAt=this.elapsed;this.dirty=true}))
+  }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.syncAudio() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.audio.setMix(settings.volume,settings.music,settings.effects); this.post.uniforms.strength.value = settings.reduced ? 0 : 1; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
+  this.cleanup.push(bridge.on("party",party=>{this.syncAudio(this.state,party);this.receiveParty(party);this.party=party;this.partyElapsedAt=this.elapsed;this.dirty=true}))
   this.listen(window, "keydown", () => this.audio.unlock()); this.listen(window, "pointerdown", () => this.audio.unlock())
-  this.listen(document, "visibilitychange", () => { this.last = 0; if (document.hidden) this.audio.suspend(); this.dirty = true })
-  this.listen(this.renderer.domElement, "webglcontextlost", e => { e.preventDefault(); this.lost = true; this.audio.suspend(); bridge.emit("renderer", { status: "lost", calls: 0, geometries: 0, textures: 0 }) })
-  this.listen(this.renderer.domElement, "webglcontextrestored", () => { this.lost = false; this.last = 0; this.resize(); this.report("ready") })
+  this.listen(window,"click",e=>{if(e.target instanceof Element&&e.target.closest("button,select"))this.audio.play("ui")})
+  this.listen(document, "visibilitychange", () => { this.last = 0; this.audio.setVisible(!document.hidden&&!this.lost); this.dirty = true })
+  this.listen(this.renderer.domElement, "webglcontextlost", e => { e.preventDefault(); this.lost = true; this.audio.setVisible(false); bridge.emit("renderer", { status: "lost", calls: 0, geometries: 0, textures: 0 }) })
+  this.listen(this.renderer.domElement, "webglcontextrestored", () => { this.lost = false; this.audio.setVisible(!document.hidden);this.last = 0; this.resize(); this.report("ready") })
   this.observer = new ResizeObserver(() => this.resize()); this.observer.observe(host)
   this.resize(); this.renderer.setAnimationLoop(timestamp => this.tick(timestamp))
   this.ready = Promise.resolve().then(() => { if (!this.disposed) { this.render(); this.report("ready") } })
+ }
+ private syncAudio(state=this.state,party=this.party) {
+  if(this.screen==="endless"||this.screen==="tutorial"){
+   if(!state){this.audio.setScene({mood:"title"});return}
+   const phase=state.phase,mood=phase==="paused"?"paused":phase==="dead"?"dead":phase==="draft"?"draft":phase==="ready"?"title":"arena"
+   let nearby=0,nearest:DungeonEnemy|undefined,nearestDistance=Infinity
+   for(const e of state.enemies){
+    if(e.kind==="chest"||e.kind==="barrel")continue
+    const distance=Math.hypot(e.x-state.player.x,e.z-state.player.z)
+    if(distance<9)nearby++
+    if(distance<nearestDistance){nearest=e;nearestDistance=distance}
+   }
+   this.audio.setScene({mood,pressure:Math.min(1,nearby/8),critical:state.player.hp>0&&state.player.hp/state.player.maxHp<=.34,boss:state.boss!==null})
+   if(mood==="arena"&&state.worldTime-this.lastEnemyCue>2&&nearest&&nearestDistance<6){this.audio.play(`enemy-${nearest.kind}`,(nearest.x-state.player.x)/12);this.lastEnemyCue=state.worldTime}
+  }else if(this.screen==="multiplayer"&&party?.phase==="racing"){
+   const own=party.players.find(p=>p.id===party.ownId)
+   this.audio.setScene({mood:own?.hp===0?"draft":"arena",pressure:.6,critical:own!==undefined&&own.hp>0&&own.hp<=30,boss:!!party.boss&&party.boss.hp>0})
+  }else this.audio.setScene({mood:this.screen==="dojo"?"dojo":"title"})
  }
  private receive(s: DungeonState) {
   const now=this.elapsed,newEffects=s.effects.filter(fx=>fx.id>this.lastEffect),dash=s.player.dashAt!==this.lastDash
@@ -204,6 +234,7 @@ export class DungeonScene {
    if(!live.has(id)&&actor.deadAt<0){
     if(newEffects.some(fx=>["shatter","hit","storm"].includes(fx.kind)&&Math.hypot(fx.x-actor.x,fx.z-actor.z)<1.5)){
      actor.deadAt=now;actor.hitAt=now;this.vfx.emit("death",actor.x,actor.z,actor.angle,actor.kind==="boss"?2:1,undefined,actor.kind==="goblin"?0x96b657:actor.kind==="guard"||actor.kind==="boss"?0xb9ccdb:0xe5caa1)
+     this.audio.play(actor.kind==="barrel"||actor.kind==="bomber"?"explosion":actor.kind==="chest"?"chest":actor.kind==="boss"?"victory":`death-${actor.kind}`,(actor.x-s.player.x)/12)
      if(actor.kind==="barrel"){this.vfx.emit("cleave",actor.x,actor.z,0,1.2);this.cameraTrauma=.25}
      if(actor.kind==="boss")this.cameraTrauma=.4
     }else this.actors.delete(id)
@@ -213,18 +244,23 @@ export class DungeonScene {
    const old=this.actors.get(e.id)
    if(old){if(e.words.length<old.layers||e.health<old.health)old.hitAt=now;Object.assign(old,e,{layers:e.words.length})}
    else {
-    const arriving=this.state?.seed===s.seed&&this.screen==="endless"&&s.phase!=="ready"
+    const arriving=this.state?.seed===s.seed&&(this.screen==="endless"||this.screen==="tutorial")&&s.phase!=="ready"
     this.actors.set(e.id,{...e,layers:e.words.length,vx:e.x,vz:e.z,angle:Math.atan2(s.player.x-e.x,s.player.z-e.z),hitAt:-10,strikeAt:-10,deadAt:-1,bornAt:arriving?now:-10})
-    if(arriving)this.vfx.emit("spawn",e.x,e.z)
+    if(arriving){this.vfx.emit("spawn",e.x,e.z);if(Math.hypot(e.x-s.player.x,e.z-s.player.z)<11)this.audio.play(`enemy-${e.kind}`,(e.x-s.player.x)/12)}
    }
   }
   const corpses=[...this.actors.values()].filter(a=>a.deadAt>=0).sort((a,b)=>b.deadAt-a.deadAt)
   for(const actor of corpses.slice(16))this.actors.delete(actor.id)
-  if(s.player.hp<this.lastHp){
+  if(s.player.hp<this.lastHp&&newEffects.some(fx=>fx.kind==="hit"&&fx.value<0)){
    this.heroHitAt=now;this.cameraTrauma=.22
+   this.vfx.emit("hurt",s.player.x,s.player.z,this.heroAngle)
    const nearest=[...this.actors.values()].filter(e=>e.deadAt<0).sort((a,b)=>Math.hypot(a.x-s.player.x,a.z-s.player.z)-Math.hypot(b.x-s.player.x,b.z-s.player.z))[0]
-   if(nearest)nearest.strikeAt=now
+   if(nearest){this.audio.play(`enemy-${nearest.kind}`,(nearest.x-s.player.x)/12);nearest.strikeAt=now;this.heroHurtAngle=Math.atan2(s.player.x-nearest.x,s.player.z-nearest.z)}
   }
+  if(s.level>this.lastLevel){this.vfx.emit("level",s.player.x,s.player.z);this.audio.play("level")}
+  const power=Object.values(s.skills).reduce((n,skill)=>n+skill.level,0)+Object.values(s.relics).reduce((n,v)=>n+v,0)
+  if(power>this.lastPower||this.lastPhase==="draft"&&s.phase==="arena"){this.vfx.emit("upgrade",s.player.x,s.player.z);this.audio.play("upgrade")}
+  this.lastLevel=s.level;this.lastPower=power
   this.lastHp=s.player.hp
   for(const fx of newEffects){
    let kind:VisualEffect=fx.kind
@@ -243,7 +279,7 @@ export class DungeonScene {
   for(const id of this.partyPoses.keys())if(!party.players.some(p=>p.id===id))this.partyPoses.delete(id)
   for(const p of party.players){
    const previous=this.party?.players.find(other=>other.id===p.id)
-   if(previous&&p.hp<previous.hp){this.vfx.emit(p.hp===0?"death":"shatter",p.x,p.z);const pose=this.partyPoses.get(p.id);if(pose)pose.hitAt=this.elapsed}
+   if(previous&&p.hp<previous.hp){this.vfx.emit(p.hp===0?"death":"hurt",p.x,p.z);const pose=this.partyPoses.get(p.id);if(pose)pose.hitAt=this.elapsed;if(p.id===party.ownId){this.heroHitAt=this.elapsed;this.audio.play(p.hp===0?"defeat":"hurt")}}
    if(p.action==="idle"||this.partyActions.get(p.id)===p.actionAt)continue
    this.partyActions.set(p.id,p.actionAt)
    if(party.now-p.actionAt>700)continue
@@ -251,10 +287,10 @@ export class DungeonScene {
    const kind:VisualEffect=p.action==="heal"||p.action==="revive"?"heal":p.action==="storm"?"storm":p.action==="block"?"block":p.action==="dodge"?"dust":p.action==="ignite"||p.action==="cleave"?"cleave":"slash"
    this.vfx.emit(kind,to.x,to.z,angle)
    if(kind==="slash"){this.vfx.emit("shatter",to.x,to.z,angle);this.cameraTrauma=.06}
-   this.audio.play(kind)
+   this.audio.play(p.action==="ignite"?"explosion":kind)
   }
   if(party.boss&&this.lastBossHp>party.boss.hp)this.bossHitAt=this.elapsed
-  if(party.boss&&this.lastBossHp>0&&party.boss.hp===0){this.vfx.emit("death",3,-4,0,3);this.vfx.emit("storm",3,-4);this.cameraTrauma=.35}
+  if(party.boss&&this.lastBossHp>0&&party.boss.hp===0){this.vfx.emit("death",3,-4,0,3);this.vfx.emit("storm",3,-4);this.cameraTrauma=.35;this.audio.play("victory")}
   this.lastBossHp=party.boss?.hp??0
   if(party.boss&&party.boss.attackAt!==this.lastBossAttack){
    this.lastBossAttack=party.boss.attackAt
@@ -316,7 +352,7 @@ export class DungeonScene {
   for (const mesh of [this.tiles, this.walls]) { mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor!.needsUpdate = true }
  }
  private update(delta: number) {
-  const s = this.state, active = this.screen === "endless", dojo = this.screen === "dojo"
+  const s = this.state, active = (this.screen === "endless"||this.screen === "tutorial"), dojo = this.screen === "dojo"
   const px = active && s ? s.player.x : this.screen==="multiplayer"?this.party?.focus.x??0:0, pz = active && s ? s.player.z : this.screen==="multiplayer"?this.party?.focus.z??0:0
   this.terrain(px, pz)
   this.dummy.root.visible = this.sensei.root.visible = dojo
@@ -327,17 +363,20 @@ export class DungeonScene {
   this.bannerPoints.forEach((p,i)=>{this.matrix.makeRotationX(this.reduced?0:Math.sin(this.elapsed*2+i)*.07).setPosition(p);this.banners.setMatrixAt(i,this.matrix)});this.banners.count=this.bannerPoints.length;this.banners.instanceMatrix.needsUpdate=true
   this.knight.root.visible=!multiplayer
   this.focus.lerp(this.point.set(px, 0, pz), Math.min(1, delta * 6 || 1))
-  const offset = this.screen === "title" ? -5 : 0, side = this.height < 520 && active ? 5 : dojo&&this.width<600 ? -3 : 0
+  const offset = this.screen === "title" ? -5 : 0, side = this.height < 520 && active ? this.screen==="tutorial"?0:5 : dojo&&this.width<600 ? -3 : 0
   const trainingOffset=dojo?(this.height/2-(this.width<600?215:235))*(2*this.camera.top/this.height)/Math.sqrt(2/3):0
   const fx=this.focus.x+offset+side+trainingOffset,fz=this.focus.z-side+trainingOffset
   this.cameraTrauma=Math.max(0,this.cameraTrauma-delta*1.7)
   const shake=this.reduced?0:this.cameraTrauma*this.cameraTrauma
   this.camera.position.set(fx+24+Math.sin(this.elapsed*61)*shake,24,fz+24+Math.cos(this.elapsed*53)*shake);this.camera.lookAt(fx,0,fz);this.camera.updateMatrixWorld()
   const hero = this.knight.root, age=this.elapsed-this.dashAt, swingAge=this.elapsed-this.swingAt
+  const hurt=Math.max(0,1-(this.elapsed-this.heroHitAt)/.45)
+  this.heroMaterial.emissive.setHex(0xff5738);this.heroMaterial.emissiveIntensity=hurt*.9;this.post.uniforms.hurt.value=hurt
   const dash=active&&!this.reduced?Math.max(0,1-age/.19):0, swing=this.reduced?0:Math.max(0,1-swingAge/.38)
   const selected=s?.enemies.find(e=>e.id===s.target),charge=active&&selected?Math.min(1,s!.prefix.length/selected.words[0]!.length):0
   if(dash>0)hero.position.lerpVectors(this.dashFrom,this.dashTo,1-dash**3)
   else hero.position.set(px,0,pz)
+  if(!this.reduced){hero.position.x+=Math.sin(this.heroHurtAngle)*Math.sin(hurt*Math.PI)*.25;hero.position.z+=Math.cos(this.heroHurtAngle)*Math.sin(hurt*Math.PI)*.25}
   if(selected&&charge>0)this.heroAngle=Math.atan2(selected.x-hero.position.x,selected.z-hero.position.z)
   const facing=active?this.heroAngle:dojo?1.3:.55,turn=Math.atan2(Math.sin(facing-hero.rotation.y),Math.cos(facing-hero.rotation.y))
   hero.rotation.y+=turn*Math.min(1,delta*22||1)
@@ -454,13 +493,13 @@ export class DungeonScene {
  }
  private tick(timestamp: number) {
   if (this.disposed || this.lost || document.hidden) { this.last = 0; return }
-  const frozen = this.screen === "endless" && this.state && ["paused", "draft", "dead"].includes(this.state.phase)
+  const frozen = (this.screen === "endless"||this.screen === "tutorial") && this.state && ["paused", "draft", "dead"].includes(this.state.phase)
   // Clean frames must not consume the next input frame's rendering slot.
   if ((frozen || this.reduced) && !this.dirty) return
   if (this.last && timestamp - this.last < (this.reduced||this.adaptive ? 32 : 16)) return
   if(this.last&&!this.adaptive){this.slowFrames=timestamp-this.last>35?this.slowFrames+1:Math.max(0,this.slowFrames-1);if(this.slowFrames>=30){this.adaptive=true;this.resize()}}
   const delta = this.last ? Math.min(.1, (timestamp - this.last) / 1000) : 0; this.last = timestamp
-  if (!frozen) this.elapsed += delta * (this.screen==="endless"&&this.state?.phase === "skills" ? .5 : 1)
+  if (!frozen) this.elapsed += delta * ((this.screen==="endless"||this.screen==="tutorial")&&this.state?.phase === "skills" ? .5 : 1)
   this.update(frozen ? 0 : delta); this.render(); this.dirty = false
   if (timestamp - this.lastMetrics > 1000) { this.lastMetrics = timestamp; this.report("ready") }
  }

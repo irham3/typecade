@@ -25,7 +25,7 @@ it("packs projected words without overlap at desktop, portrait and small landsca
     for(const [i,box] of boxes.entries()){expect(box.left).toBeGreaterThanOrEqual(bounds.left);expect(box.right).toBeLessThanOrEqual(bounds.right);expect(box.bottom).toBeLessThanOrEqual(bounds.bottom);expect(boxes.slice(i+1).some(other=>intersects(box,other))).toBe(false)}
    },{timeout:2000})
   }
-  s.target=s.enemies[0]!.id;s.prefix=s.enemies[0]!.words[0]!.slice(0,1);await act(()=>root.render(<TargetLabels view={{...s}} bridge={bridge}/>));expect(host.textContent).toContain("TARGET LOCKED")
+  s.target=s.enemies[0]!.id;s.prefix=s.enemies[0]!.words[0]!.slice(0,1);await act(()=>root.render(<TargetLabels view={{...s}} bridge={bridge}/>));expect(host.textContent).toContain("LOCKED")
   s.enemies=[];for(const [i,kind] of (["boss","bomber","barrel","chest","guard","mage"] as const).entries())run.spawn(kind,{x:i,z:0});s.target=s.enemies[0]!.id;s.prefix=s.enemies[0]!.words[0]!.slice(0,1);run.refreshQueue()
   await act(()=>{root.render(<TargetLabels view={{...s,queue:[...s.queue,999]}} bridge={bridge}/>);bridge.emit("projected",s.queue.map(id=>({id,x:500,y:10,visible:false})))})
   expect(host.querySelector(".locked .typed")?.textContent).toBe(s.prefix)

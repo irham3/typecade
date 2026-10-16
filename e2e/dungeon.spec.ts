@@ -26,7 +26,7 @@ test("the dungeon shell, Dojo and combat remain usable across small viewports",a
   await page.getByRole("button",{name:"Typing Dojo"}).click();await expect(page.getByTestId("practice-screen")).toBeVisible()
   await page.screenshot({path:info.outputPath(`dojo-${width}.png`)})
   await page.goto("/");await page.getByRole("button",{name:"Enter the keep"}).click();await page.getByRole("button",{name:"Begin run"}).click()
-  await expect(page.getByTestId("enemy-label")).toHaveCount(width<700?4:6)
+  await expect(page.getByTestId("enemy-label")).toHaveCount(4)
   const labels=await page.getByTestId("enemy-label").evaluateAll(nodes=>nodes.map(node=>{const b=node.getBoundingClientRect();return {left:b.left,right:b.right,top:b.top,bottom:b.bottom}}))
   for(const [i,b] of labels.entries()){expect(b.left).toBeGreaterThanOrEqual(0);expect(b.right).toBeLessThanOrEqual(width);expect(b.bottom).toBeLessThanOrEqual(height);for(const a of labels.slice(i+1))expect(b.left<a.right&&b.right>a.left&&b.top<a.bottom&&b.bottom>a.top).toBe(false)}
   await page.screenshot({path:info.outputPath(`combat-${width}.png`)})
@@ -44,7 +44,7 @@ test("a real dungeon run supports typing, dash, skill interruption, draft and pa
  await page.keyboard.press('Enter')
  const input=page.getByTestId('dungeon-input')
  await expect(input).toBeFocused()
- await expect(page.getByTestId('enemy-label')).toHaveCount(6)
+ await expect(page.getByTestId('enemy-label')).toHaveCount(4)
  const target=page.getByTestId('enemy-label').first(), word=(await target.getAttribute('data-word'))!
  await page.keyboard.type(word[0]!)
  await expect(page.locator('.enemy-label.locked')).toContainText(word)

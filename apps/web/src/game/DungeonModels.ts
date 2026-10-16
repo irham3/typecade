@@ -26,7 +26,7 @@ export class DungeonModels {
   })
   const merged = this.keep(mergeGeometries(copies)!); copies.forEach(g => g.dispose()); return merged
  }
- actor(kind: EnemyKind | "knight" | "dummy" | "sensei", color = 0x4999d4): ActorGeometry {
+ actor(kind: EnemyKind | "knight" | "dummy" | "sensei", color = kind==="guard"?0x92634f:0x4999d4): ActorGeometry {
   const key = `${kind}:${color}`; const cached = this.cache.get(key); if (cached) return cached
   const ink = 0x111b2b, bone = 0xeadbb2, leather = 0x543c36, steel = 0xbed4df, gold = 0xe8b966
   let body: Part[], leg: Part[] | null = [[ink, 0, -.23, 0, .32, .50, .35], [steel, 0, -.47, .05, .38, .22, .43], [ink, 0, -.59, .14, .43, .18, .63]], arm: Part[] | null = [[steel, 0, -.12, 0, .40, .40, .46], [leather, 0, -.40, .02, .28, .40, .31], [steel, 0, -.63, .08, .36, .27, .39]], weapon: Part[] | null = [[steel, 0, -.12, 0, .40, .40, .46], [leather, 0, -.42, .04, .28, .43, .31], [steel, 0, -.65, .10, .35, .25, .37], [gold, 0, -.35, .22, .66, .12, .18], [0x83bed6, 0, .36, .22, .22, 1.35, .12], [0xf1f9e7, -.08, .36, .23, .06, 1.30, .13], [gold, 0, -.80, .22, .19, .20, .18]], size = 1

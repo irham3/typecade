@@ -32,8 +32,8 @@ export interface PartyWorld {
 }
 export interface DungeonEvents {
  frame: DungeonState
- screen: "title" | "endless" | "dojo" | "multiplayer"
- settings: { reduced: boolean; volume: number }
+ screen: "title" | "endless" | "dojo" | "multiplayer" | "tutorial"
+ settings: { reduced: boolean; volume: number; music?: number; effects?: number }
  projected: DungeonLabel[]
  training: { correct: number; words: number; errors: number }
  party: PartyWorld|null

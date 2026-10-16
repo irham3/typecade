@@ -4,6 +4,8 @@ export const dungeonBalance = {
  tick: 1 / 30, enemies: 128, loot: 256, projectiles: 64, effects: 128,
  hp: 6, contactGrace: 1.2, dashGrace: .3, pickupRadius: 2.2,
  spawnRadius: 8.5, spawnInterval: 2.4, speed: .32, manaRegen: 2.5,
+ openingSeconds: 90, openingThreats: 4, openingInterval: 4,
+ learningSeconds: 180, learningThreats: 6, learningInterval: 3, preBossThreats: 12,
  bossInterval: 300, stagger: 10, bossHealth: 260,
 } as const
 export const dungeonTerrain = { chunkSize: 32, ruinX: 10, ruinZ: 10, halfWidth: 4.5, halfDepth: 2.5 } as const
@@ -20,6 +22,19 @@ export const skillRules: Record<SkillId, { cost: number; words: number; en: stri
  cleave: { cost: 25, words: 3, en: "CLEAVE", id: "SAPU", description: "Sweep nearby foes. Preserve your locked word." },
  storm: { cost: 40, words: 5, en: "STORM", id: "BADAI", description: "Strike every visible foe. Evolve to freeze." },
  heal: { cost: 35, words: 4, en: "HEAL", id: "SEMBUH", description: "Restore two hearts. Evolve to gain Aegis." },
+}
+export const combatLessons = [
+ {id:"strike",title:"Your word is your movement",help:"Type the word above the enemy. Its final letter dashes you to it and strikes. No Space or movement key is needed.",success:"Enemy defeated. The dash also collected its XP and gold."},
+ {id:"armor",title:"Two words, two armor layers",help:"Type the guard's word exactly, including its capital letter. The first word breaks a shield; the second defeats the guard.",success:"Shield broken, then guard defeated. The bars show the layers left."},
+ {id:"treasure",title:"Gold labels are loot",help:"The diamond label belongs to a chest. Type its word to open it and collect gold and XP. It cannot attack you.",success:"Chest opened. Compare your gold and XP with the previous lesson."},
+ {id:"barrel",title:"Orange labels are explosive objects",help:"Type the barrel's word to detonate it. Nearby enemies lose an armor layer too. It is an object, not a pursuer.",success:"The barrel's blast defeated its nearby enemies. One word, one chain reaction."},
+ {id:"heal",title:"Read the hit, then recover",help:"Watch one safe demonstration hit: armor flashes, the screen edge reacts, and two hearts empty. Press Tab, then type the displayed HEAL keyword.",success:"Two hearts restored. Healing uses mana and needs four completed target words before it can be used again."},
+ {id:"storm",title:"Skills affect real armor",help:"Press Tab and type the displayed STORM keyword. Time slows in skill mode. Each guard loses one layer; the remaining word still needs typing.",success:"The storm removed one layer from each guard. Its cooldown is measured in completed words, not seconds."},
+ {id:"upgrade",title:"XP becomes a stronger build",help:"Watch the XP bar fill. Time freezes for a draft. Type one complete card keyword to apply its upgrade; read the rank and effect on the card.",success:"Upgrade applied. The golden pulse and acquisition message confirm the new build. Training does not change your saved run."},
+] as const
+export const combatLessonWords:Record<DungeonLanguage,{strike:string;armor:readonly string[];treasure:string;barrel:string}>={
+ en:{strike:"cut",armor:["Guard","Break"],treasure:"OPEN",barrel:"IGNITE"},
+ id:{strike:"tebas",armor:["Perisai","Besi"],treasure:"BUKA",barrel:"LEDAKKAN"},
 }
 export const dungeonWords: Record<DungeonLanguage, Record<EnemyKind, readonly string[]>> = {
  en: {
@@ -49,13 +64,13 @@ export const bossPassages: Record<DungeonLanguage, readonly string[]> = {
 }
 export const dungeonUpgrades: Record<UpgradeId, { name: string; en: string; id: string; description: string; max: number }> = {
  cleave: { name: "Crimson Cleave", en: "BLADE", id: "UP-SAPU", description: "+40% radius. At level 3: strip two layers and magnet XP.", max: 3 },
- storm: { name: "Absolute Zero", en: "FROST", id: "BEKU", description: "Wider storm. At level 3: freeze for 5s and shorten untouched words.", max: 3 },
+ storm: { name: "Absolute Zero", en: "FROST", id: "BEKU", description: "Costs 5 less mana per rank. At level 3: freeze for 5s and shorten untouched words.", max: 3 },
  heal: { name: "Divine Aegis", en: "AEGIS", id: "LINDUNG", description: "Cheaper healing. At level 3: gain four seconds of protection.", max: 3 },
  lightning: { name: "Chain Lightning", en: "SPARK", id: "PETIR", description: "Every tenth combat character strikes two nearby foes.", max: 1 },
  magnet: { name: "XP Magnet", en: "MAGNET", id: "MAGNET", description: "+50% pickup radius. Above 60 WPM: +20% XP.", max: 5 },
  switch: { name: "Mechanical Switch", en: "THOCK", id: "DORONG", description: "Completed words push nearby foes away.", max: 1 },
  vowels: { name: "Vowel Spitfires", en: "VOWEL", id: "VOKAL", description: "Vowels scorch a seeded nearby foe.", max: 1 },
  overclock: { name: "100 WPM Overclock", en: "CLOCK", id: "CEPAT", description: "Above 100 WPM: double mana recovery and cooldown reduction.", max: 1 },
- glasses: { name: "Programmer's Glasses", en: "GLASS", id: "KACAMATA", description: "Remove punctuation from untouched mage and bomber words.", max: 1 },
+ glasses: { name: "Programmer's Glasses", en: "GLASS", id: "KACAMATA", description: "Future mage and bomber words lose punctuation.", max: 1 },
  execute: { name: "Execute Shortener", en: "FINISH", id: "AKHIR", description: "Final elite words are at most three letters.", max: 1 },
 }

@@ -21,7 +21,7 @@ function recordBestWpm(run: TypingSessionSnapshot): number {
 	return best
 }
 
-export function PracticeScreen({ onBack, onActivity }: { onBack: () => void; onActivity?: (correct:number,words:number,errors:number)=>void }) {
+export function PracticeScreen({ onBack, onActivity, onTutorial }: { onBack: () => void; onActivity?: (correct:number,words:number,errors:number)=>void; onTutorial?:()=>void }) {
 	const [config, setConfig] = useState<RaceConfig>({ ...defaultRaceConfig })
 	const [phase, setPhase] = useState<PracticePhase>("racing")
 	const [passage, setPassage] = useState(() => generateRaceText(defaultRaceConfig, `${Date.now()}:practice`))
@@ -134,7 +134,7 @@ export function PracticeScreen({ onBack, onActivity }: { onBack: () => void; onA
 	return (
 		<section className="practice-screen" data-testid="practice-screen">
 			<header className="practice-header pixel-panel">
-				<button className="pixel-action secondary" onClick={onBack}>Main menu</button>
+				<div><button className="pixel-action secondary" onClick={onBack}>Main menu</button>{onTutorial&&<button className="pixel-action secondary" onClick={onTutorial}>Combat tutorial</button>}</div>
 				<div><small>TYPECADE · ZERO STAKES</small><h1>Typing Dojo</h1></div>
 				{phase === "racing" ? <strong className="practice-clock" aria-live="polite">{config.format === "time" ? `${remaining}s` : `${Math.round((snapshot?.metrics.progress ?? 0) * 100)}%`}</strong> : <span className="practice-best">Best {bestWpm} WPM</span>}
 			</header>

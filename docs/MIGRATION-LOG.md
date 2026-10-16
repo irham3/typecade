@@ -874,3 +874,28 @@ The user found the first dungeon renderer stiff and visually weak, then requeste
 - Normal reinforcements use safe, reachable, spaced positions 6–8.5 units away. A four-combat-target floor shortens the normal countdown to 0.3 world seconds, with up to three admissions per pass. Normal pressure rises more slowly to offset the faster refill; stale unlocked non-boss pursuers retire beyond 18 units. Empty queues announce reinforcements. Typing remains the movement/combat action; arrow movement is not introduced in this revision.
 
 Verification evidence: [current revision record](verification/dungeon-visual-2026-10-16/README.md). Final browser/profile results are appended there after completion. Earlier profile and screenshot results remain historical and are not substituted for this source.
+
+
+## 2026-10-16 - Readable damage, gentler opening and optional combat lessons
+
+Following `abb85ed`, the user requested clearer player-hit effects, less pressure at the start, explicit separation of enemy and object words, visible functional level-ups, skippable combat teaching, and consistent living controls across all pages.
+
+The shared renderer now presents actual negative damage cues with local armor emission, red impact/edge feedback, a lost-HP indicator and recoil. A lower HP snapshot alone does not fabricate a new attack. Level gain and acquired power have distinct golden pulses, and draft cards show current/next rank or restorative fallback. Acquisition copy names the rank and effect; STORM now correctly describes its mana discount rather than a nonexistent range increase. One hero material and the existing post pass supply the extra feedback; existing instance caps and teardown remain.
+
+The opening has two slower foes plus two optional objects. Four threats are allowed through 90 seconds, six until three minutes, twelve until the first boss, then normal bounded horde pressure. Maintain four readable target labels with optional objects while refilling reachable foes. Segment-versus-rectangle reachability replaces sampled line checks so a thin ruin-corner intersection cannot be mistaken for a safe dash path. Both languages retain their expanded enemy-specific pools, seeded draws, armor, recurring bosses, endless progression and local save compatibility.
+
+Gold diamond LOOT labels, orange OBJECT/EXPLODES labels and enemy armor labels differ in text/icon/shape as well as color. Steel/stone/brass controls and short entry/press responses apply across title, Dojo, rooms, settings, account and results. Reduced Effects and OS reduced-motion settings suppress decorative motion.
+
+Seven optional lessons reuse the real headless rules and shared HUD/canvas: strike, armor, chest, barrel chain, controlled damage/heal, storm and a real upgrade draft. Training has its own run state and never writes a survival checkpoint or account record. Entry is available from title, Dojo and the pre-run dialog; Skip tutorial is visible immediately, replay resets training, and direct Begin run remains available. Native Tab focus no longer gets stolen by the input's background-focus recovery, and initial focus does not scroll the Dojo header offscreen. A renderer restart pauses and preserves the current lesson instead of resetting it.
+
+Current-source evidence and limits: [damage/training verification](verification/dungeon-feedback-2026-10-16/README.md). M8's unfinished final-profile gate is superseded by this revision's full verification; old captures and measurements remain historical.
+
+
+## 2026-10-16 - Adaptive dungeon soundtrack and event mixing
+
+The user asked to pause testing and prioritize a lively, state-responsive soundtrack and appropriate effects/volumes. The in-progress E2E matrix was stopped; it is not a passing complete run. The prior M9 coverage result (167 tests, 100%) predates this audio revision.
+
+- Replaced the former short oscillator bleep with an original eight-bar 112 BPM minor-key score, pad/bass/melody/percussion layers, proximity pressure, boss brass, critical-health heartbeat and quiet menu/Dojo/draft arrangements. Death stops music; boss defeat, level and acquisition have separate musical phrases.
+- Actual domain/party events now select differentiated player damage, swing/cleave, armor, creature/death, explosive, pickup/chest/magnet and skill cues. Small pitch variation, repeat cooldowns, panning, priority voice admission and music ducking keep feedback bounded under crowds.
+- Retained the existing saved master volume; added optional music/effects fields to the settings bridge and backward-compatible local settings. No run/account schema or dependency/asset download changes. Audio resources remain owned by the renderer lifecycle.
+- Caps and scheduling/mixing details are recorded in the art bible. The audio fixture and settings fixture were updated, but automated suites and the 900-active-second profile remain deferred by the user's explicit request. Final source compiles/builds; listening and hardware loudness/performance are not verified.
