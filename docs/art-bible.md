@@ -77,3 +77,7 @@ These are initial engineering caps, not measured results. Changing them requires
 Screen-space glow, emissive color and short additive effects may supply the look without an expensive global bloom chain. Do not automatically stack RenderPixelatedPass and UnrealBloomPass simply because the source blueprint mentions them. Instancing/pooling must preserve articulated or otherwise readable actor animation.
 
 After warmup, live entities/geometry/material/texture counts must plateau within caps. A repeated-navigation GC check targets less than 8 MiB retained heap growth after six cycles; record browser support and baseline variance. Profile a full 15-minute run, crowded boss phase, reduced-effects mode and WebGL context recovery. Report p50/p95 frame times and hardware; low-end physical phones and WAN capacity remain unproven until measured.
+
+## Measured calibration
+
+The [verification record](verification/dungeon-2026-10-16/README.md) contains hardware-labelled 900-second and final-build follow-up reports. The original long session measured render p95 18.0 ms on Radeon 860M. The final short capped scene remains 44 calls / p95 18.0 ms; Reduced Effects is 42 calls / p95 34.9 ms after avoiding clean-frame scheduling delays. These are local measurements, not a universal frame-rate guarantee or low-end phone calibration. Live entity limits stay unchanged.

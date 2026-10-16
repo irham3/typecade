@@ -1,5 +1,8 @@
 /// <reference types="@cloudflare/workers-types" />
 import { applyRaceInput, createRacePlayer, generateRaceText, parseRaceConfig, rankRacePlayers, type RaceConfig, type RacePlayer, type RaceRoomSnapshot } from "@typecade/race-rules"
+import { applyArenaWord, arenaMinimum, castArenaSkill, courseDistance, createArenaCombat, finishArenaDeadline, generateDungeonRoomText, leaveArena, tickArena, type ArenaCombat, type DungeonRole } from "@typecade/race-rules"
+import type { SkillId } from "@typecade/contracts"
+import { skillRules } from "@typecade/content"
 
 interface Env {
 	ROOMS: DurableObjectNamespace
@@ -10,11 +13,14 @@ interface Member {
 	player: RacePlayer
 	tokenHash: string
 	lastSeenAt: number
-	inputWindowAt: number
-	inputCount: number
+	inputCredits?: number
+	inputAt?: number
+ messagesAt?:number
+ messagesCount?:number
 }
 
 interface StoredRoom {
+ combat?: ArenaCombat
 	code: string
 	hostId: string
 	phase: RaceRoomSnapshot["phase"]
@@ -28,6 +34,15 @@ interface StoredRoom {
 
 const roomCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 const connectionProtocol = "race-v1"
+const roles: DungeonRole[] = ["dps","dps","healer","tank"]
+// Shared typing/skill budget: allow short network bursts, cap sustained input at 300 WPM.
+function consumeInput(member: Member, count: number, now: number): boolean {
+ const credits=Math.min(12,(member.inputCredits??12)+Math.max(0,now-(member.inputAt??now))*.025)
+ member.inputAt=now;member.inputCredits=credits
+ if(count>credits)return false
+ member.inputCredits-=count;return true
+}
+function roomText(config:RaceConfig,seed:string){return config.format==="custom"||config.format==="quote"?generateRaceText(config,seed):generateDungeonRoomText(config,seed)}
 
 function json(value: unknown, status = 200): Response {
 	return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } })
@@ -122,10 +137,11 @@ export class RaceRoom {
 		const playerId = crypto.randomUUID()
 		const token = crypto.randomUUID()
 		const player = createRacePlayer(playerId, name, config.variant)
+		player.role="dps"
 		this.room = {
 			code, hostId: playerId, phase: "waiting", config,
-			text: generateRaceText(config, `${code}:${crypto.randomUUID()}`),
-			members: { [playerId]: { player, tokenHash: await hashToken(token), lastSeenAt: Date.now(), inputWindowAt: 0, inputCount: 0 } },
+			text: roomText(config, `${code}:${crypto.randomUUID()}`),
+			members: { [playerId]: { player, tokenHash: await hashToken(token), lastSeenAt: Date.now() } },
 			startsAt: null, endsAt: null, createdAt: Date.now(),
 		}
 		await this.save()
@@ -145,7 +161,8 @@ export class RaceRoom {
 		if (Object.keys(room.members).length >= room.config.maxPlayers) return errorResponse("Room is full", 409)
 		const playerId = crypto.randomUUID()
 		const token = crypto.randomUUID()
-		room.members[playerId] = { player: createRacePlayer(playerId, name, room.config.variant), tokenHash: await hashToken(token), lastSeenAt: now, inputWindowAt: 0, inputCount: 0 }
+		room.members[playerId] = { player: createRacePlayer(playerId, name, room.config.variant), tokenHash: await hashToken(token), lastSeenAt: now }
+		room.members[playerId]!.player.role=roles[(Object.keys(room.members).length-1)%4]
 		if (!room.members[room.hostId]) room.hostId = playerId
 		await this.save()
 		this.broadcast()
@@ -181,12 +198,17 @@ export class RaceRoom {
 		const playerId = (socket.deserializeAttachment() as { playerId?: string } | null)?.playerId
 		const member = playerId ? room?.members[playerId] : null
 		if (!room || !member || typeof raw !== "string" || raw.length > 512) return
+		const receivedAt=Date.now()
+		if(receivedAt-(member.messagesAt??0)>=1000){member.messagesAt=receivedAt;member.messagesCount=0}
+		member.messagesCount=(member.messagesCount??0)+1
+		if(member.messagesCount>80){socket.close(1008,"Too many room messages");return}
 		let message: Record<string, unknown>
 		try { message = JSON.parse(raw) as Record<string, unknown> } catch { return }
 		if (!message || typeof message !== "object" || Array.isArray(message)) return
 		const now = Date.now()
 		member.lastSeenAt = now
 		if (message.type === "leave") {
+			if(room.combat){leaveArena(room.combat,playerId!);if(room.combat.ended)room.phase="finished"}
 			delete room.members[playerId!]
 			if (room.hostId === playerId) {
 				const remaining = Object.values(room.members)
@@ -196,32 +218,55 @@ export class RaceRoom {
 			await this.save()
 			this.broadcast()
 			socket.close(1000, "Left room")
+		} else if(message.type==="role"&&room.phase==="waiting"&&roles.includes(message.role as DungeonRole)){
+			member.player.role=message.role as DungeonRole;await this.save();this.broadcast()
 		} else if (message.type === "ready" && room.phase === "waiting") {
 			member.player.ready = message.ready === true
 			await this.save()
 			this.broadcast()
 		} else if (message.type === "start" && room.phase === "waiting" && playerId === room.hostId) {
 			const players = Object.values(room.members).map((entry) => entry.player)
-			if (players.length < 2 || players.some((player) => !player.ready || !player.connected)) {
-				socket.send(JSON.stringify({ type: "error", error: "At least two connected players must be ready" }))
+			const minimum=arenaMinimum(room.config.mode??"sprint")
+			if (players.length < minimum || players.some((player) => !player.ready || !player.connected)) {
+				socket.send(JSON.stringify({ type: "error", error: minimum===4?"At least four connected players must be ready":"At least two connected players must be ready" }))
 				return
 			}
+			if(room.config.mode==="raid"&&(["dps","healer","tank"] as const).some(role=>players.filter(p=>p.role===role).length<(role==="dps"?2:1))){socket.send(JSON.stringify({type:"error",error:"Raid needs two DPS, a healer and a tank"}));return}
 			room.phase = "countdown"
 			room.startsAt = now + 3000
 			room.endsAt = room.startsAt + (room.config.format === "time" ? room.config.timeSeconds * 1000 : Math.min(3600000, Math.max(180000, room.text.length * 200)))
+			room.combat=createArenaCombat(room.config.mode??"sprint",players,room.startsAt)
+			for(const entry of Object.values(room.members)){entry.inputCredits=12;entry.inputAt=room.startsAt}
 			await this.save()
 			await this.ctx.storage.setAlarm(room.startsAt)
 			this.broadcast()
+		} else if(message.type==="skill"&&room.phase==="racing"&&member.player.status==="racing"&&now>=(room.startsAt??Infinity)&&now<(room.endsAt??0)&&room.combat){
+			const skill=message.skill as SkillId
+			if(!Object.hasOwn(skillRules,skill)||message.text!==skillRules[skill][room.config.language]||!consumeInput(member,Array.from(String(message.text)).length,now)){socket.send(JSON.stringify({type:"error",error:"Type a valid skill keyword at a playable pace"}));return}
+			const result=castArenaSkill(room.combat,playerId!,message.skill as SkillId,message.seq as number,now)
+			if(result){socket.send(JSON.stringify({type:"error",error:result}));return}
+			if(room.combat.mode==="sprint"&&room.config.format!=="time"&&room.combat.players[playerId!]!.distance>=courseDistance(room.text)){member.player.status="finished";member.player.finishedAt=now}
+			if(room.combat.ended)room.phase="finished"
+			if(Object.values(room.members).every(entry=>entry.player.status==="finished"||entry.player.status==="out"))room.phase="finished"
+			await this.save();this.broadcast()
 		} else if (message.type === "type" && room.phase === "racing" && now >= (room.startsAt ?? Infinity) && now < (room.endsAt ?? 0)) {
 			const value = message.text
 			const seq = message.seq
 			if (typeof value !== "string" || typeof seq !== "number" || value.length > 32) return
-			if (now - member.inputWindowAt >= 1000) { member.inputWindowAt = now; member.inputCount = 0 }
-			member.inputCount += value.length
-			if (member.inputCount > 180) return
+			if(!Number.isSafeInteger(seq)||seq<=member.player.lastSeq||Array.from(value).length!==1)return
+			if(room.combat&&room.combat.players[playerId!]!.hp<=0){member.player.lastSeq=seq;socket.send(JSON.stringify({type:"snapshot",room:this.snapshot()}));return}
+			if(!consumeInput(member,1,now)){member.player.lastSeq=seq;socket.send(JSON.stringify({type:"error",error:"Input arrived too fast. Retype the current character."}));socket.send(JSON.stringify({type:"snapshot",room:this.snapshot()}));return}
 			const result = applyRaceInput(member.player, room.text, value, seq, now, room.config)
 			if (result.player === member.player) return
 			member.player = result.player
+			if(room.combat){
+				const before=result.player.cursor-result.accepted
+				for(let cursor=before;cursor<result.player.cursor;cursor++)if(room.text[cursor]===" "||cursor===room.text.length-1){const end=room.text[cursor]===" "?cursor:cursor+1;const start=room.text.lastIndexOf(" ",end-1)+1;applyArenaWord(room.combat,playerId!,room.text.slice(start,end),now)}
+				if(room.combat.mode!=="sprint"&&member.player.status==="finished")member.player.status="racing"
+				if(room.combat.mode==="sprint"&&room.config.format!=="time"&&room.combat.players[playerId!]!.distance>=courseDistance(room.text)){member.player.status="finished";member.player.finishedAt=now}
+				if(room.combat.ended)room.phase="finished"
+				if(room.combat.mode!=="sprint"&&member.player.cursor>room.text.length-100&&room.text.length<100000)room.text+=" "+generateDungeonRoomText({...room.config,format:"time"},`${room.code}:${room.text.length}`)
+			}
 			if (Object.values(room.members).every((entry) => entry.player.status === "finished" || entry.player.status === "out")) room.phase = "finished"
 			await this.save()
 			if (room.phase === "finished" || result.player.status !== "racing" || now - this.lastBroadcastAt >= 200) this.broadcast()
@@ -229,12 +274,12 @@ export class RaceRoom {
 		} else if (message.type === "rematch" && room.phase === "finished" && playerId === room.hostId) {
 			for (const [id, entry] of Object.entries(room.members)) {
 				if (!entry.player.connected) delete room.members[id]
-				else entry.player = { ...createRacePlayer(id, entry.player.name, room.config.variant), connected: true }
+				else entry.player = { ...createRacePlayer(id, entry.player.name, room.config.variant), role:entry.player.role, connected: true }
 			}
 			room.phase = "waiting"
 			room.startsAt = null
 			room.endsAt = null
-			room.text = generateRaceText(room.config, `${room.code}:${crypto.randomUUID()}`)
+			room.text=roomText(room.config,`${room.code}:${crypto.randomUUID()}`);room.combat=undefined
 			await this.save()
 			this.broadcast()
 		}
@@ -250,7 +295,7 @@ export class RaceRoom {
 		member.player.connected = false
 		member.player.ready = false
 		member.lastSeenAt = Date.now()
-		if (room.phase === "waiting" && room.hostId === playerId) room.hostId = Object.values(room.members).find((entry) => entry.player.connected)?.player.id ?? playerId!
+		if (room.hostId === playerId) room.hostId = Object.values(room.members).find((entry) => entry.player.connected)?.player.id ?? playerId!
 		await this.save()
 		this.broadcast()
 	}
@@ -265,15 +310,20 @@ export class RaceRoom {
 		if (room.phase === "countdown" && room.startsAt && now >= room.startsAt) {
 			room.phase = "racing"
 			for (const member of Object.values(room.members)) member.player.status = "racing"
-			await this.ctx.storage.setAlarm(room.endsAt!)
+			await this.ctx.storage.setAlarm(room.config.mode==="clash"||room.config.mode==="raid"?Math.min(now+1000,room.endsAt!):room.endsAt!)
 		} else if (room.phase === "racing" && room.endsAt && now >= room.endsAt) {
 			room.phase = "finished"
+			if(room.combat&&room.combat.mode!=="sprint")finishArenaDeadline(room.combat)
 			for (const member of Object.values(room.members)) {
 				if (member.player.status === "racing") {
 					member.player.status = room.config.format === "time" ? "finished" : "out"
 					member.player.finishedAt = now
 				}
 			}
+		} else if(room.phase==="racing"&&room.combat&&room.config.mode!=="sprint"){
+			tickArena(room.combat,now,Object.values(room.members).filter(e=>e.player.connected).map(e=>e.player.id))
+			if(room.combat.ended)room.phase="finished"
+			else await this.ctx.storage.setAlarm(Math.min(now+1000,room.endsAt!))
 		}
 		await this.save()
 		this.broadcast()
@@ -281,9 +331,12 @@ export class RaceRoom {
 
 	private snapshot(): RaceRoomSnapshot {
 		const room = this.room!
+		const players=rankRacePlayers(Object.values(room.members).map(member=>member.player),room.config),combat=room.combat
+		if(combat){players.sort((a,b)=>combat.mode==="clash"?(Number(b.id===combat.winner)-Number(a.id===combat.winner)||combat.players[b.id]!.score-combat.players[a.id]!.score||combat.players[b.id]!.hp-combat.players[a.id]!.hp):combat.mode==="sprint"?(Number(a.status==="out")-Number(b.status==="out")||Number(b.status==="finished")-Number(a.status==="finished")||(a.status==="finished"&&b.status==="finished"?(a.finishedAt??Infinity)-(b.finishedAt??Infinity):combat.players[b.id]!.distance-combat.players[a.id]!.distance)):combat.players[b.id]!.score-combat.players[a.id]!.score)}
 		return {
+			combat:room.combat,
 			code: room.code, hostId: room.hostId, phase: room.phase, config: room.config, text: room.text,
-			players: rankRacePlayers(Object.values(room.members).map((member) => member.player), room.config),
+			players,
 			startsAt: room.startsAt, endsAt: room.endsAt, serverNow: Date.now(),
 		}
 	}

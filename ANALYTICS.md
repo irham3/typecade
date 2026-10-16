@@ -1,8 +1,8 @@
 # Dungeon measurement plan
 
-Revision: 2026-10-15. Planning only. The previous Next.js/Umami/Search Console setup guide is retired because it refers to removed application paths and environment variables.
+Revision: 2026-10-15. Implemented measurement workflow; see the migration log for actual results. The previous Next.js/Umami/Search Console setup guide is retired because it refers to removed application paths and environment variables.
 
-No analytics dependency, remote collection or third-party account is added in this reset. Measure playability first with local test/profile evidence.
+No analytics dependency, remote collection or third-party account is added in this reset. Measure playability with local test/profile evidence. `npm run profile:dungeon` defaults to 900 active simulation seconds against `http://localhost:4173` and writes a hardware-labelled JSON report plus screenshot under `test-results/dungeon-profile`. Its bot uses real keyboard events, chooses upgrades and handles boss paragraphs; its WPM is an automated input profile, not a human study.
 
 ## Required local evidence
 

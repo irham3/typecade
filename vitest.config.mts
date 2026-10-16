@@ -14,7 +14,7 @@ const aliases = {
 
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: { include: ['@supabase/supabase-js'] },
+  optimizeDeps: { include: ['@supabase/supabase-js', 'react', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
   publicDir: path.resolve(import.meta.dirname, 'apps/web/public'),
   test: {
     projects: [
@@ -33,6 +33,8 @@ export default defineConfig({
         resolve: { alias: aliases },
         test: {
           name: 'browser',
+          // Real WebGL tests share one GPU; parallel scenes distort resize/lifecycle checks.
+          fileParallelism: false,
           include: ['src/**/*.browser.test.{ts,tsx}'],
           browser: {
             enabled: true,

@@ -2,7 +2,7 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
-import { defaultRaceConfig, type RacePlayer, type RaceRoomSnapshot, type RaceTicket } from "@typecade/race-rules"
+import { createArenaCombat, defaultRaceConfig, type RacePlayer, type RaceRoomSnapshot, type RaceTicket } from "@typecade/race-rules"
 import * as raceRules from "@typecade/race-rules"
 import { RaceScreen } from "./RaceScreen"
 
@@ -27,7 +27,7 @@ class RoomSocket {
 	deliver(room: RaceRoomSnapshot) { this.onmessage?.({ data: JSON.stringify({ type: "snapshot", room }) } as MessageEvent<string>) }
 }
 
-const ticket: RaceTicket = { code: "ABCDEFGH", playerId: "host", token: "test-token" }
+const ticket: RaceTicket = { code: "ABCDEFGH", playerId: "host", token: "test-token-01234567890123456789" }
 
 function player(id: string, name: string, fields: Partial<RacePlayer> = {}): RacePlayer {
 	return { id, name, ready: false, connected: true, status: "waiting", cursor: 0, errors: 0, lives: 0, finishedAt: null, lastSeq: 0, ...fields }
@@ -43,8 +43,47 @@ describe("multiplayer race screen browser coverage", () => {
 	let socket: RoomSocket
 	let rootUnmounted = false
 
+	it("configures every dungeon mode and keeps precision rules scoped to Sprint",async()=>{
+  await act(()=>root.render(<RaceScreen onBack={vi.fn()}/>))
+  const select=host.querySelector<HTMLSelectElement>('[aria-label="Multiplayer mode"]')!
+  for(const mode of ["clash","raid","sprint"]){await act(()=>userEvent.selectOptions(select,mode));expect(Boolean(host.querySelector('[aria-label="Challenge"]'))).toBe(mode==="sprint")}
+ })
+
+ it("preserves the active word while typing skills and shows authoritative combat outcomes",async()=>{
+  sessionStorage.setItem("typecade:dungeon:room:v1",JSON.stringify(ticket))
+  await act(()=>root.render(<RaceScreen onBack={vi.fn()}/>));socket=RoomSocket.latest!
+  const players=[player("host","Blue",{status:"racing"}),player("peer","Red",{status:"racing",role:"tank"})]
+  const current=room("waiting",players);current.config.mode="raid";current.config.language="en";current.combat=createArenaCombat("raid",players,0)
+  await act(()=>{socket.open();socket.deliver(current)})
+  await act(()=>userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Raid role"]')!,"healer"));expect(socket.sent.at(-1)).toMatchObject({type:"role",role:"healer"})
+  current.phase="racing";current.text="hit hit";current.startsAt=null
+  current.combat.actions=[{id:1,player:"boss",target:"peer",kind:"boss-hit",value:14,at:0},{id:2,player:"unknown",target:"host",kind:"strike",value:12,at:0}]
+  await act(()=>socket.deliver(current))
+  const key=async(key:string,extra:KeyboardEventInit={})=>{await act(()=>host.querySelector("input.typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true,cancelable:true,...extra})))}
+  await key("h");await key("Tab");await key("Backspace");await key("Enter");await key("x");expect(host.textContent).toContain("Type a skill keyword")
+  await key("S");expect(host.querySelector(".party-skill-dock .typed")!.textContent).toBe("")
+  await key("T");for(const character of "ORM")await key(character)
+  expect(socket.sent.at(-1)).toMatchObject({type:"skill",skill:"storm",text:"STORM",seq:1})
+  await key("Tab");await act(()=>{const input=host.querySelector<HTMLInputElement>("input.typing-native-input")!;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"CLEAVE");input.dispatchEvent(new InputEvent("input",{bubbles:true}))})
+  expect(socket.sent.at(-1)).toMatchObject({type:"skill",skill:"cleave",text:"CLEAVE",seq:2})
+  await key("Tab",{repeat:true});await key("Tab",{ctrlKey:true});await key("Tab",{metaKey:true});await key("Tab",{altKey:true})
+  await act(()=>host.querySelector<HTMLButtonElement>(".party-skill-dock button")!.click());await key("Escape");expect(host.querySelector(".party-skill-dock")!.className).not.toContain("casting")
+  current.combat.players.host!.hp=0;current.combat.players.host!.cooldowns.cleave=3;await act(()=>socket.deliver(current));expect(host.textContent).toContain("DOWNED")
+  await key("i");expect(host.querySelector<HTMLInputElement>(".typing-native-input")!.disabled).toBe(true)
+  for(const winner of ["team","boss"]){current.phase="finished";current.combat.winner=winner;await act(()=>socket.deliver(current));expect(host.textContent).toContain(winner==="team"?"Party victory":"The keep held")}
+  current.config.mode="clash";current.combat.mode="clash";current.phase="waiting";await act(()=>socket.deliver(current));expect(host.textContent).toContain("Start clash")
+  current.phase="racing";current.combat.players.host!.hp=40;await act(()=>socket.deliver(current));expect(host.textContent).toContain("40 HP")
+  current.combat.players.host!.hp=0;await act(()=>socket.deliver(current));expect(host.textContent).toContain("ELIMINATED")
+  current.phase="finished";for(const winner of ["host",null]){current.combat.winner=winner;await act(()=>socket.deliver(current));expect(host.textContent).toContain(winner?"Winner: Blue":"Draw")}
+  current.config.mode="sprint";current.combat.mode="sprint";current.combat.players.host!.hp=100;current.combat.players.host!.distance=15;current.phase="racing";await act(()=>socket.deliver(current));expect(host.textContent).toContain("LAP 2/2")
+  delete current.combat.players.host;await act(()=>socket.deliver(current));expect(host.querySelector(".battle-hud")).toBeNull()
+  current.config.mode="raid";current.combat=createArenaCombat("raid",players,0);delete current.combat.players.peer
+  for(const role of ["healer","tank"] as const){current.combat.players.host!.role=role;await act(()=>socket.deliver(current));expect(host.textContent).toContain(role==="healer"?"WORDS HEAL":"WORDS GUARD")}
+  current.config.mode=undefined;current.combat=undefined;current.phase="waiting";await act(()=>socket.deliver(current));expect(host.textContent).toContain("Start race")
+ })
+
 	it("keeps a 100-captain fleet searchable and closes the board with Escape", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		const fleet = Array.from({ length: 100 }, (_, index) => player(index === 75 ? "host" : `guest${index}`, `Captain ${index}`, { status: "racing", cursor: index % 3 }))
@@ -62,7 +101,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("rejects non-object WebSocket updates without crashing the race screen", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Host")])) })
@@ -75,7 +114,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("shows invite-copy confirmation and recovers from malformed WebSocket data", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(() => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Alpha")])) })
@@ -122,7 +161,7 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(() => socket.open?.())
 		expect(host.textContent).toContain("Connecting to room ABCDEFGH")
 		await act(() => socket.deliver(room("waiting", [player("host", "Alpha")])) )
-		expect(host.textContent).toContain("Waiting at the harbor")
+		expect(host.textContent).toContain("Waiting at the gate")
 		await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent?.includes("I'm ready"))!) })
 		expect(socket.sent.at(-1)).toMatchObject({ type: "ready", ready: true })
 
@@ -131,7 +170,7 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(async () => { await userEvent.click([...host.querySelectorAll("button")].find((button) => button.textContent === "Start race")!) })
 		expect(socket.sent.at(-1)).toMatchObject({ type: "start" })
 		await act(() => socket.deliver(room("countdown", readyRoom.players)))
-		expect(host.textContent).toContain("SET YOUR SAIL")
+		expect(host.textContent).toContain("READY YOUR BLADE")
 		await act(() => socket.deliver(room("racing", readyRoom.players.map((entry) => player(entry.id, entry.name, { ...entry, status: "racing" })))))
 		expect(host.querySelector('[data-testid="race-play"]')).not.toBeNull()
 		expect(host.querySelector<HTMLElement>('[data-testid="race-passage"]')!.style.fontSize).toBe("32px")
@@ -158,14 +197,14 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("leaves an active room when navigating to the main menu", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		const onBack = vi.fn()
 		await act(() => root.render(<RaceScreen onBack={onBack} />))
 		socket = RoomSocket.latest!
 		await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Alpha")])) })
 		await act(() => [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Main menu")!.click())
 		expect(socket.sent.at(-1)).toMatchObject({ type: "leave" })
-		expect(sessionStorage.getItem("typecade:ocean-race:ticket")).toBeNull()
+		expect(sessionStorage.getItem("typecade:dungeon:room:v1")).toBeNull()
 		expect(onBack).toHaveBeenCalledOnce()
 	})
 
@@ -179,7 +218,7 @@ describe("multiplayer race screen browser coverage", () => {
 			await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".race-config button")!) })
 			socket = RoomSocket.latest!
 			await act(() => { socket.open(); socket.deliver(room("waiting", [player("host", "Storage Captain")])) })
-			expect(host.textContent).toContain("Waiting at the harbor")
+			expect(host.textContent).toContain("Waiting at the gate")
 			await act(() => [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Main menu")!.click())
 			expect(socket.readyState).toBe(3)
 			expect(host.textContent).toContain("Create a room")
@@ -222,7 +261,7 @@ describe("multiplayer race screen browser coverage", () => {
 
 	it("exposes each supported room format and its matching settings", async () => {
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
-		const selects = () => host.querySelectorAll<HTMLSelectElement>(".race-config select")
+		const selects = () => host.querySelectorAll<HTMLSelectElement>(".race-config select:not([aria-label=\"Multiplayer mode\"])")
 		await act(async () => { await userEvent.selectOptions(selects()[0]!, "en") })
 		await act(async () => { await userEvent.selectOptions(selects()[1]!, "time") })
 		const timeLimit = host.querySelector<HTMLInputElement>('input[list="race-time-presets"]')!
@@ -233,7 +272,7 @@ describe("multiplayer race screen browser coverage", () => {
 		await act(async () => { await userEvent.click(checks[0]!) })
 		await act(async () => { await userEvent.click(checks[1]!) })
 		await act(async () => { await userEvent.selectOptions(selects()[1]!, "quote") })
-		expect(host.querySelectorAll(".race-config select")).toHaveLength(4)
+		expect(host.querySelectorAll(".race-config select")).toHaveLength(5)
 		await act(async () => { await userEvent.selectOptions(selects()[2]!, "hard") })
 		await act(async () => { await userEvent.selectOptions(selects()[1]!, "custom") })
 		const passage = host.querySelector<HTMLTextAreaElement>(".race-config textarea")!
@@ -251,7 +290,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("ignores a saved room ticket when a different deep link was requested", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		history.replaceState(null, "", "/?race=ZXCVBNMA")
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		expect(host.querySelector(".race-config")).not.toBeNull()
@@ -260,19 +299,19 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("recovers from a malformed saved room ticket", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", "{")
+		sessionStorage.setItem("typecade:dungeon:room:v1", "{")
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		expect(host.querySelector(".race-config")).not.toBeNull()
 	})
 
 	it("handles snapshots without the local player and failed invite copying", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => socket.open())
 		expect(host.textContent).toContain("Connecting to room ABCDEFGH")
 		await act(() => socket.deliver(room("waiting", [player("guest", "Bravo")])))
-		expect(host.textContent).toContain("Waiting at the harbor")
+		expect(host.textContent).toContain("Waiting at the gate")
 		await act(() => socket.deliver(room("racing", [player("guest", "Bravo", { status: "racing" })])))
 		expect(host.querySelector('[data-testid="race-play"]')).toBeNull()
 		await act(() => socket.deliver(room("waiting", [player("guest", "Bravo")])) )
@@ -290,7 +329,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("ignores socket callbacks after unmount", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(async () => root.unmount())
@@ -304,7 +343,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("shows a no-finisher result and opens its leaderboard", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => socket.open())
@@ -315,7 +354,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("uses safe race clocks and messages finished or disconnected captains", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => socket.open())
@@ -335,7 +374,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("describes an English custom room and the full online/offline roster", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => socket.open())
@@ -361,11 +400,11 @@ describe("multiplayer race screen browser coverage", () => {
 		waiting.config = { ...waiting.config, format: "time", timeSeconds: 45, variant: "classic" }
 		await act(() => socket.deliver(waiting))
 		expect(host.textContent).toContain("Bahasa Indonesia · 45 seconds")
-		expect(host.textContent).toContain("Surviving captains rank by valid progress at the deadline.")
+		expect(host.textContent).toContain("Surviving knights rank by valid progress at the deadline.")
 	})
 
 	it("sends only plain single characters from an active racer in a large fleet", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => socket.open())
@@ -392,7 +431,7 @@ describe("multiplayer race screen browser coverage", () => {
 	})
 
 	it("renders a timed challenge and closes a socket after a transport error", async () => {
-		sessionStorage.setItem("typecade:ocean-race:ticket", JSON.stringify(ticket))
+		sessionStorage.setItem("typecade:dungeon:room:v1", JSON.stringify(ticket))
 		await act(async () => root.render(<RaceScreen onBack={vi.fn()} />))
 		socket = RoomSocket.latest!
 		await act(() => socket.open())

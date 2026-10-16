@@ -1,828 +1,91 @@
 import { act } from "react"
-import { createRoot, type Root } from "react-dom/client"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
-import { fishSpecies } from "@typecade/content"
-import { createInitialCollection, createShallowCoastExpedition, serializeOceanSave } from "@typecade/game-rules"
-import { PracticeSession } from "@typecade/typing-engine"
-import { App, FeedbackBanner, handleAccountCloseKey } from "./App"
-import { PracticeScreen } from "./practice/PracticeScreen"
-import { PracticeKeyboard } from "./practice/PracticeKeyboard"
-import { createFishingGame } from "./game/createFishingGame"
-
-const accountMock = vi.hoisted(() => ({
-	client: null as object | null,
-	user: null as { id: string; email?: string } | null,
-	loading: false,
-	status: "Account sync is unavailable: Supabase is not configured.",
-	leaderboard: [] as Array<{ user_id: string; display_name: string; xp: number; catches: number; species_discovered: number; best_voyage: number }>,
-	achievements: [] as Array<{ achievement_id: string; unlocked_at: string }>,
-	signIn: vi.fn(async () => true), signUp: vi.fn(async () => true), signOut: vi.fn(async () => {}),
-	syncSave: vi.fn(async () => {}), restoreSave: vi.fn(async () => null), refresh: vi.fn(async () => {}),
-}))
-vi.mock("./account/useOceanAccount", () => ({ useOceanAccount: () => accountMock }))
-vi.mock("./game/createFishingGame", () => ({ createFishingGame: vi.fn() }))
-
-describe("application browser coverage", () => {
-	it("closes the captain ledger for Escape only", () => {
-		const onClose = vi.fn()
-		handleAccountCloseKey("Escape", onClose)
-		handleAccountCloseKey("Tab", onClose)
-		expect(onClose).toHaveBeenCalledOnce()
-	})
-	let host: HTMLDivElement
-	let root: Root
-
-	beforeEach(() => {
-		accountMock.client = null; accountMock.user = null; accountMock.loading = false
-		accountMock.status = "Account sync is unavailable: Supabase is not configured."
-		accountMock.leaderboard = []; accountMock.achievements = []
-		accountMock.signIn.mockClear(); accountMock.signUp.mockClear(); accountMock.signOut.mockClear()
-		vi.mocked(createFishingGame).mockReset().mockImplementation(() => ({ ready: Promise.resolve(), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
-		;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-		host = document.createElement("div")
-		document.body.append(host)
-		root = createRoot(host)
-	})
-
-	afterEach(async () => {
-		await act(async () => root.unmount())
-		host.remove()
-		localStorage.clear()
-		history.replaceState(null, "", "/")
-		vi.restoreAllMocks()
-	})
-
-	async function mount() { await act(async () => root.render(<App />)) }
-	async function click(selector: string) {
-		const button = host.querySelector<HTMLElement>(selector)
-		if (!button) throw new Error(`Missing control: ${selector}`)
-		await act(() => button.click())
-		if (selector === 'button[aria-label="Practice"]') await click('.practice-actions button:first-child')
-	}
-	async function practice(onBack = vi.fn()) {
-		await act(() => root.render(<PracticeScreen onBack={onBack} />))
-		await click('.practice-actions button:first-child')
-	}
-	async function sail() {
-		await click('button[aria-label="Adventure"]')
-		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
-	}
-
-	it("opens Practice ready to type and accepts its on-screen keyboard without an extra start screen", async () => {
-		await act(() => root.render(<PracticeScreen onBack={vi.fn()} />))
-		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
-		expect(host.querySelector('[data-testid="practice-passage"]')!.textContent!.split(' ')).toHaveLength(50)
-		await act(() => host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})))
-		expect(host.querySelector('.practice-clock')!.textContent).toBe('0%')
-		await click('button[aria-label="q"]')
-		expect(host.querySelectorAll('.done,.incorrect')).toHaveLength(1)
-		await click('button[aria-label="Backspace"]')
-		expect(host.querySelectorAll('.done,.incorrect')).toHaveLength(0)
-	})
-
-	it("opens the pixel-styled captain ledger from the main menu", async () => {
-		accountMock.client = {}
-		accountMock.status = ""
-		await mount()
-		await click(".account-open-button")
-		expect(host.querySelector('[role="dialog"][aria-labelledby="captain-account-title"]')).not.toBeNull()
-		expect(host.textContent).toContain("Adventure leaderboard")
-		expect(host.textContent).toContain("Achievements")
-		expect(host.textContent).toContain("Sign in to sync Adventure")
-		accountMock.loading = true
-		await act(async () => root.render(<App />))
-		expect(host.querySelector<HTMLButtonElement>('.captain-account-actions button[type="submit"]')!.textContent).toContain("Please wait")
-		accountMock.loading = false
-		await act(async () => root.render(<App />))
-		await act(async () => { await userEvent.type(host.querySelector<HTMLInputElement>('[aria-label="Email"]')!, "captain@example.test") })
-		await act(async () => { await userEvent.type(host.querySelector<HTMLInputElement>('[aria-label="Password"]')!, "secret") })
-		await act(() => host.querySelector<HTMLFormElement>(".captain-account-form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
-		expect(accountMock.signIn).toHaveBeenCalledWith("captain@example.test", "secret")
-		await click('.captain-account-actions button[type="button"]')
-		expect(host.querySelector('[aria-label="Display name"]')).not.toBeNull()
-		expect(host.querySelector<HTMLInputElement>('[aria-label="Password"]')!.autocomplete).toBe("new-password")
-		await act(async () => { await userEvent.type(host.querySelector<HTMLInputElement>('[aria-label="Display name"]')!, "Deckhand") })
-		await act(() => host.querySelector<HTMLFormElement>(".captain-account-form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
-		expect(accountMock.signUp).toHaveBeenCalledWith("captain@example.test", "secret", "Deckhand")
-		await click('.captain-account-actions button[type="button"]')
-		accountMock.user = { id: "captain", email: "captain@example.test" }
-		accountMock.leaderboard = [{ user_id: "captain", display_name: "Captain", xp: 25, catches: 1, species_discovered: 1, best_voyage: 1 }]
-		accountMock.achievements = [{ achievement_id: "first_catch", unlocked_at: "today" }]
-		accountMock.status = ""
-		await act(async () => root.render(<App />))
-		expect(host.textContent).toContain("Signed in as")
-		expect(host.textContent).toContain("Captain")
-		expect(host.textContent).toContain("25 XP")
-		expect(host.querySelector('.captain-account-columns li.unlocked')).not.toBeNull()
-		await click(".captain-account-session button")
-		expect(accountMock.signOut).toHaveBeenCalledOnce()
-		accountMock.user = { id: "captain" }
-		await act(async () => root.render(<App />))
-		expect(host.textContent).toContain("Ocean Captain")
-		await click('button[aria-label="Close captain account"]')
-		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
-		await click(".account-open-button")
-		await act(() => host.querySelector<HTMLElement>(".captain-account-panel")!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })))
-		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).not.toBeNull()
-		await act(async () => { await userEvent.keyboard("x") })
-		await act(() => host.querySelector<HTMLElement>(".captain-account-overlay")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true })))
-		await act(() => host.querySelector<HTMLElement>(".captain-account-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
-		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
-		await click(".account-open-button")
-		await act(() => host.querySelector<HTMLElement>(".captain-account-overlay")!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })))
-		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
-		expect(host.querySelector('[aria-labelledby="captain-account-title"]')).toBeNull()
-	})
-
-	it("disposes a pending renderer import when the application unmounts", async () => {
-		await act(() => root.render(<App />))
-		await act(() => root.unmount())
-		await act(async () => Promise.resolve())
-	})
-
-	it("opens menu panels and renders their meaningful content", async () => {
-		await mount()
-		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-		expect(Array.from(host.querySelectorAll('.mainmenu-button')).map((button) => button.getAttribute('aria-label'))).toEqual(["Adventure", "Multiplayer", "Practice", "Collection", "Settings"])
-		expect(host.querySelector('button[aria-label="Adventure"]')?.classList.contains("primary")).toBe(true)
-		await click('button[aria-label="Settings"]')
-		expect(host.textContent).toContain("Reduced effects")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Collection"]')
-		expect(host.textContent).toContain("0/10 species discovered")
-		expect(host.querySelectorAll(".collection-card")).toHaveLength(10)
-		expect(host.querySelector(".generated-fish-catalog")).toBeNull()
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Settings"]')
-		expect(host.textContent).toContain("Reduced effects")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Multiplayer"]')
-		expect(host.querySelector(".race-screen")).not.toBeNull()
-		await click('.race-header button.secondary-action:last-child')
-		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-	})
-
-	it("opens configurable practice and plays the selected challenge", async () => {
-		await mount()
-		await click('button[aria-label="Practice"]')
-		expect(host.querySelector('[data-testid="practice-screen"]')).not.toBeNull()
-		const language = host.querySelector<HTMLSelectElement>('[aria-label="Practice language"]')!
-		await act(async () => { await userEvent.selectOptions(language, "en") })
-		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
-		await act(async () => { await userEvent.selectOptions(format, "custom") })
-		const passage = host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!
-		await act(async () => { await userEvent.fill(passage, "abc") })
-		const challenge = host.querySelector<HTMLSelectElement>('[aria-label="Practice challenge"]')!
-		await act(async () => { await userEvent.selectOptions(challenge, "perfect") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
-		await act(async () => {
-			for (const key of ["a", "b", "c"]) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-		})
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("Good run")
-		expect(Number(localStorage.getItem("typecade:practice:best"))).toBeGreaterThan(0)
-		await click('[data-testid="practice-result"] button.pixel-action.primary')
-		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
-	})
-
-	it("shows readable spaces and a settings error when a practice passage cannot be built", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "a b") })
-		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
-		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent).toBe("a b")
-
-		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
-		await click(".practice-actions button:first-child")
-		const now = vi.spyOn(Date, "now").mockImplementation(() => { throw "clock unavailable" })
-		try {
-			await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
-			expect(host.querySelector('[role="alert"]')?.textContent).toBe("Check the practice settings.")
-		} finally {
-			now.mockRestore()
-		}
-	})
-
-	it("marks each correctly typed practice character as complete", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "abc") })
-		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
-		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true })))
-		expect(host.querySelector('[data-testid="practice-passage"] .done')?.textContent).toBe("a")
-	})
-
-	it("hides temporary skill feedback after its display duration", async () => {
-		await act(async () => root.render(<FeedbackBanner feedback={{ id: 1, kind: "skill", title: "Sonar", detail: "Sweep active" }} reducedMotion />))
-		expect(host.querySelector<HTMLElement>('[data-testid="skill-feedback"]')?.hidden).toBe(false)
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 2700)) })
-		expect(host.querySelector<HTMLElement>('[data-testid="skill-feedback"]')?.hidden).toBe(true)
-	})
-
-	it("starts word-count practice with its selected language and returns to setup", async () => {
-		await mount()
-		await click('button[aria-label="Practice"]')
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice language"]')!, "en") })
-		const words = host.querySelector<HTMLInputElement>('[aria-label="Practice word count"]')!
-		await act(async () => { await userEvent.fill(words, "5") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		expect(host.querySelector('[data-testid="practice-racing"]')?.textContent).toContain("English · words")
-		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent?.length).toBeGreaterThan(0)
-		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
-		expect(host.querySelector('[data-testid="practice-racing"]')).not.toBeNull()
-		await click(".practice-actions button:first-child")
-		expect(host.querySelector('[aria-label="Practice word count"]')).not.toBeNull()
-	})
-
-	it("finishes timed practice at its configured deadline", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
-		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
-		expect(host.querySelector(".practice-clock")?.textContent).toBe("1s")
-		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true })))
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1100)) })
-		expect(host.querySelector(".practice-clock")?.textContent).toBe("1s")
-		expect(host.querySelector('[data-testid="practice-result"]')).toBeNull()
-		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1200)) })
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
-		await click('[data-testid="practice-result"] button.secondary')
-		expect(host.querySelector('[aria-label="Practice duration"]')).not.toBeNull()
-	})
-
-	it("rejects input at the practice deadline before the display timer runs", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		const passage = host.querySelector('[data-testid="practice-passage"]')!.textContent!
-		const process = vi.spyOn(PracticeSession.prototype, "processKey")
-		let now = Date.now()
-		vi.spyOn(Date, "now").mockImplementation(() => now)
-		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: passage[0], bubbles: true })))
-		now += 1000
-		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: passage[1], bubbles: true })))
-		expect(process).toHaveBeenCalledTimes(1)
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
-	})
-
-	it("keeps practice readable when the typing engine has no initial metrics snapshot", async () => {
-		const snapshots = vi.spyOn(PracticeSession.prototype, "getSnapshot").mockReturnValueOnce(null as never)
-		await practice()
-		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
-		expect(host.querySelector(".practice-clock")?.textContent).toBe("0%")
-		expect(host.querySelector(".practice-stats")?.textContent).toContain("100% accuracy")
-
-		await act(async () => root.unmount())
-		root = createRoot(host)
-		snapshots.mockRestore()
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "1") })
-		await act(() => host.querySelector<HTMLButtonElement>('[data-testid="practice-screen"] button[type="submit"]')!.click())
-		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1200)) })
-		expect(host.querySelector(".practice-result-stats")?.textContent).toContain("%Accuracy")
-	})
-
-	it("validates a custom practice passage and ignores shortcut keys while typing", async () => {
-		await mount()
-		await click('button[aria-label="Practice"]')
-		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
-		const options = host.querySelectorAll<HTMLInputElement>(".practice-options input")
-		await act(async () => { await userEvent.click(options[0]!) })
-		await act(async () => { await userEvent.click(options[1]!) })
-		expect(options[0]?.checked).toBe(true)
-		expect(options[1]?.checked).toBe(true)
-		await act(async () => { await userEvent.selectOptions(format, "custom") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		expect(host.querySelector('[role="alert"]')?.textContent).toContain("three characters")
-		const shuffle = host.querySelector<HTMLInputElement>(".practice-config input[type=checkbox]")!
-		await act(async () => { await userEvent.click(shuffle) })
-		expect(shuffle.checked).toBe(true)
-		const passage = host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!
-		await act(async () => { await userEvent.fill(passage, "abc") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		await act(async () => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "x", ctrlKey: true, bubbles: true })))
-		expect(host.querySelector('[data-testid="practice-passage"] .next')?.textContent).toBe("a")
-		await act(async () => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
-		await click(".practice-actions button:first-child")
-		expect(host.querySelector('[data-testid="practice-screen"] button[type="submit"]')).not.toBeNull()
-		await click(".practice-header button.pixel-action.secondary")
-		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-	})
-
-	it("stops a challenge at its first fatal typo even when mobile input commits multiple characters", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "abc") })
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice challenge"]')!, "perfect") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		const input = host.querySelector<HTMLInputElement>(".typing-native-input")!
-		await act(() => {
-			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "xabc")
-			input.dispatchEvent(new InputEvent("input", { bubbles: true }))
-		})
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("Perfect Tide broken")
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).not.toContain("Good run")
-		expect(localStorage.getItem("typecade:practice:best")).toBeNull()
-	})
-
-	it("plays practice with blocked storage and ignores corrupt best scores", async () => {
-		localStorage.setItem("typecade:practice:best", "broken")
-		await practice()
-		expect(host.textContent).toContain("Best 0 WPM")
-		localStorage.setItem("typecade:practice:best", "-5")
-		await act(() => root.unmount())
-		root = createRoot(host)
-		await practice()
-		expect(host.textContent).toContain("Best 0 WPM")
-		vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked") })
-		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked") })
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom") })
-		await act(async () => { await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "abc") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		await act(() => { for (const key of "abc") host.querySelector(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })) })
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("Good run")
-	})
-
-	it("ends Three Hulls practice after the third mistake", async () => {
-		await mount()
-		await click('button[aria-label="Practice"]')
-		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
-		await act(async () => { await userEvent.selectOptions(format, "custom") })
-		const passage = host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!
-		await act(async () => { await userEvent.fill(passage, "abc") })
-		const challenge = host.querySelector<HTMLSelectElement>('[aria-label="Practice challenge"]')!
-		await act(async () => { await userEvent.selectOptions(challenge, "three-hulls") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		for (const key of ["x", "y", "z"]) {
-			await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })))
-		}
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("All hulls lost")
-	})
-
-	it("ends Perfect Tide on its first typo", async () => {
-		await mount()
-		await click('button[aria-label="Practice"]')
-		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
-		await act(async () => { await userEvent.selectOptions(format, "custom") })
-		const passage = host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!
-		await act(async () => { await userEvent.fill(passage, "abc") })
-		const challenge = host.querySelector<HTMLSelectElement>('[aria-label="Practice challenge"]')!
-		await act(async () => { await userEvent.selectOptions(challenge, "perfect") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("Perfect Tide broken")
-	})
-
-	it("finishes timed practice when the configured clock expires", async () => {
-		await mount()
-		await click('button[aria-label="Practice"]')
-		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
-		await act(async () => { await userEvent.selectOptions(format, "time") })
-		const duration = host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!
-		await act(async () => { await userEvent.fill(duration, "1") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		await act(() => host.querySelector<HTMLInputElement>(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1250)) })
-		expect(host.querySelector('[data-testid="practice-result"]')?.textContent).toContain("SESSION COMPLETE")
-	})
-
-	it("runs quote practice with monospace text and rejects modified or navigation keys", async () => {
-		localStorage.setItem("typecade:practice:best", "999")
-		const onBack = vi.fn()
-		await practice(onBack)
-		const format = host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!
-		await act(async () => { await userEvent.selectOptions(format, "quote") })
-		const difficulty = host.querySelector<HTMLSelectElement>('[aria-label="Quote difficulty"]')!
-		await act(async () => { await userEvent.selectOptions(difficulty, "hard") })
-		const monospace = host.querySelector<HTMLInputElement>('.practice-config input[type="checkbox"]')!
-		await act(() => monospace.click())
-		const size = host.querySelector<HTMLInputElement>('[aria-label="Text size"]')!
-		await act(async () => { await userEvent.fill(size, "32") })
-		expect(host.querySelector('[data-testid="practice-screen"]')?.textContent).toContain("Best 999 WPM")
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		const passage = host.querySelector<HTMLElement>('[data-testid="practice-passage"]')!
-		expect(passage.classList.contains("mono")).toBe(true)
-		expect(passage.style.fontSize).toBe("32px")
-		const initial = host.querySelectorAll('[data-testid="practice-passage"] .done').length
-		await act(async () => {
-			;(host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "a", ctrlKey: true, bubbles: true }))
-			;(host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }))
-		})
-		expect(host.querySelectorAll('[data-testid="practice-passage"] .done')).toHaveLength(initial)
-		await act(async () => { await userEvent.click(host.querySelector<HTMLButtonElement>(".practice-racing button")!) })
-		expect(host.querySelector('[data-testid="practice-racing"]')).toBeNull()
-		expect(host.querySelector('[aria-label="Quote difficulty"]')).not.toBeNull()
-		expect(onBack).not.toHaveBeenCalled()
-	})
-
-	it("edits practice mistakes, restarts the same text and shuffles through buttons and shortcuts", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "custom"); await userEvent.fill(host.querySelector<HTMLTextAreaElement>('[aria-label="Custom passage"]')!, "one two three") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		const key = async (key: string, options = {}) => act(() => host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,...options})))
-		await key("x")
-		expect(host.querySelector('.incorrect')?.textContent).toBe("o")
-		await key("Backspace")
-		expect(host.querySelector('.incorrect')).toBeNull()
-		await key("o")
-		await key("Tab")
-		expect(host.querySelectorAll('.done')).toHaveLength(0)
-		expect(host.querySelector('[data-testid="practice-passage"]')?.textContent).toBe("one two three")
-		await key("Enter",{shiftKey:true})
-		await click('.practice-actions button:nth-child(2)')
-		await click('.practice-actions button:last-child')
-		expect(document.activeElement).toBe(host.querySelector('.typing-native-input'))
-		await click('.practice-actions button:first-child')
-		await act(async () => userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice typing style"]')!, "classic"))
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		expect(host.querySelector<HTMLElement>('.rolling-passage')!.style.height).toBe("4em")
-		await act(() => { for (const key of "one two three") host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true})) })
-		expect(host.querySelector('[data-testid="practice-result"]')).toBeNull()
-		await key(" ")
-		expect(host.querySelector('[data-testid="practice-result"]')).not.toBeNull()
-	})
-
-	it("extends timed practice and pauses its deadline while input focus is elsewhere", async () => {
-		await practice()
-		await act(async () => { await userEvent.selectOptions(host.querySelector<HTMLSelectElement>('[aria-label="Practice text format"]')!, "time"); await userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Practice duration"]')!, "10") })
-		await click('[data-testid="practice-screen"] button[type="submit"]')
-		let now = 10000
-		vi.spyOn(Date,'now').mockImplementation(()=>now)
-		const target = host.querySelector('[data-testid="practice-passage"]')!.textContent!
-		await act(() => { for (const key of target) host.querySelector<HTMLInputElement>('.typing-native-input')!.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true})) })
-		expect(host.querySelector('[data-testid="practice-passage"]')!.textContent!.length).toBeGreaterThan(target.length)
-		await act(() => host.querySelector<HTMLInputElement>('.typing-native-input')!.blur())
-		now += 20000
-		await act(async () => { await new Promise((resolve)=>setTimeout(resolve,150)) })
-		expect(host.querySelector('[data-testid="practice-result"]')).toBeNull()
-		await click('.practice-refocus')
-		expect(host.querySelector('.practice-refocus')).toBeNull()
-		now += 10000
-		await act(async () => { await new Promise((resolve)=>setTimeout(resolve,150)) })
-		expect(host.querySelector('[data-testid="practice-result"]')).not.toBeNull()
-	})
-
-	it("types with the pixel keyboard including shift, numbers, symbols and backspace", async () => {
-		const onKey = vi.fn()
-		await act(() => root.render(<PracticeKeyboard onKey={onKey} />))
-		await click('button[aria-label="Shift"]')
-		await click('button[aria-label="Backspace"]')
-		const pointer = new PointerEvent('pointerdown',{bubbles:true,cancelable:true})
-		await act(() => host.querySelector('button[aria-label="q"]')!.dispatchEvent(pointer))
-		expect(pointer.defaultPrevented).toBe(true)
-		await click('button[aria-label="q"]')
-		await click('button[aria-label="q"]')
-		await click('button[aria-label="Space"]')
-		await click('button[aria-label="Backspace"]')
-		await click('button[aria-label="123"]')
-		await click('button[aria-label="1"]')
-		await click('button[aria-label="More"]')
-		await click('button[aria-label="€"]')
-		await click('button[aria-label="123"]')
-		await click('button[aria-label="ABC"]')
-		await click('button[aria-label="Shift"]')
-		await click('button[aria-label="Shift"]')
-		expect(onKey.mock.calls.map(([key])=>key)).toEqual(["Backspace","Q","q"," ","Backspace","1","€"])
-	})
-
-	it("runs preparation choices, HUD panels, settings, and pause navigation", async () => {
-		await mount()
-		await click('button[aria-label="Adventure"]')
-		expect(host.querySelector('[data-testid="prep-screen"]')).not.toBeNull()
-		await click('[data-testid="prep-screen"] .route-choice-grid button:nth-child(2)')
-		expect(host.querySelector('[data-testid="prep-screen"] .route-choice-grid button.selected')?.textContent).toContain("Reef Shelf")
-		const selectedSkill = host.querySelector<HTMLElement>('.prep-skill[aria-pressed="true"]')
-		if (!selectedSkill) throw new Error("Expected an equipped skill")
-		await act(() => selectedSkill.click())
-		const unselectedSkill = host.querySelector<HTMLElement>('.prep-skill.active[aria-pressed="false"]') ?? host.querySelector<HTMLElement>('.prep-skill[aria-pressed="false"]')
-		if (!unselectedSkill) throw new Error("Expected an unequipped skill offer")
-		await act(() => unselectedSkill.click())
-		expect(unselectedSkill.getAttribute("aria-pressed")).toBe("true")
-		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
-		expect(host.querySelector('[data-testid="ocean-hud"]')).not.toBeNull()
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Reef Shelf")
-		await click('button[aria-label="Fish"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]'), host.textContent).not.toBeNull()
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Pebble Goby")
-		await click('button[aria-label="Fish"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
-		await click('button[aria-label="Route"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Use Sonar to preview the zone fish")
-		await click('[data-testid="overlay-panel"] .route-choice-grid button:nth-child(2)')
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Skills"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Cost")
-		await click('button[aria-label="Skills"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
-		await click('button[aria-label="Skills"]')
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Settings"]')
-		await click('button[aria-label="Settings"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
-		await click('button[aria-label="Settings"]')
-		const range = host.querySelector<HTMLInputElement>('.settings-grid input[type="range"]')!
-		await act(async () => { await userEvent.fill(range, "0.2") })
-		const reducedEffects = host.querySelector<HTMLInputElement>('.settings-grid input[type="checkbox"]')!
-		await act(() => reducedEffects.click())
-		expect(host.querySelector('[data-testid="ocean-hud"]')?.getAttribute("data-reduced-effects")).toBe("true")
-		expect(reducedEffects.checked).toBe(true)
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Pause game"]')
-		expect(host.querySelector('[data-testid="pause-panel"]')).not.toBeNull()
-		await act(() => host.querySelector('dialog[data-testid="pause-panel"]')!.dispatchEvent(new Event("cancel", { cancelable: true })))
-		expect(host.querySelector('[data-testid="pause-panel"]')).toBeNull()
-		await click('button[aria-label="Pause game"]')
-		await click('[data-testid="pause-panel"] button.primary-action')
-		expect(host.querySelector('[data-testid="pause-panel"]')).toBeNull()
-		await click('button[aria-label="Pause game"]')
-		await click('[data-testid="pause-panel"] button.secondary-action')
-		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-		await click('button[aria-label="Adventure"]')
-		expect(host.querySelector('[data-testid="prep-screen"]')).not.toBeNull()
-		await click('[data-testid="prep-screen"] .prep-header button.secondary-action')
-	})
-
-	it("resumes the saved zone from harbor instead of restarting at the coast", async () => {
-		const expedition = { ...createShallowCoastExpedition("later-zone-prep"), currentZoneIndex: 1, currentEncounterIndex: 1, selectedRouteId: "reef_shelf" }
-		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))
-		await mount()
-		await click('button[aria-label="Adventure"]')
-		expect(host.querySelector('[data-testid="prep-screen"] .route-choice-grid button.selected')?.textContent).toContain("Coral Pass")
-		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 5/10")
-	})
-
-	it("offers all unlocked skills and keeps a loadout between one and three choices", async () => {
-		const collection = { ...createInitialCollection(), xp: 300 }
-		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(createShallowCoastExpedition("full-draft"), collection))
-		await mount()
-		await click('button[aria-label="Adventure"]')
-		expect(host.textContent).toContain("All six skills unlocked")
-		expect(host.querySelectorAll(".prep-skill")).toHaveLength(6)
-		while (host.querySelectorAll('.prep-skill[aria-pressed="true"]').length > 1) await click('.prep-skill[aria-pressed="true"]')
-		expect(host.querySelector<HTMLButtonElement>('.prep-skill[aria-pressed="true"]')!.disabled).toBe(true)
-		await click('.prep-skill[aria-pressed="false"]')
-		await click('.prep-skill[aria-pressed="false"]:not(:disabled)')
-		expect([...host.querySelectorAll<HTMLButtonElement>('.prep-skill[aria-pressed="false"]')].every((button) => button.disabled)).toBe(true)
-	})
-
-	it("returns to a valid first-zone loadout after losing the final line to the boss", async () => {
-		const expedition = { ...createShallowCoastExpedition("last-line-boss"), currentZoneIndex: 2, currentEncounterIndex: 3, selectedRouteId: "crown_wake", spareLines: 0 }
-		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(expedition, createInitialCollection()))
-		await mount()
-		await sail()
-		await act(() => { for (let typo = 0; typo < 50; typo++) host.querySelector(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "~", bubbles: true })) })
-		expect(host.querySelector('[data-testid="complete-panel"]')?.textContent).toContain("Expedition ended")
-		await click('[data-testid="complete-panel"] button.secondary')
-		await click('button[aria-label="Adventure"]')
-		expect(host.querySelector('.prep-routes button.selected')?.textContent).toContain("Lagoon Gate")
-		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Voyage 1")
-	})
-
-	it("ends a failed expedition honestly and allows a fresh run with its collection", async () => {
-		await mount()
-		await sail()
-		for (let line = 0; line < 3; line++) {
-			await act(() => { for (let typo = 0; typo < 50; typo++) host.querySelector(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "~", bubbles: true })) })
-			if (line < 2) await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1600)) })
-		}
-		expect(host.querySelector('[data-testid="complete-panel"]')?.textContent).toContain("Expedition ended")
-		expect(host.querySelector('[data-testid="complete-panel"]')?.textContent).not.toContain("Shallow Coast cleared")
-		await click('[data-testid="complete-panel"] button')
-		expect(host.querySelector('[data-testid="complete-panel"]')).toBeNull()
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 1/10")
-	})
-
-	it("resolves a catch, persists it, and locks the route after typing starts", async () => {
-		await mount()
-		await sail()
-		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
-		expect(target.length).toBeGreaterThan(0)
-		await act(async () => {
-			for (const key of target) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-		})
-		expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Catch secured")
-		expect(JSON.parse(localStorage.getItem("typecade:ocean-typing-rpg:m1") ?? "{}").collection.records.reef_minnow?.count).toBe(1)
-		await click('button[aria-label="Route"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Route locked after typing starts.")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-	})
-
-	it("reports an escaped fish and retries with the next line", async () => {
-		await mount()
-		await sail()
-		await act(async () => {
-			for (let index = 0; index < 50; index += 1) {
-				;(host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "~", bubbles: true }))
-			}
-		})
-		expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Line lost")
-		await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1600)) })
-		expect(host.querySelector('[data-testid="result-toast"]')).toBeNull()
-		expect(host.querySelector('[data-testid="typing-target"]')).not.toBeNull()
-	})
-
-	it("reveals catch tables with Sonar and shows newly caught fish records", async () => {
-		const collection = { ...createInitialCollection(), xp: 0 }
-		localStorage.setItem("typecade:ocean-typing-rpg:m1", serializeOceanSave(createShallowCoastExpedition("sonar-ui-check"), collection))
-		await mount()
-		await sail()
-		const sonar = [...host.querySelectorAll<HTMLButtonElement>(".skill-button")].find((button) => button.title.startsWith("Sonar:"))
-		expect(sonar?.disabled).toBe(false)
-		await act(() => sonar!.click())
-		const hiddenSpeciesIndex = fishSpecies.findIndex((species) => species.id === "kelp_darter")
-		const hiddenSpecies = fishSpecies[hiddenSpeciesIndex]!
-		await act(() => { fishSpecies.splice(hiddenSpeciesIndex, 1) })
-		try {
-			await click('button[aria-label="Route"]')
-			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Sonar sweep active")
-			expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("kelp_darter")
-		} finally {
-			await act(() => { fishSpecies.splice(hiddenSpeciesIndex, 0, hiddenSpecies) })
-		}
-		await click('button[aria-label="Route"]')
-		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
-		await act(async () => {
-			for (const key of target) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-		})
-		await click('button[aria-label="Collection"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("1/10 species discovered")
-		await click('button[aria-label="Collection"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
-		await click('button[aria-label="Collection"]')
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Fish"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Largest")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-	})
-
-	it("shows level-up feedback when a saved collection crosses its next level", async () => {
-		const collection = { ...createInitialCollection(), xp: 23, records: { reef_minnow: { fishId: "reef_minnow", largestSizeKg: 1, bestQuality: 0.5, count: 1, firstCaughtAt: "2026-10-09T00:00:00Z", lastCaughtAt: "2026-10-09T00:00:00Z" } } }
-		localStorage.setItem(
-			"typecade:ocean-typing-rpg:m1",
-			serializeOceanSave(createShallowCoastExpedition("level-up-check"), collection),
-		)
-		await mount()
-		await sail()
-		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
-		await act(async () => {
-			for (const key of target) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-		})
-		expect(host.querySelector('[data-testid="level-up-banner"]')?.textContent).toContain("LEVEL 2")
-		expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Catch #2")
-	})
-
-	it("uses an earned skill, blocks typing while paused, and resumes the same encounter", async () => {
-		await mount()
-		await sail()
-		const input = host.querySelector<HTMLInputElement>('[data-testid="typing-input"]')!
-		input.blur()
-		await click('.typing-panel')
-		expect(document.activeElement).toBe(input)
-		expect(host.querySelector('[data-testid="typing-target"]')?.classList.contains("rolling-passage")).toBe(true)
-		expect(host.querySelector('.typing-help')?.textContent).toContain("Type here to start")
-		expect(host.querySelector('.skill-button.passive')?.tagName).toBe("ARTICLE")
-		expect(host.querySelector('.skill-button.passive')?.textContent).toContain("Automatic")
-		expect(host.querySelector('.skill-dock-help')?.textContent).toContain("Perfect word +14")
-		await click('.hud .practice-keyboard button[aria-label="o"]')
-		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1)
-		await click('button[aria-label="Settings"]')
-		const reducedEffects = host.querySelector<HTMLInputElement>('.settings-grid input[type="checkbox"]')!
-		await act(() => reducedEffects.click())
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
-		const prefixLength = target.split(" ").slice(0, 3).join(" ").length + 1
-		await act(async () => {
-			for (const key of target.slice(1, prefixLength)) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-		})
-		const activeSkill = [...host.querySelectorAll<HTMLButtonElement>('[data-testid="skill-dock"] .skill-button.active:enabled')].find((button) => button.textContent?.includes("Sonar"))
-		expect(activeSkill).not.toBeNull()
-		await act(() => activeSkill!.click())
-		expect(document.activeElement).toBe(input)
-		expect(host.querySelector('[data-testid="skill-feedback"]')).not.toBeNull()
-		await click('button[aria-label="Pause game"]')
-		const cursor = host.querySelectorAll('[data-testid="typing-target"] .done').length
-		await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key: "x", bubbles: true })))
-		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(cursor)
-		await click('[data-testid="pause-panel"] button.primary-action')
-		expect(host.querySelector('[data-testid="pause-panel"]')).toBeNull()
-	})
-
-	it("completes a voyage, refits skills at harbor and continues the same endless expedition", async () => {
-		await mount()
-		await click('button[aria-label="Adventure"]')
-		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
-		for (let encounter = 1; encounter <= 10; encounter += 1) {
-			expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain(`Encounter ${encounter}/10`)
-			const target = host.querySelector('[data-testid="typing-target"]')?.textContent?.replace(/\u00a0/g, " ") ?? ""
-			expect(target.length).toBeGreaterThan(0)
-			if (encounter === 10) {
-				let sawGuardPhase = false
-				for (const key of target) {
-					await act(() => (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })))
-					if (host.querySelector('[data-testid="boss-phase-callout"] .boss-guard-pips')) {
-						expect(host.querySelector('[data-testid="boss-phase-callout"]')?.textContent).toContain("Crown Guard")
-						const activeGuards = host.querySelectorAll('.boss-guard-pips i.active').length
-						if (activeGuards === 2) sawGuardPhase = true
-					}
-				}
-				expect(sawGuardPhase).toBe(true)
-			} else {
-				await act(async () => {
-					for (const key of target) (host.querySelector(".typing-native-input") ?? window).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))
-				})
-			}
-			if (encounter < 10) expect(host.querySelector('[data-testid="result-toast"]')?.textContent).toContain("Catch secured")
-			if (encounter < 10) await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1850)) })
-		}
-		expect(host.querySelector('[data-testid="complete-panel"]')).toBeNull()
-		expect(host.querySelector('[data-testid="prep-screen"]')?.textContent).toContain("Harbor refit · Voyage 2")
-		const saved = JSON.parse(localStorage.getItem("typecade:ocean-typing-rpg:m1") ?? "{}")
-		expect(saved.expedition).toMatchObject({ complete: false, voyage: 2 })
-		await click('[data-testid="prep-screen"] .prep-header button.primary-action')
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Voyage 2")
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 1/10")
-	}, 40000)
-
-	it("starts from the race deep link and returns to the main menu", async () => {
-		history.replaceState(null, "", "/?race=ABCDEFGH")
-		await mount()
-		expect(host.querySelector(".race-screen")).not.toBeNull()
-		await click('.race-header button.secondary-action:last-child')
-		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-	})
-
-	it("pauses Adventure during loading, explains render failure and retries without resetting the voyage", async () => {
-		let release!: () => void
-		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: new Promise<void>(resolve => { release = resolve }), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
-		await mount(); await sail()
-		expect(host.querySelector('.renderer-status')?.textContent).toContain("Preparing the ocean")
-		const input = host.querySelector(".typing-native-input")!
-		await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "o", bubbles: true })))
-		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(0)
-		await act(async () => { release(); await Promise.resolve() })
-		expect(host.querySelector('.renderer-status')).toBeNull()
-		await act(() => host.querySelector('.game-canvas')!.dispatchEvent(new CustomEvent("renderer:error")))
-		expect(host.querySelector('.renderer-status')?.textContent).toContain("voyage is paused")
-		await click('.renderer-status button:first-of-type')
-		expect(host.querySelector('.renderer-status')).toBeNull()
-		expect(host.querySelector('[data-testid="route-strip"]')?.textContent).toContain("Encounter 1/10")
-	})
-
-	it("recovers from initialization rejection and ignores promises settled after renderer removal", async () => {
-		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: Promise.reject(new Error("offline")), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
-		await mount(); await sail()
-		expect(host.querySelector('.renderer-status')?.textContent).toContain("could not load")
-		await click('.renderer-status button:first-of-type'); expect(host.querySelector('.renderer-status')).toBeNull()
-		let reject!: (reason: Error) => void
-		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: new Promise<void>((_, fail) => { reject = fail }), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
-		await act(() => host.querySelector('.game-canvas')!.dispatchEvent(new CustomEvent("renderer:error")))
-		await click('.renderer-status button:first-of-type')
-		await click('.renderer-status button.secondary-action')
-		await click('button[aria-label="Practice"]')
-		await act(async () => { reject(new Error("late failure")); await Promise.resolve() })
-		expect(host.querySelector('.practice-screen')).not.toBeNull()
-	})
-
-	it("ignores late readiness after leaving for Practice", async () => {
-		let release!: () => void
-		vi.mocked(createFishingGame).mockImplementationOnce(() => ({ ready: new Promise<void>(resolve => { release = resolve }), destroy: vi.fn() }) as unknown as ReturnType<typeof createFishingGame>)
-		await mount(); await act(async () => { await vi.waitFor(() => expect(release).toBeTypeOf("function")) }); await click('button[aria-label="Practice"]')
-		await act(async () => { release(); await Promise.resolve() })
-		expect(host.querySelector('.game-canvas')?.getAttribute('data-renderer-state')).toBe("loading")
-	})
-
-	it("closes settings with Escape and reaches the menu from a paused run", async () => {
-		await mount()
-		await sail()
-		const firstKey = host.querySelector('[data-testid="typing-target"]')!.textContent![0]!
-		await act(() => host.querySelector(".typing-native-input")!.dispatchEvent(new KeyboardEvent("keydown", { key: firstKey, bubbles: true })))
-		await click('button[aria-label="Settings"]')
-		await act(() => host.querySelector("dialog")!.dispatchEvent(new Event("cancel", { cancelable: true })))
-		expect(host.querySelector('[data-testid="overlay-panel"]')).toBeNull()
-		await click('button[aria-label="Pause game"]')
-		await click('[data-testid="pause-panel"] button.secondary-action')
-		expect(host.querySelector('[data-testid="main-menu"]')).not.toBeNull()
-		await click('button[aria-label="Settings"]')
-		expect(host.querySelector('[data-testid="overlay-panel"]')?.textContent).toContain("Settings")
-		await click('[data-testid="overlay-panel"] button[aria-label="Close"]')
-		await click('button[aria-label="Adventure"]')
-		expect(host.querySelector('[data-testid="pause-panel"]')).not.toBeNull()
-		expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1)
-	})
- it("selects fish and text format through the HUD, responds to resize and highlights touch input",async()=>{
-  await mount();await sail();await click('.shoal-picker button:nth-child(2)');expect(document.activeElement).toBe(host.querySelector('[aria-label="Adventure typing input"]'));const format=host.querySelector<HTMLSelectElement>('[aria-label="Adventure text format"]')!;await act(()=>{format.focus();format.click()});expect(document.activeElement).toBe(format);await act(()=>userEvent.selectOptions(format,"word"));expect(document.activeElement).toBe(host.querySelector('[aria-label="Adventure typing input"]'));expect(host.querySelector('[data-testid="typing-target"]')!.textContent!.split(/\s+/)).toHaveLength(1)
-  vi.stubGlobal("innerWidth",390);await act(()=>window.dispatchEvent(new Event("resize")));expect(host.querySelector('.shoal-picker button')!.getAttribute("style")).toContain("27.5%");vi.stubGlobal("innerWidth",1366);vi.stubGlobal("innerHeight",768);await act(()=>window.dispatchEvent(new Event("resize")));expect(host.querySelector('.shoal-picker button')!.getAttribute("style")).toContain("39%")
-  const key=host.querySelector('[data-testid="typing-target"]')!.textContent![0]!;await click(`.hud .practice-keyboard button[aria-label="${key}"]`);expect(host.querySelectorAll('[data-testid="typing-target"] .done')).toHaveLength(1);vi.unstubAllGlobals()
- })
- it("uses the shared skill glyph for every unlocked loadout",async()=>{
-  const expedition=createShallowCoastExpedition("unlocked-icons");localStorage.setItem("typecade:ocean-typing-rpg:m1",serializeOceanSave(expedition,{...createInitialCollection(),xp:500}));await mount();await click('button[aria-label="Adventure"]');await click('.prep-skill.selected');const calm=Array.from(host.querySelectorAll<HTMLButtonElement>('.prep-skill')).find(button=>button.textContent!.includes('Calm Current'))!;await act(()=>calm.click());await click('[data-testid="prep-screen"] .prep-header button.primary-action');await click('button[aria-label="Skills"]');expect(host.querySelector('.skill-list')!.textContent).toContain('Calm Current')
- })
-
+import { createRoot, type Root } from "react-dom/client"
+import { afterEach, beforeEach, expect, it, vi } from "vitest"
+import { App, runTime } from "./App"
+import { SurvivalRun } from "@typecade/game-rules"
+import type { DungeonEvents } from "@typecade/contracts"
+import type { GameEventBridge } from "./bridge/game-event-bridge"
+const scene=vi.hoisted(()=>({destroy:vi.fn(),bridge:null as GameEventBridge<DungeonEvents>|null,fail:false,ready:undefined as Promise<void>|undefined}))
+vi.mock("./game/DungeonScene",()=>({DungeonScene:class {ready=scene.ready??Promise.resolve();constructor(_host:HTMLElement,bridge:GameEventBridge<DungeonEvents>){if(scene.fail)throw new Error("WebGL unavailable");scene.bridge=bridge;bridge.emit("renderer",{status:"ready",calls:1,geometries:1,textures:1})}destroy(){scene.destroy()}}}))
+let host:HTMLDivElement,root:Root
+beforeEach(()=>{scene.fail=false;scene.ready=undefined;scene.bridge=null;Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});localStorage.clear();host=document.createElement("div");document.body.append(host);root=createRoot(host)})
+afterEach(async()=>{await act(()=>root.unmount());host.remove();localStorage.clear();history.replaceState(null,"","/");vi.restoreAllMocks()})
+async function mount(){
+ await act(()=>root.render(<App/>))
+ for(let i=0;i<30;i++){
+  if(host.querySelector('[data-testid="dungeon-canvas"]')?.getAttribute("data-renderer-state")!=="loading")return
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10))})
+ }
+ throw new Error("Renderer did not settle")
+}
+async function click(text:string){const button=[...host.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.includes(text))!;expect(button).toBeTruthy();await act(()=>button.click())}
+it("opens a live game shell, settings, account and both secondary modes",async()=>{
+ localStorage.setItem("typecade:ocean-typing-rpg:m1","old data")
+ await mount();await act(()=>host.querySelector("a")!.click());expect(host.textContent).toContain("A fighting chance.");expect(runTime(125)).toBe("02:05")
+ await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click());expect(host.querySelector("dialog")?.textContent).toContain("Reduced Effects")
+ await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Reduced Effects"]')!.click());await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
+ expect(host.getAttribute("data-reduced-effects")).not.toBe("false");await click("Account");expect(host.textContent).toContain("Local progress");await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
+ await click("Typing Dojo");expect(host.textContent).toContain("Typing Dojo");await click("Main menu");await click("Multiplayer");expect(host.textContent).toContain("Gather at the keep");await click("Main menu")
+ expect(localStorage.getItem("typecade:ocean-typing-rpg:m1")).toBe("old data")
+})
+it("starts, types, pauses and resumes without letting global keys alter the run",async()=>{
+ await mount();await click("Enter the keep");await click("Begin run")
+ const input=host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!;expect(input).toBe(document.activeElement)
+ await act(()=>window.dispatchEvent(new KeyboardEvent("keydown",{key:"a"})))
+ await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",bubbles:true,cancelable:true})));expect(host.querySelector(".skill-dock")?.className).toContain("casting")
+ await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",bubbles:true,cancelable:true})))
+ await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));expect(host.textContent).toContain("Take a breath.")
+ await click("Settings");await click("Done");await click("Resume run");expect(host.querySelector('[data-testid="dungeon-input"]')).toBe(document.activeElement)
+ await act(()=>host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Save and return")
+})
+it("restores draft and boss phases with real scoped typing",async()=>{
+ const run=new SurvivalRun("draft");run.start();run.gainXp(130);run.advance(.01);localStorage.setItem("typecade:dungeon:run:v1",run.serialize())
+ await mount();await click("Continue run");await click("Resume run");expect(host.querySelectorAll(".upgrade-card")).toHaveLength(3)
+ const keyword=host.querySelector('[data-testid="upgrade-keyword"]')!.textContent!
+ await act(()=>{for(const key of keyword)host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true}))})
+ expect(host.querySelector(".upgrade-card")).toBeNull()
+ await act(()=>scene.bridge!.emit("renderer",{status:"lost",calls:0,geometries:0,textures:0}));expect(host.textContent).toContain("Restore scene");await click("Restore scene");expect(host.textContent).toContain("Take a breath.")
+})
+it("loads touch settings, casts evolved skills and keeps forms and browser shortcuts usable",async()=>{
+ localStorage.setItem("typecade:dungeon:settings:v1",JSON.stringify({reduced:true,volume:.5,keyboard:true}))
+ const r=new SurvivalRun("evolved");r.start();r.state.time=5;r.state.streak=r.state.correct=r.state.bestStreak=60;r.state.player.hp=3;r.state.skills.cleave.level=3;r.state.skills.storm.level=3;r.state.skills.heal.level=3;r.state.enemies=[];r.spawn("minotaur",{x:2,z:0});r.refreshQueue()
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount()
+ await click("Sound on");await click("Sound off")
+ const language=host.querySelector("select")!;await act(()=>{language.value="id";language.dispatchEvent(new Event("change",{bubbles:true}))})
+ await click("Continue run");await click("Resume run");expect(host.querySelectorAll(".combat-keyboard")).toHaveLength(1)
+ await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="CLEAVE skill"]')!.click());await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="CLEAVE skill"]')!.click())
+ const input=host.querySelector("input")!;for(const key of "CLEAVE")await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
+ expect(host.textContent).toContain("3w COOLDOWN");expect(host.textContent).toContain("EVO")
+ await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",repeat:true,bubbles:true,cancelable:true})))
+ for(const options of [{ctrlKey:true},{metaKey:true},{altKey:true}])await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",bubbles:true,cancelable:true,...options})))
+ await act(()=>host.querySelector<HTMLButtonElement>('.combat-keyboard [aria-label="q"]')!.click());await act(()=>host.querySelector<HTMLButtonElement>('.combat-keyboard>button')!.click())
+ await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Settings")
+ const volume=host.querySelector<HTMLInputElement>('[aria-label="Sound volume"]')!;await act(()=>userEvent.fill(volume,"0.7"))
+ await act(()=>host.querySelector<HTMLInputElement>('[aria-label="On-screen keyboard"]')!.click());await click("Done");await click("Save and return")
+})
+it("renders armor breaks, typed upgrades and final results from valid checkpoints",async()=>{
+ const r=new SurvivalRun("boss-ui"),s=r.state;r.start();s.time=s.worldTime=300;s.nextBoss=600;const boss=r.spawn("boss",{x:2,z:0})!;boss.words=[];s.phase="overdrive";s.stagger=10;s.paragraph="strike BLIZZARD ";s.player.hp=2
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run");expect(host.textContent).toContain("ARMOR BREAK")
+ const input=host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!;await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"s",bubbles:true})))
+ await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Save and return")
+ await act(()=>root.unmount());root=createRoot(host);r.state.phase="arena";r.state.relics.lightning=1;r.state.player.hp=1;r.state.player.invincible=0;r.state.boss=null;r.state.enemies=[];r.spawn("skeleton",{x:0,z:0});r.refreshQueue();localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run");await act(async()=>{await new Promise(resolve=>setTimeout(resolve,180))});expect(host.textContent).toContain("The keep remembers");expect(host.querySelector('[aria-label="Run build"]')?.textContent).toContain("Chain Lightning");await click("Try another run");await click("Back to title")
+})
+it("explains renderer initialization errors and accepts a clean retry",async()=>{
+ localStorage.setItem("typecade:dungeon:settings:v1","{");scene.fail=true;await mount();await click("Enter the keep");expect(host.textContent).toContain("scene needs a moment")
+ scene.fail=false;await click("Restore scene");await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});expect(host.textContent).toContain("Begin run")
+})
+it("keeps typed draft choices frozen and resumes the resulting build",async()=>{
+ const r=new SurvivalRun("offer-ui"),s=r.state;r.start();s.time=10;s.phase="draft";s.offers=["heal","storm","cleave"];s.pendingDrafts=s.legendaryDrafts=1;s.level=2
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
+ const key=async(key:string)=>act(()=>host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
+ await key("F");expect(host.querySelector('.upgrade-card:nth-child(2) .typed')!.textContent).toBe("F")
+ for(const k of "ROST")await key(k);expect(host.querySelector(".upgrade-card")).toBeNull()
+ await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="Pause game"]')!.click());await click("Save and return")
+})
+it("handles deep links, invalid settings bounds and late renderer failures after disposal",async()=>{
+ history.replaceState(null,"","/?race=ABCDEFGH");await mount();expect(host.textContent).toContain("Gather at the keep");await click("Main menu")
+ await act(()=>root.unmount());root=createRoot(host);localStorage.setItem("typecade:dungeon:settings:v1",JSON.stringify({reduced:false,volume:2}));
+ let reject!:(error:Error)=>void;scene.ready=new Promise((_resolve,fail)=>{reject=fail});await mount();await act(()=>root.unmount());root=createRoot(host);await act(async()=>reject(new Error("Late initialization")))
+ scene.ready=undefined;scene.bridge=null;act(()=>root.render(<App/>));act(()=>root.unmount());root=createRoot(host);await act(async()=>{await Promise.resolve()});expect(scene.bridge).toBeNull()
 })

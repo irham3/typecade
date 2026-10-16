@@ -1,5 +1,5 @@
 name: "Typecade — Dungeon Typing Roguelike"
-description: "Being rebuilt as a 2.5D action-typing roguelike: endless survival, typing-driven combat, build upgrades, Dojo and real multiplayer. React, TypeScript, Vite and Three.js."
+description: "A 2.5D action-typing roguelike: endless survival, typing-driven combat, build upgrades, Dojo and real multiplayer. React, TypeScript, Vite and Three.js."
 topics:
   - typing-game
   - roguelike

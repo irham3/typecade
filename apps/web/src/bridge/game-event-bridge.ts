@@ -1,26 +1,17 @@
-import type { GameEventMap } from "@typecade/contracts"
+import type { DungeonEvents } from "@typecade/contracts"
+const replayableEvents = new Set<PropertyKey>(["frame", "screen", "settings"])
 
-type GameEventKey = keyof GameEventMap
-type Handler<K extends GameEventKey> = (payload: GameEventMap[K]) => void
-const replayableEvents = new Set<GameEventKey>([
-	"game:paused",
-	"encounter:started",
-	"line:changed",
-	"settings:volumes",
-	"settings:effects",
-	"screen:changed",
-])
+export class GameEventBridge<M extends object = DungeonEvents> {
+	constructor(private readonly replay: ReadonlySet<PropertyKey> = replayableEvents) {}
+	private readonly handlers = new Map<keyof M, Set<(payload: unknown) => void>>()
+	private readonly lastPayloads = new Map<keyof M, unknown>()
 
-export class GameEventBridge {
-	private readonly handlers = new Map<GameEventKey, Set<(payload: unknown) => void>>()
-	private readonly lastPayloads = new Map<GameEventKey, unknown>()
-
-	on<K extends GameEventKey>(eventName: K, handler: Handler<K>): () => void {
+	on<K extends keyof M>(eventName: K, handler: (payload: M[K]) => void): () => void {
 		const listeners = this.handlers.get(eventName) ?? new Set<(payload: unknown) => void>()
 		const wrapped = handler as (payload: unknown) => void
 		listeners.add(wrapped)
 		this.handlers.set(eventName, listeners)
-		if (replayableEvents.has(eventName) && this.lastPayloads.has(eventName)) {
+		if (this.replay.has(eventName) && this.lastPayloads.has(eventName)) {
 			wrapped(this.lastPayloads.get(eventName))
 		}
 
@@ -32,8 +23,8 @@ export class GameEventBridge {
 		}
 	}
 
-	emit<K extends GameEventKey>(eventName: K, payload: GameEventMap[K]): void {
-		if (replayableEvents.has(eventName)) {
+	emit<K extends keyof M>(eventName: K, payload: M[K]): void {
+		if (this.replay.has(eventName)) {
 			this.lastPayloads.set(eventName, payload)
 		}
 		const listeners = this.handlers.get(eventName)

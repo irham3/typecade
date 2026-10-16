@@ -65,3 +65,7 @@ tsc-errors.txt
 /skills-lock.json
 *.swp
 *.swo
+
+# Local verification output and Supabase CLI cache
+/.*.log
+/supabase/.temp/

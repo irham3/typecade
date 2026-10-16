@@ -1,19 +1,20 @@
 # Dungeon release checklist
 
-Revision: 2026-10-15. Replaces the former typing-test/Overdrive promotion playbook. Current phase is planning; no deployment or public announcement is authorized by this checklist.
+Revision: 2026-10-15. Replaces the former typing-test/Overdrive promotion playbook. The dungeon implementation has passed the local verification recorded in the migration log. GitHub push is authorized; app/Worker deployment and public announcements are separate release actions.
 
 ## Before release
 
-- [ ] Complete the [delivery gates](docs/todo.md), with real playable Endless and accurately labelled mode availability.
-- [ ] Review every page against [interaction design](docs/design.md) and [art bible](docs/art-bible.md).
-- [ ] Run unit, coverage, build, E2E, lint, web/server TypeScript and retirement audits on the final source.
-- [ ] Capture actual dungeon screenshots and a short gameplay recording; reference images are not product evidence.
-- [ ] Verify EN/ID, keyboard-only play, text separation, accessible input, sound unlock and Reduced Effects.
-- [ ] Measure crowded/boss frame times, 15-minute memory behavior and repeated mode teardown.
-- [ ] Complete each enabled multiplayer mode with independent real clients; report local/WAN limitations.
-- [ ] Preserve old saves; validate new namespace/account schema and distinguish local from verified ranked results.
-- [ ] Audit final public assets, licensing, dependency use and production URLs.
-- [ ] Review Worker configuration and environment bindings before any deploy; legacy Ocean identifiers are still present.
+- [x] Complete the [delivery gates](docs/todo.md), with real playable Endless and accurately labelled mode availability.
+- [x] Review every page against [interaction design](docs/design.md) and [art bible](docs/art-bible.md).
+- [x] Run unit, coverage, build, E2E, lint, web/server TypeScript and retirement audits on the final source.
+- [x] Capture actual dungeon screenshots and machine-readable profile evidence; reference images are not product evidence.
+- [ ] Capture a human-reviewed gameplay recording before a public launch.
+- [x] Verify EN/ID, keyboard-only play, text separation, accessible input, sound unlock and Reduced Effects.
+- [x] Measure crowded/boss frame times, 15-minute memory behavior and repeated mode teardown.
+- [x] Complete each enabled multiplayer mode with independent real clients; report local/WAN limitations.
+- [x] Preserve old saves; validate new namespace/account schema and distinguish local from verified ranked results.
+- [x] Audit final public assets, licensing, dependency use and production URLs.
+- [x] Review Worker configuration and environment bindings before any deploy; the obsolete Ocean deployment alias is retired.
 - [ ] Obtain final deployment authorization when needed by the active task; this planning change does not deploy.
 
 ## Public description and evidence

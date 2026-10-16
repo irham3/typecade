@@ -1,0 +1,152 @@
+{
+  "url": "http://localhost:4173",
+  "browser": "149.0.7827.55",
+  "hardware": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpu": "AMD Ryzen AI 7 350 w/ Radeon 860M              ",
+    "cores": 16,
+    "memoryGiB": 31,
+    "gpuRenderer": "ANGLE (AMD, AMD Radeon(TM) 860M Graphics (0x00001114) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpu": [
+      {
+        "vendorId": 4098,
+        "deviceId": 4372,
+        "subSysId": 939595690,
+        "revision": 194,
+        "vendorString": "",
+        "deviceString": "AMD Radeon(TM) 860M Graphics",
+        "driverVendor": "AMD",
+        "driverVersion": "32.0.22024.3004"
+      },
+      {
+        "vendorId": 4098,
+        "deviceId": 4372,
+        "subSysId": 939595690,
+        "revision": 194,
+        "vendorString": "",
+        "deviceString": "AMD Radeon(TM) 860M Graphics",
+        "driverVendor": "",
+        "driverVersion": "32.0.22024.3004"
+      },
+      {
+        "vendorId": 4098,
+        "deviceId": 4372,
+        "subSysId": 939595690,
+        "revision": 194,
+        "vendorString": "",
+        "deviceString": "AMD Radeon(TM) 860M Graphics",
+        "driverVendor": "",
+        "driverVersion": "32.0.22024.3004"
+      },
+      {
+        "vendorId": 5140,
+        "deviceId": 140,
+        "subSysId": 0,
+        "revision": 0,
+        "vendorString": "",
+        "deviceString": "Microsoft Basic Render Driver",
+        "driverVendor": "",
+        "driverVersion": "10.0.26100.9711"
+      }
+    ]
+  },
+  "activeSeconds": 5,
+  "wallSeconds": 19,
+  "deaths": 0,
+  "intervals": {
+    "survival": {
+      "rafMs": {
+        "p50": 16.699999999999818,
+        "p95": 16.799999999999727,
+        "samples": 344
+      },
+      "renderMs": {
+        "p50": 16.700000002980232,
+        "p95": 18.399999991059303,
+        "samples": 313
+      }
+    },
+    "crowded-boss": {
+      "rafMs": {
+        "p50": 16.699999999999818,
+        "p95": 16.700000000000273,
+        "samples": 241
+      },
+      "renderMs": {
+        "p50": 16.700000002980232,
+        "p95": 18,
+        "samples": 240
+      }
+    },
+    "reduced": {
+      "rafMs": {
+        "p50": 16.699999999999818,
+        "p95": 16.799999999999272,
+        "samples": 181
+      },
+      "renderMs": {
+        "p50": 33.3999999910593,
+        "p95": 34.900000005960464,
+        "samples": 88
+      }
+    }
+  },
+  "navigation": {
+    "cycles": 6,
+    "before": 7433752,
+    "after": 7725436,
+    "retained": 291684
+  },
+  "samples": [
+    {
+      "label": "survival-final",
+      "wall": 8,
+      "calls": 12,
+      "geometries": 47,
+      "textures": 2,
+      "time": 5.366666666666657,
+      "level": 2,
+      "biome": 0,
+      "enemies": 0,
+      "loot": 0,
+      "projectiles": 0,
+      "effects": 0,
+      "wpm": "37",
+      "heap": 7242980
+    },
+    {
+      "label": "crowded-boss",
+      "wall": 15,
+      "calls": 44,
+      "geometries": 46,
+      "textures": 2,
+      "time": 9.566666666666643,
+      "level": 2,
+      "biome": 0,
+      "enemies": 128,
+      "loot": 256,
+      "projectiles": 64,
+      "effects": 128,
+      "wpm": "37",
+      "heap": 6714888
+    },
+    {
+      "label": "reduced",
+      "wall": 19,
+      "calls": 42,
+      "geometries": 46,
+      "textures": 1,
+      "time": 12.599999999999966,
+      "level": 2,
+      "biome": 0,
+      "enemies": 128,
+      "loot": 256,
+      "projectiles": 64,
+      "effects": 128,
+      "wpm": "30",
+      "heap": 7200584
+    }
+  ],
+  "errors": []
+}

@@ -11,8 +11,7 @@
     "build": "vite build --config apps/web/vite.config.ts",
     "build:worker": "npm run build",
     "preview": "vite preview --config apps/web/vite.config.ts --host 0.0.0.0",
-    "dev:rooms": "wrangler dev --config wrangler.ocean.jsonc --port 8787",
-    "deploy:ocean": "npm run build && wrangler deploy --config wrangler.ocean.jsonc",
+    "dev:rooms": "wrangler dev --port 8787",
     "deploy": "npm run build:worker && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "start": "vite preview --config apps/web/vite.config.ts --host 0.0.0.0",
@@ -21,7 +20,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "profile:dungeon": "node e2e/profile-dungeon.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",

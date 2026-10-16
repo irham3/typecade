@@ -1,10 +1,11 @@
 # Typecade asset credits
 
-Updated 2026-10-15 for dungeon planning. The dungeon references are design input; the existing runtime is still fishing until implementation.
+Updated 2026-10-15 for the dungeon implementation.
 
-- Four reference images supplied by the user are stored unchanged under `docs/reference/dungeon`. They are not bundled runtime art. Their inclusion does not establish rights to redistribute them as game assets.
-- Press Start 2P comes from the [Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/pressstart2p), under SIL Open Font License 1.1. Keep `apps/web/public/assets/sunset/OFL.txt` beside the bundled font, including when relocating it.
-- Existing `PixelArt.tsx` glyphs, `CoastalModels.ts` procedural models and `assets/sunset/rowboat.svg` are original project work. Fishing-specific art is marked for retirement with its callers.
-- Twelve existing MP3 files are project-owned procedural sounds without third-party samples. Ocean-only sounds are marked for removal; generic effects require listening review before dungeon reuse.
+- Press Start 2P is bundled from the [Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/pressstart2p), under SIL Open Font License 1.1. The font and license stay together in `apps/web/public/assets/dungeon/fonts`.
+- `DungeonModels.ts`, `DungeonScene.ts`, `Glyph.tsx` and `assets/dungeon/crest.svg` are original project geometry, effects and glyphs. Actors and terrain render live; no reference image is used as a backdrop or texture.
+- `DungeonAudio.ts` synthesizes bounded sound cues with native Web Audio, without third-party samples or an audio library.
+- Four user-supplied reference images remain unchanged under `docs/reference/dungeon`, outside the runtime bundle. Their inclusion does not establish rights to redistribute them as game assets.
+- All former boat/fish/island artwork and twelve Ocean MP3s are removed with their final callers. Previous credits remain in Git history.
 
-Full inventory and retirement dependencies: [asset audit](docs/asset-audit.md). Old Ocean/Overdrive artwork and production references removed from this branch remain recoverable through Git history. No new dungeon runtime assets or production screenshots are claimed by this planning change.
+See the [asset audit](docs/asset-audit.md) and [license inventory](ASSET-LICENSES.md).

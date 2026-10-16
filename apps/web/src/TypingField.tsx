@@ -1,6 +1,13 @@
 import { useEffect, useRef, type RefObject } from "react"
 
-export function TypingPassage({ text, cursor, className, testId, fontSize, monospace = false, mistake = false, rollingLines, typedText }: { text: string; cursor: number; className: string; testId: string; fontSize?: number; monospace?: boolean; mistake?: boolean; rollingLines?: 2 | 3; typedText?: string }) {
+export function TypingPassage({ text: fullText, cursor: fullCursor, className, testId, fontSize, monospace = false, mistake = false, rollingLines, typedText: fullTypedText }: { text: string; cursor: number; className: string; testId: string; fontSize?: number; monospace?: boolean; mistake?: boolean; rollingLines?: 2 | 3; typedText?: string }) {
+	// Keep long endless/timed streams bounded in the DOM while retaining word boundaries.
+ const start = fullCursor > 160 ? Math.max(fullCursor - 120, fullText.lastIndexOf(" ", fullCursor - 80) + 1) : 0
+	const boundary = fullText.indexOf(" ", fullCursor + 240)
+	const end = Math.min(fullCursor + 320, boundary < 0 ? fullText.length : boundary)
+	const text = fullText.slice(start, end)
+	const cursor = fullCursor - start
+	const typedText = fullTypedText?.slice(start, end)
 	const container = useRef<HTMLDivElement>(null)
 	useEffect(() => {
 		const box = container.current!
@@ -10,7 +17,8 @@ export function TypingPassage({ text, cursor, className, testId, fontSize, monos
 			if (rollingLines) {
 				const content = box.firstElementChild as HTMLElement
 				const lineHeight = parseFloat(getComputedStyle(content).lineHeight)
-				const top = rollingLines === 2 ? (next.closest('.typing-word') as HTMLElement).offsetTop : next.offsetTop
+				const word = next.closest<HTMLElement>(".typing-word")!
+				const top = rollingLines === 2 && !word.classList.contains("long") ? word.offsetTop : next.offsetTop
 				const line = Math.floor((top + 2) / lineHeight)
 				content.style.transform = `translateY(-${Math.max(0, line - (rollingLines === 3 ? 1 : 0)) * lineHeight}px)`
 			} else box.scrollTop = Math.max(0, next.offsetTop - box.clientHeight / 3)
@@ -23,7 +31,7 @@ export function TypingPassage({ text, cursor, className, testId, fontSize, monos
 	let offset = 0
 	return <div ref={container} className={`${className} typing-passage ${monospace ? "mono" : ""} ${rollingLines ? "rolling-passage" : ""}`} data-testid={testId} style={{ fontSize, ...(rollingLines ? { height: `${rollingLines * 2}em` } : {}) }} aria-label="Typing passage">
 		<div className="typing-lines">
-		{text.split(/(\s+)/).map((word, index) => <span className="typing-word" key={index}>{Array.from(word).map((char) => {
+		{text.split(/(\s+)/).map((word, index) => <span className={`typing-word${word.length > 32 ? " long" : ""}`} key={index}>{Array.from(word).map((char) => {
 			const position = offset
 			offset += char.length
 			return <span key={position} className={position < cursor ? typedText !== undefined && typedText.slice(position, position + char.length) !== char ? "incorrect" : "done" : position === cursor ? `next ${mistake ? "mistake" : ""}` : "ghost"}>{char}</span>
@@ -44,9 +52,10 @@ export function TypingInput({ label, onType, disabled = false, onEscape, inputRe
 		} else typeText(value.slice(displayValue?.length ?? 0))
 	}
 	return <input ref={ref} className="typing-native-input" aria-label={label} data-testid={testId} value={displayValue} inputMode={inputMode} disabled={disabled} placeholder={disabled ? "Typing paused" : "Type the highlighted character…"} autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck={false}
-		onFocus={() => onFocusChange?.(true)} onBlur={() => onFocusChange?.(false)}
+		onFocus={() => onFocusChange?.(true)} onBlur={() => { onFocusChange?.(false); if (!onFocusChange) queueMicrotask(() => { if (document.activeElement === document.body || document.activeElement === ref.current?.closest("dialog")) ref.current?.focus() }) }}
 		onPaste={(event) => event.preventDefault()}
 		onKeyDown={(event) => {
+			if (event.repeat) { event.preventDefault(); return }
 			if (onRestart && !event.nativeEvent.isComposing && !composing.current) {
 				if (!event.ctrlKey && !event.metaKey && !event.altKey) {
 					if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "Delete"].includes(event.key)) { event.preventDefault(); return }

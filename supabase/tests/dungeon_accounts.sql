@@ -1,0 +1,52 @@
+-- Run as the database owner. Every QA write is rolled back; no auth user is created.
+begin;
+do $test$
+declare
+ owner_id uuid;
+ checkpoint jsonb := '{"version":1,"seed":"dungeon-transaction-qa","language":"en","phase":"paused","resumePhase":"arena","afterDraft":"arena","rng":0,"time":60,"worldTime":60,"nextBoss":300,"spawnAt":61,"nextId":1,"biome":0,"level":5,"xp":0,"totalXp":1000,"gold":3,"kills":1,"words":10,"correct":50,"errors":0,"streak":50,"bestStreak":50,"pendingDrafts":0,"legendaryDrafts":0,"player":{"x":0,"z":0,"hp":6,"maxHp":6,"mana":100,"invincible":0,"dashAt":-10,"dashFrom":{"x":0,"z":0}},"enemies":[],"loot":[],"projectiles":[],"effects":[],"queue":[],"offers":[],"skills":{"cleave":{"level":1,"cooldown":0},"storm":{"level":1,"cooldown":0},"heal":{"level":1,"cooldown":0}},"relics":{"lightning":0,"magnet":0,"switch":0,"vowels":0,"overclock":0,"glasses":0,"execute":0},"target":null,"boss":null,"prefix":"","command":"","paragraph":"","cursor":0,"stagger":0,"labelLimit":6,"notice":"QA"}';
+ revision bigint; blocked boolean; count_rows bigint;
+begin
+ select u.id into owner_id from auth.users u where not exists(select 1 from public.dungeon_saves s where s.user_id=u.id) limit 1;
+ assert owner_id is not null, 'QA needs one existing account without a dungeon checkpoint';
+ perform set_config('request.jwt.claim.sub', owner_id::text, true);
+ execute 'set local role authenticated';
+ revision := public.save_dungeon_checkpoint(checkpoint,0,'QA Knight');
+ assert revision=1, 'First revision';
+ select count(*) into count_rows from public.dungeon_saves;
+ assert count_rows=1, 'Owner reads only own save';
+ select count(*) into count_rows from public.dungeon_achievements;
+ assert count_rows=3, 'Atomic achievements';
+ revision := public.save_dungeon_checkpoint(checkpoint,1,'QA Knight');
+ assert revision=2, 'Revision increments';
+ blocked:=false;
+ begin perform public.save_dungeon_checkpoint(checkpoint,1,'QA Knight'); exception when serialization_failure then blocked:=true; end;
+ assert blocked, 'Stale revision must fail';
+ blocked:=false;
+ begin perform public.save_dungeon_checkpoint(jsonb_set(checkpoint,'{player}','{}'),2,'QA Knight'); exception when raise_exception then blocked:=true; end;
+ assert blocked, 'Malformed checkpoint must fail';
+ blocked:=false;
+ begin update public.dungeon_saves set revision=99; exception when insufficient_privilege then blocked:=true; end;
+ assert blocked, 'Direct writes must fail';
+ perform set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
+ select count(*) into count_rows from public.dungeon_saves;
+ assert count_rows=0, 'Other account cannot read checkpoint';
+ select count(*) into count_rows from public.dungeon_achievements;
+ assert count_rows=0, 'Other account cannot read achievements';
+ select count(*) into count_rows from public.dungeon_records;
+ assert count_rows=0, 'Other account cannot read private records';
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub','',true);
+ execute 'set local role anon';
+ blocked:=false;
+ begin perform public.save_dungeon_checkpoint(checkpoint,0,'QA Knight'); exception when insufficient_privilege then blocked:=true; end;
+ assert blocked, 'Anonymous upload must fail';
+ blocked:=false;
+ begin perform 1 from public.dungeon_saves; exception when insufficient_privilege then blocked:=true; end;
+ assert blocked, 'Anonymous checkpoint read must fail';
+ assert not exists(select 1 from public.dungeon_leaderboard() r where to_jsonb(r) ?| array['user_id','save_data','email']), 'Public board exposes curated fields only';
+ execute 'reset role';
+ perform set_config('typecade.dungeon_qa','ownership, revision conflict, validation, direct-write denial, achievements and public fields passed',true);
+end;
+$test$;
+select current_setting('typecade.dungeon_qa') as verification;
+rollback;

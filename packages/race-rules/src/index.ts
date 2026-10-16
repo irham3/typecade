@@ -1,4 +1,7 @@
+import { createSeededRng } from "../../game-rules/src/rng"
 import { raceQuotes, raceWords } from "../../content/src/race"
+import type { ArenaCombat, DungeonRole, DungeonRoomMode } from "./arena"
+export * from "./arena"
 
 export type RaceLanguage = "id" | "en"
 export type RaceFormat = "words" | "time" | "quote" | "custom"
@@ -6,6 +9,7 @@ export type RaceVariant = "classic" | "perfect" | "three-hulls"
 export type RaceStatus = "waiting" | "racing" | "finished" | "out"
 
 export interface RaceConfig {
+ mode?: DungeonRoomMode
 	language: RaceLanguage
 	format: RaceFormat
 	wordCount: number
@@ -20,6 +24,7 @@ export interface RaceConfig {
 }
 
 export interface RacePlayer {
+ role?: DungeonRole
 	id: string
 	name: string
 	ready: boolean
@@ -33,6 +38,7 @@ export interface RacePlayer {
 }
 
 export interface RaceRoomSnapshot {
+ combat?: ArenaCombat
 	code: string
 	hostId: string
 	phase: "waiting" | "countdown" | "racing" | "finished"
@@ -51,6 +57,7 @@ export interface RaceTicket {
 }
 
 export const defaultRaceConfig: RaceConfig = {
+ mode: "sprint",
 	language: "id",
 	format: "words",
 	wordCount: 50,
@@ -68,6 +75,9 @@ export function parseRaceConfig(input: unknown): RaceConfig {
 	if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid race settings")
 	const raw = input as Record<string, unknown>
 	const config = { ...defaultRaceConfig, ...raw }
+	if (!["sprint","clash","raid"].includes(config.mode!)) throw new Error("Invalid dungeon room mode")
+	if (config.mode!=="sprint"&&config.variant!=="classic") throw new Error("Combat rooms use the classic typing rules")
+	if (config.mode==="raid"&&config.maxPlayers<4) throw new Error("Raid rooms need at least four slots")
 	if (!(["id", "en"] as unknown[]).includes(config.language)) throw new Error("Choose Indonesian or English")
 	if (!(["words", "time", "quote", "custom"] as unknown[]).includes(config.format)) throw new Error("Invalid text format")
 	if (!(["easy", "medium", "hard"] as unknown[]).includes(config.difficulty)) throw new Error("Invalid quote difficulty")
@@ -83,6 +93,7 @@ export function parseRaceConfig(input: unknown): RaceConfig {
 	if (customText.length > 5000) throw new Error("Custom text is too long")
 	if (config.format === "custom" && customText.length < 3) throw new Error("Enter at least three characters")
 	return {
+		mode: config.mode,
 		language: config.language,
 		format: config.format,
 		wordCount: config.wordCount,
@@ -101,20 +112,8 @@ export function cleanRaceText(value: string): string {
 	return value.normalize("NFKC").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2013\u2014]/g, "-").replace(/\s+/g, " ").trim()
 }
 
-function createRng(seed: string): () => number {
-	let state = 2166136261
-	for (const character of seed) state = Math.imul(state ^ character.charCodeAt(0), 16777619)
-	return () => {
-		state += 0x6d2b79f5
-		let value = state
-		value = Math.imul(value ^ (value >>> 15), value | 1)
-		value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
-		return ((value ^ (value >>> 14)) >>> 0) / 4294967296
-	}
-}
-
 export function generateRaceText(config: RaceConfig, seed: string): string {
-	const random = createRng(seed)
+	const random = createSeededRng(seed).nextFloat
 	if (config.format === "quote") {
 		const quotes = raceQuotes[config.language][config.difficulty]
 		return quotes[Math.floor(random() * quotes.length)]!

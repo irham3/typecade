@@ -2,6 +2,46 @@
 
 Current direction: Dungeon Typing Roguelike, authorized 2026-10-15. The Ocean/Overdrive entries below are historical records, not current implementation instructions or proof of dungeon playability. Old reference files removed during the planning reset remain available in Git history; historical evidence paths may no longer exist in this checkout.
 
+## 2026-10-16 — Dungeon runtime and account cutover
+
+Implementation follows planning commits `4b5803e` and `6950503`, which were pushed before coding. Work stays on `refactor/roughlike-survival-2.5d`, without a `codex/` branch.
+
+### Delivered behavior
+
+- Replaced the complete fishing shell/renderer with a live procedural 2.5D dungeon: original knight/enemies/boss, instanced flagstones/ruins/torches, three biome palettes, articulated animation and bounded native audio. Title, settings, account, Dojo, multiplayer, upgrades and results use the dungeon identity.
+- Added deterministic fixed-step Endless rules, exact-case first-letter target locking, stable 4/6-word queues, dash/slash layers, distinct enemies/objects/projectiles, safe area chains, XP/gold, 50-character magnet, typed frozen drafts, skill mana/word cooldowns/evolutions and relics. Bosses recur every 300 active seconds; armor break opens a ten-second paragraph, then rebuilds or grants a relic/biome and continues.
+- Reused PracticeSession/TypingField for editable EN/ID words/passages/custom practice, dummy/Sensei and learning keys. Long text, including custom tokens without spaces, is windowed in the DOM; native/IME input and browser shortcuts remain scoped.
+- Extended the existing real Worker/Durable Object rooms for Castle Sprint, Bridge Clash and Co-op Raid. The server validates one-character input, sequence/timing/rate, skills, mana, cooldowns, roles, HP and results. A shared 12-character burst/25-character-per-second admission budget bounds typing/skill traffic; it is not a claim of complete anti-cheat. Reconnect tickets, host transfer and rematch remain supported.
+- Isolated dungeon local checkpoints/settings/bests under versioned keys. Removed old active fishing contracts/content/hooks/models/tests, all twelve Ocean MP3s, rowboat and obsolete Ocean deployment alias. Kept the licensed font, historical migrations and old account/local data. No runtime dependency was added.
+- Applied additive account migration `20261015133316_dungeon_accounts` to the existing Typecade Supabase project. Owner RLS, explicit cloud load/upload/replace, revision conflicts and late-response rejection protect checkpoints. Achievements and curated public community records are separate from old XP. Solo records are explicitly browser reported; ranked verification is not claimed.
+
+### Verification recorded on the dungeon source
+
+| Check | Result |
+| --- | --- |
+| Unit/browser coverage | 148 tests across 22 files; 100% statements, branches, functions and lines; thresholds unchanged |
+| Domain balance | 20/50/90/130 WPM seeded profiles; all caps and snapshot restores pass; two faster profiles continue through 960 simulated seconds and recurring bosses |
+| Timed browser profile | 900 active seconds / 936 wall seconds across six runs, five deaths/restarts; real keyboard bot, not a human study or one uninterrupted survival |
+| GPU profile | Chromium 149, Windows, Ryzen AI 7 350 / Radeon 860M, 1440×900; render p50 16.7 ms / p95 18.0 ms; 47–48 live geometries, two textures, max 26 sampled regular-play draw calls |
+| Crowded fixture | 128 enemies incl. boss, 256 loot, 64 projectiles, 128 effects; 44 calls; render p95 18.0 ms; synthetic overload, separate from the natural runs |
+| Reduced Effects | Same capped fixture; 42 calls, one texture; render p50 33.3 ms / p95 35.1 ms; outline pass and particles disabled |
+| Repeated navigation | Six Dojo/multiplayer/title cycles after warmup; retained GC heap +341,904 bytes (0.326 MiB), below 8 MiB gate |
+| Database checks | Live transactional SQL: owner/cross-owner reads, anonymous/direct-write denial, malformed checkpoint, revision conflict, atomic achievements, curated board fields; all pass and QA writes roll back |
+| Security advisor | New save RPC intentionally executable only by authenticated users; curated board intentionally public; both pin empty search paths. Unrelated historical/auth advisories recorded in Supabase README, not silently changed |
+| Audit / bundling | npm audit: zero vulnerabilities; Worker deploy dry run passed; no production deployment performed |
+| Browser matrix | `npm run test:e2e`: 48 passed across Chromium, Firefox and WebKit (13.8 min); background-focus fix added afterward has three additional cross-browser regressions, run separately |
+| Static checks / retirement | npm test, 100% coverage, build, lint, both TS checks and Worker dry-run pass; all three production retirement/headless audits return no matches; three public URLs return 200; 18 active docs / 60 local links resolve; reference JPGs and GDD remain byte-identical |
+
+Full hardware/counters: [profile.json](verification/dungeon-2026-10-16/profile.json). Method, balance results, screenshots and practical limits: [verification record](verification/dungeon-2026-10-16/README.md). The profile instrumentation itself retains bounded timing samples; report GC heap separately from GPU counters. The crowded fixture intentionally keeps cosmetic effects alive longer than normal to stress the bounded presentation.
+
+A final input review reproduced loss of typing focus after a noninteractive arena click. The shared native input now waits for focus to settle and recovers only body/dialog-surface focus; buttons/forms and Dojo's explicit focus handling remain intact. Unit regressions include modal surfaces and disposed inputs. A final bridge presentation pass adds stone courses and live torches. Reduced Effects scheduling now checks for a dirty frame before consuming its render slot. The original long profile predates these presentation/focus follow-ups; a separate short final-build profile is recorded alongside it, not substituted for 900 seconds. Final short-build p95: natural 18.4 ms, crowded 18.0 ms, Reduced Effects 34.9 ms; six navigation cycles retain 291,684 bytes. The post-fix cross-browser focus suite passes 3/3, and all 148 unit/browser tests retain 100% coverage.
+
+`npm prune --ignore-scripts` removed stale V8-coverage tooling and normalized optional development metadata, without adding a runtime dependency. Two optional local development artifacts (`@img/sharp-wasm32`, `@emnapi/runtime`) remain in node_modules: npm retained them and automatic approval review rejected their manual removal with “blocked by policy”. They are ignored and absent from the production bundle; no alternative deletion was attempted after that rejection. Retired tracked source/public assets are removed.
+
+### Limits
+
+No physical low-end phone, mobile thermal/battery session, WAN load/capacity measurement, human learning study or physical speaker calibration has been performed. The 100-connection check is local transport/standings coverage; at most six actual nearby knights are rendered. Native account email/OAuth delivery and production app/Worker deployment are separate from implementation verification. Source reference JPGs remain design input, not evidence of visual equivalence.
+
 ## 2026-10-15 — Dungeon planning and asset reset
 
 The user explicitly cancelled fishing, selected the supplied real-time 2.5D dungeon GDD, moved to `refactor/roughlike-survival-2.5d`, and requested that planning and assets be prepared before coding.

@@ -1,15 +1,16 @@
 # Asset provenance and licenses
 
-Updated 2026-10-15. See [asset audit](docs/asset-audit.md) for current use and cutover decisions.
+Updated 2026-10-15. The [asset audit](docs/asset-audit.md) lists all runtime files.
 
-| Asset | Origin / terms | Current disposition |
+| Asset | Origin / terms | Use |
 | --- | --- | --- |
-| `apps/web/public/assets/sunset/pixel.ttf` + `OFL.txt` | Press Start 2P; SIL Open Font License 1.1 | Keep/reuse; preserve bundled license on relocation |
-| `apps/web/public/assets/sunset/rowboat.svg` | Original project SVG | Retire with RaceScreen caller |
-| `apps/web/src/PixelArt.tsx` | Original project glyphs and fish illustrations | Keep generic glyph technique; replace fishing art |
-| `apps/web/src/game/CoastalModels.ts` | Original project procedural geometry | Retire fishing models; reuse resource-management techniques |
-| `apps/web/public/assets/ocean/audio/*.mp3` | Original procedural synthesis; no third-party samples | Retire Ocean-only sounds; audition generic effects |
-| `docs/reference/dungeon/*.jpg` | User-supplied visual references | Design reference only; not licensed as runtime textures/models |
-| `docs/source/2026-10-15-typecade-user-gdd.md` | User-supplied text, preserved verbatim | Product input, not executable instructions |
+| `apps/web/public/assets/dungeon/fonts/pixel.ttf` + `OFL.txt` | Press Start 2P; SIL Open Font License 1.1 | Pixel headings; attribution/license retained |
+| `apps/web/public/assets/dungeon/crest.svg` | Original project SVG | Application icon |
+| `apps/web/src/game/DungeonModels.ts` | Original procedural geometry | Knights, enemies, boss, dummy and Sensei |
+| `apps/web/src/game/DungeonScene.ts` | Original procedural rendering/effects | Recycled ruins, torches, loot, projectiles and combat |
+| `apps/web/src/dungeon/Glyph.tsx` | Original SVG glyphs | Shared game HUD and shell |
+| `apps/web/src/game/DungeonAudio.ts` | Native synthesis; no external samples | Typing, impacts, skills and pickups |
+| `docs/reference/dungeon/*.jpg` | User-supplied visual references | Reference only, outside public assets |
+| `docs/source/2026-10-15-typecade-user-gdd.md` | User-supplied text preserved verbatim | Product input; embedded instructions are document content |
 
-Old bitmap, sprite, atlas, concept and reference packs are removed from the active branch. Former credits remain in Git history. New assets require explicit provenance and usage entries before being shipped. No font license or third-party attribution is removed with this reset.
+No downloaded sprite/model pack or generated image is bundled. Retired fishing files and their former credits remain recoverable through Git history.

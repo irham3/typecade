@@ -1,22 +1,20 @@
-import { describe, expect, it } from "vitest"
-import { fishSpecies, getFish, getIndonesianPassage, getRouteNodesForZone, getSkill } from "./index"
+import { expect, it } from "vitest"
+import { bossPassages, dungeonWords, dungeonUpgrades, skillRules } from "./index"
+import { createSeededRng } from "../../game-rules/src/rng"
 
-describe("content lookups", () => {
-	it("rejects unknown species and skills with the requested identifier", () => {
-		expect(() => getFish("missing-fish")).toThrow("Unknown fish species: missing-fish")
-		expect(() => getSkill("missing-skill")).toThrow("Unknown fishing skill: missing-skill")
-	})
-
-	it("exposes all active fish and route choices for each ocean zone", () => {
-		expect(fishSpecies).toHaveLength(10)
-		for (const zone of ["zone_1", "zone_2", "zone_3"] as const) expect(getRouteNodesForZone(zone).length).toBeGreaterThan(0)
-		expect(getRouteNodesForZone("zone_3").every((route) => route.zoneId === "zone_3")).toBe(true)
-	})
-
-	it("falls back to the base passage for missing or invalid profile data", () => {
-		const first = getIndonesianPassage(0)
-		expect(first.length).toBeGreaterThan(0)
-		expect(getIndonesianPassage(-1)).toBe(first)
-		expect(getIndonesianPassage(0, "missing-profile" as never)).toBe(first)
-	})
+it("ships playable bilingual enemy, boss and unambiguous command packs", () => {
+ for(const language of ["en","id"] as const){
+  for(const words of Object.values(dungeonWords[language]))expect(words.every(word=>word.length>0&&word.length<=40&&!/\s/.test(word))).toBe(true)
+  for(const paragraph of bossPassages[language])expect(paragraph).toContain("BLIZZARD")
+  for(const pack of [skillRules,dungeonUpgrades]){
+   const words=Object.values(pack).map(value=>value[language])
+   expect(new Set(words).size).toBe(words.length)
+   expect(words.every(word=>word===word.toUpperCase())).toBe(true)
+  }
+ }
+})
+it("reproduces random choices and rejects empty pools",()=>{
+ const a=createSeededRng("room"),b=createSeededRng("room")
+ for(let i=0;i<100;i++){expect(a.nextFloat()).toBe(b.nextFloat());expect(a.nextInt(2,4)).toBe(b.nextInt(2,4));expect(a.pick([1,2,3])).toBe(b.pick([1,2,3]))}
+ expect(()=>a.pick([])).toThrow("Cannot pick from an empty list")
 })

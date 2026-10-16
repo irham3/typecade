@@ -1,8 +1,8 @@
 # Dungeon redesign — document index
 
-Status: planning baseline, 2026-10-15. No dungeon implementation is claimed.
+Status: dungeon implementation, 2026-10-15. Current verification is tracked in the delivery checklist and migration log.
 
-The latest request cancels fishing and asks for planning and asset cleanup before coding. This replaces every former Ocean, sunset-fishing and Overdrive implementation plan. Old plans and reference packs are removed from the branch; Git history preserves them.
+The user cancelled fishing, requested planning and asset cleanup, then authorized a GitHub checkpoint followed by implementation. This replaces every former Ocean, sunset-fishing and Overdrive implementation plan. Old plans and reference packs are removed from the branch; Git history preserves them.
 
 ## Reading order
 

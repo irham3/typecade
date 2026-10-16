@@ -1,39 +1,17 @@
 export const raceWords = {
-	id: "ombak karang perahu nelayan ikan pasang surut laut biru arus angin layar jangkar pasir mutiara laguna dermaga mercusuar buih cahaya pagi senja malam bintang awan badai hujan tenang deras cepat lambat kail tali jaring dayung kapal haluan buritan pulau teluk pantai terumbu kerang rumput laut hiu pari ubur pelampung peta kompas gelombang kedalaman permukaan lintasan tujuan garis akhir mulai siap kuat sabar ritme fokus ketik kata tepat salah ulang menang bersama dekat jauh depan belakang".split(" "),
-	en: "wave reef boat fisher fish tide ocean blue current wind sail anchor sand pearl lagoon harbor lighthouse foam light morning dusk night star cloud storm rain calm swift fast slow hook line net paddle ship bow stern island bay coast coral shell kelp shark ray jellyfish buoy map compass swell depth surface course goal finish start ready strong steady rhythm focus type word correct error retry win together near far ahead behind".split(" "),
+ id: "batu pedang perisai gerbang benteng lorong obor api tanah baja debu pintu kunci rune mantra bayangan cahaya malam fajar bintang menara lantai pilar jubah pelindung penjaga ksatria penyihir tebas sabet serbu tangkis lari lompat hindar sembuh pecah buka tutup maju mundur utara selatan timur barat jalur tujuan akhir mulai siap kuat sabar ritme fokus ketik kata tepat salah ulang menang bersama dekat jauh depan belakang".split(" "),
+ en: "stone blade shield gate keep hall torch fire earth steel dust door key rune spell shadow light night dawn star tower floor pillar cloak armor guard knight mage strike slash dash block run leap dodge heal break open close advance retreat north south east west path goal finish start ready strong steady rhythm focus type word correct error retry win together near far ahead behind".split(" "),
 } as const
 
 export const raceQuotes = {
-	id: {
-		easy: [
-			"Ombak kecil membawa perahu ke karang.",
-			"Kapten membaca angin sebelum berlayar.",
-			"Jaga ritme saat arus mulai berubah.",
-		],
-		medium: [
-			"Di dekat mercusuar, setiap nelayan menjaga haluan dan membaca warna air sebelum badai tiba.",
-			"Perahu melaju saat pasang naik, tetapi tangan yang tenang tetap lebih penting daripada angin kencang.",
-			"Sebuah peta menunjukkan tujuan; langkah kecil yang konsisten membawa seluruh awak sampai ke sana.",
-		],
-		hard: [
-			"Ketika langit meredup di atas laguna, sang kapten menghitung jeda antargelombang, mengencangkan tali layar, lalu mengarahkan perahu melewati celah karang yang hanya tampak sesaat.",
-			"Di tengah arus yang berubah arah, awak kapal tidak mengejar setiap percikan; mereka menjaga napas, membaca kompas, dan memilih jalur aman sampai mercusuar terlihat jelas di ujung cakrawala.",
-		],
-	},
-	en: {
-		easy: [
-			"Small waves carry the boat toward the reef.",
-			"The captain reads the wind before sailing.",
-			"Keep your rhythm when the current turns.",
-		],
-		medium: [
-			"Near the lighthouse, every sailor watches the water and keeps the bow steady before the storm arrives.",
-			"The boat moves with the rising tide, but calm hands matter more than a strong and restless wind.",
-			"A map can show the destination; steady strokes bring the whole crew safely across the bay.",
-		],
-		hard: [
-			"As dusk settled over the lagoon, the captain counted the space between waves, tightened the sail, and guided the boat through a narrow break in the coral that appeared only for a moment.",
-			"When the current changed without warning, the crew held its course, checked the compass, and waited for the distant lighthouse to emerge beyond the dark line of the horizon.",
-		],
-	},
+ id: {
+  easy:["Obor kecil menerangi lorong batu.","Ksatria menjaga gerbang sampai fajar.","Jaga ritme dan arahkan pedangmu."],
+  medium:["Di bawah menara, seorang penjaga mengangkat perisai ketika langkah berat terdengar dari lorong gelap.","Pedang itu retak pada serangan pertama, tetapi gagangnya masih cukup kuat untuk menahan satu pukulan lagi.","Peta menunjukkan pintu keluar; tanda kapur di dinding membantu rombongan menemukan jalan kembali."],
+  hard:["Setelah melewati gerbang yang hangus, sang ksatria berhenti di persimpangan, menandai batu dengan kapur, lalu mendengarkan bunyi rantai dari ruangan di sebelah kiri.","Di balik pintu besi terdapat tiga kunci: satu berkarat, satu patah, dan satu masih hangat; penyihir meminta semua orang mundur sebelum mencoba kunci yang terakhir."],
+ },
+ en: {
+  easy:["A small torch lights the stone hall.","The knight guards the gate until dawn.","Keep your rhythm and raise your blade."],
+  medium:["Below the tower, a guard raises her shield as heavy footsteps echo through the dark passage.","The blade cracked on the first strike, but its handle still held against one more blow.","A map marks the exit; chalk lines on the wall help the party find the way back."],
+  hard:["Beyond the scorched gate, the knight stopped at a junction, marked a stone with chalk, and listened to the sound of chains dragging through the room on the left.","Behind the iron door lay three keys: one rusted, one broken, and one still warm; the mage asked everyone to step back before trying the last of them."],
+ },
 } as const

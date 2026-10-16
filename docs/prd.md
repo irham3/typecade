@@ -1,6 +1,6 @@
 # Typecade dungeon — requirements
 
-Revision: 2026-10-15. Status: planned, not implemented. Governing rules: [game design](game-design.md). Delivery order: [checklist](todo.md).
+Revision: 2026-10-15. Status: implemented and verified in this branch.  Governing rules: [game design](game-design.md). Delivery order: [checklist](todo.md).
 
 ## Product acceptance
 

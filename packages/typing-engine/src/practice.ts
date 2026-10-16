@@ -2,7 +2,7 @@ import { normalizeText, type TypingSessionSnapshot } from "./index"
 
 export type PracticeStyle = "modern" | "classic"
 
-// Practice permits editing mistakes; competitive/fishing sessions keep strict input.
+// Practice permits editing mistakes; competitive sessions keep strict input.
 export class PracticeSession {
 	private text: string
 	private typed = ""

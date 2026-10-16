@@ -21,7 +21,7 @@ function recordBestWpm(run: TypingSessionSnapshot): number {
 	return best
 }
 
-export function PracticeScreen({ onBack }: { onBack: () => void }) {
+export function PracticeScreen({ onBack, onActivity }: { onBack: () => void; onActivity?: (correct:number,words:number,errors:number)=>void }) {
 	const [config, setConfig] = useState<RaceConfig>({ ...defaultRaceConfig })
 	const [phase, setPhase] = useState<PracticePhase>("racing")
 	const [passage, setPassage] = useState(() => generateRaceText(defaultRaceConfig, `${Date.now()}:practice`))
@@ -123,6 +123,7 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	const updateConfig = <K extends keyof RaceConfig>(key: K, value: RaceConfig[K]) => setConfig((current) => ({ ...current, [key]: value }))
 	const currentText = snapshot?.targetText ?? passage
 	const cursor = snapshot?.cursor ?? 0
+	useEffect(()=>{onActivity?.(snapshot?.metrics.correctKeystrokes??0,currentText.slice(0,cursor).split(/\s+/).length-1,snapshot?.metrics.incorrectKeystrokes??0)},[onActivity,snapshot?.metrics.correctKeystrokes,snapshot?.metrics.incorrectKeystrokes,currentText,cursor])
 	const inputText = snapshot?.currentInput ?? ""
 	const changeFocus = (isFocused: boolean) => {
 		setFocused(isFocused)
@@ -131,13 +132,14 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<main className="practice-screen" data-testid="practice-screen">
+		<section className="practice-screen" data-testid="practice-screen">
 			<header className="practice-header pixel-panel">
 				<button className="pixel-action secondary" onClick={onBack}>Main menu</button>
-				<div><small>TYPECADE · COASTAL PRACTICE</small><h1>Practice</h1></div>
+				<div><small>TYPECADE · ZERO STAKES</small><h1>Typing Dojo</h1></div>
 				{phase === "racing" ? <strong className="practice-clock" aria-live="polite">{config.format === "time" ? `${remaining}s` : `${Math.round((snapshot?.metrics.progress ?? 0) * 100)}%`}</strong> : <span className="practice-best">Best {bestWpm} WPM</span>}
 			</header>
 
+			<div className="dojo-objective"><span>TRAINING DUMMY · ×{3-((currentText.slice(0,cursor).split(/\s+/).length-1)%3)}</span><strong>{(snapshot?.metrics.wpm??0)>=60?"RHYTHM FOUND":"OBJECTIVE: REACH 60 WPM"}</strong><small>Practice words, sentences, case, digits and symbols. Sensei is watching.</small></div>
 			{phase === "setup" ? (
 				<form className="practice-config pixel-panel" onSubmit={start}>
 					<div className="practice-config-heading"><div><small>BUILD A SESSION</small><h2>Typing settings</h2></div><span>Rules can change between sessions.</span></div>
@@ -153,7 +155,7 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 							<label className="pixel-check"><input type="checkbox" checked={config.numbers} onChange={(e) => updateConfig("numbers", e.target.checked)} /> Numbers</label>
 						</div>}
 						{config.format === "custom" && <label className="pixel-check practice-wide"><input type="checkbox" checked={config.shuffle} onChange={(e) => updateConfig("shuffle", e.target.checked)} /> Shuffle words</label>}
-						<label>Challenge<select aria-label="Practice challenge" value={config.variant} onChange={(e) => updateConfig("variant", e.target.value as RaceConfig["variant"])}><option value="classic">Classic Current</option><option value="perfect">Perfect Tide · first typo ends run</option><option value="three-hulls">Three Hulls · three mistakes</option></select></label>
+						<label>Challenge<select aria-label="Practice challenge" value={config.variant} onChange={(e) => updateConfig("variant", e.target.value as RaceConfig["variant"])}><option value="classic">Free training</option><option value="perfect">Precision · first typo ends the lesson</option><option value="three-hulls">Three attempts · three mistakes</option></select></label>
 						<label>Text size <span>{fontSize}px</span><input aria-label="Text size" type="range" min="20" max="40" step="2" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} /></label>
 						<label>Typing style<select aria-label="Practice typing style" value={style} onChange={(e) => setStyle(e.target.value as PracticeStyle)}><option value="modern">Modern · three lines</option><option value="classic">Classic · two lines</option></select></label>
 						<label className="pixel-check"><input type="checkbox" checked={monospace} onChange={(e) => setMonospace(e.target.checked)} /> Monospace text</label>
@@ -163,7 +165,7 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 				</form>
 			) : phase === "racing" ? (
 				<section className="practice-racing pixel-panel" data-testid="practice-racing">
-					<div className="practice-run-meta"><span>{config.language === "id" ? "Bahasa Indonesia" : "English"} · {config.format} · {config.variant.replaceAll("-", " ")}</span>{config.variant !== "classic" && <span>{lives} hulls</span>}</div>
+					<div className="practice-run-meta"><span>{config.language === "id" ? "Bahasa Indonesia" : "English"} · {config.format} · {config.variant.replaceAll("-", " ")}</span>{config.variant !== "classic" && <span>{lives} attempts</span>}</div>
 					<div className={`practice-typing ${style}`} onClick={() => inputRef.current!.focus()}>
 						<TypingPassage text={currentText} cursor={cursor} className="practice-passage" testId="practice-passage" fontSize={fontSize} monospace={monospace} rollingLines={style === "modern" ? 3 : 2} typedText={inputText} />
 						<TypingInput inputRef={inputRef} label="Practice typing input" inputMode="none" onType={typeKey} onEscape={() => start(undefined, true)} onRestart={() => start(undefined, true)} onShuffle={() => start()} onFocusChange={changeFocus} displayValue={style === "classic" ? inputText.split(" ").at(-1)! : inputText} />
@@ -172,17 +174,17 @@ export function PracticeScreen({ onBack }: { onBack: () => void }) {
 					<p className="practice-focus-hint">Type to start. Backspace fixes a typo. Tab / Esc restarts; Shift + Enter shuffles. The timer pauses when focus leaves the input.</p>
 					<div className="practice-actions"><button className="pixel-action secondary" onClick={() => setPhase("setup")}>Typing settings</button><button className="pixel-action secondary" onClick={() => start(undefined, true)}>Restart text</button><button className="pixel-action secondary" onClick={() => start()}>Shuffle text</button></div>
 					<div className="practice-stats"><span><strong>{snapshot?.metrics.wpm ?? 0}</strong> WPM</span><span><strong>{snapshot?.metrics.accuracy ?? 100}%</strong> accuracy</span><span><strong>{snapshot?.metrics.maxCombo ?? 0}</strong> best streak</span></div>
-					<PracticeKeyboard onKey={(key) => { inputRef.current!.focus(); typeKey(key) }} />
+					<PracticeKeyboard expectedKey={currentText[cursor]} onKey={(key) => { inputRef.current!.focus(); typeKey(key) }} />
 				</section>
 			) : (
 				<section className="practice-result pixel-panel" data-testid="practice-result">
 					<small>{phase === "out" ? "PRACTICE ENDED" : "SESSION COMPLETE"}</small>
-					<h2>{phase === "out" ? config.variant === "perfect" ? "Perfect Tide broken" : "All hulls lost" : "Good run"}</h2>
+					<h2>{phase === "out" ? config.variant === "perfect" ? "Precision lesson ended" : "Three attempts used" : "Good run"}</h2>
 					<div className="practice-result-stats"><strong>{snapshot!.metrics.wpm}<span>WPM</span></strong><strong>{snapshot!.metrics.accuracy}%<span>Accuracy</span></strong><strong>{snapshot!.metrics.consistency}%<span>Consistency</span></strong></div>
 					<p>Best: {bestWpm} WPM</p>
 					<div><button className="pixel-action primary" onClick={(e) => start(e)}>Practice again</button><button className="pixel-action secondary" onClick={() => setPhase("setup")}>Typing settings</button></div>
 				</section>
 			)}
-		</main>
+		</section>
 	)
 }

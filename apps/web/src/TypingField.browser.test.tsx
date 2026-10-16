@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { userEvent } from "vitest/browser"
 import { TypingInput, TypingPassage } from "./TypingField"
+import "./styles.css"
 
 let host: HTMLDivElement
 let root: Root
@@ -87,7 +88,7 @@ it("moves complete rows in a clipped two/three-line window and recomputes after 
 		expect(box.scrollTop).toBe(0)
 		const first = content.style.transform
 		expect(first).not.toBe("translateY(-0px)")
-		box.style.width = "100px"
+		box.style.width = "72px"
 		await vi.waitFor(() => expect(content.style.transform).not.toBe(first))
 		const next = host.querySelector<HTMLElement>('.next')!
 		const translate = Number(content.style.transform.match(/-([\d.]+)/)![1])
@@ -117,4 +118,42 @@ it("supports editable practice input, restarts, shuffle, IME deletion and focus 
 	await act(() => root.render(<TypingInput label="Practice" onType={onType} displayValue="ab" onRestart={onRestart} />))
 	await act(() => input.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",shiftKey:true,bubbles:true})))
 	expect(onShuffle).toHaveBeenCalledOnce()
+})
+
+it("bounds long streams without losing the active letter and ignores held keys",async()=>{
+ const text="strike ".repeat(10000)
+ await act(()=>root.render(<TypingPassage text={text} cursor={400} className="test" testId="bounded" typedText={text.slice(0,400)}/>))
+ expect(host.textContent!.length).toBeLessThan(400);expect(host.querySelector(".next")!.textContent).toBe(text[400])
+ const onType=vi.fn();await act(()=>root.render(<TypingInput label="held" onType={onType}/>))
+ await act(()=>host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key:"a",repeat:true,bubbles:true,cancelable:true})))
+ expect(onType).not.toHaveBeenCalled()
+})
+
+it("bounds a custom token without spaces and keeps its active character visible",async()=>{
+ const text="a".repeat(10000)
+ for(const cursor of [0,4000]){
+  await act(()=>root.render(<TypingPassage text={text} cursor={cursor} className="long-token" testId="token" rollingLines={2} fontSize={24}/>))
+  const box=host.querySelector<HTMLElement>(".typing-passage")!;box.style.width="200px"
+  expect(host.textContent!.length).toBeLessThanOrEqual(440)
+  await vi.waitFor(()=>{const next=box.querySelector<HTMLElement>(".next")!,b=box.getBoundingClientRect(),n=next.getBoundingClientRect();expect(n.top).toBeGreaterThanOrEqual(b.top);expect(n.bottom).toBeLessThanOrEqual(b.bottom);expect(n.right).toBeLessThanOrEqual(b.right)})
+ }
+})
+
+it("recovers background focus without stealing focus from controls or a disposed input",async()=>{
+ await act(()=>root.render(<TypingInput label="arena" onType={vi.fn()}/>))
+ const input=host.querySelector("input")!
+ await act(async()=>input.blur());expect(document.activeElement).toBe(input)
+ const button=document.createElement("button");document.body.append(button)
+ await act(async()=>button.focus());expect(document.activeElement).toBe(button)
+ button.remove();await act(()=>input.focus())
+ act(()=>{input.blur();root.unmount()});root=createRoot(host);await act(async()=>{await Promise.resolve()});expect(host.querySelector("input")).toBeNull()
+ await act(()=>root.render(<TypingInput label="disposing" onType={vi.fn()}/>));const menu=document.createElement("button");document.body.append(menu)
+ act(()=>{host.querySelector("input")!.blur();root.unmount();menu.focus()});root=createRoot(host);await act(async()=>{await Promise.resolve()});expect(document.activeElement).toBe(menu);menu.remove()
+})
+
+it("keeps a typed modal choice focused after clicking its noninteractive surface",async()=>{
+ await act(()=>root.render(<dialog open tabIndex={-1}><TypingInput label="draft" onType={vi.fn()}/><button>Menu</button></dialog>))
+ const dialog=host.querySelector("dialog")!,input=host.querySelector("input")!
+ await act(async()=>dialog.focus());expect(document.activeElement).toBe(input)
+ await act(async()=>host.querySelector("button")!.focus());expect(document.activeElement).toBe(host.querySelector("button"))
 })

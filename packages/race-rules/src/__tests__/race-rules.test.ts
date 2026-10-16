@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { applyRaceInput, createRacePlayer, defaultRaceConfig, generateRaceText, parseRaceConfig, raceAccuracy, rankRacePlayers, type RacePlayer } from "../index"
 
-describe("Ocean Race rules", () => {
+describe("Dungeon room rules", () => {
 	it("validates every shared setting and rejects impossible rooms", () => {
 		expect(parseRaceConfig({ language: "en", format: "words", wordCount: 1000, maxPlayers: 100 }).wordCount).toBe(1000)
 		for (const input of [null, [], { language: "fr" }, { format: "unknown" }, { difficulty: "extreme" }, { variant: "unknown" }, { maxPlayers: 101 }, { wordCount: 0 }, { timeSeconds: 3601 }, { format: "custom", customText: "  " }, { customText: null }, { customText: "x".repeat(5001) }, { punctuation: "yes" }]) {
@@ -32,7 +32,7 @@ describe("Ocean Race rules", () => {
 	})
 
 	it("only advances on correct input and ignores duplicate sequence numbers", () => {
-		const player = { ...createRacePlayer("a", "Captain", "classic"), status: "racing" as const }
+		const player = { ...createRacePlayer("a", "Knight", "classic"), status: "racing" as const }
 		const config = { ...defaultRaceConfig, format: "custom" as const }
 		const first = applyRaceInput(player, "abc", "ax", 1, 100, config)
 		expect(first.player.cursor).toBe(1)
@@ -49,16 +49,16 @@ describe("Ocean Race rules", () => {
 	})
 
 	it("keeps timed races active until the shared deadline", () => {
-		const player = { ...createRacePlayer("a", "Captain", "classic"), status: "racing" as const }
+		const player = { ...createRacePlayer("a", "Knight", "classic"), status: "racing" as const }
 		const result = applyRaceInput(player, "abc", "abc", 1, 100, { ...defaultRaceConfig, format: "time" })
 		expect(result.player.cursor).toBe(3)
 		expect(result.player.status).toBe("racing")
 		expect(applyRaceInput(result.player, "abc", "a", 2, 200, { ...defaultRaceConfig, format: "time" }).player.cursor).toBe(3)
 	})
 
-	it("eliminates on one error in Perfect Tide and three in Three Hulls", () => {
+	it("eliminates on one error in Precision and three in Three Attempts", () => {
 		for (const [variant, attempts] of [["perfect", 1], ["three-hulls", 3]] as const) {
-			let player: RacePlayer = { ...createRacePlayer("a", "Captain", variant), status: "racing" }
+			let player: RacePlayer = { ...createRacePlayer("a", "Knight", variant), status: "racing" }
 			for (let seq = 1; seq <= attempts; seq += 1) player = applyRaceInput(player, "abc", "x", seq, seq * 100, { ...defaultRaceConfig, variant }).player
 			expect(player.status).toBe("out")
 			expect(player.errors).toBe(attempts)
@@ -88,7 +88,7 @@ describe("Ocean Race rules", () => {
 	})
 
 	it("keeps standings deterministic with the 100-player room limit", () => {
-		const players = Array.from({ length: 100 }, (_, index) => ({ ...createRacePlayer(String(index).padStart(3, "0"), `Captain ${index}`, "classic"), status: "racing" as const, cursor: index }))
+		const players = Array.from({ length: 100 }, (_, index) => ({ ...createRacePlayer(String(index).padStart(3, "0"), `Knight ${index}`, "classic"), status: "racing" as const, cursor: index }))
 		const ranked = rankRacePlayers(players, { ...defaultRaceConfig, maxPlayers: 100 })
 		expect(ranked).toHaveLength(100)
 		expect(ranked[0]?.cursor).toBe(99)

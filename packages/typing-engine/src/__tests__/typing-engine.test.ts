@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { normalizeKey, normalizeText, replayInputLog, TypingSession } from "../index"
 
 describe("TypingSession", () => {
+	it("uses the platform clock when input has no explicit timestamp",()=>{const session=new TypingSession("a");session.processKey("a");expect(session.isComplete()).toBe(true)})
 	it("accepts Unicode codepoints and advances timed metrics without adding input", () => {
 		const session = new TypingSession("🐟a")
 		session.processKey("🐟", 0)

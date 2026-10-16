@@ -37,6 +37,102 @@ const request = (path: string, body?: unknown, method = "POST") => new Request(`
 } as RequestInit & { duplex?: "half" })
 
 describe("multiplayer Worker", () => {
+ it("settles skill finishers, interrupted combats and older persisted finish times",async()=>{
+  vi.useFakeTimers();vi.setSystemTime(20_000_000)
+  try{
+   for(const mode of ["sprint","clash","raid"] as const){
+    const state=stateMock(),room=new RaceRoom(state.ctx as unknown as DurableObjectState,{} as never)
+    await room.fetch(request("/create",{code:"ABCDEFGH",name:"Blue",config:{...defaultRaceConfig,mode,language:"en",format:"custom",customText:"hit",maxPlayers:4}}))
+    for(const name of ["Red","Green","Gold"])await room.fetch(request("/join",{name}))
+    const current=(room as unknown as {room:{phase:string;startsAt:number;text:string;config:{mode?:string};combat:import("@typecade/race-rules").ArenaCombat;members:Record<string,{player:RacePlayer}>};snapshot:()=>import("@typecade/race-rules").RaceRoomSnapshot})
+    const ids=Object.keys(current.room.members),sockets=ids.map(id=>{const socket=new FakeSocket();socket.serializeAttachment({playerId:id});state.sockets.push(socket);current.room.members[id]!.player.connected=true;return socket})
+    const send=async(i:number,message:unknown)=>room.webSocketMessage(sockets[i]! as unknown as WebSocket,JSON.stringify(message))
+    for(let i=0;i<4;i++)await send(i,{type:"ready",ready:true})
+    if(mode==="sprint")delete current.room.config.mode
+    await send(0,{type:"start"});vi.setSystemTime(current.room.startsAt);await room.alarm()
+    if(mode==="sprint"){
+     for(let i=0;i<4;i++){await send(i,{type:"skill",skill:"cleave",text:"CLEAVE",seq:1});expect(current.room.members[ids[i]!]!.player.status).toBe("finished")}
+     expect(current.room.phase).toBe("finished")
+     for(const entry of Object.values(current.room.members))entry.player.finishedAt=null
+     expect(current.snapshot().players).toHaveLength(4)
+    }else{
+     current.room.text="hit ".repeat(25000);current.room.members[ids[0]!]!.player.cursor=99999
+     vi.advanceTimersByTime(50);await send(0,{type:"type",text:" ",seq:1})
+     expect(current.room.members[ids[0]!]!.player.status).toBe("racing")
+     if(mode==="raid")current.room.combat.bossHp=1
+     else for(const id of ids.slice(1))current.room.combat.players[id]!.hp=1
+     vi.advanceTimersByTime(1000);await send(0,{type:"skill",skill:"cleave",text:"CLEAVE",seq:1})
+     expect(current.room.phase).toBe("finished")
+     await send(0,{type:"rematch"});for(let i=0;i<4;i++)await send(i,{type:"ready",ready:true});await send(0,{type:"start"});vi.setSystemTime(current.room.startsAt);await room.alarm()
+     await send(3,{type:"leave"});expect(current.room.phase).toBe("racing")
+     await send(2,{type:"leave"});await send(1,{type:"leave"})
+     expect(current.room.phase).toBe(mode==="clash"?"finished":"racing")
+    }
+   }
+  }finally{vi.useRealTimers()}
+ })
+ it("supports old stored rooms with absent mode/budget fields and rejects actions outside their clock",async()=>{
+  vi.useFakeTimers();vi.setSystemTime(0)
+  try{
+   const state=stateMock(),room=new RaceRoom(state.ctx as unknown as DurableObjectState,{} as never)
+   const ticket=await(await room.fetch(request("/create",{code:"ABCDEFGH",name:"Blue",config:{...defaultRaceConfig,mode:"raid",maxPlayers:4}}))).json() as {playerId:string}
+   const current=(room as unknown as {room:{phase:string;config:{mode?:string};combat?:import("@typecade/race-rules").ArenaCombat;text:string;startsAt:number|null;endsAt:number|null;members:Record<string,{player:RacePlayer}>}}).room
+   const socket=new FakeSocket();socket.serializeAttachment({playerId:ticket.playerId});state.sockets.push(socket);current.members[ticket.playerId]!.player.connected=true
+   const send=async(message:unknown)=>room.webSocketMessage(socket as unknown as WebSocket,JSON.stringify(message))
+   await send({type:"start"});expect(socket.sent.at(-1)).toContain("At least four")
+   current.phase="racing";current.members[ticket.playerId]!.player.status="racing";current.text="abc"
+   await send({type:"skill",skill:"storm",seq:1,text:"BADAI"})
+   current.startsAt=0;await send({type:"skill",skill:"storm",seq:1,text:"BADAI"})
+   current.endsAt=10000;await send({type:"type",text:"a",seq:1});expect(current.members[ticket.playerId]!.player.cursor).toBe(1)
+   current.members[ticket.playerId]!.player.status="out";await send({type:"type",text:"b",seq:2});expect(current.members[ticket.playerId]!.player.cursor).toBe(1)
+   current.phase="waiting";delete current.config.mode;current.members[ticket.playerId]!.player.status="waiting";await send({type:"ready",ready:true});await send({type:"start"});expect(socket.sent.at(-1)).toContain("At least two")
+   for(let i=0;i<90;i++)await send({type:"unknown"});expect(socket.closed).toBe(true)
+  }finally{vi.useRealTimers()}
+ })
+
+ it("runs server-owned dungeon roles, word effects, skill checks, deadlines and rematches",async()=>{
+  vi.useFakeTimers();vi.setSystemTime(10_000_000)
+  try{
+   for(const mode of ["raid","clash","sprint"] as const){
+    const state=stateMock(),room=new RaceRoom(state.ctx as unknown as DurableObjectState,{} as never)
+    await room.fetch(request("/create",{code:"ABCDEFGH",name:"Blue",config:{...defaultRaceConfig,language:"en",mode,format:"custom",customText:"hit hit hit hit hit",maxPlayers:4}}))
+    for(const name of ["Red","Green","Gold"])await room.fetch(request("/join",{name}))
+    const current=(room as unknown as {room:{phase:string;startsAt:number;endsAt:number;text:string;combat:import("@typecade/race-rules").ArenaCombat;members:Record<string,{player:RacePlayer;inputCredits:number;inputAt:number}>}}).room
+    const ids=Object.keys(current.members),sockets=ids.map(id=>{const socket=new FakeSocket();socket.serializeAttachment({playerId:id});state.sockets.push(socket);current.members[id]!.player.connected=true;return socket})
+    const send=async(i:number,message:unknown)=>room.webSocketMessage(sockets[i]! as unknown as WebSocket,JSON.stringify(message))
+    await send(2,{type:"role",role:"dps"});for(let i=0;i<4;i++)await send(i,{type:"ready",ready:true})
+    if(mode==="raid"){await send(0,{type:"start"});expect(current.phase).toBe("waiting");expect(sockets[0]!.sent.at(-1)).toContain("Raid needs");await send(2,{type:"role",role:"healer"})}
+    await send(0,{type:"start"});vi.setSystemTime(current.startsAt);await room.alarm();expect(current.phase).toBe("racing")
+    const type=async(i:number,text:string)=>{for(const char of text){vi.advanceTimersByTime(50);await send(i,{type:"type",text:char,seq:current.members[ids[i]!]!.player.lastSeq+1})}}
+    await type(0,"hit ");expect(current.combat.players[ids[0]!]!.words).toBe(1)
+    await send(0,{type:"skill",skill:"storm",seq:1,text:"FAKE"});expect(sockets[0]!.sent.at(-1)).toContain("valid skill")
+    await send(0,{type:"skill",skill:"storm",seq:1,text:"STORM"});expect(current.combat.players[ids[0]!]!.cooldowns.storm).toBe(5)
+    vi.advanceTimersByTime(1000);await send(0,{type:"skill",skill:"storm",seq:2,text:"STORM"});expect(sockets[0]!.sent.at(-1)).toContain("more words")
+    if(mode==="raid"){
+     current.combat.players[ids[0]!]!.hp=0;await send(0,{type:"type",text:"h",seq:99});expect(current.members[ids[0]!]!.player.lastSeq).toBe(99)
+     await type(2,"hit ");expect(current.combat.revives).toBe(2);expect(current.combat.players[ids[0]!]!.hp).toBeGreaterThan(0)
+     current.combat.nextAttack=Date.now();await room.alarm();expect(current.combat.actions.at(-1)!.target).toBe(ids[3])
+     current.combat.bossHp=1;await type(1,"hit ");expect(current.combat.winner).toBe("team");expect(current.phase).toBe("finished")
+    }else if(mode==="clash"){
+     current.combat.players[ids[1]!]!.hp=1;current.combat.players[ids[2]!]!.hp=0;current.combat.players[ids[3]!]!.hp=0
+     await type(0,"hit ");expect(current.phase).toBe("finished");expect(current.combat.winner).toBe(ids[0])
+    }else{
+     current.combat.players[ids[0]!]!.distance=24;vi.advanceTimersByTime(1000);await send(0,{type:"skill",skill:"cleave",seq:3,text:"CLEAVE"});expect(current.members[ids[0]!]!.player.status).toBe("finished")
+     vi.setSystemTime(current.endsAt);await room.alarm();expect(current.phase).toBe("finished")
+    }
+    await send(0,{type:"rematch"});expect(current.members[ids[2]!]!.player.role).toBe(mode==="raid"?"healer":"dps");expect(current.combat).toBeUndefined()
+    for(let i=0;i<4;i++)await send(i,{type:"ready",ready:true})
+    await send(0,{type:"start"});vi.setSystemTime(current.startsAt);await room.alarm()
+    vi.advanceTimersByTime(1000);await room.alarm()
+    current.members[ids[0]!]!.inputCredits=0;current.members[ids[0]!]!.inputAt=Date.now();await send(0,{type:"skill",skill:"cleave",seq:1,text:"CLEAVE"});expect(sockets[0]!.sent.at(-1)).toContain("playable pace")
+    if(mode==="raid"){for(const player of Object.values(current.combat.players))player.hp=0;await room.alarm();expect(current.combat.winner).toBe("boss")}
+    else{vi.setSystemTime(current.endsAt);await room.alarm();expect(current.phase).toBe("finished")}
+    await room.webSocketClose(sockets[0]! as unknown as WebSocket)
+    for(let i=0;i<81;i++)await send(1,{type:"unknown"})
+    expect(sockets[1]!.closed).toBe(true)
+   }
+  }finally{vi.useRealTimers()}
+ })
 	it("routes health, room actions, errors, and static assets", async () => {
 		const NativeRequest = Request
 		class WorkerRequest extends NativeRequest {
@@ -225,8 +321,8 @@ describe("multiplayer Worker", () => {
 			expect(state.alarms.at(-1)).toBe(1_003_000)
 			vi.setSystemTime(1_003_000)
 			await room.alarm()
-			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "abc", seq: 1 }))
-			await room.webSocketMessage(guestSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "abc", seq: 1 }))
+			for(const [i,text] of Array.from("abc").entries())await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text, seq:i+1 }))
+			for(const [i,text] of Array.from("abc").entries())await room.webSocketMessage(guestSocket as unknown as WebSocket, JSON.stringify({ type: "type", text, seq:i+1 }))
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "rematch" }))
 			expect(Object.values(internalRoom.members).every((member) => member.player.connected)).toBe(true)
 			expect(JSON.parse(hostSocket.sent.at(-1)!).room.phase).toBe("waiting")
@@ -287,15 +383,15 @@ describe("multiplayer Worker", () => {
 			const sentAfterFirst = hostSocket.sent.length
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "b", seq: 1 }))
 			expect(hostSocket.sent.length).toBe(sentAfterFirst)
-			for (let seq = 2; seq <= 7; seq += 1) {
-				await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "x".repeat(32), seq }))
-			}
-			expect(current.members[host.playerId]!.inputCount).toBe(194)
-			vi.advanceTimersByTime(1000)
-			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "bc", seq: 8 }))
-			expect(current.members[host.playerId]!.player.status).toBe("finished")
-			expect(current.members[host.playerId]!.inputCount).toBe(2)
-			await room.webSocketMessage(guestSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "abc", seq: 1 }))
+			for (let seq = 2; seq <= 20; seq += 1) {
+    await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "type", text: "x", seq }))
+   }
+   expect(current.members[host.playerId]!.player.cursor).toBe(1)
+   expect(hostSocket.sent.some(raw=>JSON.parse(raw).error?.includes("too fast"))).toBe(true)
+   vi.advanceTimersByTime(1000)
+   for(const [i,text] of Array.from("bc").entries())await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type:"type",text,seq:i+21 }))
+   expect(current.members[host.playerId]!.player.status).toBe("finished")
+			for(const [i,text] of Array.from("abc").entries())await room.webSocketMessage(guestSocket as unknown as WebSocket, JSON.stringify({ type: "type", text, seq:i+1 }))
 			expect(current.phase).toBe("finished")
 			current.members[guest.playerId]!.player.connected = false
 			await room.webSocketMessage(hostSocket as unknown as WebSocket, JSON.stringify({ type: "rematch" }))

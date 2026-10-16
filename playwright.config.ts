@@ -18,7 +18,7 @@ export default defineConfig({
 	projects: [
 		{
 			name: "chromium",
-			use: { ...devices["Desktop Chrome"] },
+			use: { ...devices["Desktop Chrome"], launchOptions: { args: process.platform === "win32" ? ["--enable-gpu", "--use-angle=d3d11"] : [] } },
 		},
 		{ name: "firefox", use: { ...devices["Desktop Firefox"] } },
 		{ name: "webkit", use: { ...devices["Desktop Safari"] } },

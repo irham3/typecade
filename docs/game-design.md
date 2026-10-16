@@ -1,8 +1,8 @@
 # Typecade — Dungeon Typing Roguelike
 
-Status: implementation specification; not shipped. Revision: 2026-10-15.
+Status: implemented and verified in this branch; production app/Worker deployment is separate. Revision: 2026-10-15.
 
-Source: [supplied full GDD](source/2026-10-15-typecade-user-gdd.md) and [four references](README.md#visual-references). This document resolves interactions and distinguishes product rules from image prompts. Current phase is planning, before coding.
+Source: [supplied full GDD](source/2026-10-15-typecade-user-gdd.md) and [four references](README.md#visual-references). This document resolves interactions and distinguishes product rules from image prompts. The planning checkpoint was pushed before implementation; see the delivery checklist for current evidence.
 
 ## 1. Identity and modes
 
