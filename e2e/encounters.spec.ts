@@ -4,7 +4,7 @@ import {SurvivalRun} from "../packages/game-rules/src/survival"
 test("typed supplies equip shield and a real sentry beside distinct flying and ranged enemies",async({page},info)=>{
  const r=new SurvivalRun("supplies-e2e"),s=r.state;r.start();s.time=s.worldTime=180;s.nextBoss=s.spawnAt=3600;s.player.invincible=100;s.player.hp=3;s.player.mana=10;s.enemies=[];s.queue=[]
  for(const [kind,x,z]of [["shield",1,0],["potion",3,0],["mana",5,0],["sentry",2,3],["bat",4,-2],["mage",-4,0]] as const){const e=r.spawn(kind,{x,z})!;if(e.speed)e.frozen=100}
- r.refreshQueue();await page.addInitScript(raw=>localStorage.setItem("typecade:dungeon:run:v1",raw),r.serialize());await page.setViewportSize({width:1440,height:900});await page.goto("/")
+ r.refreshQueue();await page.addInitScript(raw=>{if(!localStorage.getItem("typecade:dungeon:run:v1"))localStorage.setItem("typecade:dungeon:run:v1",raw)},r.serialize());await page.setViewportSize({width:1440,height:900});await page.goto("/")
  await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
  await expect(page.locator(".kind-bat")).toContainText("AIR");await expect(page.locator(".kind-mage")).toContainText("AIR")
  for(const kind of ["shield","potion","mana","sentry"]){
