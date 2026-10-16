@@ -138,3 +138,13 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Differentiate hurt, strikes, armor, creature/death, explosive, loot, chest, heal, magnet, level, upgrade, victory and defeat feedback; duck music beneath major cues and bound repeating voices.
 - [x] Add compatible persisted master/music/effects controls; stop sources/scheduling when paused, muted, hidden or context-lost and dispose with the renderer.
 - [ ] Listening on headphones/speakers, current-source automated suites and timed resource profile. User explicitly deferred testing during this implementation; earlier coverage and partial E2E results do not verify the audio revision.
+
+
+## M11 - Enemy patterns, readable supplies, equipment and CI repair
+
+- [x] Merge checkpoint PR #8 into main through GitHub's normal merge endpoint at 9229079; CI was pending, not claimed passing.
+- [x] Add seeded speed variation, per-type steering, flying bats/hovering mages, ranged cast cues and committed minotaur charge/recovery telegraphs.
+- [x] Add typed shield/potion/mana/sentry supplies with distinct models/labels, real shield absorption, one timed attacking tower, visible equipment and compatible save defaults/validation.
+- [x] Default new solo vocabulary/selector to Indonesian and raise the music bus without overwriting saved mute/master preferences.
+- [x] Restore 100% statements/branches/functions/lines coverage without lowering thresholds: 176 tests, 25 files; see verification/dungeon-encounters-2026-10-16.
+- [ ] Finish current-source browser matrix, Worker dry-run, timed profile and confirm GitHub CI result.

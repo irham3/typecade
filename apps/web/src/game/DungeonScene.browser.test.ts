@@ -10,7 +10,7 @@ import type { MeshStandardMaterial,ShaderMaterial } from "three"
 
 it("marks actual player damage, level gain and acquired power with distinct visual feedback",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1000px;height:700px";document.body.append(host)
- const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("hit-and-level")
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("hit-and-level","en")
  const visual=game as unknown as {tick:(t:number)=>void;heroMaterial:MeshStandardMaterial;post:ShaderMaterial;vfx:DungeonVfx}
  try{
   await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("screen","endless");bridge.emit("frame",run.state)
@@ -32,7 +32,7 @@ it("renders real instanced actors, recycles chunks and releases WebGL resources 
  const rawTick=(game as unknown as {tick:(timestamp:number)=>void}).tick.bind(game)
  let epoch=0
  const tick=(timestamp:number)=>rawTick(epoch+timestamp)
- const run=new SurvivalRun("render"),s=run.state;run.start()
+ const run=new SurvivalRun("render","en"),s=run.state;run.start()
  try{
   await game.ready;await new Promise(requestAnimationFrame);game.renderer.setAnimationLoop(null);epoch=performance.now();expect(host.querySelectorAll("canvas")).toHaveLength(1)
   bridge.emit("settings",{reduced:false,volume:0});bridge.emit("frame",s);tick(100);tick(101);tick(120);tick(150)
@@ -68,7 +68,7 @@ it("renders real instanced actors, recycles chunks and releases WebGL resources 
   const canvas=host.querySelector("canvas")!;canvas.dispatchEvent(new Event("webglcontextlost",{cancelable:true}));tick(6300)
   expect(events).toContainEqual({status:"lost",calls:0,geometries:0,textures:0})
   host.style.width="800px";await new Promise(resolve=>setTimeout(resolve,40));canvas.dispatchEvent(new Event("webglcontextrestored"));tick(6400)
-  s.biome=2;bridge.emit("frame",s);tick(6500);bridge.emit("frame",new SurvivalRun("new-run").state);tick(6600);window.dispatchEvent(new KeyboardEvent("keydown",{key:"Q"}));window.dispatchEvent(new PointerEvent("pointerdown"))
+  s.biome=2;bridge.emit("frame",s);tick(6500);bridge.emit("frame",new SurvivalRun("new-run","en").state);tick(6600);window.dispatchEvent(new KeyboardEvent("keydown",{key:"Q"}));window.dispatchEvent(new PointerEvent("pointerdown"))
  }finally{game.destroy();game.destroy();unsubscribe();bridge.clear();host.remove()}
  expect(host.querySelector("canvas")).toBeNull()
 },20000)
@@ -80,7 +80,7 @@ it("ignores pending readiness after immediate renderer disposal",async()=>{
 
 it("plays a cleave independently of dash, keeps death poses briefly and expires effects without changing rules",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1440px;height:900px";document.body.append(host)
- const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("visual-combat"),s=run.state
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("visual-combat","en"),s=run.state
  const visual=game as unknown as {tick:(t:number)=>void;vfx:DungeonVfx;actors:Map<number,{deadAt:number;hitAt:number;angle:number}>}
  try{
   await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("frame",s);bridge.emit("screen","endless")
@@ -113,7 +113,7 @@ it("plays a cleave independently of dash, keeps death poses briefly and expires 
 
 it("bounds death afterimages, reacts to damage and armor, and presents authoritative party skills and boss attacks",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1440px;height:900px";document.body.append(host)
- const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("horde-feedback"),s=run.state
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("horde-feedback","en"),s=run.state
  const visual=game as unknown as {tick:(t:number)=>void;vfx:DungeonVfx;actors:Map<number,{deadAt:number;hitAt:number;strikeAt:number}>;cameraTrauma:number}
  try{
   await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("frame",s);bridge.emit("screen","endless")
@@ -136,7 +136,7 @@ it("bounds death afterimages, reacts to damage and armor, and presents authorita
   bridge.emit("screen","multiplayer")
   const party:PartyWorld={mode:"raid",phase:"racing",casting:false,ownId:"a",now:1000,focus:{x:0,z:0},obstacles:[],boss:{hp:100,maxHp:100,nextAttack:1500,attackAt:-1000,target:null},players:[{id:"a",name:"Knight",x:0,z:0,color:0x4999d4,hp:100,action:"idle",actionAt:0,target:null,role:"dps"},{id:"b",name:"Tank",x:2,z:0,color:0xd06b62,hp:100,action:"idle",actionAt:0,target:null,role:"tank"}]}
   const partyFrame=()=>{bridge.emit("party",structuredClone(party));now+=40;visual.tick(now)}
-  partyFrame()
+  party.players[0]!.shield=20;partyFrame()
   for(const [i,action]of ["heal","revive","storm","block","dodge","ignite","cleave","strike"].entries()){
    party.now+=100;Object.assign(party.players[0]!,{action,actionAt:party.now,target:action==="strike"?"boss":i%2?null:"b"});partyFrame()
   }
@@ -147,7 +147,26 @@ it("bounds death afterimages, reacts to damage and armor, and presents authorita
   party.boss!.hp=0;partyFrame()
   party.boss!.attackAt=party.now-1000;partyFrame()
   party.players=party.players.slice(0,1);party.players[0]!.actionAt=-10000;partyFrame()
-  party.mode="clash";party.players[0]!.hp=90;partyFrame();bridge.emit("party",null)
+  party.players[0]!.hp=50;party.mode="clash";partyFrame();party.players[0]!.hp=0;partyFrame();party.mode="clash";party.players[0]!.hp=90;partyFrame();bridge.emit("party",null)
   expect(game.renderer.info.render.calls).toBeLessThanOrEqual(120)
+ }finally{game.destroy();bridge.clear();host.remove()}
+},20000)
+
+it("renders flying enemies, supply silhouettes, shield gear, sentry beams and charge telegraphs from actual state",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:1280px;height:800px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),r=new SurvivalRun("equipment-visual"),s=r.state
+ const visual=game as unknown as {tick:(t:number)=>void;heroShield:{visible:boolean};sentryMesh:{visible:boolean};orbitals:{count:number};telegraphs:{count:number}}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);bridge.emit("screen","endless");r.start();s.enemies=[];s.queue=[];let now=performance.now();const frame=()=>{now+=50;bridge.emit("frame",s);visual.tick(now)};frame()
+  for(const [i,kind]of (["shield","potion","mana","sentry","bat","mage","minotaur"] as const).entries())r.spawn(kind,{x:(i%3)*2,z:Math.floor(i/3)*2})
+  const mage=s.enemies.find(e=>e.kind==="mage")!;mage.attack=.5
+  const minotaur=s.enemies.find(e=>e.kind==="minotaur")!;minotaur.motion="windup";minotaur.motionTime=1;minotaur.aim={x:0,z:0};s.player.shield=2;s.relics.lightning=s.relics.vowels=1;s.sentry={x:0,z:0,life:18,cooldown:1};frame()
+  const button=document.createElement("button");host.append(button);button.click();host.click();window.dispatchEvent(new Event("click"));button.remove()
+  s.queue=[s.enemies.find(e=>e.kind==="bat")!.id];frame();bridge.emit("settings",{reduced:true,volume:0});frame();bridge.emit("settings",{reduced:false,volume:0});frame()
+  expect(visual.heroShield.visible).toBe(true);expect(visual.sentryMesh.visible).toBe(true);expect(visual.orbitals.count).toBe(4);expect(visual.telegraphs.count).toBe(2)
+  s.effects=[{id:s.nextId++,kind:"sentry",x:0,z:0,life:.55,value:1,to:{x:2,z:2}},{id:s.nextId++,kind:"block",x:0,z:0,life:.55,value:1}];frame()
+  minotaur.motion="charge";frame();s.enemies=[];s.queue=[];frame()
+  for(const kind of ["shield","potion","mana","sentry","chest"] as const){s.enemies=[];s.queue=[];const item=r.spawn(kind,{x:1,z:0})!;frame();s.enemies=[];s.effects=[{id:s.nextId++,kind:"hit",x:item.x,z:item.z,life:.55,value:0}];frame()}
+  s.relics.lightning=s.relics.vowels=0;s.sentry=null;bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.orbitals.count).toBe(0);expect(visual.sentryMesh.visible).toBe(false)
  }finally{game.destroy();bridge.clear();host.remove()}
 },20000)

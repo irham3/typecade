@@ -12,7 +12,7 @@ for(const language of ["en","id"] as const)it(`teaches actual combat and upgrade
  lesson.input("a");expect(lesson.run.state.errors).toBe(1);tick();expect(lesson.next()).toBe(true)
  type(words.armor[0]!);expect(lesson.complete).toBe(false);expect(lesson.run.state.enemies[0]!.words).toHaveLength(1);type(words.armor[1]!);expect(lesson.complete).toBe(true);lesson.next()
  type(words.treasure);expect(lesson.run.state.gold).toBe(25);expect(lesson.run.state.totalXp).toBe(50);lesson.next()
- type(words.barrel);expect(lesson.run.state.kills).toBe(3);expect(lesson.complete).toBe(true);lesson.next()
+ type(words.barrel);expect(lesson.run.state.kills).toBe(2);expect(lesson.complete).toBe(true);lesson.next()
  expect(lesson.complete).toBe(false);tick();expect(lesson.run.state.player.hp).toBe(4);expect(lesson.run.state.effects.some(fx=>fx.kind==="hit"&&fx.value===-2)).toBe(true)
  lesson.input("Tab");type(skillRules.heal[language]);expect(lesson.run.state.player.hp).toBe(6);expect(lesson.complete).toBe(true);lesson.next()
  expect(lesson.complete).toBe(false);lesson.input("Tab");type(skillRules.storm[language]);expect(lesson.complete).toBe(true);expect(lesson.run.state.enemies.every(e=>e.words.length===1)).toBe(true);lesson.next()

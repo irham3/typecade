@@ -19,7 +19,7 @@ it("mixes independent buses, schedules adaptive music and gives health/progressi
  const internal=audio as unknown as {voices:Set<{bus:string}>;buses:Record<string,{gain:{value:number;setTargetAtTime:ReturnType<typeof vi.fn>}}>}
  try{
   audio.play("hurt");expect(sources).toHaveLength(0)
-  audio.unlock();audio.setMix(.5,.3,.8)
+  audio.unlock();audio.unlock();expect(audio.volume).toBe(.28);audio.setMix(.5,.3,.8)
   expect(internal.buses.effects.gain.setTargetAtTime).toHaveBeenCalledWith(.8,0,.04)
   audio.setScene({mood:"arena",pressure:1,boss:true,critical:true})
   for(let i=0;i<200;i++){
@@ -50,5 +50,36 @@ it("keeps missing devices and rejected autoplay optional",async()=>{
   context.state="running";audio.suspend();audio.dispose();await Promise.resolve()
   vi.stubGlobal("AudioContext",class{constructor(){throw new Error("No device")}})
   const unavailable=new DungeonAudio();unavailable.unlock();unavailable.dispose()
+ }finally{audio.dispose();vi.useRealTimers();vi.unstubAllGlobals()}
+})
+
+it("sounds every real feedback family, decays voices and changes arrangement without restarting the beat grid",async()=>{
+ vi.useFakeTimers()
+ const {context,sources}=device(),audio=new DungeonAudio()
+ const a=audio as unknown as {voices:Set<{source:{onended:(()=>void)|null};bus:string}>;schedule:()=>void;release:(v:unknown,stop?:boolean)=>void;nextBeat:number;step:number;intensity:number;sound:(f:number,d:number,l:number,b:string,t:number)=>void}
+ const end=()=>{for(const source of sources)source.onended?.()}
+ try{
+  audio.setMix(NaN,1,1);audio.unlock();expect(sources).toHaveLength(0);audio.setMix(.5)
+  audio.setVisible(false);audio.unlock();audio.setVisible(true);audio.setScene({mood:"paused"});audio.unlock();audio.setScene({mood:"title"});audio.unlock()
+  for(const kind of ["ui","tick","slash","dust","cleave","hurt","hit","shatter","block","storm","explosion","heal","pickup","chest","magnet","level","upgrade","boss","warning","defeat","enemy-skeleton","enemy-mage","enemy-guard","enemy-goblin","enemy-bomber","enemy-minotaur","enemy-boss","death-skeleton","death-guard","death-mage","death-goblin","death-minotaur","victory","shield","mana","deploy","sentry","enemy-bat","death-bat"]){
+   context.currentTime+=2;audio.play(kind,.4);const count=sources.length;audio.play(kind);expect(sources.length).toBe(count);end()
+  }
+  audio.play("enemy-goblin");audio.play("enemy-mage");end()
+  for(const mood of ["title","dojo","draft","arena"] as const){
+   audio.setScene({mood,pressure:0});a.intensity=0
+   for(let i=0;i<130;i++){context.currentTime+=.134;a.schedule();end()}
+  }
+  audio.setScene({mood:"arena",critical:true});context.currentTime+=.2;a.schedule();end();audio.setScene({mood:"arena",boss:true,critical:true,pressure:1})
+  for(let i=0;i<130;i++){context.currentTime+=.134;a.schedule();end()}
+  audio.setMix(.5,0,1);a.schedule();audio.play("hurt");end()
+  audio.setMix(.5,1,0);audio.play("hurt");a.step=0;a.nextBeat=context.currentTime+.02;a.schedule();end()
+  audio.setMix(.5,0,0);expect(vi.getTimerCount()).toBe(0)
+  audio.setMix(.5,1,1);context.state="suspended";a.schedule();audio.play("hurt");audio.setScene({mood:"arena"});audio.setVisible(false);await Promise.resolve();await Promise.resolve();await Promise.resolve();context.state="running";audio.setVisible(true)
+  for(let i=0;i<15;i++){context.currentTime+=1;audio.play("storm")}
+  context.currentTime+=1;audio.play("tick");audio.play("hurt");expect(a.voices.size).toBeLessThanOrEqual(20)
+  const voice=[...a.voices][0]!;a.release(voice);a.release(voice)
+  a.nextBeat=context.currentTime+.02;a.step=0;a.schedule();audio.setScene({mood:"dead"});audio.setScene({mood:"dead"});audio.suspend();
+  context.state="suspended";audio.setScene({mood:"arena"});audio.setMix(.5,0,0);for(let i=0;i<5;i++)await Promise.resolve();
+  context.state="running";audio.setMix(.5,1,1);audio.suspend();audio.dispose();a.schedule();a.sound(100,.1,.1,"music",0)
  }finally{audio.dispose();vi.useRealTimers();vi.unstubAllGlobals()}
 })

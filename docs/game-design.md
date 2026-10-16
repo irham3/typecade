@@ -12,7 +12,7 @@ All five modes remain in scope: Endless Survival, Typing Dojo, Castle Sprint, Br
 
 ## 2. Endless loop
 
-1. Begin with two slower seeded enemies and two optional objects, spread 6-6.9 units from the player. New enemies arrive from safe directions outside a protected start radius. Begin with an explicit keyboard-ready action and readable controls; no damage before readiness.
+1. Begin with two slower seeded enemies, a chest and a shield pickup, spread 6-6.9 units from the player. New enemies arrive from safe directions outside a protected start radius. Begin with an explicit keyboard-ready action and readable controls; no damage before readiness.
 2. Show 4–6 eligible enemy/object labels, prioritizing nearby threats. Type one to lock it; finish to dash and strip a layer.
 3. Kills drop XP gems and gold. Attract nearby drops during movement. Every **50 consecutive correct characters** triggers a global XP magnet; typo resets streak.
 4. Filling XP raises run level and freezes the arena for three upgrade choices. Type a complete keyword to choose and safely resume.
@@ -31,7 +31,7 @@ The final character commits immediately; no Space confirmation or movement key. 
 
 Dash uses domain positions and a bounded duration, lands on traversable floor, and gives short visible non-stacking invulnerability. Multiple completions during animation apply exactly once in event order. Camera follows without excessive shake. Rendering never changes outcomes.
 
-Choose EN/ID before the run; language changes cannot replace an active word. UI remains English; gameplay vocabulary lives in content packs. Exact shown capitalization is required; shielded enemies teach Shift.
+Default new runs to Indonesian; choose EN/ID before the run; language changes cannot replace an active word. UI remains English; gameplay vocabulary lives in content packs. Exact shown capitalization is required; shielded enemies teach Shift.
 
 ## 4. Enemies and environmental targets
 
@@ -133,3 +133,12 @@ Before M1 implementation, pin starting HP, damage grace, dash duration, spawn cu
 ### Adaptive score and sound feedback
 
 Presentation reads actual solo/party state for the soundtrack: menu and Dojo use a light arrangement, enemy proximity raises combat layers, an active boss adds low brass, and critical HP adds a double heartbeat. Healing out of critical HP removes the heartbeat. Draft selection retains a quiet music bed and distinct level/acquisition fanfares; paused or hidden gameplay is silent. Damage, armor, enemy arrivals/nearby creatures, deaths, loot, chest, explosive, magnet and each skill use differentiated cues with bounded repetition and priority. Settings independently control master, music/ambience and effects volumes without changing saved run/account data. Sound remains optional and never decides gameplay outcomes.
+
+
+## Enemy steering and world supplies revision, 2026-10-16
+
+Each spawn gets a seeded 88-112% speed variation on its type's multiplier. Skeletons sway slightly; goblins weave and burst; guards advance slowly; bats use an airborne silhouette with animated wings and weaving pursuit; mages hover and orbit at 4.5-6.5 units, retreating when crowded. Mage shots require an unobstructed path and have a visible 1.1-second cast warning. Minotaurs and bosses alternate chase, a 1.1-second locked-direction windup, a bounded 1.3-second charge and an 0.85-second recovery. Their ground lane telegraphs the committed destination, allowing a typed dash to leave it. All dash destinations remain walkable even for flying targets. Movement, attacks and shot admission stay in the seeded simulation; renderer interpolation and flight height cannot change outcomes. Early threat caps remain in force; bats begin at 60 seconds and specialists retain the later roster.
+
+Four non-hostile, uppercase, typed world supplies join chest and explosive barrel. A blue kite shield grants two shield HP up to four; shield absorbs before health and uses the normal non-stacking hit grace. A red cross-marked bottle restores up to two hearts. A faceted blue-violet mana crystal restores up to 40 mana. A gold/steel sentry deploys one visible stationary tower for 18 world seconds, firing at one reachable foe within seven units every 1.8 world seconds. Replacing a sentry refreshes its location and lifetime; it never stacks. The tower preserves the active target's word/prefix and cannot collect supplies. Skill/relic area damage also leaves supplies available for deliberate typing. Item collection is not an enemy kill; supplies do not satisfy threat floors. One uncollected pickup of each supply kind is admitted at a time; sentries enter the optional pool after 90 seconds.
+
+The HUD shows current shield 0-4, collected supplies and used/active/expired state, plus acquired relic ranks. The knight visibly carries a shield while charges remain; existing offensive relics get corresponding orbiting motes, and the tower and beam show actual sentry shots. Party shields display only authoritative room shield values. Small screens retain a focusable horizontally scrollable equipment row. Version-1 checkpoints without the new supply, shield or sentry fields receive empty defaults; present values, telegraphs and beam endpoints are validated before restore. Existing checkpoint language and partially typed words remain intact; the new-run selector defaults to ID. Music bus gain rises from 0.65 to 1.55 (about 7.5 dB) relative to unchanged effects; new music defaults to 0.85, retaining saved controls and mute preferences.

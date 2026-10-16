@@ -1,4 +1,4 @@
-import type { DungeonLanguage, EnemyKind, SkillId, UpgradeId } from "../../contracts/src/survival"
+import type { DungeonLanguage, EnemyKind, SupplyKind, SkillId, UpgradeId } from "../../contracts/src/survival"
 
 export const dungeonBalance = {
  tick: 1 / 30, enemies: 128, loot: 256, projectiles: 64, effects: 128,
@@ -8,6 +8,14 @@ export const dungeonBalance = {
  learningSeconds: 180, learningThreats: 6, learningInterval: 3, preBossThreats: 12,
  bossInterval: 300, stagger: 10, bossHealth: 260,
 } as const
+export const dungeonSupplies:Record<SupplyKind,{name:string;benefit:string;icon:"shield"|"heal"|"gem"|"tower";color:number}>= {
+ shield:{name:"Aegis Shield",benefit:"+2 shield · absorbs damage first · cap 4",icon:"shield",color:0x73dcec},
+ potion:{name:"Health Potion",benefit:"Restore 2 hearts",icon:"heal",color:0xff8180},
+ mana:{name:"Mana Crystal",benefit:"Restore 40 mana",icon:"gem",color:0x92a4ff},
+ sentry:{name:"Arc Sentry",benefit:"Deploy 18s · fires every 1.8s · range 7",icon:"tower",color:0xf0cc78},
+}
+export const dungeonObjects:readonly EnemyKind[]=["barrel","chest","shield","potion","mana","sentry"]
+export const enemySpeed:Record<EnemyKind,number>={skeleton:.9,goblin:1.35,guard:.65,bomber:1.05,mage:.8,bat:1.15,minotaur:.7,boss:.6,barrel:0,chest:0,shield:0,potion:0,mana:0,sentry:0}
 export const dungeonTerrain = { chunkSize: 32, ruinX: 10, ruinZ: 10, halfWidth: 4.5, halfDepth: 2.5 } as const
 export const dungeonBiomes=[
  {name:"Ashen Courtyard",stone:0x485469,moss:0x3c5147,fog:0x111a2b,flame:0xff923d},
@@ -38,6 +46,8 @@ export const combatLessonWords:Record<DungeonLanguage,{strike:string;armor:reado
 }
 export const dungeonWords: Record<DungeonLanguage, Record<EnemyKind, readonly string[]>> = {
  en: {
+  shield:["SHIELD","AEGIS","WARD","PROTECT","DEFEND","COVER","BARRIER","BULWARK"],potion:["POTION","MEND","RECOVER","DRINK","HEALTH","RESTORE","REMEDY","REVIVE"],mana:["MANA","ENERGY","CHARGE","REFILL","SPIRIT","FLOW","POWER","CHANNEL"],sentry:["TURRET","SENTRY","DEPLOY","BUILD","GUARDIAN","WATCH","ASSEMBLE","BEACON"],
+  bat:["wing","flap","dive","swoop","fang","bite","gloom","night","glide","soar","swift","flit","flutter","perch","roost","screech","shade","echo","hunt","dark"],
   skeleton: ["cut","slash","jab","rip","bash","chip","crack","crush","flay","hack","hew","jolt","kick","knock","lunge","parry","press","pry","rake","rend","sever","slice","smash","split","stab","sting","swat","trip","ward","whack","wring","clash"],
   goblin: ["dash","stab","rush","hit","chop","rend","ambush","dodge","evade","feint","flank","jab","juke","knife","lunge","pounce","prowl","scurry","skulk","sneak","spring","stalk","strike","vault","weave","wound","harry","dart","slash","claw","grip","pry"],
   guard: ["Guard","Break","Shatter","Bastion","Deflect","Fortify","Parry","Shield","Protect","Rampart","Sentinel","Buckle","Counter","Tempered","Brace","Ironclad","Bulwark","Resolve","Stand","Ward"],
@@ -48,6 +58,8 @@ export const dungeonWords: Record<DungeonLanguage, Record<EnemyKind, readonly st
   barrel: ["IGNITE","BURST","EXPLODE","KINDLE","DETONATE","SCORCH","SPARK","BLAZE"], chest: ["LOOT","OPEN","CLAIM","UNLOCK","PLUNDER","SEARCH","REVEAL","GATHER"],
  },
  id: {
+  shield:["PERISAI","TAMENG","LINDUNG","BENTENG","JAGA","PELINDUNG","TEGUH","PERTAHAN"],potion:["RAMUAN","PULIH","SEMBUH","MINUM","OBAT","NYAWA","SEHAT","BOTOL"],mana:["MANA","ENERGI","KRISTAL","ARUS","DAYA","ISI","CAHAYA","ALIR"],sentry:["MENARA","PASANG","RAKIT","BANGUN","PENJAGA","AKTIF","TEMBAK","PANTAU"],
+  bat:["sayap","kelam","terbang","sambar","malam","gelap","gema","gigit","taring","kepak","angin","hantu","bayang","intai","buru","terkam","senyap","langit","layang","cicit"],
   skeleton: ["tebas","sabet","hajar","iris","pukul","belah","babat","tikam","retak","rapuh","lawan","patah","hantam","kikis","cakar","bentur","gurat","sayat","ayun","tusuk","desak","gempur","dobrak","duel","tahan","ruas","paku","siku","jagal","gebuk","sentak","usir"],
   goblin: ["babat","serbu","tikam","gempur","usir","lawan","elak","hindar","lompat","sambar","sergap","intai","cabik","cakar","terkam","kejar","sentak","gigit","libas","tusuk","gesit","tangkis","sayat","kelit","terjang","rebut","desak","jegal","pukul","sabet","tebas","hajar"],
   guard: ["Perisai","Hantam","Besi","Benteng","Tangkis","Hadang","Lindung","Patah","Redam","Tahan","Tembus","Penjaga","Pelindung","Pertahan","Palang","Teguh","Baja","Tameng","Kukuh","Bentur"],

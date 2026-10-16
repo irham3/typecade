@@ -24,6 +24,7 @@ it("gives slash, lightning and healing different geometry and bounds simultaneou
   vfx.update(1,false);expect(vfx.count).toBe(0)
   vfx.clear();vfx.update(0,false);expect(vfx.sparks.count).toBe(0)
   vfx.emit("dash",0,0,0,1,{x:3,z:3});vfx.update(.04,false);expect(vfx.sparks.count).toBe(4);vfx.update(.04,true);expect(vfx.sparks.count).toBe(0)
+  vfx.clear();vfx.emit("sentry",0,0,0,1,{x:3,z:3});vfx.update(.04,false);expect(vfx.sparks.count).toBe(1);vfx.update(.04,true);expect(vfx.sparks.count).toBe(1)
   vfx.clear();for(let i=0;i<24;i++)vfx.emit("storm",0,0);vfx.emit("dust",0,0);expect(vfx.count).toBe(24)
   for(const kind of ["storm","slash","heal"] as const){for(let i=0;i<24;i++)vfx.emit(kind,0,0);vfx.update(.01,false)}
   expect(vfx.bolts.count).toBeLessThanOrEqual(32);expect(vfx.arcs.count).toBeLessThanOrEqual(24)

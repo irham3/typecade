@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test"
 import { SurvivalRun } from "../packages/game-rules/src/survival"
 
 test("successive dashes keep varied reachable words available without an unexplained wait",async({page})=>{
- const run=new SurvivalRun("flow-e2e");run.start();run.state.time=run.state.worldTime=1
+ const run=new SurvivalRun("flow-e2e","en");run.start();run.state.time=run.state.worldTime=1
  await page.addInitScript(raw=>localStorage.setItem("typecade:dungeon:run:v1",raw),run.serialize())
  await page.goto("/");await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
  const words:string[]=[]
@@ -50,7 +50,7 @@ test("a real dungeon run supports typing, dash, skill interruption, draft and pa
  await expect(page.locator('.enemy-label.locked')).toContainText(word)
  await page.keyboard.press('Tab')
  await expect(page.locator('.skill-dock')).toHaveClass(/casting/)
- await page.keyboard.type('CLEAVE')
+ await page.keyboard.type('SAPU')
  await expect(page.locator('.skill-dock')).not.toHaveClass(/casting/)
  await expect(page.locator('.enemy-label.locked .typed')).toHaveText(word[0]!)
  await page.keyboard.type(word.slice(1))

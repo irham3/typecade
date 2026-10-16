@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { SurvivalRun, createDungeonState, dungeonWalkable, restoreDungeonRun, runAccuracy, runWpm, xpThreshold } from "./survival"
-import { dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, skillRules } from "../../content/src/dungeon"
+import { dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonObjects, skillRules } from "../../content/src/dungeon"
 import type { DungeonState, EnemyKind, SkillId, UpgradeId } from "../../contracts/src/survival"
 
 const type = (run: SurvivalRun, word: string) => { for (const key of word) run.input(key) }
-function arena() { const run = new SurvivalRun("test"); run.start(); run.state.enemies = []; run.state.queue = []; run.state.spawnAt = 100; return run }
+function arena() { const run = new SurvivalRun("test","en"); run.start(); run.state.enemies = []; run.state.queue = []; run.state.spawnAt = 100; return run }
 function tick(run: SurvivalRun, seconds: number) { for (let i = 0; i < Math.ceil(seconds * 30); i++) run.advance(1 / 30) }
 function defeat(run: SurvivalRun, kind: EnemyKind = "skeleton") { const e = run.spawn(kind, { x: run.state.player.x + 2, z: run.state.player.z })!; run.refreshQueue(); while (e.words.length && run.state.enemies.includes(e)) type(run, e.words[0]!); return e }
 
@@ -13,7 +13,7 @@ describe("real-time typing survival", () => {
   for(const language of ["en","id"] as const){
    const r=new SurvivalRun("lexicon",language);r.state.enemies=[]
    for(const kind of Object.keys(dungeonWords[language]) as EnemyKind[]){
-    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(kind==="barrel"||kind==="chest"?8:20)
+    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(dungeonObjects.includes(kind)?8:20)
     const seen:string[]=[]
     for(let i=0;i<30;i++){r.state.enemies=[];r.state.boss=null;const e=r.spawn(kind,{x:2,z:0})!;expect(pool).toContain(e.words[0]);seen.push(...e.words)}
     expect(new Set(seen).size).toBeGreaterThanOrEqual(Math.min(pool.length,20))
@@ -37,7 +37,7 @@ describe("real-time typing survival", () => {
   for(const time of [0,100,160])for(const position of [{x:0,z:0},{x:14,z:4},{x:-12,z:-3}]){
    const r=arena();r.state.player.x=position.x;r.state.player.z=position.z;r.state.time=time;r.state.nextBoss=1000;r.state.spawnAt=2
    tick(r,.4)
-   const targets=r.targets().filter(e=>e.kind!=="chest"&&e.kind!=="barrel")
+   const targets=r.targets().filter(e=>!dungeonObjects.includes(e.kind))
    expect(targets.length).toBeGreaterThanOrEqual(time<60?2:3)
    expect(new Set(targets.map(e=>e.words[0]![0])).size).toBe(targets.length)
    for(const e of targets){const d=Math.hypot(e.x-position.x,e.z-position.z);expect(d).toBeGreaterThan(5.5);expect(d).toBeLessThan(8.6);for(let t=0;t<=1;t+=.05)expect(dungeonWalkable({x:position.x+(e.x-position.x)*t,z:position.z+(e.z-position.z)*t})).toBe(true)}
@@ -47,12 +47,12 @@ describe("real-time typing survival", () => {
   const r=arena();tick(r,.4);expect(r.state.enemies).toHaveLength(0)
  })
  it("opens gently and bounds each learning stage before regular horde pressure",()=>{
-  const r=new SurvivalRun("gentle-start");r.start();expect(r.state.queue).toHaveLength(4)
-  expect(r.state.enemies.map(e=>e.kind)).toEqual(["skeleton","goblin","chest","barrel"])
+  const r=new SurvivalRun("gentle-start","en");r.start();expect(r.state.queue).toHaveLength(4)
+  expect(r.state.enemies.map(e=>e.kind)).toEqual(["skeleton","goblin","chest","shield"])
   expect(r.state.enemies[0]!.speed).toBeLessThan(B.speed)
   r.state.player.invincible=1000
-  for(let i=0;i<179*30;i++){r.advance(1/30);expect(r.state.enemies.filter(e=>e.kind!=="chest"&&e.kind!=="barrel").length).toBeLessThanOrEqual(r.state.time<B.openingSeconds?B.openingThreats:B.learningThreats)}
-  r.state.enemies=[];r.state.queue=[];r.state.time=B.learningSeconds+1;r.state.spawnAt=0;tick(r,1);expect(r.targets().filter(e=>e.kind!=="chest"&&e.kind!=="barrel").length).toBeGreaterThanOrEqual(4);tick(r,45);expect(r.state.enemies.filter(e=>e.kind!=="chest"&&e.kind!=="barrel").length).toBeLessThanOrEqual(B.preBossThreats)
+  for(let i=0;i<179*30;i++){r.advance(1/30);expect(r.state.enemies.filter(e=>!dungeonObjects.includes(e.kind)).length).toBeLessThanOrEqual(r.state.time<B.openingSeconds?B.openingThreats:B.learningThreats)}
+  r.state.enemies=[];r.state.queue=[];r.state.time=B.learningSeconds+1;r.state.spawnAt=0;tick(r,1);expect(r.targets().filter(e=>!dungeonObjects.includes(e.kind)).length).toBeGreaterThanOrEqual(4);tick(r,45);expect(r.state.enemies.filter(e=>!dungeonObjects.includes(e.kind)).length).toBeLessThanOrEqual(B.preBossThreats)
  })
  it("applies the mana benefit shown on active upgrades and increases the actual cleave reach",()=>{
   for(const id of ["cleave","storm","heal"] as const){
@@ -83,7 +83,7 @@ describe("real-time typing survival", () => {
   delayed.state.player.x=NaN;delayed.state.player.z=NaN;expect(delayed.spawn("skeleton",{x:NaN,z:NaN})).toBeUndefined()
  })
  it("rejects malformed counters, entity pools and positions before restoring them",()=>{
-  const original=new SurvivalRun("malformed").serialize(),cases:Array<(s:DungeonState)=>void>=[
+  const original=new SurvivalRun("malformed","en").serialize(),cases:Array<(s:DungeonState)=>void>=[
    s=>{s.level=0},s=>{s.level=1.1},s=>{s.pendingDrafts=1001},s=>{s.worldTime=2},s=>{s.xp=125},s=>{s.xp=1},s=>{s.streak=1},s=>{s.bestStreak=1},s=>{s.player.x=1e8},s=>{s.player.x=10;s.player.z=10},s=>{s.player.maxHp=0},
    s=>{s.enemies=Array(B.enemies+1).fill(s.enemies[0])},s=>{s.loot=Array(B.loot+1).fill({})},s=>{s.projectiles=Array(B.projectiles+1).fill({})},s=>{s.effects=Array(B.effects+1).fill({})},
    s=>{s.enemies[0]!.id=s.nextId},s=>{s.enemies[0]!.speed=11},s=>{s.enemies[0]!.words=[]},s=>{s.enemies[0]!.health=0},s=>{s.enemies[0]!.waypoint={x:10,z:10}},
@@ -91,12 +91,12 @@ describe("real-time typing survival", () => {
    s=>{s.queue=[s.queue[0]!,s.queue[0]!]},s=>{s.offers=["storm","storm"]},s=>{s.target=s.enemies[0]!.id;s.prefix=s.enemies[0]!.words[0]!},
   ]
   for(const change of cases){const s=JSON.parse(original);change(s);expect(restoreDungeonRun(JSON.stringify(s))).toBeNull()}
-  const armed=new SurvivalRun("armed");armed.start();const target=armed.targets()[0]!;armed.input(target.words[0]![0]!);expect(restoreDungeonRun(armed.serialize())).not.toBeNull()
+  const armed=new SurvivalRun("armed","en");armed.start();const target=armed.targets()[0]!;armed.input(target.words[0]![0]!);expect(restoreDungeonRun(armed.serialize())).not.toBeNull()
   const legacy=JSON.parse(original);delete legacy.legendaryDrafts;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.legendaryDrafts).toBe(0)
  })
  it("replays a seed and physical input deterministically, independently of renderer", () => {
   const play = () => { const r = new SurvivalRun("replay", "id"); r.start(); for (let i = 0; i < 12; i++) { const target = r.targets()[0]; if (target) type(r, target.words[0]!); tick(r, .5); if (r.state.phase === "draft") r.chooseUpgrade(r.state.offers[0]!) }; return r.serialize() }
-  expect(play()).toBe(play()); expect(new SurvivalRun("other").serialize()).not.toBe(new SurvivalRun("replay").serialize())
+  expect(play()).toBe(play()); expect(new SurvivalRun("other","en").serialize()).not.toBe(new SurvivalRun("replay","en").serialize())
  })
  it("locks exact-case words, rejects typos, dashes on completion and grants drops once", () => {
   const r = arena(), e = r.spawn("guard", { x: 2, z: 0 })!; r.refreshQueue(); const word = e.words[0]!
@@ -153,7 +153,7 @@ describe("real-time typing survival", () => {
   const r=arena();r.state.player={...r.state.player,x:16,z:10}
   const e=r.spawn("skeleton",{x:4,z:6})!;e.speed=10;e.waypoint={x:4.7,z:6.7}
   const before={x:e.x,z:e.z};(r as unknown as {moveEnemy:(enemy:typeof e,dt:number)=>void}).moveEnemy(e,.3)
-  expect(dungeonWalkable(e)).toBe(true);expect(Number.isFinite(e.x)).toBe(true);expect(e.x).toBe(before.x);expect(e.z).toBe(before.z)
+  expect(dungeonWalkable(e)).toBe(true);expect(Number.isFinite(e.x)).toBe(true);expect(Math.hypot(e.x-before.x,e.z-before.z)).toBeLessThanOrEqual(e.speed*.3);expect(e.x).toBeCloseTo(4.7);expect(e.z).toBeCloseTo(6.7)
  })
  it("enforces finite pools and returns to endless after a recurring boss", () => {
   const r = arena(); r.state.time = 299.99; tick(r, .1); expect(r.state.boss).not.toBeNull()
@@ -190,11 +190,11 @@ describe("real-time typing survival", () => {
   expect(restoreDungeonRun(r.serialize())?.state.phase).toBe("dead")
   const live = new SurvivalRun("saved", "id"); live.start(); const enemy = live.targets()[0]!; live.input(enemy.words[0]![0]!); live.input("Tab")
   const restored = restoreDungeonRun(live.serialize())!; expect(restored.state.phase).toBe("paused"); restored.resume(); expect(restored.state.phase).toBe("skills"); expect(restored.state.prefix).toBe(live.state.prefix)
-  const loaded = restoreDungeonRun(new SurvivalRun("ready").serialize()); expect(loaded?.state.phase).toBe("ready")
+  const loaded = restoreDungeonRun(new SurvivalRun("ready","en").serialize()); expect(loaded?.state.phase).toBe("ready")
  })
  it("rejects corrupt and incompatible checkpoints without mutating the original", () => {
   expect(restoreDungeonRun(null)).toBeNull(); expect(restoreDungeonRun("{" )).toBeNull(); expect(restoreDungeonRun("x".repeat(500001))).toBeNull()
-  const original = new SurvivalRun("validation").serialize()
+  const original = new SurvivalRun("validation","en").serialize()
   const mutations: Array<(s: DungeonState) => void> = [
    s=>{s.version=2 as 1},s=>{s.language="xx" as "en"},s=>{s.seed="x".repeat(201)},s=>{s.phase="no" as "ready"},s=>{s.time=-1},s=>{s.player.hp=100},s=>{s.player.mana=-1},s=>{s.player.maxHp=101},
    s=>{s.enemies[0]!.words=[""]},s=>{s.enemies[0]!.kind="dragon" as EnemyKind},s=>{s.enemies.push(s.enemies[0]!)},s=>{s.loot=[{id:1,x:0,z:0,xp:-1,gold:0,mana:0}]},

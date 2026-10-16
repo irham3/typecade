@@ -10,7 +10,7 @@ import "../styles.css"
 it("packs projected words without overlap at desktop, portrait and small landscape sizes",async()=>{
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
  const host=document.createElement("div");host.style.cssText="position:relative;width:1440px;height:900px";document.body.append(host)
- const root=createRoot(host),run=new SurvivalRun("labels"),s=run.state,bridge=new GameEventBridge()
+ const root=createRoot(host),run=new SurvivalRun("labels","en"),s=run.state,bridge=new GameEventBridge()
  const intersects=(a:DOMRect,b:DOMRect)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top
  try{
   await act(()=>root.render(<TargetLabels view={s} bridge={bridge}/>))
@@ -35,5 +35,19 @@ it("packs projected words without overlap at desktop, portrait and small landsca
   expect(host.querySelectorAll(".party-name")).toHaveLength(2);expect(host.textContent).toContain("DOWNED")
   const width=window.innerWidth;Object.defineProperty(window,"innerWidth",{value:390,configurable:true});await act(()=>bridge.emit("partyProjected",[{id:"a",name:"Blue",hp:1,color:0x123,role:"dps",x:50,y:50},{id:"b",name:"Red",hp:1,color:0x456,role:"tank",x:50,y:50}]))
   const names=[...host.querySelectorAll<HTMLElement>(".party-name")];expect(names[0]!.style.top).not.toBe(names[1]!.style.top);Object.defineProperty(window,"innerWidth",{value:width,configurable:true})
+ }finally{await act(()=>root.unmount());host.remove();bridge.clear()}
+})
+
+it("names each supply benefit and makes flying, casting and charge warnings distinct",async()=>{
+ Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});const host=document.createElement("div");host.style.cssText="position:relative;width:1440px;height:900px";document.body.append(host)
+ const root=createRoot(host),r=new SurvivalRun("item-labels"),s=r.state,bridge=new GameEventBridge()
+ try{
+  await act(()=>root.render(<TargetLabels view={s} bridge={bridge}/>))
+  for(const kind of ["shield","potion","mana","sentry","bat","mage","minotaur"] as const){
+   s.enemies=[];s.queue=[];const e=r.spawn(kind,{x:0,z:2})!;s.queue=[e.id];if(kind==="mage")e.attack=.5;if(kind==="minotaur"){e.motion="windup";e.motionTime=1}
+   await act(()=>{root.render(<TargetLabels view={{...s}} bridge={bridge}/>);bridge.emit("projected",[{id:e.id,x:500,y:500,visible:true}])})
+   expect(host.querySelector(".enemy-label")?.textContent).toMatch(kind==="shield"?/SHIELD/:kind==="potion"?/HP/:kind==="mana"?/MP/:kind==="sentry"?/SENTRY/:kind==="minotaur"?/CHARGE/:/AIR/)
+   if(kind==="mage"){e.attack=2;await act(()=>root.render(<TargetLabels view={{...s}} bridge={bridge}/>));expect(host.textContent).toContain("MAGE")}
+  }
  }finally{await act(()=>root.unmount());host.remove();bridge.clear()}
 })

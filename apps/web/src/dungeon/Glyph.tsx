@@ -1,4 +1,5 @@
 const paths = {
+ tower: "M3 22v-4h3V9H3V2h4v3h3V2h4v3h3V2h4v7h-3v9h3v4H3zm7-4h4v-7h-4z",
  sword: "M4 21l6-6-2-2 2-2 2 2L21 2l1 1-8 12 2 2-2 2-2-2-6 6z",
  storm: "M2 4h20v3H6v3h13v3H9v3h7v3h-4v3H9v-3H6v-3H3v-3h3v-3H2z",
  heal: "M9 2h6v7h7v6h-7v7H9v-7H2V9h7z",

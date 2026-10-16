@@ -899,3 +899,13 @@ The user asked to pause testing and prioritize a lively, state-responsive soundt
 - Actual domain/party events now select differentiated player damage, swing/cleave, armor, creature/death, explosive, pickup/chest/magnet and skill cues. Small pitch variation, repeat cooldowns, panning, priority voice admission and music ducking keep feedback bounded under crowds.
 - Retained the existing saved master volume; added optional music/effects fields to the settings bridge and backward-compatible local settings. No run/account schema or dependency/asset download changes. Audio resources remain owned by the renderer lifecycle.
 - Caps and scheduling/mixing details are recorded in the art bible. The audio fixture and settings fixture were updated, but automated suites and the 900-active-second profile remain deferred by the user's explicit request. Final source compiles/builds; listening and hardware loudness/performance are not verified.
+
+
+## 2026-10-16 - Enemy patterns, visible supplies and coverage repair
+
+PR #8 merged into main at 9229079 under the user's explicit merge request while validation was pending. The later CI coverage failure was acknowledged; the user then requested current CI verification, superseding the earlier test deferral.
+
+- Added deterministic speed variation and steering, flying bats/hovering ranged mages, projectile line-of-sight/walls and committed minotaur charge/recovery with renderer-only flight/telegraphs.
+- Added four readable typed supply shapes and real shield/potion/mana/sentry effects, bounded tower attacks with active-word protection, equipment/status HUD, carried shield/orbitals and authoritative party shield display. Version-1 saves receive validated missing-field defaults, preserving existing language/progress.
+- New runs default to ID. Music bus rises by approximately 7.5 dB relative to the prior mix; existing mute/master/bus preferences remain intact.
+- Unchanged global coverage gates now pass at 100% in all four metrics, with 176 tests in 25 files. The prior coverage failure was repaired with meaningful audio/lifecycle, gameplay, restore validation and renderer/UI cases; no threshold or scope exclusion was added. See verification/dungeon-encounters-2026-10-16 for final checks and outstanding listening/hardware limitations.

@@ -22,7 +22,7 @@ async function mount(){
 }
 async function click(text:string){const button=[...host.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.includes(text))!;expect(button).toBeTruthy();await act(()=>button.click())}
 it("offers a skippable, replayable combat tutorial without replacing the saved run",async()=>{
- const saved=new SurvivalRun("keep-my-save");saved.state.time=2;const raw=saved.serialize();localStorage.setItem("typecade:dungeon:run:v1",raw)
+ const saved=new SurvivalRun("keep-my-save","en");saved.state.time=2;const raw=saved.serialize();localStorage.setItem("typecade:dungeon:run:v1",raw)
  await mount();await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING");await click("Skip tutorial")
  expect(host.textContent).toContain("Every word.");expect(localStorage.getItem("typecade:dungeon:run:v1")).toBe(raw)
  await click("Typing Dojo");await click("Combat tutorial");expect(host.textContent).toContain("Your word is your movement");await click("Skip tutorial");expect(host.textContent).toContain("Typing Dojo");await click("Main menu")
@@ -48,12 +48,12 @@ for(const language of ["en","id"] as const)it(`teaches each real combat action a
  const hidden=vi.spyOn(document,"hidden","get").mockReturnValue(true);await act(()=>document.dispatchEvent(new Event("visibilitychange")));expect(host.textContent).toContain("Take a breath.");hidden.mockReturnValue(false);await act(()=>document.dispatchEvent(new Event("visibilitychange")));await click("Resume run");await click("Skip tutorial")
 })
 it("announces reinforcements during a temporarily empty arena",async()=>{
- const r=new SurvivalRun("empty-ui");r.start();r.state.enemies=[];r.state.queue=[];r.state.time=r.state.worldTime=1;r.state.spawnAt=100
+ const r=new SurvivalRun("empty-ui","en");r.start();r.state.enemies=[];r.state.queue=[];r.state.time=r.state.worldTime=1;r.state.spawnAt=100
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
  expect(host.textContent).toContain("REINFORCEMENTS APPROACHING")
 })
 it("explains max-rank restorative drafts and applies their actual heart and mana recovery",async()=>{
- const r=new SurvivalRun("boon-ui"),s=r.state;r.start();s.time=10;s.phase="draft";s.pendingDrafts=1;s.offers=["cleave","storm","heal"];s.player.hp=3;s.player.mana=50
+ const r=new SurvivalRun("boon-ui","en"),s=r.state;r.start();s.time=10;s.phase="draft";s.pendingDrafts=1;s.offers=["cleave","storm","heal"];s.player.hp=3;s.player.mana=50
  s.skills.cleave.level=s.skills.storm.level=s.skills.heal.level=3
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
  expect(host.textContent).toContain("MAX RANK");for(const key of "BLADE")await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
@@ -79,7 +79,7 @@ it("starts, types, pauses and resumes without letting global keys alter the run"
  await act(()=>host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Save and return")
 })
 it("restores draft and boss phases with real scoped typing",async()=>{
- const run=new SurvivalRun("draft");run.start();run.gainXp(130);run.advance(.01);localStorage.setItem("typecade:dungeon:run:v1",run.serialize())
+ const run=new SurvivalRun("draft","en");run.start();run.gainXp(130);run.advance(.01);localStorage.setItem("typecade:dungeon:run:v1",run.serialize())
  await mount();await click("Continue run");await click("Resume run");expect(host.querySelectorAll(".upgrade-card")).toHaveLength(3)
  const keyword=host.querySelector('[data-testid="upgrade-keyword"]')!.textContent!
  await act(()=>{for(const key of keyword)host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true}))})
@@ -88,7 +88,7 @@ it("restores draft and boss phases with real scoped typing",async()=>{
 })
 it("loads touch settings, casts evolved skills and keeps forms and browser shortcuts usable",async()=>{
  localStorage.setItem("typecade:dungeon:settings:v1",JSON.stringify({reduced:true,volume:.5,keyboard:true}))
- const r=new SurvivalRun("evolved");r.start();r.state.time=5;r.state.streak=r.state.correct=r.state.bestStreak=60;r.state.player.hp=3;r.state.skills.cleave.level=3;r.state.skills.storm.level=3;r.state.skills.heal.level=3;r.state.enemies=[];r.spawn("minotaur",{x:2,z:0});r.refreshQueue()
+ const r=new SurvivalRun("evolved","en");r.start();r.state.time=5;r.state.streak=r.state.correct=r.state.bestStreak=60;r.state.player.hp=3;r.state.skills.cleave.level=3;r.state.skills.storm.level=3;r.state.skills.heal.level=3;r.state.enemies=[];r.spawn("minotaur",{x:2,z:0});r.refreshQueue()
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount()
  await click("Sound on");await click("Sound off")
  const language=host.querySelector("select")!;await act(()=>{language.value="id";language.dispatchEvent(new Event("change",{bubbles:true}))})
@@ -106,7 +106,7 @@ it("loads touch settings, casts evolved skills and keeps forms and browser short
  await act(()=>host.querySelector<HTMLInputElement>('[aria-label="On-screen keyboard"]')!.click());await click("Done");await click("Save and return")
 })
 it("renders armor breaks, typed upgrades and final results from valid checkpoints",async()=>{
- const r=new SurvivalRun("boss-ui"),s=r.state;r.start();s.time=s.worldTime=300;s.nextBoss=600;const boss=r.spawn("boss",{x:2,z:0})!;boss.words=[];s.phase="overdrive";s.stagger=10;s.paragraph="strike BLIZZARD ";s.player.hp=2
+ const r=new SurvivalRun("boss-ui","en"),s=r.state;r.start();s.time=s.worldTime=300;s.nextBoss=600;const boss=r.spawn("boss",{x:2,z:0})!;boss.words=[];s.phase="overdrive";s.stagger=10;s.paragraph="strike BLIZZARD ";s.player.hp=2
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run");expect(host.textContent).toContain("ARMOR BREAK")
  const input=host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!;await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"s",bubbles:true})))
  await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Save and return")
@@ -117,7 +117,7 @@ it("explains renderer initialization errors and accepts a clean retry",async()=>
  scene.fail=false;await click("Restore scene");await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});expect(host.textContent).toContain("Begin run")
 })
 it("keeps typed draft choices frozen and resumes the resulting build",async()=>{
- const r=new SurvivalRun("offer-ui"),s=r.state;r.start();s.time=10;s.phase="draft";s.offers=["heal","storm","cleave"];s.pendingDrafts=s.legendaryDrafts=1;s.level=2
+ const r=new SurvivalRun("offer-ui","en"),s=r.state;r.start();s.time=10;s.phase="draft";s.offers=["heal","storm","cleave"];s.pendingDrafts=s.legendaryDrafts=1;s.level=2
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
  const key=async(key:string)=>act(()=>host.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
  await key("F");expect(host.querySelector('.upgrade-card:nth-child(2) .typed')!.textContent).toBe("F")
@@ -129,4 +129,12 @@ it("handles deep links, invalid settings bounds and late renderer failures after
  await act(()=>root.unmount());root=createRoot(host);localStorage.setItem("typecade:dungeon:settings:v1",JSON.stringify({reduced:false,volume:2}));
  let reject!:(error:Error)=>void;scene.ready=new Promise((_resolve,fail)=>{reject=fail});await mount();await act(()=>root.unmount());root=createRoot(host);await act(async()=>reject(new Error("Late initialization")))
  scene.ready=undefined;scene.bridge=null;act(()=>root.render(<App/>));act(()=>root.unmount());root=createRoot(host);await act(async()=>{await Promise.resolve()});expect(scene.bridge).toBeNull()
+})
+
+it("shows acquired supplies, active shield, expired sentry and real relic ranks while new runs default to Indonesian",async()=>{
+ const r=new SurvivalRun("equipment","id"),s=r.state;r.start();s.time=s.worldTime=1;s.player.invincible=1000;s.player.shield=2;s.supplies={shield:2,potion:1,mana:3,sentry:1};s.sentry={x:0,z:0,life:.15,cooldown:1};s.relics.lightning=s.relics.magnet=s.relics.switch=1;s.notice="Aegis Shield acquired. +2 shield"
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();expect(host.querySelector<HTMLSelectElement>('[aria-label="Word language"]')!.value).toBe("id")
+ await click("Continue run");await click("Resume run");expect(host.querySelector('[aria-label="Shield"]')?.getAttribute("value")).toBe("2")
+ expect(host.querySelector('[aria-label="Acquired equipment"]')?.textContent).toContain("2/4 SHIELD");expect(host.textContent).toContain("SUPPLY COLLECTED");expect(host.textContent).toContain("ACTIVE · RANK 1")
+ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,400))});expect(host.textContent).toContain("EXPIRED")
 })

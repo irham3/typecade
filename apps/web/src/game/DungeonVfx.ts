@@ -1,10 +1,10 @@
 import { AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, DoubleSide, DynamicDrawUsage, Euler, Float32BufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, PlaneGeometry, Quaternion, RingGeometry, Scene, Vector3 } from "three"
 import type { Point } from "@typecade/contracts"
 
-export type VisualEffect = "slash" | "cleave" | "hit" | "storm" | "lightning" | "heal" | "pickup" | "shatter" | "magnet" | "death" | "dust" | "dash" | "block" | "spawn" | "hurt" | "level" | "upgrade"
+export type VisualEffect = "slash" | "cleave" | "hit" | "storm" | "lightning" | "heal" | "pickup" | "shatter" | "magnet" | "death" | "dust" | "dash" | "block" | "spawn" | "hurt" | "level" | "upgrade" | "shield" | "mana" | "deploy" | "sentry"
 type Burst = Point & { kind: VisualEffect; age: number; life: number; angle: number; power: number; end?: Point; tint?: number }
-const colors = { slash: 0x65dfff, cleave: 0xffa64f, hit: 0xff7651, storm: 0x73cdff, lightning: 0xb3eaff, heal: 0x8cffad, pickup: 0x9af3b8, shatter: 0xffd99b, magnet: 0xa3dfff, death: 0xe5caa1, dust: 0x8c959c, dash:0x7bdcff, block: 0xffd376, spawn:0x9a9cfa, hurt:0xff694f, level:0xffd571, upgrade:0xffdf91 }
-const major:VisualEffect[]=["cleave","storm","heal","magnet","death","hurt","level","upgrade"]
+const colors = { slash: 0x65dfff, cleave: 0xffa64f, hit: 0xff7651, storm: 0x73cdff, lightning: 0xb3eaff, heal: 0x8cffad, pickup: 0x9af3b8, shatter: 0xffd99b, magnet: 0xa3dfff, death: 0xe5caa1, dust: 0x8c959c, dash:0x7bdcff, block: 0xffd376, spawn:0x9a9cfa, hurt:0xff694f, level:0xffd571, upgrade:0xffdf91, shield:0x76deef, mana:0x9bafff, deploy:0xf1d38a, sentry:0x9df2ff }
+const major:VisualEffect[]=["cleave","storm","heal","magnet","death","hurt","level","upgrade","shield","deploy","block"]
 
 /** Bounded presentation bursts. Neither effects nor their clocks change combat or input. */
 export class DungeonVfx {
@@ -70,6 +70,11 @@ export class DungeonVfx {
   for (const b of this.bursts) {
    b.age += delta
    const t = Math.min(1, b.age / b.life), fade = (1 - t) ** 2, color = b.tint??colors[b.kind], size = b.power
+   if(b.kind==="sentry"&&b.end){
+    const angle=Math.atan2(b.end.x-b.x,b.end.z-b.z),length=Math.hypot(b.end.x-b.x,b.end.z-b.z)
+    this.place(this.sparks,(b.x+b.end.x)/2,1.25,(b.z+b.end.z)/2,reduced?.035:.075,.055,length,0,angle,0,color,fade*1.6)
+    continue
+   }
    if(b.kind==="dash"&&b.end){
     if(!reduced)for(let i=0;i<4;i++){const spread=(i-1.5)*.19,d=Math.hypot(b.end.x-b.x,b.end.z-b.z);this.place(this.sparks,(b.x+b.end.x)/2+Math.cos(b.angle)*spread,.22+i*.18,(b.z+b.end.z)/2-Math.sin(b.angle)*spread,.055,.045,d*(1-t),0,b.angle,0,i%2?0xe0faff:color,fade*1.7)}
     continue
@@ -79,7 +84,7 @@ export class DungeonVfx {
     this.place(this.arcs,b.x,.8,b.z,radius,radius,1,-1.25,b.angle+t*2.4,0,color,fade*1.6)
     this.place(this.arcs,b.x,.83,b.z,radius*.90,radius*.90,1,-1.25,b.angle+t*2.4-.1,0,0xf2fcff,fade*1.3)
    }
-   if (["storm", "lightning", "heal", "magnet", "cleave", "block", "hit", "spawn", "hurt", "level", "upgrade"].includes(b.kind)) {
+   if (["storm", "lightning", "heal", "magnet", "cleave", "block", "hit", "spawn", "hurt", "level", "upgrade", "shield", "mana", "deploy"].includes(b.kind)) {
     const radius = b.kind === "storm" || b.kind === "magnet" ? .8+t*5 : b.kind === "cleave" ? .5+t*3.5 : .5+t*1.6
     this.place(this.rings,b.x,.06,b.z,radius*size,radius*size,1,-Math.PI/2,0,t*2,color,fade)
     this.place(this.glows,b.x,.04,b.z,radius*4,radius*4,1,-Math.PI/2,0,0,color,fade*.35)

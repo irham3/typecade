@@ -66,7 +66,7 @@ try{
    const clock=document.querySelector(".hud-topline strong")?.textContent??"00:00"
    const [m,s]=clock.split(":").map(Number)
    const locked=document.querySelector(".enemy-label.locked"),target=locked??document.querySelector(".enemy-label")
-   return {clock:m*60+s,upgrade:document.querySelector('[data-testid="upgrade-keyword"]')?.textContent,word:target?.getAttribute("data-word")?.slice(locked?.querySelector(".typed")?.textContent?.length??0),boss:[...document.querySelectorAll('.boss-passage .next,.boss-passage .ghost')].map(n=>n.textContent).join("").slice(0,8),hp:document.querySelectorAll('.hearts .filled').length,heal:document.querySelector('.skill-heal:not(.unavailable)')!==null,storm:document.querySelector('.skill-storm:not(.unavailable)')!==null,labels:document.querySelectorAll('.enemy-label').length,dead:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Try another run"),paused:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Resume run")}
+   return {clock:m*60+s,upgrade:document.querySelector('[data-testid="upgrade-keyword"]')?.textContent,word:target?.getAttribute("data-word")?.slice(locked?.querySelector(".typed")?.textContent?.length??0),boss:[...document.querySelectorAll('.boss-passage .next,.boss-passage .ghost')].map(n=>n.textContent).join("").slice(0,8),hp:document.querySelectorAll('.hearts .filled').length,heal:document.querySelector('.skill-heal:not(.unavailable)')!==null,storm:document.querySelector('.skill-storm:not(.unavailable)')!==null,healWord:document.querySelector(".skill-heal strong")?.textContent,stormWord:document.querySelector(".skill-storm strong")?.textContent,labels:document.querySelectorAll('.enemy-label').length,dead:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Try another run"),paused:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Resume run")}
   })
   active+=Math.max(0,ui.clock-lastClock);lastClock=ui.clock
   if(!ui.labels&&!ui.boss&&!ui.upgrade&&!ui.dead&&!ui.paused){if(!emptySince)emptySince=Date.now();longestEmptyArenaMs=Math.max(longestEmptyArenaMs,Date.now()-emptySince)}else emptySince=0
@@ -74,8 +74,8 @@ try{
   else if(ui.paused)await page.getByRole("button",{name:"Resume run"}).click()
   else if(ui.upgrade)await page.keyboard.type(ui.upgrade,{delay:65})
   else if(ui.boss)await page.keyboard.type(ui.boss,{delay:65})
-  else if(ui.hp<=3&&ui.heal){await page.keyboard.press("Tab");await page.keyboard.type("HEAL",{delay:65});casts.heal++}
-  else if(ui.labels>=6&&ui.storm&&ui.clock-lastCast>=20){await page.keyboard.press("Tab");await page.keyboard.type("STORM",{delay:65});lastCast=ui.clock;casts.storm++}
+  else if(ui.hp<=3&&ui.heal){await page.keyboard.press("Tab");await page.keyboard.type(ui.healWord,{delay:65});casts.heal++}
+  else if(ui.labels>=6&&ui.storm&&ui.clock-lastCast>=20){await page.keyboard.press("Tab");await page.keyboard.type(ui.stormWord,{delay:65});lastCast=ui.clock;casts.storm++}
   else if(ui.word)await page.keyboard.type(ui.word,{delay:65})
   else await page.waitForTimeout(100)
   if(active>=nextSample){await sample("survival");nextSample+=30}
@@ -101,7 +101,7 @@ try{
  })
  assert(capped.enemies.length===128)
  await page.reload();await expect(renderer()).toHaveAttribute("data-renderer-state","ready");await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
- await collect();await page.keyboard.press("Tab");await page.keyboard.type("STORM");await page.keyboard.press("Tab");await page.keyboard.type("CLEAVE");await page.screenshot({path:`${output}/crowded-burst.png`});await page.waitForTimeout(4000);await finishFrames("crowded-boss");await page.screenshot({path:`${output}/crowded-boss.png`});await page.keyboard.press("Escape");await sample("crowded-boss")
+ await collect();await page.keyboard.press("Tab");await page.keyboard.type(capped.language==="id"?"BADAI":"STORM");await page.keyboard.press("Tab");await page.keyboard.type(capped.language==="id"?"SAPU":"CLEAVE");await page.screenshot({path:`${output}/crowded-burst.png`});await page.waitForTimeout(4000);await finishFrames("crowded-boss");await page.screenshot({path:`${output}/crowded-boss.png`});await page.keyboard.press("Escape");await sample("crowded-boss")
  await page.getByRole("button",{name:"Settings",exact:true}).click();await page.getByLabel("Reduced Effects",{exact:true}).check();await page.getByRole("button",{name:"Done",exact:true}).click();await page.getByRole("button",{name:"Resume run"}).click()
  await collect();await page.waitForTimeout(3000);await finishFrames("reduced");await page.keyboard.press("Escape");await sample("reduced")
  assert(errors.length===0,errors.join("\n"))

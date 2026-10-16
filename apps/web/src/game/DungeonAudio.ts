@@ -21,7 +21,7 @@ export class DungeonAudio {
  private disposed = false
  private resuming = false
  private masterVolume = .28
- private musicVolume = .7
+ private musicVolume = .85
  private effectsVolume = 1
  private nextBeat = 0
  private step = 0
@@ -30,13 +30,13 @@ export class DungeonAudio {
  private intensity = 0
  get volume() { return this.masterVolume }
  set volume(value: number) { this.setMix(value, this.musicVolume, this.effectsVolume) }
- setMix(volume: number, music = .7, effects = 1) {
+ setMix(volume: number, music = .85, effects = 1) {
   this.masterVolume = this.clamp(volume); this.musicVolume = this.clamp(music); this.effectsVolume = this.clamp(effects)
   if (this.context && this.master) {
    const now = this.context.currentTime
    this.master.gain.setTargetAtTime(this.masterVolume * .8, now, .04)
    this.buses.effects!.gain.setTargetAtTime(this.effectsVolume, now, .04)
-   this.buses.music!.gain.setTargetAtTime(this.musicVolume * .65, now, .15)
+   this.buses.music!.gain.setTargetAtTime(this.musicVolume * 1.55, now, .15)
    this.buses.ambience!.gain.setTargetAtTime(this.musicVolume * .15, now, .2)
   }
   this.transport()
@@ -55,7 +55,7 @@ export class DungeonAudio {
     this.duck = ctx.createGain(); this.duck.connect(this.master)
     for (const bus of ["music", "effects", "ambience"] as const) {
      const node = this.buses[bus] = ctx.createGain()
-     node.gain.value = bus === "effects" ? this.effectsVolume : this.musicVolume * (bus === "music" ? .65 : .15)
+     node.gain.value = bus === "effects" ? this.effectsVolume : this.musicVolume * (bus === "music" ? 1.55 : .15)
      node.connect(bus === "effects" ? this.master : this.duck)
     }
     this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
@@ -174,13 +174,19 @@ export class DungeonAudio {
   if (kind.startsWith("enemy-")) { if (now - (this.cooldowns.get("enemy") ?? -10) < .65) return; this.cooldowns.set("enemy", now) }
   this.cooldowns.set(kind, now); this.variation++
   const pitch = [1, 1.035, .97, 1.015, .985][this.variation % 5]!, priority = kind === "hurt" || kind === "defeat" ? 4 : major ? 3 : kind === "tick" || kind.startsWith("enemy-") ? 0 : 1
-  const tone = (freq: number, duration: number, level: number, type: OscillatorType | "noise" = "triangle", end = freq, delay = 0) => this.sound(freq * pitch, duration, level, "effects", now + delay, type, end * pitch, pan, priority)
-  const chime = (notes: number[], level = .22, spacing = .07) => notes.forEach((n, i) => tone(hz(n), .3, level, "sine", hz(n), i * spacing))
+  const tone = (freq: number, duration: number, level: number, type: OscillatorType | "noise", end = freq, delay = 0) => this.sound(freq * pitch, duration, level, "effects", now + delay, type, end * pitch, pan, priority)
+  const chime = (notes: number[], level:number, spacing:number) => notes.forEach((n, i) => tone(hz(n), .3, level, "sine", hz(n), i * spacing))
   if (major && this.duck) {
    this.duck.gain.cancelScheduledValues(now); this.duck.gain.setValueAtTime(this.duck.gain.value, now)
    this.duck.gain.linearRampToValueAtTime(.38, now + .025); this.duck.gain.setTargetAtTime(1, now + .12, .16)
   }
   switch (kind) {
+   case "shield": tone(490,.38,.16,"sine",980);chime([74,81,86],.16,.065);break
+   case "mana": chime([81,86,93],.17,.05);break
+   case "deploy": tone(190,.15,.2,"square",270);chime([69,74,81],.16,.07);break
+   case "sentry": tone(1000,.13,.13,"triangle",300);break
+   case "enemy-bat": tone(2100,.06,.055,"noise");tone(2900,.07,.045,"noise",2900,.09);break
+   case "death-bat": tone(800,.18,.1,"sine",220);break
    case "ui": tone(660, .055, .055, "sine", 880); break
    case "tick": tone(1100, .035, .035, "sine", 750); break
    case "slash": case "dust": tone(2100, .12, .22, "noise"); tone(430, .075, .13, "triangle", 100); break
