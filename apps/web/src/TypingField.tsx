@@ -44,7 +44,7 @@ export function TypingInput({ label, onType, disabled = false, onEscape, inputRe
 	const ownRef = useRef<HTMLInputElement>(null)
 	const ref = inputRef ?? ownRef
 	const composing = useRef(false)
-	useEffect(() => { if (!disabled) ref.current?.focus() }, [disabled, ref])
+	useEffect(() => { if (!disabled) ref.current?.focus({preventScroll:true}) }, [disabled, ref])
 	const typeText = (text: string) => { for (const char of text) onType(char) }
 	const commitInput = (value: string) => {
 		if (displayValue !== undefined && value.length < displayValue.length) {
@@ -52,7 +52,7 @@ export function TypingInput({ label, onType, disabled = false, onEscape, inputRe
 		} else typeText(value.slice(displayValue?.length ?? 0))
 	}
 	return <input ref={ref} className="typing-native-input" aria-label={label} data-testid={testId} value={displayValue} inputMode={inputMode} disabled={disabled} placeholder={disabled ? "Typing paused" : "Type the highlighted character…"} autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck={false}
-		onFocus={() => onFocusChange?.(true)} onBlur={() => { onFocusChange?.(false); if (!onFocusChange) queueMicrotask(() => { if (document.activeElement === document.body || document.activeElement === ref.current?.closest("dialog")) ref.current?.focus() }) }}
+		onFocus={() => onFocusChange?.(true)} onBlur={event => { onFocusChange?.(false); if (!onFocusChange&&(!event.relatedTarget||event.relatedTarget===ref.current?.closest("dialog"))) queueMicrotask(() => { if (document.activeElement === document.body || document.activeElement === ref.current?.closest("dialog")) ref.current?.focus({preventScroll:true}) }) }}
 		onPaste={(event) => event.preventDefault()}
 		onKeyDown={(event) => {
 			if (event.repeat) { event.preventDefault(); return }

@@ -6,6 +6,23 @@ import { createArenaCombat,createRacePlayer,defaultRaceConfig,type RaceRoomSnaps
 import type { DungeonEvents, PartyWorld } from "@typecade/contracts"
 import { partyWorld } from "../dungeon/party-world"
 import type { DungeonVfx } from "./DungeonVfx"
+import type { MeshStandardMaterial,ShaderMaterial } from "three"
+
+it("marks actual player damage, level gain and acquired power with distinct visual feedback",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:1000px;height:700px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("hit-and-level")
+ const visual=game as unknown as {tick:(t:number)=>void;heroMaterial:MeshStandardMaterial;post:ShaderMaterial;vfx:DungeonVfx}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("screen","endless");bridge.emit("frame",run.state)
+  let now=performance.now()+100;const frame=()=>{now+=50;bridge.emit("frame",run.state);visual.tick(now)}
+  run.damage(1);frame();expect(visual.post.uniforms.hurt.value).toBeGreaterThan(0);expect(visual.heroMaterial.emissiveIntensity).toBeGreaterThan(0)
+  for(let i=0;i<20;i++)frame();expect(visual.post.uniforms.hurt.value).toBe(0)
+  run.gainXp(130);run.advance(.01);frame();expect(run.state.phase).toBe("draft");expect(visual.vfx.rings.count).toBeGreaterThan(0)
+  run.chooseUpgrade(run.state.offers[0]!);frame();expect(visual.vfx.count).toBeGreaterThan(0)
+  host.style.height="390px";await new Promise(resolve=>setTimeout(resolve,30));bridge.emit("screen","tutorial");run.spawn("skeleton",{x:3,z:0});frame();run.state.player.invincible=0;run.damage(1);frame();bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.heroMaterial.emissiveIntensity).toBeGreaterThan(0)
+  run.state.enemies=[];run.state.queue=[];run.state.player.invincible=0;run.damage(1);frame();expect(visual.heroMaterial.emissiveIntensity).toBeGreaterThan(0)
+ }finally{game.destroy();host.remove();bridge.clear()}
+},20000)
 
 it("renders real instanced actors, recycles chunks and releases WebGL resources across all modes",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1000px;height:700px";document.body.append(host)
@@ -104,7 +121,7 @@ it("bounds death afterimages, reacts to damage and armor, and presents authorita
   s.enemies=[];const guard=run.spawn("guard",{x:2,z:0})!;run.refreshQueue();frame()
   run.input(guard.words[0]![0]!);frame();for(const key of guard.words[0]!.slice(1))run.input(key);frame()
   expect(visual.actors.get(guard.id)!.hitAt).toBeGreaterThan(0)
-  run.spawn("goblin",{x:5,z:0});frame();s.player.hp--;frame();expect(visual.actors.get(guard.id)!.strikeAt).toBeGreaterThan(0)
+  run.spawn("goblin",{x:5,z:0});frame();s.player.invincible=0;run.damage(1);frame();expect(visual.actors.get(guard.id)!.strikeAt).toBeGreaterThan(0)
   s.enemies=[];s.queue=[];frame();expect(visual.actors.has(guard.id)).toBe(false)
   const kinds=["skeleton","goblin","guard","barrel","boss"] as const
   for(let i=0;i<24;i++)run.spawn(kinds[i%5]!,{x:i%4,z:Math.floor(i/4)})

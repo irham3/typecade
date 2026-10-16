@@ -38,13 +38,29 @@ describe("real-time typing survival", () => {
    const r=arena();r.state.player.x=position.x;r.state.player.z=position.z;r.state.time=time;r.state.nextBoss=1000;r.state.spawnAt=2
    tick(r,.4)
    const targets=r.targets().filter(e=>e.kind!=="chest"&&e.kind!=="barrel")
-   expect(targets.length).toBeGreaterThanOrEqual(3)
+   expect(targets.length).toBeGreaterThanOrEqual(time<60?2:3)
    expect(new Set(targets.map(e=>e.words[0]![0])).size).toBe(targets.length)
    for(const e of targets){const d=Math.hypot(e.x-position.x,e.z-position.z);expect(d).toBeGreaterThan(5.5);expect(d).toBeLessThan(8.6);for(let t=0;t<=1;t+=.05)expect(dungeonWalkable({x:position.x+(e.x-position.x)*t,z:position.z+(e.z-position.z)*t})).toBe(true)}
    expect(targets.some((a,i)=>targets.slice(i+1).some(b=>Math.hypot(a.x-b.x,a.z-b.z)<.9))).toBe(false)
    r.state.enemies=[];r.state.queue=[];r.state.player.x+=4;tick(r,.8);expect(r.targets().length).toBeGreaterThanOrEqual(4)
   }
   const r=arena();tick(r,.4);expect(r.state.enemies).toHaveLength(0)
+ })
+ it("opens gently and bounds each learning stage before regular horde pressure",()=>{
+  const r=new SurvivalRun("gentle-start");r.start();expect(r.state.queue).toHaveLength(4)
+  expect(r.state.enemies.map(e=>e.kind)).toEqual(["skeleton","goblin","chest","barrel"])
+  expect(r.state.enemies[0]!.speed).toBeLessThan(B.speed)
+  r.state.player.invincible=1000
+  for(let i=0;i<179*30;i++){r.advance(1/30);expect(r.state.enemies.filter(e=>e.kind!=="chest"&&e.kind!=="barrel").length).toBeLessThanOrEqual(r.state.time<B.openingSeconds?B.openingThreats:B.learningThreats)}
+  r.state.enemies=[];r.state.queue=[];r.state.time=B.learningSeconds+1;r.state.spawnAt=0;tick(r,1);expect(r.targets().filter(e=>e.kind!=="chest"&&e.kind!=="barrel").length).toBeGreaterThanOrEqual(4);tick(r,45);expect(r.state.enemies.filter(e=>e.kind!=="chest"&&e.kind!=="barrel").length).toBeLessThanOrEqual(B.preBossThreats)
+ })
+ it("applies the mana benefit shown on active upgrades and increases the actual cleave reach",()=>{
+  for(const id of ["cleave","storm","heal"] as const){
+   const r=arena(),cost=r.skillCost(id);r.state.phase="draft";r.state.pendingDrafts=1;r.state.offers=[id];r.state.player.hp=3;r.state.player.mana=50
+   expect(r.chooseUpgrade(id)).toBe(true);expect(r.state.skills[id].level).toBe(2);expect(r.skillCost(id)).toBe(cost-5);expect(r.state.player.hp).toBe(4);expect(r.state.player.mana).toBe(65)
+   expect(r.state.notice).toContain("Rank 2")
+   if(id==="cleave"){const victim=r.spawn("skeleton",{x:5,z:0})!;r.input("Tab");r.cast("cleave");expect(r.state.enemies).not.toContain(victim)}
+  }
  })
  it("preserves a storm cue when a full horde fills the bounded effect history",()=>{
   const r=arena()
@@ -157,7 +173,7 @@ describe("real-time typing survival", () => {
   r.setLabelLimit(4); expect(r.state.queue.length).toBeLessThanOrEqual(4); r.setLabelLimit(6)
   r.state.loot = Array.from({ length: B.loot }, (_, i) => ({ id: 1000 + i, x: 25, z: 25, xp: 1, gold: 0, mana: 0 }))
   r.state.enemies = []; defeat(r); expect(r.state.loot.length).toBeLessThanOrEqual(B.loot); expect(r.state.loot.reduce((n,e) => n + e.xp,0) + r.state.totalXp).toBe(B.loot + 25)
-  r.state.enemies = []; const far = r.spawn("skeleton", { x: 100, z: 100 })!; tick(r, .1); expect(r.state.enemies).not.toContain(far)
+  r.state.enemies = []; const far = r.spawn("skeleton", { x: 100, z: 100 })!;far.waypoint={x:98,z:100}; tick(r, .1); expect(r.state.enemies).not.toContain(far)
  })
  it("applies letter, lexicon and speed relics and exhausts offers safely", () => {
   const r = arena(); for (const id of Object.keys(r.state.relics) as (keyof DungeonState["relics"])[]) r.state.relics[id] = dungeonUpgrades[id].max

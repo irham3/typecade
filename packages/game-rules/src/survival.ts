@@ -16,8 +16,17 @@ export function dungeonWalkable(p: Point) {
  return true
 }
 function reachable(a: Point, b: Point) {
- const steps = Math.ceil(distance(a, b) * 2)
- for (let i = 1; i <= steps; i++) if (!dungeonWalkable({ x: a.x + (b.x - a.x) * i / steps, z: a.z + (b.z - a.z) * i / steps })) return false
+ if(distance(a,b)>T.chunkSize)return false
+ for(let cx=Math.floor(Math.min(a.x,b.x)/T.chunkSize);cx<=Math.floor(Math.max(a.x,b.x)/T.chunkSize);cx++)for(let cz=Math.floor(Math.min(a.z,b.z)/T.chunkSize);cz<=Math.floor(Math.max(a.z,b.z)/T.chunkSize);cz++)for(const offset of [0,16]){
+  const center={x:cx*T.chunkSize+T.ruinX+offset,z:cz*T.chunkSize+T.ruinZ+offset}
+  let enter=0,exit=1
+  for(const [axis,half]of [["x",T.halfWidth],["z",T.halfDepth]] as const){
+   const delta=b[axis]-a[axis],lo=center[axis]-half,hi=center[axis]+half
+   if(delta===0){if(a[axis]<lo||a[axis]>hi){exit=-1;break}}
+   else{const t0=(lo-a[axis])/delta,t1=(hi-a[axis])/delta;enter=Math.max(enter,Math.min(t0,t1));exit=Math.min(exit,Math.max(t0,t1))}
+  }
+  if(enter<=exit)return false
+ }
  return true
 }
 
@@ -39,7 +48,7 @@ export class SurvivalRun {
  constructor(seed: string, language: DungeonLanguage = "en", restored?: DungeonState) {
   this.state = restored ?? createDungeonState(seed, language)
   if (!restored) {
-   for (let i = 0; i < 6; i++) this.spawn(i === 4 ? "barrel" : i % 2 ? "goblin" : "skeleton", { x: Math.sin(i * 1.05) * (5 + i * .25), z: Math.cos(i * 1.05) * (5 + i * .25) })
+   for (const [i,kind] of (["skeleton","goblin","chest","barrel"] as const).entries()) this.spawn(kind, { x: Math.sin(i * Math.PI/2) * (6 + i * .3), z: Math.cos(i * Math.PI/2) * (6 + i * .3) })
    this.refreshQueue()
   }
  }
@@ -73,7 +82,7 @@ export class SurvivalRun {
   const layers = kind === "boss" ? 3 + Math.min(2, s.biome) : kind === "minotaur" ? Math.min(5, 3 + Math.floor(s.time / 900)) : kind === "guard" ? 2 : 1
   const words = Array.from({ length: layers }, (_, i) => this.drawWord(kind,layers-i,i===0))
   const health = kind === "boss" ? B.bossHealth * (1 + s.biome * .5) : layers
-  const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: objects.includes(kind) ? 0 : B.speed * (kind === "goblin" ? 1.3 : 1) * (1 + Math.min(2, s.time / 900)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 8 : 0, health, maxHealth: health }
+  const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: objects.includes(kind) ? 0 : B.speed * (kind === "goblin" ? 1.3 : 1) * (.65+.35*Math.min(1,s.time/B.openingSeconds)) * (1 + Math.min(2, s.time / 900)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 8 : 0, health, maxHealth: health }
   s.enemies.push(enemy)
   if (kind === "boss") { s.boss = enemy.id; s.notice = "Obsidian Minotaur — break its armor." }
   return enemy
@@ -285,7 +294,7 @@ export class SurvivalRun {
   if (s.phase !== "draft" || !s.offers.includes(id)) return false
   if (skillIds.includes(id as SkillId)) { s.skills[id as SkillId].level = Math.min(3, s.skills[id as SkillId].level + 1); s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1); s.player.mana = Math.min(100, s.player.mana + 15) }
   else s.relics[id as RelicId]++
-  s.pendingDrafts--;s.legendaryDrafts=Math.max(0,s.legendaryDrafts-1); s.phase = s.afterDraft; s.command = ""; s.offers = []; s.notice = `${dungeonUpgrades[id].name} acquired.`
+  s.pendingDrafts--;s.legendaryDrafts=Math.max(0,s.legendaryDrafts-1); s.phase = s.afterDraft; s.command = ""; s.offers = []; s.notice = `${dungeonUpgrades[id].name} acquired. Rank ${this.upgradeLevel(id)} — ${dungeonUpgrades[id].description}${skillIds.includes(id as SkillId)?" Restore up to 1 heart and 15 mana.":""}`
   this.openDraft(); return true
  }
  damage(amount: number) {
@@ -313,12 +322,25 @@ export class SurvivalRun {
    const boss = this.spawn("boss", { x: s.player.x + 5, z: s.player.z - 4 })
    if (boss) { s.nextBoss += B.bossInterval; if (s.phase === "skills") { s.phase = "arena"; s.command = "" } }
   }
+  const opening=s.time<B.openingSeconds,learning=s.time<B.learningSeconds
+  const floor=opening?2:learning?3:4,limit=opening?B.openingThreats:learning?B.learningThreats:s.time<B.bossInterval?B.preBossThreats:B.enemies
+  const interval=opening?B.openingInterval:learning?B.learningInterval:B.spawnInterval
   s.spawnAt -= dt
   if (s.spawnAt <= 0) {
-   const roster:EnemyKind[]=s.time<90?["skeleton","goblin","skeleton"]:s.time<150?["skeleton","goblin","guard"]:["skeleton","goblin","skeleton","goblin","skeleton","goblin","guard","guard","minotaur","bomber","mage"]
-   const deficit=4-this.targets().filter(e=>!objects.includes(e.kind)).length
-   for(let i=0;i<Math.max(1,Math.min(3,deficit));i++)this.spawn(this.pick(deficit>0?roster:[...roster,"barrel","chest"]))
-   s.spawnAt = Math.max(.65, B.spawnInterval / (1 + s.time / 360 + s.level * .03))
+   const roster:EnemyKind[]=opening?["skeleton","goblin","skeleton"]:s.time<150?["skeleton","goblin","guard"]:["skeleton","goblin","skeleton","goblin","skeleton","goblin","guard","guard","minotaur","bomber","mage"]
+   const needed=Math.max(floor-this.targets().filter(e=>!objects.includes(e.kind)).length,4-s.queue.length)
+   for(let i=0;i<Math.max(1,Math.min(opening?2:3,needed));i++){
+    this.refreshQueue()
+    const threats=s.enemies.filter(e=>!objects.includes(e.kind)).length
+    const needCombat=this.targets().filter(e=>!objects.includes(e.kind)).length<floor,needLabels=s.queue.length<4
+    if(threats>=limit&&!needLabels)break
+    let pool:EnemyKind[]
+    if(threats>=limit||!needCombat&&needLabels)pool=["chest","barrel"]
+    else if(needCombat)pool=roster
+    else pool=[...roster,"barrel","chest"]
+    this.spawn(this.pick(pool))
+   }
+   s.spawnAt = learning?interval:Math.max(.65, interval / (1 + s.time / 360 + s.level * .03))
   }
   for (const e of [...s.enemies]) {
    if (e.frozen > 0) { e.frozen -= dt; continue }
@@ -345,7 +367,7 @@ export class SurvivalRun {
   s.projectiles = s.projectiles.filter(p => { p.x += p.vx * dt; p.z += p.vz * dt; p.life -= dt; if (distance(p, s.player) < .6) { this.damage(1); return false }; return p.life > 0 })
   this.collectLoot(); this.openDraft(); this.refreshQueue()
   // Preserve scripted spawn holds; shorten only the director's normal countdown.
-  if(s.spawnAt<=B.spawnInterval&&this.targets().filter(e=>!objects.includes(e.kind)).length<4)s.spawnAt=Math.min(s.spawnAt,.3)
+  if(s.spawnAt<=interval&&(s.queue.length<4||this.targets().filter(e=>!objects.includes(e.kind)).length<floor&&s.enemies.filter(e=>!objects.includes(e.kind)).length<limit))s.spawnAt=Math.min(s.spawnAt,.3)
  }
  serialize() { return JSON.stringify(this.state) }
 }

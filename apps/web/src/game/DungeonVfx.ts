@@ -1,10 +1,10 @@
 import { AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, DoubleSide, DynamicDrawUsage, Euler, Float32BufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, PlaneGeometry, Quaternion, RingGeometry, Scene, Vector3 } from "three"
 import type { Point } from "@typecade/contracts"
 
-export type VisualEffect = "slash" | "cleave" | "hit" | "storm" | "lightning" | "heal" | "pickup" | "shatter" | "magnet" | "death" | "dust" | "dash" | "block" | "spawn"
+export type VisualEffect = "slash" | "cleave" | "hit" | "storm" | "lightning" | "heal" | "pickup" | "shatter" | "magnet" | "death" | "dust" | "dash" | "block" | "spawn" | "hurt" | "level" | "upgrade"
 type Burst = Point & { kind: VisualEffect; age: number; life: number; angle: number; power: number; end?: Point; tint?: number }
-const colors = { slash: 0x65dfff, cleave: 0xffa64f, hit: 0xff7651, storm: 0x73cdff, lightning: 0xb3eaff, heal: 0x8cffad, pickup: 0x9af3b8, shatter: 0xffd99b, magnet: 0xa3dfff, death: 0xe5caa1, dust: 0x8c959c, dash:0x7bdcff, block: 0xffd376, spawn:0x9a9cfa }
-const major:VisualEffect[]=["cleave","storm","heal","magnet","death"]
+const colors = { slash: 0x65dfff, cleave: 0xffa64f, hit: 0xff7651, storm: 0x73cdff, lightning: 0xb3eaff, heal: 0x8cffad, pickup: 0x9af3b8, shatter: 0xffd99b, magnet: 0xa3dfff, death: 0xe5caa1, dust: 0x8c959c, dash:0x7bdcff, block: 0xffd376, spawn:0x9a9cfa, hurt:0xff694f, level:0xffd571, upgrade:0xffdf91 }
+const major:VisualEffect[]=["cleave","storm","heal","magnet","death","hurt","level","upgrade"]
 
 /** Bounded presentation bursts. Neither effects nor their clocks change combat or input. */
 export class DungeonVfx {
@@ -55,7 +55,7 @@ export class DungeonVfx {
    else if(!major.includes(kind))return
    else this.bursts.shift()
   }
-  this.bursts.push({ kind, x, z, angle, power, end, tint, age: 0, life: kind==="dash"?.24:kind === "heal" || kind === "death" ? .85 : kind === "pickup" ? .65 : kind === "slash" || kind === "cleave" ? .36 : .6 })
+  this.bursts.push({ kind, x, z, angle, power, end, tint, age: 0, life: kind==="level"||kind==="upgrade"?1.2:kind==="dash"?.24:kind === "heal" || kind === "death" ? .85 : kind === "pickup" ? .65 : kind === "slash" || kind === "cleave" ? .36 : .6 })
  }
  clear() { this.bursts.length = 0; for (const mesh of [this.sparks, this.arcs, this.rings, this.bolts, this.glows]) mesh.count = 0 }
  groundLight(x:number,z:number,color:number,intensity:number) { this.place(this.glows,x,.005,z,6,6,1,-Math.PI/2,0,0,color,intensity);this.glows.instanceMatrix.needsUpdate=true;this.glows.instanceColor!.needsUpdate=true }
@@ -79,7 +79,7 @@ export class DungeonVfx {
     this.place(this.arcs,b.x,.8,b.z,radius,radius,1,-1.25,b.angle+t*2.4,0,color,fade*1.6)
     this.place(this.arcs,b.x,.83,b.z,radius*.90,radius*.90,1,-1.25,b.angle+t*2.4-.1,0,0xf2fcff,fade*1.3)
    }
-   if (["storm", "lightning", "heal", "magnet", "cleave", "block", "hit", "spawn"].includes(b.kind)) {
+   if (["storm", "lightning", "heal", "magnet", "cleave", "block", "hit", "spawn", "hurt", "level", "upgrade"].includes(b.kind)) {
     const radius = b.kind === "storm" || b.kind === "magnet" ? .8+t*5 : b.kind === "cleave" ? .5+t*3.5 : .5+t*1.6
     this.place(this.rings,b.x,.06,b.z,radius*size,radius*size,1,-Math.PI/2,0,t*2,color,fade)
     this.place(this.glows,b.x,.04,b.z,radius*4,radius*4,1,-Math.PI/2,0,0,color,fade*.35)
@@ -102,7 +102,8 @@ export class DungeonVfx {
     if(b.kind==="slash"||b.kind==="cleave"){y=.7+Math.sin(t*Math.PI)*.9;sx=scale*3;sz=scale*.5}
     if(b.kind==="dust"){y=.07+t*.3;sx=scale*2;sy=scale*.4;sz=scale*2}
     if(b.kind==="spawn"){y=t*2.6;x=b.x+Math.sin(a)*(.6-t*.4);z=b.z+Math.cos(a)*(.6-t*.4);sy=scale*3}
-    const impact=(b.kind==="hit"||b.kind==="shatter")&&i<4&&t<.25
+    if(b.kind==="level"||b.kind==="upgrade"){y=.2+t*4+(i%3)*.3;x=b.x+Math.sin(a+t*4)*(.8+t*.5);z=b.z+Math.cos(a+t*4)*(.8+t*.5);sy=scale*6}
+    const impact=(b.kind==="hit"||b.kind==="shatter"||b.kind==="hurt")&&i<4&&t<.25
     if(impact){y=1+Math.sin(a)*(.2+t*2);x=b.x+Math.cos(a)*(.2+t*2);z=b.z;sx=.45*(1-t*4);sy=.035;sz=.05}
     this.place(this.sparks,x,Math.max(.04,y),z,sx,sy,sz,impact?0:b.age*4+i,impact?0:a,impact?a:b.age*5,impact?0xf4faff:color,fade*(impact?2.5:1.4))
    }

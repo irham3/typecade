@@ -23,7 +23,7 @@ Orthographic azimuth starts at 45 degrees, elevation 35.264 degrees above the gr
 | Damage / danger | `#e96861` |
 | Curse / elite magic | `#b391e8` |
 
-Validate text contrast in the rendered scene. Pixel heading font stays local with its SIL license; small text is readable monospace. UI glyphs share authored shapes/stroke weight. No generic emoji/icon packs, decorative dashboard charts or excessive glows. Dungeon identity reaches all shell pages, not just gameplay.
+Validate text contrast in the rendered scene. Pixel heading font stays local with its SIL license; small text is readable monospace. UI glyphs share authored shapes/stroke weight. Use the same stone/steel/brass panel and button edges across title, Dojo, lobby, settings, account, drafts and results. Buttons press into their bevels; entry/card transitions are short and respect Reduced Effects. No generic emoji/icon packs, decorative dashboard charts or excessive glows. Dungeon identity reaches all shell pages, not just gameplay.
 
 ## Actor and prop manifest
 
@@ -40,7 +40,8 @@ Prefer procedural shared primitives and small authored geometry; reuse existing 
 
 | Element | Required motion / feedback |
 | --- | --- |
-| Knight | Breathing/weight shift, articulated gait, anticipation, dash lean, sword arc, recovery and hit recoil |
+| Knight | Breathing/weight shift, articulated gait, anticipation, dash lean, sword arc, recovery, actual-damage armor flash/red ring/edge/lost-HP response and hit recoil |
+| Progression | Golden level pulse, frozen draft entrance, current/next rank, separate acquired-upgrade pulse and benefit text |
 | Trash | Independent gait phase, target pursuit, attack tell, knockback and short death reaction |
 | Shields/elites | Layer crack/shatter, heavy impact, distinct surviving next-layer state |
 | Bomber/mage | Fuse countdown/cast tell, real timed projectile or explosion outcome |
@@ -83,3 +84,14 @@ After warmup, live entities/geometry/material/texture counts must plateau within
 The original measurements below predate the 2026-10-16 visual revision. New evidence belongs in `verification/dungeon-visual-2026-10-16`; do not use the original 44-call result as the revised renderer's budget measurement. The visual revision adds chamfered character forms, independently posed arms, tapered sword trails, differentiated skills, short death poses, depth-based outlines, two small procedurally authored textures, ruin returns, wind-deformed banners and torch fixtures, spawn rings and brief impact stars. These replace the earlier one-box-per-event effects. Contact damage, HP, dash destinations and XP rules are preserved. Word pools and the spawn director now follow the revised game design; the bounded word history is backward compatible with version-1 saves; room events now preserve the accepted cast's skill name, and the effect-history cap retains cast cues during full-horde hits.
 
 The [verification record](verification/dungeon-2026-10-16/README.md) contains hardware-labelled 900-second and final-build follow-up reports. The original long session measured render p95 18.0 ms on Radeon 860M. The final short capped scene remains 44 calls / p95 18.0 ms; Reduced Effects is 42 calls / p95 34.9 ms after avoiding clean-frame scheduling delays. These are local measurements, not a universal frame-rate guarantee or low-end phone calibration. Live entity limits stay unchanged.
+
+The later onboarding/damage revision is verified separately in `verification/dungeon-feedback-2026-10-16`. It retains the VFX instance caps, adds one shared hero material for local damage emission, and uses the existing post pass for the edge response. The optional tutorial shares the renderer and headless rules; it never allocates a second WebGL canvas or writes a run checkpoint.
+
+
+## Adaptive audio revision, 2026-10-16
+
+The dungeon uses an original locally synthesized D-minor score at 112 BPM: eight bars of changing harmony and melody, soft pad/bass in menu and Dojo, beat-aligned percussion/ostinato layers under nearby threats, low brass for a live boss, and reduced lead plus a double heartbeat at 34% HP or below (party threshold: 30/100). Drafting keeps a quiet bed so the level fanfare completes. Defeat stops the score and plays a descending phrase; boss defeat has its own victory fanfare. Filtered noise supplies subdued torch/wind texture and crackle. These are synthesized character cues, not recorded monster voices or an orchestral soundtrack.
+
+Actual events select distinct swing, cleave, armor, hurt, creature, death, explosion, loot, magnet, chest, heal, level and upgrade sounds. Nearby creature chatter is limited globally to one cue per 650 ms and per kind to one per 1.4 s; normal repeat cues have 100 ms cooldowns. Minor cues vary pitch slightly. Music ducks to 0.38 gain beneath major cues and releases gradually. Three persisted controls set Master, Music & ambience, and Sound effects; existing settings retain their master value and default missing bus values to 0.7/1.0. Master defaults to the existing 0.28. A master compressor and conservative bus gains provide headroom; this is not a measured LUFS or speaker-calibrated result.
+
+Audio is created only after a gesture. One 40 ms audio-clock scheduler looks ahead 140 ms and skips missed time rather than replaying a backlog. Hard cap: 40 scheduled/live source voices total, with bus caps of 22 music, 20 effects and 2 ambience. Major feedback may evict lower-priority voices within those bounds; minor swarm chatter drops at capacity. One mono one-second noise buffer is shared (192 KB at 48 kHz). Hidden tabs, paused gameplay, context loss and mute stop sources/timer and suspend the context; renderer teardown disconnects all buses, closes the context and releases the buffer. No external audio assets or library are added. Actual listening and timed hardware profiling remain deferred at the user's request.

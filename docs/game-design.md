@@ -12,7 +12,7 @@ All five modes remain in scope: Endless Survival, Typing Dojo, Castle Sprint, Br
 
 ## 2. Endless loop
 
-1. Spawn seeded skeletons/goblins from 360 degrees outside a protected start radius. Begin with an explicit keyboard-ready action and readable controls; no damage before readiness.
+1. Begin with two slower seeded enemies and two optional objects, spread 6-6.9 units from the player. New enemies arrive from safe directions outside a protected start radius. Begin with an explicit keyboard-ready action and readable controls; no damage before readiness.
 2. Show 4–6 eligible enemy/object labels, prioritizing nearby threats. Type one to lock it; finish to dash and strip a layer.
 3. Kills drop XP gems and gold. Attract nearby drops during movement. Every **50 consecutive correct characters** triggers a global XP magnet; typo resets streak.
 4. Filling XP raises run level and freezes the arena for three upgrade choices. Type a complete keyword to choose and safely resume.
@@ -47,6 +47,10 @@ Choose EN/ID before the run; language changes cannot replace an active word. UI 
 
 Enemy packs in each language contain 32 skeleton words, 32 goblin words, 20 each for guards, elites, bosses, bombers and mages, and eight each for barrels/chests. Each armor layer draws a seeded word. Prefer words absent from the last 24 generated layers; preserve distinct visible initials first, then fall back to the least recently generated eligible word if the pool is constrained. Relics keep their existing shortening/punctuation rules. Checkpoints retain this bounded history; older version-1 checkpoints initialize it empty. Late trash uses a separate 30-word pack. Four boss passages per language retain the real `BLIZZARD` trigger.
 
+Enemy labels explicitly say ENEMY/LOCKED and retain armor bars. Chests use a bordered gold diamond label saying LOOT / GOLD + XP; barrels use a bordered orange blast label saying OBJECT / EXPLODES. Objects have no enemy armor bars. Color is reinforced by icon, text and shape.
+
+Actual player HP loss and its negative damage cue drive a warm armor flash, brief red edge response, readable lost-HP indicator, recoil and a red impact ring. Preserve short feedback in Reduced Effects without camera shake. Loading a checkpoint with lower HP alone must not simulate a new hit.
+
 Telegraph bomber expiry, contact and projectile attacks. Contact damage has a cooldown; no unavoidable spawn hits. Death, drops and area-chain reactions resolve once per entity. Objects use the same bounded queue and separate type cues. Objects cannot force dash into walls.
 
 ## 5. Tab-to-cast
@@ -71,7 +75,7 @@ Shortening never rewrites partial input; apply to the next untouched word. Death
 
 Baseline XP threshold: `floor(100 * 1.25 ** level)`, with safe numeric bounds. Carry excess XP; resolve multiple levels through sequential frozen drafts. Offers are seeded, distinct and eligible, excluding maxed upgrades. Define a repeatable fallback once finite upgrades are exhausted so endless runs cannot reach an empty draft.
 
-Three cards show effect, level and unique typed keyword such as `UP-SAPU`, `PETIR`, `MAGNET`. Successful completion commits one offer exactly once. Draft input cannot trigger combat.
+Level gain produces a golden character pulse and an animated frozen draft. Cards show current-to-next rank (or max-rank restoration); choosing one applies the real upgrade and produces a separate acquisition pulse/message naming the rank and benefit. Restoration copy describes the cap honestly when HP/mana are already full. Three cards show effect, level and unique typed keyword such as `UP-SAPU`, `PETIR`, `MAGNET`. Successful completion commits one offer exactly once. Draft input cannot trigger combat.
 
 | Family | Required effect |
 | --- | --- |
@@ -95,7 +99,7 @@ Only accepted combat input triggers letter relics. Drafts, menus and skill names
 | Every 05:00 | Recurring armored boss |
 | 15:00 onward | Up to five elite layers, 8–12 letter words, faster/denser mobs |
 
-The spawn director aims for four reachable combat labels; objects do not satisfy that floor. If fewer remain after a dash, cap the next normal world-time countdown at 0.3 seconds and admit up to three replacements per pass. New normal enemies appear 6�8.5 units away on walkable floor with a clear approach and at least one unit of spacing; search 16 seeded angles before declining an unsafe spawn. The normal interval is `max(0.65, 2.4 / (1 + time / 360 + level * 0.03))`. Early packs are trash, guards begin at 90 seconds, and later packs weight trash above specialists. Retire unlocked non-boss pursuers beyond 18 units. A short arrival ring distinguishes reinforcements, and an empty queue displays a reinforcement notice. There is no artificial wave counter or mandatory arrow movement; completed words remain the repositioning action.
+For the first 90 seconds the director aims for two reachable combat labels within a maximum of four live threats. Optional objects keep the target queue at four labels. Opening batches admit at most two targets, use a four-second normal interval, and scale new-enemy speed from 65% to full baseline over this opening. From 90 to 180 seconds, aim for three reachable combat labels with six live threats and a three-second interval. From 180 seconds to the first boss, cap regular pressure at twelve live threats. After the learning stage the director aims for four reachable combat labels; objects do not satisfy that floor. If fewer remain after a dash, cap the next normal world-time countdown at 0.3 seconds and admit up to three replacements per pass. New normal enemies appear 6–8.5 units away on walkable floor with an exact segment-versus-ruin check for the approach and at least one unit of spacing; search 16 seeded angles before declining an unsafe spawn. The normal interval is `max(0.65, 2.4 / (1 + time / 360 + level * 0.03))`. Early packs are trash, guards begin at 90 seconds, and later packs weight trash above specialists. Retire unlocked non-boss pursuers beyond 18 units. A short arrival ring distinguishes reinforcements, and an empty queue displays a reinforcement notice. There is no artificial wave counter or mandatory arrow movement; completed words remain the repositioning action.
 
 Difficulty grows within entity caps: queued/offscreen spawns follow deterministic admission rules, then layers/speed/composition increase pressure. Never evict a locked target. Only one main boss is active; further scheduled bosses wait for encounter resolution.
 
@@ -104,6 +108,8 @@ Obsidian Minotaur has layered armor and separate health. Armor loss triggers **A
 Append seeded continuation if the passage ends early. Kill resolves relic/biome once, returns to horde and keeps the run going; otherwise armor reforms at stagger expiry. Pause/hidden tabs freeze the timer. Nested skill mode cannot extend stagger. Damage/XP text reflects actual rules; never copy fake `999 CRIT` values from concept art.
 
 ## 8. Other modes
+
+**Combat tutorial:** optional seven-step safe training, accessible from the main menu, pre-run dialog and Dojo. Skip tutorial is visible from the first step; Shift+Tab can reach it and Escape opens normal pause controls. Lessons reuse the headless combat rules for dash/kill, case-sensitive armor, chest rewards, barrel chains, a controlled demonstration hit plus healing, area armor removal and an actual level-up draft. Completed lessons can advance with Enter or a button. Reset training on replay; do not replace a saved survival run, award account progress or require tutorial completion before Begin run.
 
 **Typing Dojo:** safe chamber, Sensei, layered wooden dummy. Preserve word/sentence/custom practice, EN/ID, editable input, WPM/accuracy and useful settings. Lessons cover case, digits, symbols, dash/strike and sustained WPM. No death or reward farming. Paragraphs are always appropriate in this mode.
 
@@ -122,3 +128,8 @@ Use a separately versioned dungeon namespace. Preserve settings and old Ocean da
 A checkpoint includes seed and RNG state, entities/IDs, simulation clock, build, input phase and boss schedule; seed alone cannot reproduce divergent choices. Resume paused with explicit readiness. Reject corrupt/incompatible snapshots without deleting previous valid data. Account synchronization needs its own schema/validation and honest handling of locally earned scores.
 
 Before M1 implementation, pin starting HP, damage grace, dash duration, spawn curve/speeds, loot, mana costs/recovery, word cooldowns and draft weights in one tested data table. These are unspecified in the supplied GDD. Calibrate with 20/50/90/130 WPM simulations, errors/idle gaps and actual play; screenshots are not balance evidence. Preserve source requirements: 50-character magnet, five-minute bosses, ten-second stagger.
+
+
+### Adaptive score and sound feedback
+
+Presentation reads actual solo/party state for the soundtrack: menu and Dojo use a light arrangement, enemy proximity raises combat layers, an active boss adds low brass, and critical HP adds a double heartbeat. Healing out of critical HP removes the heartbeat. Draft selection retains a quiet music bed and distinct level/acquisition fanfares; paused or hidden gameplay is silent. Damage, armor, enemy arrivals/nearby creatures, deaths, loot, chest, explosive, magnet and each skill use differentiated cues with bounded repetition and priority. Settings independently control master, music/ambience and effects volumes without changing saved run/account data. Sound remains optional and never decides gameplay outcomes.

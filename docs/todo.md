@@ -119,3 +119,22 @@ The user's visual review found that the initial M2 presentation was stiff and di
 - [ ] Finish final regression, visual captures, timed profile and resource-disposal evidence for the revised source.
 
 Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save format, historical account data, endless progression and levelling rules are preserved. No new runtime dependency or public asset file is introduced.
+
+
+## M9 - Damage clarity, gentler opening, optional training and shared shell polish
+
+- [x] Add actual-damage armor/edge/ring/HP feedback; keep Reduced Effects readable and ignore HP differences from checkpoint loading alone.
+- [x] Start with two slower foes and two optional objects; cap pressure at four threats for 90 seconds, six until three minutes, twelve until the first boss.
+- [x] Distinguish enemy, loot and explosive labels with text, icons, shape and color; retain non-overlap and exact target input.
+- [x] Show real level-up/acquisition pulses, draft rank changes and applied-upgrade benefits.
+- [x] Reuse real rules for seven isolated combat lessons; allow skip from the first step, replay through Dojo and direct Begin run without tutorial completion.
+- [x] Unify steel/stone/brass controls and restrained interaction/entry animation across shell pages with reduced-motion fallbacks.
+- [ ] Finish current-source browser matrix, captures, 900-active-second profile and retirement/resource checks. This supersedes M8's remaining final-profile gate; do not label its old captures as this revision.
+
+
+## M10 - Adaptive dungeon audio, 2026-10-16
+
+- [x] Replace the single-bleep audio with an original native Web Audio score, beat-scheduled state-driven layers, quiet menu/Dojo/draft arrangements and live boss/critical-HP responses.
+- [x] Differentiate hurt, strikes, armor, creature/death, explosive, loot, chest, heal, magnet, level, upgrade, victory and defeat feedback; duck music beneath major cues and bound repeating voices.
+- [x] Add compatible persisted master/music/effects controls; stop sources/scheduling when paused, muted, hidden or context-lost and dispose with the renderer.
+- [ ] Listening on headphones/speakers, current-source automated suites and timed resource profile. User explicitly deferred testing during this implementation; earlier coverage and partial E2E results do not verify the audio revision.
