@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { App, runTime } from "./App"
 import { SurvivalRun } from "@typecade/game-rules"
+import { combatLessonWords, dungeonUpgrades, skillRules } from "@typecade/content"
 import type { DungeonEvents } from "@typecade/contracts"
 import type { GameEventBridge } from "./bridge/game-event-bridge"
 const scene=vi.hoisted(()=>({destroy:vi.fn(),bridge:null as GameEventBridge<DungeonEvents>|null,fail:false,ready:undefined as Promise<void>|undefined}))
@@ -20,10 +21,43 @@ async function mount(){
  throw new Error("Renderer did not settle")
 }
 async function click(text:string){const button=[...host.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.includes(text))!;expect(button).toBeTruthy();await act(()=>button.click())}
+it("offers a skippable, replayable combat tutorial without replacing the saved run",async()=>{
+ const saved=new SurvivalRun("keep-my-save");saved.state.time=2;const raw=saved.serialize();localStorage.setItem("typecade:dungeon:run:v1",raw)
+ await mount();await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING");await click("Skip tutorial")
+ expect(host.textContent).toContain("Every word.");expect(localStorage.getItem("typecade:dungeon:run:v1")).toBe(raw)
+ await click("Typing Dojo");await click("Combat tutorial");expect(host.textContent).toContain("Your word is your movement");await click("Skip tutorial");expect(host.textContent).toContain("Typing Dojo");await click("Main menu")
+ await click("Enter the keep");await click("Try combat tutorial");await click("Skip tutorial");expect(host.textContent).toContain("The keep is listening.")
+})
+for(const language of ["en","id"] as const)it(`teaches each real combat action and displays hit and upgrade feedback in ${language}`,async()=>{
+ await mount();const select=host.querySelector<HTMLSelectElement>('[aria-label="Word language"]')!;await act(()=>{select.value=language;select.dispatchEvent(new Event("change",{bubbles:true}))});await click("Combat tutorial")
+ const words=combatLessonWords[language]
+ const type=async(word:string)=>act(()=>{for(const key of (["Tab","Enter"].includes(word)?[word]:word))host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true,cancelable:true}))})
+ await type(words.strike);expect(host.textContent).toContain("Enemy defeated.");await type("Enter")
+ await type(words.armor[0]!);await act(()=>scene.bridge!.emit("renderer",{status:"lost",calls:0,geometries:0,textures:0}));await click("Restore scene");await click("Resume run");expect(host.textContent).toContain("Two words, two armor layers");await type(words.armor[1]!);await click("Next lesson")
+ await type(words.treasure);expect(host.textContent).toContain("Chest opened.");await click("Next lesson")
+ await type(words.barrel);expect(host.textContent).toContain("One word, one chain reaction.");await click("Next lesson")
+ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,850))});expect(host.querySelector(".damage-response")?.textContent).toContain("-2 HP")
+ await type("Tab");await type(skillRules.heal[language]);expect(host.textContent).toContain("Two hearts restored.");await click("Next lesson")
+ await type("Tab");await type(skillRules.storm[language]);expect(host.textContent).toContain("storm removed one layer");await click("Next lesson")
+ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,850))});expect(host.querySelectorAll(".upgrade-card")).toHaveLength(3);expect(host.textContent).toContain("RANK")
+ const keyword=host.querySelector('[data-testid="upgrade-keyword"]')!.textContent!
+ await act(()=>{for(const key of keyword)host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true}))})
+ expect(host.querySelector(".upgrade-acquired")?.textContent).toContain("UPGRADE ACTIVE");expect(host.textContent).toContain("Upgrade applied.")
+ expect(Object.values(dungeonUpgrades).some(offer=>host.textContent?.includes(offer.name))).toBe(true)
+ await click("Finish tutorial");await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING · 1/7")
+ const hidden=vi.spyOn(document,"hidden","get").mockReturnValue(true);await act(()=>document.dispatchEvent(new Event("visibilitychange")));expect(host.textContent).toContain("Take a breath.");hidden.mockReturnValue(false);await act(()=>document.dispatchEvent(new Event("visibilitychange")));await click("Resume run");await click("Skip tutorial")
+})
 it("announces reinforcements during a temporarily empty arena",async()=>{
  const r=new SurvivalRun("empty-ui");r.start();r.state.enemies=[];r.state.queue=[];r.state.time=r.state.worldTime=1;r.state.spawnAt=100
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
  expect(host.textContent).toContain("REINFORCEMENTS APPROACHING")
+})
+it("explains max-rank restorative drafts and applies their actual heart and mana recovery",async()=>{
+ const r=new SurvivalRun("boon-ui"),s=r.state;r.start();s.time=10;s.phase="draft";s.pendingDrafts=1;s.offers=["cleave","storm","heal"];s.player.hp=3;s.player.mana=50
+ s.skills.cleave.level=s.skills.storm.level=s.skills.heal.level=3
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
+ expect(host.textContent).toContain("MAX RANK");for(const key of "BLADE")await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
+ expect(host.querySelector(".hearts")?.getAttribute("aria-label")).toBe("4 of 6 hearts");expect(host.textContent).toContain("Restore up to 1 heart and 15 mana.")
 })
 it("opens a live game shell, settings, account and both secondary modes",async()=>{
  localStorage.setItem("typecade:ocean-typing-rpg:m1","old data")
@@ -67,6 +101,8 @@ it("loads touch settings, casts evolved skills and keeps forms and browser short
  await act(()=>host.querySelector<HTMLButtonElement>('.combat-keyboard [aria-label="q"]')!.click());await act(()=>host.querySelector<HTMLButtonElement>('.combat-keyboard>button')!.click())
  await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Settings")
  const volume=host.querySelector<HTMLInputElement>('[aria-label="Sound volume"]')!;await act(()=>userEvent.fill(volume,"0.7"))
+ await act(()=>userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Music volume"]')!,"0.35"));await act(()=>userEvent.fill(host.querySelector<HTMLInputElement>('[aria-label="Effects volume"]')!,"0.8"))
+ expect(JSON.parse(localStorage.getItem("typecade:dungeon:settings:v1")!)).toMatchObject({volume:.7,music:.35,effects:.8})
  await act(()=>host.querySelector<HTMLInputElement>('[aria-label="On-screen keyboard"]')!.click());await click("Done");await click("Save and return")
 })
 it("renders armor breaks, typed upgrades and final results from valid checkpoints",async()=>{

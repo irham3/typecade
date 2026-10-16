@@ -12,7 +12,8 @@ it("gives slash, lightning and healing different geometry and bounds simultaneou
   vfx.clear();vfx.emit("heal",0,0);vfx.update(.08,false)
   expect(vfx.rings.count).toBe(1);expect(vfx.sparks.count).toBe(10);expect(vfx.bolts.count).toBe(0)
   vfx.clear();vfx.emit("spawn",0,0);vfx.emit("hit",0,0);vfx.emit("shatter",0,0);vfx.update(.03,false);expect(vfx.sparks.count).toBe(24);expect(vfx.rings.count).toBe(2)
-  const kinds:VisualEffect[]=["slash","cleave","hit","storm","lightning","heal","pickup","shatter","magnet","death","dust","block","dash","spawn"]
+  vfx.clear();for(const kind of ["hurt","level","upgrade"] as const)vfx.emit(kind,0,0);vfx.update(.03,false);expect(vfx.rings.count).toBe(3);expect(vfx.sparks.count).toBe(24)
+  const kinds:VisualEffect[]=["slash","cleave","hit","storm","lightning","heal","pickup","shatter","magnet","death","dust","block","dash","spawn","hurt","level","upgrade"]
   vfx.clear()
   for(let i=0;i<96;i++)vfx.emit(kinds[i%kinds.length]!,i%4,i%3,.5,1,{x:5,z:5})
   vfx.update(.12,false);expect(vfx.count).toBe(24);expect(vfx.sparks.count).toBe(128)

@@ -6,16 +6,16 @@ import { readStorage, writeStorage } from "../storage"
 
 export const dungeonSaveKey = "typecade:dungeon:run:v1"
 const bestKey = "typecade:dungeon:best:v1"
-const snapshot = (s: DungeonState): DungeonState => ({ ...s, player: { ...s.player }, enemies: s.enemies.map(e => ({ ...e, words: [...e.words] })), recentWords:[...s.recentWords], queue: [...s.queue], offers: [...s.offers], skills: { cleave: { ...s.skills.cleave }, storm: { ...s.skills.storm }, heal: { ...s.skills.heal } }, relics: { ...s.relics } })
+export const dungeonSnapshot = (s: DungeonState): DungeonState => ({ ...s, player: { ...s.player }, enemies: s.enemies.map(e => ({ ...e, words: [...e.words] })), recentWords:[...s.recentWords], queue: [...s.queue], offers: [...s.offers], skills: { cleave: { ...s.skills.cleave }, storm: { ...s.skills.storm }, heal: { ...s.skills.heal } }, relics: { ...s.relics } })
 
 export function useSurvivalRun(enabled: boolean) {
  const [initial] = useState(() => restoreDungeonRun(readStorage("localStorage", dungeonSaveKey)) ?? new SurvivalRun(`run-${Date.now()}`))
  const run = useRef(initial)
  const [bridge] = useState(() => new GameEventBridge<DungeonEvents>(new Set(["frame", "screen", "settings"])))
- const [view, setView] = useState(() => snapshot(initial.state))
+ const [view, setView] = useState(() => dungeonSnapshot(initial.state))
  const [best, setBest] = useState(() => { const n = Number(readStorage("localStorage", bestKey)); return Number.isFinite(n) && n > 0 ? n : 0 })
  const savedAt = useRef(0)
- const publish = useCallback(() => { bridge.emit("frame", run.current.state); setView(snapshot(run.current.state)) }, [bridge])
+ const publish = useCallback(() => { bridge.emit("frame", run.current.state); setView(dungeonSnapshot(run.current.state)) }, [bridge])
  const save = useCallback(() => {
   const s = run.current.state
   writeStorage("localStorage", dungeonSaveKey, run.current.serialize())
@@ -38,7 +38,7 @@ export function useSurvivalRun(enabled: boolean) {
    lag += delta
    while (lag >= 1 / 30) { run.current.advance(1 / 30); lag -= 1 / 30 }
    bridge.emit("frame", run.current.state)
-   if (now - publishedAt >= 100 || previousPhase !== run.current.state.phase) { setView(snapshot(run.current.state)); publishedAt = now }
+   if (now - publishedAt >= 100 || previousPhase !== run.current.state.phase) { setView(dungeonSnapshot(run.current.state)); publishedAt = now }
    previousPhase = run.current.state.phase
    if (now - savedAt.current > 5000 || ["draft", "dead"].includes(run.current.state.phase)) { save(); savedAt.current = now }
   }, 1000 / 30)

@@ -37,6 +37,13 @@ it("types through the focused native input and preserves browser shortcuts", asy
 	await act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })))
 	expect(onEscape).toHaveBeenCalledOnce()
 })
+it("lets native Tab navigation reach controls without trapping focus in the typing field",async()=>{
+ await act(()=>root.render(<><button>Skip</button><TypingInput label="Lesson typing" onType={()=>{}}/><button>Options</button></>))
+ const [skip,options]=host.querySelectorAll("button"),input=host.querySelector("input")!
+ expect(document.activeElement).toBe(input)
+ await act(async()=>{await userEvent.keyboard("{Shift>}{Tab}{/Shift}")});expect(document.activeElement).toBe(skip)
+ await act(()=>input.focus());await act(async()=>{await userEvent.keyboard("{Tab}")});expect(document.activeElement).toBe(options)
+})
 
 it("accepts mobile input and IME composition once, without treating composition keys as typos", async () => {
 	const onType = vi.fn()
