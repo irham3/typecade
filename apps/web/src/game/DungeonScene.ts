@@ -438,7 +438,8 @@ export class DungeonScene {
     const walk=this.reduced||e.frozen>0||death>0||dungeonObjects.includes(kind)?0:Math.sin(pace)*(active ? .55 : .16)
     e.vx+=(e.x-e.vx)*Math.min(1,delta*18);e.vz+=(e.z-e.vz)*Math.min(1,delta*18)
     const recoil=this.reduced?0:hit*.23+(e.deadAt<0?0:.65+death*.75),x=e.vx-Math.sin(angle)*recoil,z=e.vz-Math.cos(angle)*recoil
-    const bob=this.reduced||death>0||e.frozen>0?0:kind==="mage"?1.0+Math.sin(pace*.65)*.18:kind==="bat"?1.25+Math.sin(pace*1.3)*.22:kind in dungeonSupplies?.15+Math.sin(pace)*.08:Math.abs(walk)*(kind==="goblin"?.13:.065)
+    const altitude=kind==="mage"?1:kind==="bat"?1.25:0
+    const bob=altitude+(this.reduced||death>0||e.frozen>0?0:kind==="mage"?Math.sin(pace*.65)*.18:kind==="bat"?Math.sin(pace*1.3)*.22:kind in dungeonSupplies?.15+Math.sin(pace)*.08:Math.abs(walk)*(kind==="goblin"?.13:.065))
     const stagger = e.kind === "boss" && s?.phase === "overdrive"
     this.matrix.makeRotationX(-Math.PI/2).scale(this.scale.setScalar(scale*1.1)).setPosition(x,.015,z);this.shadows.setMatrixAt(shadowIndex++,this.matrix)
     this.rotation.setFromEuler(this.euler.set(this.reduced?0:-hit*.22+strike*.22+death*1.3+(e.motion==="windup"?-.2:e.motion==="charge"?.35:0),e.angle,this.reduced?0:walk*.065+death*.6,"YXZ"))

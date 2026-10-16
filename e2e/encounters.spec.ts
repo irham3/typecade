@@ -12,6 +12,6 @@ test("typed supplies equip shield and a real sentry beside distinct flying and r
   await expect(page.locator(`.equipment-badge.item-${kind}`)).toBeVisible()
  }
  await expect(page.getByLabel("Shield",{exact:true})).toHaveAttribute("value","2");await expect(page.locator(".item-sentry")).toContainText("ACTIVE")
- await expect(page.locator(".item-potion")).toContainText("USED");await page.keyboard.press("Escape");await page.screenshot({path:info.outputPath("equipped-supplies.png")})
+ await expect(page.locator(".item-potion")).toContainText("USED");await page.screenshot({path:info.outputPath("equipped-supplies.png")});await page.keyboard.press("Escape")
  await page.getByRole("button",{name:"Resume run"}).click();await page.keyboard.press("Escape");await page.getByRole("button",{name:"Save and return to title"}).click();await page.reload();await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click();await expect(page.locator(".item-shield")).toContainText("2/4")
 })

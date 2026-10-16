@@ -6,7 +6,7 @@ import { createArenaCombat,createRacePlayer,defaultRaceConfig,type RaceRoomSnaps
 import type { DungeonEvents, PartyWorld } from "@typecade/contracts"
 import { partyWorld } from "../dungeon/party-world"
 import type { DungeonVfx } from "./DungeonVfx"
-import type { MeshStandardMaterial,ShaderMaterial } from "three"
+import { Matrix4,type InstancedMesh,type MeshStandardMaterial,type ShaderMaterial } from "three"
 
 it("marks actual player damage, level gain and acquired power with distinct visual feedback",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1000px;height:700px";document.body.append(host)
@@ -155,14 +155,15 @@ it("bounds death afterimages, reacts to damage and armor, and presents authorita
 it("renders flying enemies, supply silhouettes, shield gear, sentry beams and charge telegraphs from actual state",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1280px;height:800px";document.body.append(host)
  const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),r=new SurvivalRun("equipment-visual"),s=r.state
- const visual=game as unknown as {tick:(t:number)=>void;heroShield:{visible:boolean};sentryMesh:{visible:boolean};orbitals:{count:number};telegraphs:{count:number}}
+ const visual=game as unknown as {tick:(t:number)=>void;heroShield:{visible:boolean};sentryMesh:{visible:boolean};orbitals:{count:number};telegraphs:{count:number};batches:Map<string,{body:InstancedMesh}>}
  try{
   await game.ready;game.renderer.setAnimationLoop(null);bridge.emit("screen","endless");r.start();s.enemies=[];s.queue=[];let now=performance.now();const frame=()=>{now+=50;bridge.emit("frame",s);visual.tick(now)};frame()
   for(const [i,kind]of (["shield","potion","mana","sentry","bat","mage","minotaur"] as const).entries())r.spawn(kind,{x:(i%3)*2,z:Math.floor(i/3)*2})
   const mage=s.enemies.find(e=>e.kind==="mage")!;mage.attack=.5
   const minotaur=s.enemies.find(e=>e.kind==="minotaur")!;minotaur.motion="windup";minotaur.motionTime=1;minotaur.aim={x:0,z:0};s.player.shield=2;s.relics.lightning=s.relics.vowels=1;s.sentry={x:0,z:0,life:18,cooldown:1};frame()
   const button=document.createElement("button");host.append(button);button.click();host.click();window.dispatchEvent(new Event("click"));button.remove()
-  s.queue=[s.enemies.find(e=>e.kind==="bat")!.id];frame();bridge.emit("settings",{reduced:true,volume:0});frame();bridge.emit("settings",{reduced:false,volume:0});frame()
+  s.queue=[s.enemies.find(e=>e.kind==="bat")!.id];frame();bridge.emit("settings",{reduced:true,volume:0});frame()
+  const transform=new Matrix4();visual.batches.get("bat")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThanOrEqual(1.25);visual.batches.get("mage")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThanOrEqual(1);bridge.emit("settings",{reduced:false,volume:0});frame()
   expect(visual.heroShield.visible).toBe(true);expect(visual.sentryMesh.visible).toBe(true);expect(visual.orbitals.count).toBe(4);expect(visual.telegraphs.count).toBe(2)
   s.effects=[{id:s.nextId++,kind:"sentry",x:0,z:0,life:.55,value:1,to:{x:2,z:2}},{id:s.nextId++,kind:"block",x:0,z:0,life:.55,value:1}];frame()
   minotaur.motion="charge";frame();s.enemies=[];s.queue=[];frame()
