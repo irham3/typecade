@@ -7,6 +7,7 @@ describe("authoritative dungeon room combat",()=>{
  it("seeds the course and gives obstacle words actual distance bonuses",()=>{
   const config={...defaultRaceConfig,mode:"sprint" as const,wordCount:50};expect(generateDungeonRoomText(config,"a")).toBe(generateDungeonRoomText(config,"a"));expect(generateDungeonRoomText(config,"a")).not.toBe(generateDungeonRoomText(config,"b"))
   expect(generateDungeonRoomText({...config,language:"id"},"a")).toContain("LOMPAT");expect(generateDungeonRoomText({...config,mode:"raid"},"a").split(" ")).toHaveLength(1000)
+  for(const language of ["en","id"] as const){const words=generateDungeonRoomText({...config,language,mode:"raid"},"variety").split(" ");expect(new Set(words).size).toBeGreaterThan(35);for(let i=0;i<words.length;i++){if(i%7===5)expect(words[i]).toBe(language==="en"?"DODGE":"LOMPAT");else if(i%11===8)expect(words[i]).toBe(language==="en"?"IGNITE":"LEDAKKAN");else if(words[i]!==words[i]!.toUpperCase())expect(words.slice(Math.max(0,i-8),i)).not.toContain(words[i])}}
   const c=createArenaCombat("sprint",players(),0);applyArenaWord(c,"0","dash",1);applyArenaWord(c,"0","DODGE",2);applyArenaWord(c,"0","IGNITE",3);expect(c.players["0"]!.distance).toBe(28);expect(courseDistance("one two three")).toBe(15)
   expect(castArenaSkill(c,"0","cleave",1,4)).toBe("");expect(c.players["0"]!.distance).toBe(36);c.players["0"]!.cooldowns.storm=0;expect(castArenaSkill(c,"0","storm",2,5)).toBe("")
  })
@@ -55,4 +56,14 @@ describe("authoritative dungeon room combat",()=>{
   const p=players();p[0]!.role="healer";const c=createArenaCombat("sprint",p,0);for(let i=0;i<40;i++)applyArenaWord(c,"0","run",i);expect(c.actions).toHaveLength(16);expect(c.players["0"]!.role).toBe("healer");applyArenaWord(c,"missing","a",100)
  })
  it("finishes an empty opponent set safely",()=>{const c=createArenaCombat("clash",players().slice(0,1),0);applyArenaWord(c,"0","strike",1);expect(c.winner).toBe("0")})
+ it("preserves the cast skill in room events so clients can distinguish cleave from storm",()=>{
+  for(const mode of ["sprint","clash","raid"] as const){
+   const c=createArenaCombat(mode,players(),0)
+   expect(castArenaSkill(c,"0","cleave",1,10)).toBe("");expect(c.actions.at(-1)).toMatchObject({kind:"cleave",player:"0",at:10})
+   expect(castArenaSkill(c,"0","storm",2,20)).toBe("");expect(c.actions.at(-1)).toMatchObject({kind:"storm",player:"0",at:20})
+   if(mode==="clash")expect(c.players["1"]!.hp).toBe(65)
+   if(mode==="raid")expect(c.bossHp).toBe(910)
+   if(mode==="sprint")expect(c.players["0"]!.distance).toBe(20)
+  }
+ })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { SurvivalRun, createDungeonState, restoreDungeonRun, runAccuracy, runWpm, xpThreshold } from "./survival"
-import { dungeonBalance as B, dungeonUpgrades, skillRules } from "../../content/src/dungeon"
+import { SurvivalRun, createDungeonState, dungeonWalkable, restoreDungeonRun, runAccuracy, runWpm, xpThreshold } from "./survival"
+import { dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, skillRules } from "../../content/src/dungeon"
 import type { DungeonState, EnemyKind, SkillId, UpgradeId } from "../../contracts/src/survival"
 
 const type = (run: SurvivalRun, word: string) => { for (const key of word) run.input(key) }
@@ -9,6 +9,53 @@ function tick(run: SurvivalRun, seconds: number) { for (let i = 0; i < Math.ceil
 function defeat(run: SurvivalRun, kind: EnemyKind = "skeleton") { const e = run.spawn(kind, { x: run.state.player.x + 2, z: run.state.player.z })!; run.refreshQueue(); while (e.words.length && run.state.enemies.includes(e)) type(run, e.words[0]!); return e }
 
 describe("real-time typing survival", () => {
+ it("varies words without weakening enemy-specific case, symbols or armor",()=>{
+  for(const language of ["en","id"] as const){
+   const r=new SurvivalRun("lexicon",language);r.state.enemies=[]
+   for(const kind of Object.keys(dungeonWords[language]) as EnemyKind[]){
+    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(kind==="barrel"||kind==="chest"?8:20)
+    const seen:string[]=[]
+    for(let i=0;i<30;i++){r.state.enemies=[];r.state.boss=null;const e=r.spawn(kind,{x:2,z:0})!;expect(pool).toContain(e.words[0]);seen.push(...e.words)}
+    expect(new Set(seen).size).toBeGreaterThanOrEqual(Math.min(pool.length,20))
+    if(kind==="skeleton"||kind==="goblin")expect(pool.every(w=>/^[a-z]{3,7}$/.test(w))).toBe(true)
+    if(kind==="guard")expect(pool.every(w=>/^[A-Z][a-z]+$/.test(w))).toBe(true)
+    if(kind==="boss"||kind==="minotaur")expect(pool.every(w=>/^[A-Z]+$/.test(w))).toBe(true)
+    if(kind==="bomber")expect(pool.every(w=>/^[a-z]+-\d+$/.test(w))).toBe(true)
+    if(kind==="mage")expect(pool.every(w=>/[!_]/.test(w))).toBe(true)
+   }
+   r.state.enemies=[];r.state.recentWords=[];const recent:string[]=[]
+   for(let i=0;i<80;i++){const e=r.spawn("skeleton",{x:2,z:0})!;expect(recent.slice(-24)).not.toContain(e.words[0]);recent.push(e.words[0]!);r.state.enemies=[]}
+   expect(r.state.recentWords).toHaveLength(24)
+   r.state.time=901;expect(dungeonLongWords[language]).toContain(r.spawn("goblin")!.words[0])
+   r.refreshQueue();const original=r.serialize(),loaded=restoreDungeonRun(original)!
+   expect(loaded.state.recentWords).toEqual(r.state.recentWords);expect(loaded.spawn("guard")?.words).toEqual(r.spawn("guard")?.words)
+   const legacy=JSON.parse(original);delete legacy.recentWords;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.recentWords).toEqual([])
+   for(const bad of [null,[7],[""],["x".repeat(41)],Array(25).fill("cut")]){const s=JSON.parse(original);s.recentWords=bad;expect(restoreDungeonRun(JSON.stringify(s))).toBeNull()}
+  }
+ })
+ it("refills reachable combat targets promptly after a dash and bounds their approach",()=>{
+  for(const time of [0,100,160])for(const position of [{x:0,z:0},{x:14,z:4},{x:-12,z:-3}]){
+   const r=arena();r.state.player.x=position.x;r.state.player.z=position.z;r.state.time=time;r.state.nextBoss=1000;r.state.spawnAt=2
+   tick(r,.4)
+   const targets=r.targets().filter(e=>e.kind!=="chest"&&e.kind!=="barrel")
+   expect(targets.length).toBeGreaterThanOrEqual(3)
+   expect(new Set(targets.map(e=>e.words[0]![0])).size).toBe(targets.length)
+   for(const e of targets){const d=Math.hypot(e.x-position.x,e.z-position.z);expect(d).toBeGreaterThan(5.5);expect(d).toBeLessThan(8.6);for(let t=0;t<=1;t+=.05)expect(dungeonWalkable({x:position.x+(e.x-position.x)*t,z:position.z+(e.z-position.z)*t})).toBe(true)}
+   expect(targets.some((a,i)=>targets.slice(i+1).some(b=>Math.hypot(a.x-b.x,a.z-b.z)<.9))).toBe(false)
+   r.state.enemies=[];r.state.queue=[];r.state.player.x+=4;tick(r,.8);expect(r.targets().length).toBeGreaterThanOrEqual(4)
+  }
+  const r=arena();tick(r,.4);expect(r.state.enemies).toHaveLength(0)
+ })
+ it("preserves a storm cue when a full horde fills the bounded effect history",()=>{
+  const r=arena()
+  for(let i=0;i<B.enemies;i++)r.spawn("guard",{x:Math.sin(i)*5,z:Math.cos(i)*5})
+  r.input("Tab");expect(r.cast("storm")).toBe(true)
+  expect(r.state.enemies).toHaveLength(128);expect(r.state.enemies.every(e=>e.words.length===1)).toBe(true)
+  expect(r.state.effects).toHaveLength(B.effects);expect(r.state.effects.some(fx=>fx.kind==="storm")).toBe(true)
+  r.state.effects=Array.from({length:B.effects},()=>({id:r.state.nextId++,kind:"slash" as const,x:0,z:0,life:.5,value:1}))
+  r.state.player.mana=100;r.state.skills.storm.cooldown=0;r.input("Tab");r.cast("storm")
+  expect(r.state.enemies).toHaveLength(0);expect(r.state.effects).toHaveLength(B.effects);expect(r.state.effects.some(fx=>fx.kind==="storm")).toBe(true)
+ })
  it("handles pressure caps, interrupted targets and armor breaks caused by skills",()=>{
   const r=arena();r.resume();const enemy=r.spawn("minotaur",{x:2,z:0})!;r.refreshQueue();r.input(enemy.words[0]![0]!);enemy.words=[enemy.words[0]!];r.state.skills.storm.level=3;r.input("Tab");r.cast("storm");expect(r.state.prefix).toHaveLength(1);expect(enemy.words[0]!.length).toBeGreaterThan(1)
   r.state.target=999;r.input("x");expect(r.state.target).toBeNull()
@@ -64,7 +111,7 @@ describe("real-time typing survival", () => {
  it("heals, evolves freeze and aegis, and limits skill use to skill mode", () => {
   const r = arena(); expect(r.cast("heal")).toBe(false); r.input("Tab"); expect(r.cast("heal")).toBe(false); expect(r.state.notice).toContain("full")
   r.state.player.hp = 1; r.state.skills.heal.level = 3; expect(r.cast("heal")).toBe(true); expect(r.state.player.hp).toBe(3); expect(r.state.player.invincible).toBe(4)
-  const e = r.spawn("minotaur", { x: 4, z: 0 })!; r.state.player.mana = 100; r.state.skills.storm.level = 3; r.input("Tab"); r.cast("storm"); expect(e.frozen).toBe(5); expect(e.words[0]!.length).toBe(3); tick(r, .1); expect(e.frozen).toBeLessThan(5)
+  const e = r.spawn("minotaur", { x: 4, z: 0 })!,shortened=e.words.slice(1).map(w=>w.slice(0,Math.ceil(w.length/2))); r.state.player.mana = 100; r.state.skills.storm.level = 3; r.input("Tab"); r.cast("storm"); expect(e.frozen).toBe(5); expect(e.words).toEqual(shortened); tick(r, .1); expect(e.frozen).toBeLessThan(5)
   r.state.player.mana = 100; r.state.skills.cleave.level = 3; r.input("Tab"); r.cast("cleave"); expect(r.state.enemies).not.toContain(e)
  })
  it("collects XP on dash, carries overflow and freezes for distinct typed upgrade choices", () => {
@@ -79,11 +126,18 @@ describe("real-time typing survival", () => {
   r.input("?"); expect(r.state.streak).toBe(0)
  })
  it("runs digit bombers, mage projectiles and environmental chain explosions", () => {
+  const far=arena(),unlocked=far.spawn("bomber",{x:7,z:0})!;unlocked.attack=0;tick(far,.1);expect(far.state.player.hp).toBe(6);expect(far.state.enemies).not.toContain(unlocked)
   const r = arena(); const mage = r.spawn("mage", { x: 2, z: 0 })!; mage.attack = .01; tick(r, .1); expect(r.state.projectiles.length).toBeGreaterThan(0)
   r.state.player.invincible = 0; const hp = r.state.player.hp; tick(r, 1); expect(r.state.player.hp).toBeLessThanOrEqual(hp)
   const bomb = r.spawn("bomber", { x: r.state.player.x + 1, z: r.state.player.z })!; bomb.attack = .01; r.refreshQueue(); r.input(bomb.words[0]![0]!); tick(r, .1); expect(r.state.target).toBeNull(); expect(r.state.enemies).not.toContain(bomb)
   r.state.player.invincible = 100; r.state.enemies = []; defeat(r, "barrel"); defeat(r, "chest"); expect(r.state.gold).toBeGreaterThan(20)
   r.state.enemies = []; defeat(r, "bomber"); defeat(r, "mage"); expect(r.state.player.mana).toBeLessThanOrEqual(100)
+ })
+ it("does not step into a wall when an oversized movement step overshoots its corner waypoint",()=>{
+  const r=arena();r.state.player={...r.state.player,x:16,z:10}
+  const e=r.spawn("skeleton",{x:4,z:6})!;e.speed=10;e.waypoint={x:4.7,z:6.7}
+  const before={x:e.x,z:e.z};(r as unknown as {moveEnemy:(enemy:typeof e,dt:number)=>void}).moveEnemy(e,.3)
+  expect(dungeonWalkable(e)).toBe(true);expect(Number.isFinite(e.x)).toBe(true);expect(e.x).toBe(before.x);expect(e.z).toBe(before.z)
  })
  it("enforces finite pools and returns to endless after a recurring boss", () => {
   const r = arena(); r.state.time = 299.99; tick(r, .1); expect(r.state.boss).not.toBeNull()

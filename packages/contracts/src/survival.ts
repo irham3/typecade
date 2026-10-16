@@ -16,7 +16,7 @@ export interface DungeonState {
  version: 1; seed: string; rng: number; language: DungeonLanguage; phase: RunPhase; resumePhase: RunPhase
  time: number; worldTime: number; nextBoss: number; spawnAt: number; nextId: number; biome: number
  player: Point & { hp: number; maxHp: number; mana: number; invincible: number; dashFrom: Point; dashAt: number }
- enemies: DungeonEnemy[]; loot: DungeonLoot[]; projectiles: DungeonProjectile[]; effects: DungeonEffect[]
+ enemies: DungeonEnemy[]; loot: DungeonLoot[]; projectiles: DungeonProjectile[]; effects: DungeonEffect[]; recentWords: string[]
  target: number | null; prefix: string; command: string; queue: number[]; labelLimit: number
  level: number; xp: number; totalXp: number; gold: number; kills: number; words: number; correct: number; errors: number; streak: number; bestStreak: number
  skills: Record<SkillId, { level: number; cooldown: number }>; relics: Record<RelicId, number>
@@ -27,7 +27,7 @@ export interface DungeonLabel { id: number; x: number; y: number; visible: boole
 export interface PartyWorld {
  mode:"sprint"|"clash"|"raid";phase:"waiting"|"countdown"|"racing"|"finished";casting:boolean;ownId:string|null
  players:Array<{id:string;name:string;x:number;z:number;color:number;hp:number;action:string;actionAt:number;target:string|null;role:string}>
- boss:{hp:number;maxHp:number}|null;now:number;focus:Point
+ boss:{hp:number;maxHp:number;nextAttack:number;attackAt:number;target:string|null}|null;now:number;focus:Point
  obstacles:Array<Point & {kind:"barrel"|"goblin"|"barrier";word:string}>
 }
 export interface DungeonEvents {

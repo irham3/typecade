@@ -1,6 +1,6 @@
 # Typecade — Dungeon Typing Roguelike
 
-Status: implemented and verified in this branch; production app/Worker deployment is separate. Revision: 2026-10-15.
+Status: implemented and verified in this branch; production app/Worker deployment is separate. Revision: 2026-10-16.
 
 Source: [supplied full GDD](source/2026-10-15-typecade-user-gdd.md) and [four references](README.md#visual-references). This document resolves interactions and distinguishes product rules from image prompts. The planning checkpoint was pushed before implementation; see the delivery checklist for current evidence.
 
@@ -44,6 +44,8 @@ Choose EN/ID before the run; language changes cannot replace an active word. UI 
 | Mage | `hex_bolt!`, `void_orb!` / `kutuk_petir!`, `mantra!` | Return projectile; drop mana |
 | Barrel | `IGNITE` / `LEDAKKAN` | Free local area explosion |
 | Chest | `LOOT` / `BUKA` | Treasure pickup |
+
+Enemy packs in each language contain 32 skeleton words, 32 goblin words, 20 each for guards, elites, bosses, bombers and mages, and eight each for barrels/chests. Each armor layer draws a seeded word. Prefer words absent from the last 24 generated layers; preserve distinct visible initials first, then fall back to the least recently generated eligible word if the pool is constrained. Relics keep their existing shortening/punctuation rules. Checkpoints retain this bounded history; older version-1 checkpoints initialize it empty. Late trash uses a separate 30-word pack. Four boss passages per language retain the real `BLIZZARD` trigger.
 
 Telegraph bomber expiry, contact and projectile attacks. Contact damage has a cooldown; no unavoidable spawn hits. Death, drops and area-chain reactions resolve once per entity. Objects use the same bounded queue and separate type cues. Objects cannot force dash into walls.
 
@@ -93,6 +95,8 @@ Only accepted combat input triggers letter relics. Drafts, menus and skill names
 | Every 05:00 | Recurring armored boss |
 | 15:00 onward | Up to five elite layers, 8–12 letter words, faster/denser mobs |
 
+The spawn director aims for four reachable combat labels; objects do not satisfy that floor. If fewer remain after a dash, cap the next normal world-time countdown at 0.3 seconds and admit up to three replacements per pass. New normal enemies appear 6�8.5 units away on walkable floor with a clear approach and at least one unit of spacing; search 16 seeded angles before declining an unsafe spawn. The normal interval is `max(0.65, 2.4 / (1 + time / 360 + level * 0.03))`. Early packs are trash, guards begin at 90 seconds, and later packs weight trash above specialists. Retire unlocked non-boss pursuers beyond 18 units. A short arrival ring distinguishes reinforcements, and an empty queue displays a reinforcement notice. There is no artificial wave counter or mandatory arrow movement; completed words remain the repositioning action.
+
 Difficulty grows within entity caps: queued/offscreen spawns follow deterministic admission rules, then layers/speed/composition increase pressure. Never evict a locked target. Only one main boss is active; further scheduled bosses wait for encounter resolution.
 
 Obsidian Minotaur has layered armor and separate health. Armor loss triggers **ARMOR BREAK** and a **ten-second stagger**. Skill cards slide away and a rolling paragraph appears. Correct characters deal deterministic damage with phantom slashes; embedded `BLIZZARD` triggers once per occurrence.
@@ -103,7 +107,7 @@ Append seeded continuation if the passage ends early. Kill resolves relic/biome 
 
 **Typing Dojo:** safe chamber, Sensei, layered wooden dummy. Preserve word/sentence/custom practice, EN/ID, editable input, WPM/accuracy and useful settings. Lessons cover case, digits, symbols, dash/strike and sustained WPM. No death or reward farming. Paragraphs are always appropriate in this mode.
 
-**Castle Sprint:** real 4+ participant rooms, colored knights, traversable castle course. Tactical stream advances distance; show laps, WPM and live positions. Dodge/barrel/goblin words affect actual obstacles and results. Server owns starts, finish, scoring, reconnect and rematch.
+**Castle Sprint:** real 4+ participant rooms, colored knights, traversable castle course. Tactical stream varies ordinary verbs using the shared bilingual trash packs with an eight-word recent history. Preserve the original special-action sampling weight and scheduled dodge/explosion cadence so defense/obstacle words remain available. Tactical stream advances distance; show laps, WPM and live positions. Dodge/barrel/goblin words affect actual obstacles and results. Server owns starts, finish, scoring, reconnect and rematch.
 
 **Bridge Clash / Arena Royale:** real 1v1 and 2–4+ participant bridge combat. Attack/defense words change HP, shield and points. Define target selection, defense windows, ties, replay rejection and authoritative outcomes before enabling the mode.
 

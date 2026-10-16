@@ -25,7 +25,7 @@ Twelve Ocean MP3s and the rowboat SVG are deleted with `FishingScene`, `CoastalM
 | UI | Original `Glyph.tsx` shapes, live readable HTML text, shared font/palette; no emoji/icon library |
 | Audio | Native `DungeonAudio` synthesis with eight-voice cap and gesture unlock; no MP3 downloads |
 
-The renderer uses no image textures or per-actor texture allocations. Its render-target texture is included in GPU counters. Geometry, materials, voices, observers, subscriptions and WebGL resources have explicit teardown. Performance evidence belongs to the migration log, not the reference JPGs.
+The visual revision uses two source-authored canvas textures: a 32 × 32 stone tile and a 64 × 64 radial light mask. They are generated once per renderer and explicitly disposed, alongside the render target and its depth texture. There are no downloaded image textures or per-actor texture allocations. The public-file inventory remains unchanged. Geometry, materials, voices, observers, subscriptions and WebGL resources have explicit teardown. Performance evidence belongs to the migration log, not the reference JPGs.
 
 ## Audits
 

@@ -1,4 +1,21 @@
 import { expect, test } from "@playwright/test"
+import { SurvivalRun } from "../packages/game-rules/src/survival"
+
+test("successive dashes keep varied reachable words available without an unexplained wait",async({page})=>{
+ const run=new SurvivalRun("flow-e2e");run.start();run.state.time=run.state.worldTime=1
+ await page.addInitScript(raw=>localStorage.setItem("typecade:dungeon:run:v1",raw),run.serialize())
+ await page.goto("/");await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
+ const words:string[]=[]
+ for(let i=0;i<20;i++){
+  const draft=page.getByTestId("upgrade-keyword").first()
+  if(await draft.isVisible())await page.keyboard.type((await draft.textContent())!)
+  await expect.poll(()=>page.getByTestId("enemy-label").count(),{timeout:3000}).toBeGreaterThan(0)
+  const word=(await page.getByTestId("enemy-label").first().getAttribute("data-word"))!
+  words.push(word);await page.keyboard.type(word,{delay:20})
+ }
+ expect(new Set(words).size).toBeGreaterThan(12)
+ await expect(page.getByRole("button",{name:"Try another run"})).toHaveCount(0)
+})
 
 test("the dungeon shell, Dojo and combat remain usable across small viewports",async({page},info)=>{
  for(const [width,height] of [[320,640],[844,390],[768,1024]]){

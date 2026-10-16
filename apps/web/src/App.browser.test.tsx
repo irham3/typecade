@@ -20,6 +20,11 @@ async function mount(){
  throw new Error("Renderer did not settle")
 }
 async function click(text:string){const button=[...host.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.includes(text))!;expect(button).toBeTruthy();await act(()=>button.click())}
+it("announces reinforcements during a temporarily empty arena",async()=>{
+ const r=new SurvivalRun("empty-ui");r.start();r.state.enemies=[];r.state.queue=[];r.state.time=r.state.worldTime=1;r.state.spawnAt=100
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
+ expect(host.textContent).toContain("REINFORCEMENTS APPROACHING")
+})
 it("opens a live game shell, settings, account and both secondary modes",async()=>{
  localStorage.setItem("typecade:ocean-typing-rpg:m1","old data")
  await mount();await act(()=>host.querySelector("a")!.click());expect(host.textContent).toContain("A fighting chance.");expect(runTime(125)).toBe("02:05")

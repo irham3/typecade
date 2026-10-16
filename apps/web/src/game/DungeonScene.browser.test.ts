@@ -3,8 +3,9 @@ import { DungeonScene } from "./DungeonScene"
 import { GameEventBridge } from "../bridge/game-event-bridge"
 import { SurvivalRun } from "@typecade/game-rules"
 import { createArenaCombat,createRacePlayer,defaultRaceConfig,type RaceRoomSnapshot } from "@typecade/race-rules"
-import type { DungeonEvents } from "@typecade/contracts"
+import type { DungeonEvents, PartyWorld } from "@typecade/contracts"
 import { partyWorld } from "../dungeon/party-world"
+import type { DungeonVfx } from "./DungeonVfx"
 
 it("renders real instanced actors, recycles chunks and releases WebGL resources across all modes",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1000px;height:700px";document.body.append(host)
@@ -59,3 +60,77 @@ it("ignores pending readiness after immediate renderer disposal",async()=>{
  const host=document.createElement("div"),bridge=new GameEventBridge<DungeonEvents>(),ready=vi.fn();bridge.on("renderer",ready)
  const game=new DungeonScene(host,bridge);game.destroy();await game.ready;expect(ready).not.toHaveBeenCalled()
 })
+
+it("plays a cleave independently of dash, keeps death poses briefly and expires effects without changing rules",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:1440px;height:900px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("visual-combat"),s=run.state
+ const visual=game as unknown as {tick:(t:number)=>void;vfx:DungeonVfx;actors:Map<number,{deadAt:number;hitAt:number;angle:number}>}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("frame",s);bridge.emit("screen","endless")
+  let now=performance.now()+100;const frame=(dt=40)=>{now+=dt;bridge.emit("frame",s);visual.tick(now)}
+  run.input("Tab");for(const key of "CLEAVE")run.input(key);frame()
+  expect(s.player.dashAt).toBe(-10);expect(visual.vfx.arcs.count).toBeGreaterThan(0)
+  for(let i=0;i<10;i++)frame(100)
+  expect(visual.vfx.count).toBe(0)
+  s.enemies=[];const victim=run.spawn("skeleton",{x:2,z:0})!;run.refreshQueue();frame()
+  const victimFacing=visual.actors.get(victim.id)!.angle
+  for(const key of victim.words[0]!)run.input(key);frame()
+  expect(s.enemies.some(e=>e.id===victim.id)).toBe(false)
+  expect(visual.actors.get(victim.id)!.deadAt).toBeGreaterThanOrEqual(0)
+  expect(visual.actors.get(victim.id)!.angle).toBe(victimFacing)
+  const kills=s.kills,position={x:s.player.x,z:s.player.z}
+  for(let i=0;i<10;i++)frame(100)
+  expect(visual.actors.has(victim.id)).toBe(false);expect(s.kills).toBe(kills);expect({x:s.player.x,z:s.player.z}).toEqual(position)
+  s.enemies=[];run.spawn("goblin",{x:3,z:0});run.refreshQueue();frame();s.player.mana=100;s.skills.storm.cooldown=0
+  run.input("Tab");for(const key of "STORM")run.input(key);frame()
+  expect(visual.vfx.bolts.count).toBeGreaterThan(0)
+  for(let i=0;i<10;i++)frame(100)
+  s.phase="arena";s.player.hp=2;s.player.mana=100;s.skills.heal.cooldown=0;frame()
+  run.input("Tab");for(const key of "HEAL")run.input(key);frame()
+  expect(s.player.hp).toBe(4);expect(visual.vfx.rings.count).toBeGreaterThan(0)
+  bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.vfx.sparks.count).toBe(0)
+  for(let i=0;i<10;i++)frame(100)
+  expect(visual.vfx.count).toBe(0)
+ }finally{game.destroy();bridge.clear();host.remove()}
+},20000)
+
+it("bounds death afterimages, reacts to damage and armor, and presents authoritative party skills and boss attacks",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:1440px;height:900px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("horde-feedback"),s=run.state
+ const visual=game as unknown as {tick:(t:number)=>void;vfx:DungeonVfx;actors:Map<number,{deadAt:number;hitAt:number;strikeAt:number}>;cameraTrauma:number}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("frame",s);bridge.emit("screen","endless")
+  let now=performance.now()+100;const frame=(dt=40)=>{now+=dt;bridge.emit("frame",s);visual.tick(now)}
+  s.enemies=[];const guard=run.spawn("guard",{x:2,z:0})!;run.refreshQueue();frame()
+  run.input(guard.words[0]![0]!);frame();for(const key of guard.words[0]!.slice(1))run.input(key);frame()
+  expect(visual.actors.get(guard.id)!.hitAt).toBeGreaterThan(0)
+  run.spawn("goblin",{x:5,z:0});frame();s.player.hp--;frame();expect(visual.actors.get(guard.id)!.strikeAt).toBeGreaterThan(0)
+  s.enemies=[];s.queue=[];frame();expect(visual.actors.has(guard.id)).toBe(false)
+  const kinds=["skeleton","goblin","guard","barrel","boss"] as const
+  for(let i=0;i<24;i++)run.spawn(kinds[i%5]!,{x:i%4,z:Math.floor(i/4)})
+  frame();const victims=[...s.enemies];s.enemies=[];s.queue=[];s.effects=victims.map(e=>({id:s.nextId++,kind:"shatter",x:e.x,z:e.z,life:.55,value:1}));frame()
+  expect([...visual.actors.values()].filter(a=>a.deadAt>=0)).toHaveLength(16)
+  for(let i=0;i<10;i++)frame(100)
+  expect(visual.actors.size).toBe(0)
+  s.boss=null;const boss=run.spawn("boss",{x:2,z:2})!;s.boss=boss.id;frame();s.phase="overdrive";frame()
+  expect(visual.vfx.bolts.count).toBeGreaterThan(0)
+  s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.cursor=1;s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.phase="arena";frame()
+  s.enemies=[];s.queue=[];s.boss=null;s.phase="overdrive";frame();s.phase="arena";frame()
+  bridge.emit("screen","multiplayer")
+  const party:PartyWorld={mode:"raid",phase:"racing",casting:false,ownId:"a",now:1000,focus:{x:0,z:0},obstacles:[],boss:{hp:100,maxHp:100,nextAttack:1500,attackAt:-1000,target:null},players:[{id:"a",name:"Knight",x:0,z:0,color:0x4999d4,hp:100,action:"idle",actionAt:0,target:null,role:"dps"},{id:"b",name:"Tank",x:2,z:0,color:0xd06b62,hp:100,action:"idle",actionAt:0,target:null,role:"tank"}]}
+  const partyFrame=()=>{bridge.emit("party",structuredClone(party));now+=40;visual.tick(now)}
+  partyFrame()
+  for(const [i,action]of ["heal","revive","storm","block","dodge","ignite","cleave","strike"].entries()){
+   party.now+=100;Object.assign(party.players[0]!,{action,actionAt:party.now,target:action==="strike"?"boss":i%2?null:"b"});partyFrame()
+  }
+  party.boss!.hp=80;party.boss!.attackAt=party.now;party.boss!.target="b";partyFrame();partyFrame()
+  party.players[1]!.hp=50;partyFrame();party.players[1]!.hp=0;partyFrame()
+  expect(visual.vfx.count).toBeGreaterThan(0)
+  party.now+=100;party.boss!.attackAt=party.now;party.boss!.target="missing";partyFrame()
+  party.boss!.hp=0;partyFrame()
+  party.boss!.attackAt=party.now-1000;partyFrame()
+  party.players=party.players.slice(0,1);party.players[0]!.actionAt=-10000;partyFrame()
+  party.mode="clash";party.players[0]!.hp=90;partyFrame();bridge.emit("party",null)
+  expect(game.renderer.info.render.calls).toBeLessThanOrEqual(120)
+ }finally{game.destroy();bridge.clear();host.remove()}
+},20000)

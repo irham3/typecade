@@ -1,22 +1,23 @@
-import { BoxGeometry, BufferAttribute, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, SphereGeometry } from "three"
+import { BufferAttribute, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, SphereGeometry } from "three"
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js"
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
 import type { EnemyKind } from "@typecade/contracts"
 
 type Shape = "box" | "cone" | "round" | "cylinder"
 type Part = [color: number, x: number, y: number, z: number, sx: number, sy: number, sz: number, shape?: Shape, rz?: number]
-export interface ActorGeometry { body: BufferGeometry; leg: BufferGeometry | null; weapon: BufferGeometry | null; scale: number }
+export interface ActorGeometry { body: BufferGeometry; leg: BufferGeometry | null; arm: BufferGeometry | null; weapon: BufferGeometry | null; scale: number }
 
 /** Vertex-colored shared meshes keep a whole actor part in one draw call. */
 export class DungeonModels {
  readonly geometries = new Set<BufferGeometry>()
  readonly material = new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 })
- private shapes = { box: this.keep(new BoxGeometry(1, 1, 1)), cone: this.keep(new ConeGeometry(1, 1, 4)), round: this.keep(new SphereGeometry(1, 5, 3)), cylinder: this.keep(new CylinderGeometry(1, 1, 1, 6)) }
+ private shapes = { box: this.keep(new RoundedBoxGeometry(1, 1, 1, 1, .07)), cone: this.keep(new ConeGeometry(1, 1, 4)), round: this.keep(new SphereGeometry(1, 7, 4)), cylinder: this.keep(new CylinderGeometry(1, 1, 1, 8)) }
  private cache = new Map<string, ActorGeometry>()
  keep<T extends BufferGeometry>(geometry: T): T { this.geometries.add(geometry); return geometry }
  geometry(parts: Part[]) {
   const color = new Color(), transform = new Matrix4(), scale = new Matrix4()
   const copies = parts.map(([hex, x, y, z, sx, sy, sz, shape = "box", rz = 0]) => {
-   const copy = this.shapes[shape].clone(); color.setHex(hex)
+   const source=this.shapes[shape],copy=source.index?source.toNonIndexed():source.clone(); color.setHex(hex)
    const colors = new Float32Array(copy.getAttribute("position").count * 3)
    for (let i = 0; i < colors.length; i += 3) { colors[i] = color.r; colors[i + 1] = color.g; colors[i + 2] = color.b }
    copy.setAttribute("color", new BufferAttribute(colors, 3))
@@ -27,45 +28,54 @@ export class DungeonModels {
  }
  actor(kind: EnemyKind | "knight" | "dummy" | "sensei", color = 0x4999d4): ActorGeometry {
   const key = `${kind}:${color}`; const cached = this.cache.get(key); if (cached) return cached
-  const ink = 0x182332, bone = 0xd4c9a8, leather = 0x674330, steel = 0xadbcca, gold = 0xc99a4c
-  let body: Part[], leg: Part[] | null = [[leather, 0, -.26, 0, .25, .52, .28], [ink, 0, -.54, .1, .30, .16, .48]], weapon: Part[] | null = [[leather, .46, .06, .04, .17, .46, .20], [gold, .48, -.12, .16, .48, .10, .12], [0xc8e6e7, .48, .40, .16, .12, .95, .09]], size = 1
+  const ink = 0x111b2b, bone = 0xeadbb2, leather = 0x543c36, steel = 0xbed4df, gold = 0xe8b966
+  let body: Part[], leg: Part[] | null = [[ink, 0, -.23, 0, .32, .50, .35], [steel, 0, -.47, .05, .38, .22, .43], [ink, 0, -.59, .14, .43, .18, .63]], arm: Part[] | null = [[steel, 0, -.12, 0, .40, .40, .46], [leather, 0, -.40, .02, .28, .40, .31], [steel, 0, -.63, .08, .36, .27, .39]], weapon: Part[] | null = [[steel, 0, -.12, 0, .40, .40, .46], [leather, 0, -.42, .04, .28, .43, .31], [steel, 0, -.65, .10, .35, .25, .37], [gold, 0, -.35, .22, .66, .12, .18], [0x83bed6, 0, .36, .22, .22, 1.35, .12], [0xf1f9e7, -.08, .36, .23, .06, 1.30, .13], [gold, 0, -.80, .22, .19, .20, .18]], size = 1
   if (kind === "barrel" || kind === "chest") {
    body = kind === "barrel" ? [[0x845234, 0, .58, 0, .55, 1.1, .55, "cylinder"], [0x3f4048, 0, .28, 0, .59, .10, .59, "cylinder"], [0x3f4048, 0, .90, 0, .59, .10, .59, "cylinder"], [0xe45f3c, 0, 1.2, 0, .15, .16, .15]] : [[0x785130, 0, .43, 0, 1.1, .8, .75], [gold, 0, .86, 0, 1.14, .10, .78], [gold, 0, .45, .4, .18, .3, .08]]
-   leg = weapon = null
+   leg = arm = weapon = null
   } else if (kind === "dummy") {
-   body = [[0x9d7147, 0, .7, 0, .16, 1.4, .16], [0x785130, 0, .12, 0, .9, .2, .65], [0xae8352, 0, 1.1, 0, .85, .65, .45], [steel, 0, 1.12, .26, .65, .4, .05], [0xbe935e, 0, 1.75, 0, .55, .55, .5], [ink, -.12, 1.8, .27, .09, .1, .04], [ink, .12, 1.8, .27, .09, .1, .04], [0x795234, 0, 1.25, 0, 1.65, .18, .18]]; leg = weapon = null
+   body = [[0x9d7147, 0, .7, 0, .16, 1.4, .16], [0x785130, 0, .12, 0, .9, .2, .65], [0xae8352, 0, 1.1, 0, .95, .75, .55], [steel, 0, 1.12, .31, .75, .5, .05], [0xbe935e, 0, 1.85, 0, .70, .65, .6], [ink, -.16, 1.9, .32, .10, .12, .04], [ink, .16, 1.9, .32, .10, .12, .04], [0x795234, 0, 1.25, 0, 1.85, .22, .22]]; leg = arm = weapon = null
   } else if (kind === "sensei" || kind === "mage") {
    const robe = kind === "sensei" ? 0x625ba0 : 0x4e386d
-   body = [[robe, 0, .9, 0, .6, 1.2, .6, "cone"], [robe, 0, 1.3, 0, .65, .55, .45], [kind === "sensei" ? bone : ink, 0, 1.85, 0, .45, .46, .4], [robe, 0, 2.2, 0, .50, .60, .50, "cone"], [0xa9864f, 0, 1.98, 0, .55, .10, .55], [0xb497e9, 0, 1.85, .24, .23, .08, .03]]
-   weapon = [[0x6c4834, .55, 0, 0, .10, 1.7, .10], [0xab7ad6, .55, .95, 0, .22, .34, .22, "round"]]
-   leg = [[ink, 0, -.4, 0, .18, .7, .25]]
+   body = [[robe, 0, .80, 0, 1.1, 1.4, .90, "cone"], [robe, 0, 1.32, 0, .85, .60, .63], [gold, 0, 1.02, .35, .14, .8, .1], [kind === "sensei" ? bone : ink, 0, 1.94, .08, .64, .59, .57], [robe, -.12, 2.40, 0, .90, .94, .80, "cone", .16], [gold, 0, 2.04, 0, 1.02, .13, .87], [0xd8a7ff, -.15, 1.96, .39, .12, .10, .04], [0xd8a7ff, .15, 1.96, .39, .12, .10, .04]]
+   arm = [[robe, 0, -.3, 0, .33, .65, .4], [bone, 0, -.63, .06, .22, .18, .25]]
+   weapon = [[robe, 0, -.23, 0, .32, .55, .35], [0x76553c, 0, -.2, .20, .13, 1.85, .13], [gold, 0, .60, .20, .32, .14, .32], [0xbca1ff, 0, .86, .20, .35, .45, .35, "round"]]
+   leg = [[ink, 0, -.4, 0, .22, .7, .33]]
   } else if (kind === "skeleton" || kind === "bomber") {
-   body = [[bone, 0, 1.15, 0, .14, .65, .14], [bone, 0, 1.35, 0, .7, .12, .22], [bone, 0, 1.1, 0, .60, .10, .25], [bone, 0, .89, 0, .46, .12, .25], [bone, 0, 1.85, 0, .53, .53, .45], [ink, -.13, 1.9, .24, .13, .13, .03], [ink, .13, 1.9, .24, .13, .13, .03], [ink, 0, 1.68, .24, .23, .07, .03], [bone, -.42, 1.1, 0, .13, .65, .13]]
-   leg = [[bone, 0, -.30, 0, .13, .62, .13], [bone, 0, -.60, .10, .2, .12, .35]]
-   weapon = kind === "bomber" ? [[0x312e39, .45, -.06, .16, .36, .45, .36, "round"], [0xe47840, .45, .45, .16, .08, .35, .08]] : [[bone, .43, -.04, 0, .14, .65, .14], [0x9a9d9b, .45, .30, .1, .09, .65, .07]]
+   body = [[bone, 0, 1.13, 0, .20, .74, .23], [bone, 0, 1.42, 0, .86, .16, .35], [bone, 0, 1.20, .03, .76, .13, .36], [bone, 0, .99, 0, .62, .13, .35], [bone, 0, .78, 0, .60, .19, .35], [bone, 0, 1.98, .04, .83, .73, .70], [ink, -.21, 2.04, .40, .22, .23, .04], [ink, .21, 2.04, .40, .22, .23, .04], [0xed895e, -.21, 2.04, .43, .08, .08, .03], [0xed895e, .21, 2.04, .43, .08, .08, .03], [bone, 0, 1.61, .18, .52, .18, .50], [ink, 0, 1.69, .41, .39, .08, .04]]
+   leg = [[bone, 0, -.26, 0, .19, .57, .20], [bone, 0, -.59, .11, .25, .16, .42]]
+   arm = [[bone, 0, -.27, 0, .19, .57, .20], [bone, 0, -.60, .08, .24, .17, .30]]
+   weapon = kind === "bomber" ? [[bone, 0, -.25, 0, .19, .56, .20], [0x312e39, 0, -.48, .23, .50, .53, .50, "round"], [0xffa83f, 0, -.03, .23, .09, .35, .09]] : [[bone, 0, -.27, 0, .19, .57, .20], [leather, 0, -.58, .20, .15, .3, .15], [steel, 0, -.02, .20, .18, .85, .10]]
   } else if (kind === "minotaur" || kind === "boss") {
    const armor = kind === "boss" ? 0x525969 : 0x7b858b
-   body = [[0x594936, 0, 1.18, 0, .95, .85, .57], [armor, -.56, 1.45, 0, .42, .45, .60], [armor, .56, 1.45, 0, .42, .45, .6], [gold, 0, .87, .02, 1.0, .17, .63], [armor, 0, 1.98, 0, .75, .64, .61], [0xc3b89d, 0, 1.77, .4, .55, .30, .23], [0xeb805c, -.2, 2.04, .33, .1, .1, .04], [0xeb805c, .2, 2.04, .33, .1, .1, .04], [bone, -.50, 2.30, 0, .17, .6, .17, "cone", -.6], [bone, .5, 2.3, 0, .17, .6, .17, "cone", .6]]
+   body = [[0x594936, 0, 1.20, 0, 1.17, .92, .77], [armor, 0, 1.40, .42, .90, .59, .15], [gold, 0, .84, .02, 1.18, .20, .82], [armor, 0, 2.03, .08, .96, .80, .78], [0xc3b89d, 0, 1.82, .56, .68, .37, .32], [ink, -.25, 2.10, .49, .18, .16, .04], [ink, .25, 2.10, .49, .18, .16, .04], [0xff8352, -.25, 2.10, .52, .12, .10, .04], [0xff8352, .25, 2.10, .52, .12, .10, .04], [bone, -.63, 2.39, 0, .25, .79, .25, "cone", -.7], [bone, .63, 2.39, 0, .25, .79, .25, "cone", .7]]
    leg = [[leather, 0, -.3, 0, .34, .6, .35], [armor, 0, -.58, .12, .4, .2, .5]]
-   weapon = [[0x6a4832, .62, .06, 0, .2, 1.4, .2], [armor, .62, .6, 0, .70, .58, .4], [gold, .62, .9, 0, .72, .10, .42]]
+   arm = [[armor, 0, -.02, 0, .56, .54, .68], [leather, 0, -.43, 0, .37, .66, .42], [gold, 0, -.73, .05, .44, .22, .49]]
+   weapon = [[armor, 0, -.02, 0, .56, .54, .68], [leather, 0, -.4, 0, .38, .65, .42], [0x6a4832, 0, -.15, .26, .2, 1.8, .2], [armor, 0, .67, .26, .95, .68, .56], [gold, 0, 1.0, .26, .98, .12, .60]]
    size = kind === "boss" ? 2 : 1.35
   } else if (kind === "goblin") {
-   body = [[0x755134, 0, 1.12, 0, .55, .56, .34], [0x81944c, 0, 1.68, 0, .52, .5, .43], [0x81944c, -.38, 1.72, 0, .28, .12, .2, "cone", 1.2], [0x81944c, .38, 1.72, 0, .28, .12, .2, "cone", -1.2], [0xf4cb65, -.13, 1.73, .24, .1, .08, .03], [0xf4cb65, .13, 1.73, .24, .1, .08, .03], [0x81944c, -.37, 1.14, 0, .2, .55, .2]]
-   size = .88
+   body = [[0x755134, 0, 1.05, 0, .76, .67, .55], [0x96b657, 0, 1.77, .12, .82, .72, .68], [0x96b657, -.55, 1.87, .04, .59, .22, .28, "cone", 1.1], [0x96b657, .55, 1.87, .04, .59, .22, .28, "cone", -1.1], [ink, -.20, 1.88, .48, .24, .15, .04], [ink, .20, 1.88, .48, .24, .15, .04], [0xffd76a, -.20, 1.88, .51, .12, .08, .03], [0xffd76a, .20, 1.88, .51, .12, .08, .03], [0x729343, 0, 1.64, .51, .28, .24, .27], [bone, -.18, 1.48, .48, .12, .23, .12, "cone"], [bone, .18, 1.48, .48, .12, .23, .12, "cone"]]
+   leg = [[0x73904b, 0, -.24, 0, .25, .50, .28], [leather, 0, -.55, .13, .35, .22, .51]]
+   arm = [[0x96b657, 0, -.25, 0, .26, .55, .29], [0x96b657, 0, -.58, .09, .32, .21, .34]]
+   weapon = [[0x96b657, 0, -.27, 0, .27, .58, .30], [leather, 0, -.54, .16, .18, .30, .18], [steel, 0, -.02, .17, .28, .75, .14]]
+   size = .92
   } else {
-   body = [[color, 0, 1.12, 0, .66, .70, .45], [leather, 0, .83, 0, .70, .14, .48], [steel, -.43, 1.36, 0, .3, .35, .52], [steel, .43, 1.36, 0, .30, .35, .52], [color, 0, 1.90, 0, .64, .65, .57], [steel, 0, 2.23, 0, .66, .10, .59], [ink, 0, 1.94, .30, .50, .12, .04], [steel, 0, 1.83, .33, .08, .47, .05], [steel, -.39, 1.02, .13, .22, .38, .2]]
-   if (kind === "guard") body.push([0x766040, -.5, 1.13, .31, .40, .70, .16], [gold, -.5, 1.13, .4, .08, .72, .02])
+   body = [[ink, 0, 1.16, 0, .94, .82, .68], [color, 0, 1.22, .05, .84, .73, .68], [steel, 0, 1.48, .39, .72, .19, .12], [gold, 0, .82, .02, .98, .16, .76], [leather, 0, .68, .01, .81, .25, .58], [color, 0, 2.0, 0, 1.0, .86, .87], [steel, 0, 2.45, 0, 1.02, .11, .91], [ink, 0, 2.04, .45, .84, .20, .06], [0x81d9eb, -.24, 2.06, .49, .22, .06, .04], [0x81d9eb, .24, 2.06, .49, .22, .06, .04], [steel, 0, 1.94, .49, .12, .69, .10], [steel, 0, 1.68, .37, .88, .13, .18], [gold, 0, 2.46, -.02, .12, .15, .9], [0x263e63, 0, 1.15, -.44, .82, 1.18, .14], [color, 0, .66, -.49, .91, .25, .16]]
+   arm.push([color, 0, -.52, .28, .46, .65, .13], [gold, 0, -.52, .37, .11, .52, .05])
+   if (kind === "guard") arm.push([0x766040, 0, -.44, .37, .72, 1.08, .16], [gold, 0, -.44, .47, .12, .98, .04])
   }
-  const result = { body: this.geometry(body), leg: leg ? this.geometry(leg) : null, weapon: weapon ? this.geometry(weapon) : null, scale: size }
+  const result = { body: this.geometry(body), leg: leg ? this.geometry(leg) : null, arm: arm ? this.geometry(arm) : null, weapon: weapon ? this.geometry(weapon) : null, scale: size }
   this.cache.set(key, result); return result
  }
  rig(kind: "knight" | "dummy" | "sensei", color?: number) {
   const model = this.actor(kind, color), root = new Group(), body = new Mesh(model.body, this.material), legs: Mesh[] = []
   root.add(body)
-  if (model.leg) for (const x of [-.19, .19]) { const mesh = new Mesh(model.leg, this.material); mesh.position.set(x, .7, 0); legs.push(mesh); root.add(mesh) }
+  if (model.leg) for (const x of [-.25, .25]) { const mesh = new Mesh(model.leg, this.material); mesh.position.set(x, .7, 0); legs.push(mesh); root.add(mesh) }
   const weapon = model.weapon ? new Mesh(model.weapon, this.material) : null
-  if (weapon) { weapon.position.y = 1.16; root.add(weapon) }
-  return { root, body, legs, weapon }
+  if (weapon) { weapon.position.set(.62, 1.52, 0); root.add(weapon) }
+  const arm = model.arm ? new Mesh(model.arm, this.material) : null
+  if (arm) { arm.position.set(-.62, 1.52, 0); root.add(arm) }
+  return { root, body, legs, weapon, arm }
  }
  dispose() { this.geometries.forEach(g => g.dispose()); this.geometries.clear(); this.cache.clear(); this.material.dispose() }
 }

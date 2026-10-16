@@ -14,6 +14,7 @@ it("projects only actual nearby peers and preserves stable identity, actions and
  room.config.mode="raid";room.combat.mode="raid";room.combat.players["3"]!.hp=0
  expect(partyWorld(room,"3",false)!.players[0]).toMatchObject({role:"tank",hp:0})
  expect(partyWorld(room,"0",false)!.boss?.maxHp).toBe(1000)
+ room.combat.actions.push({id:2,player:"boss",target:"3",kind:"boss-hit",value:14,at:90});expect(partyWorld(room,"0",false)!.boss).toMatchObject({attackAt:90,target:"3",nextAttack:5000})
  room.config.mode="sprint";room.combat.mode="sprint";room.text="DODGE IGNITE hit";expect(partyWorld(room,null,false)!.players).toHaveLength(4);expect(partyWorld(room,"0",false)!.obstacles).toHaveLength(3);expect(partyWorld(room,"missing",false)!.players).toHaveLength(4);
  delete room.combat.players["3"];expect(partyWorld(room,"0",false)!.players.find(p=>p.id==="3")!.hp).toBe(100);
  room.config.mode=undefined;room.combat=undefined;expect(partyWorld(room,"0",false)!.mode).toBe("sprint")

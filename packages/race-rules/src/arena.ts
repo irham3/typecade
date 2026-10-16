@@ -1,5 +1,5 @@
 import { createSeededRng } from "../../game-rules/src/rng"
-import { skillRules } from "../../content/src/dungeon"
+import { dungeonWords, skillRules } from "../../content/src/dungeon"
 import type { DungeonLanguage, SkillId } from "../../contracts/src/survival"
 import type { RaceConfig, RacePlayer } from "./index"
 
@@ -8,7 +8,7 @@ export type DungeonRole = "dps" | "healer" | "tank"
 export interface ArenaPlayer {
  hp: number; shield: number; guardUntil: number; mana: number; words: number; score: number; distance: number; role: DungeonRole; cooldowns: Record<SkillId,number>; skillSeq: number
 }
-export interface ArenaAction { id:number; player:string; target:string; kind:"strike"|"block"|"heal"|"revive"|"dodge"|"ignite"|"storm"|"boss-hit"; value:number; at:number }
+export interface ArenaAction { id:number; player:string; target:string; kind:"strike"|"cleave"|"block"|"heal"|"revive"|"dodge"|"ignite"|"storm"|"boss-hit"; value:number; at:number }
 export interface ArenaCombat {
  mode:DungeonRoomMode; players:Record<string,ArenaPlayer>; order:string[]; bossHp:number; bossMaxHp:number; revives:number; nextAttack:number; nextId:number; actions:ArenaAction[]; winner:string|null; ended:boolean
 }
@@ -63,10 +63,11 @@ export function castArenaSkill(c:ArenaCombat,id:string,skill:SkillId,seq:number,
   if(c.mode==="raid")healParty(c,id,25,now)
   else{const restored=Math.min(25,100-p.hp);p.hp+=restored;action(c,id,id,"heal",restored,now)}
  }else if(c.mode==="raid"){
-  const damage=skill==="storm"?55:35;c.bossHp=Math.max(0,c.bossHp-damage);p.score+=damage;action(c,id,"boss",skill==="storm"?"storm":"strike",damage,now)
+  const damage=skill==="storm"?55:35;c.bossHp=Math.max(0,c.bossHp-damage);p.score+=damage;action(c,id,"boss",skill,damage,now)
  }else if(c.mode==="clash"){
   for(const other of c.order)if(other!==id&&c.players[other]!.hp>0)hit(c,id,other,skill==="storm"?20:15,now)
- }else{p.distance+=skill==="storm"?12:8;action(c,id,id,skill==="storm"?"storm":"strike",8,now)}
+  action(c,id,id,skill,skill==="storm"?20:15,now)
+ }else{p.distance+=skill==="storm"?12:8;action(c,id,id,skill,8,now)}
  resolveArena(c);return ""
 }
 export function tickArena(c:ArenaCombat,now:number,connected:readonly string[]){
@@ -87,8 +88,13 @@ function resolveArena(c:ArenaCombat){
 export function generateDungeonRoomText(config:RaceConfig,seed:string):string{
  const random=createSeededRng(seed),language:DungeonLanguage=config.language
  const vocabulary=language==="en"?["strike","dash","leap","cut","sprint","DODGE","BLOCK","CRUSH","IGNITE","SHIELD","HEAL"]:["tebas","serbu","sabet","lari","babat","LOMPAT","TANGKIS","HANCURKAN","LEDAKKAN","PERISAI","SEMBUH"]
+ const pool=[...new Set([...dungeonWords[language].skeleton,...dungeonWords[language].goblin,...vocabulary.slice(0,5)])],recent:string[]=[]
  const count=config.mode==="sprint"&&config.format==="words"?config.wordCount:1000
- return Array.from({length:count},(_,i)=>i%7===5?vocabulary[5]!:i%11===8?vocabulary[8]!:random.pick(vocabulary)).join(" ")
+ return Array.from({length:count},(_,i)=>{
+  const action=i%7===5?vocabulary[5]!:i%11===8?vocabulary[8]!:random.pick(vocabulary)
+  const word=vocabulary.slice(5).includes(action)?action:random.pick(pool.filter(word=>!recent.includes(word)))
+  recent.push(word);if(recent.length>8)recent.shift();return word
+ }).join(" ")
 }
 export function arenaMinimum(mode:DungeonRoomMode){return mode==="raid"?4:2}
 export function leaveArena(c:ArenaCombat,id:string){delete c.players[id];c.order=c.order.filter(player=>player!==id);resolveArena(c)}

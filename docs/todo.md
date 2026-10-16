@@ -103,3 +103,19 @@ Gate: scoped browser tests cover start/kill/cast/draft/death/restart and boss fi
 | M7 | DATA-02, PERF-02, CLEAN-01 and final regression of all requirements |
 
 Do not mark gates complete from code existence, old Ocean screenshots or tests that never exercise the new mechanic.
+
+## M8 — Visual and combat-feedback revision, 2026-10-16
+
+The user's visual review found that the initial M2 presentation was stiff and did not match the supplied art direction. The earlier functional checks did not establish visual quality.
+
+- [x] Rework chunky character silhouettes, beveled forms, visor/armor/weapon detail and separate arm articulation across shared actors.
+- [x] Present eased dash travel, charge-facing, alternating swings, per-kind gait, hit flash/recoil and bounded death poses without changing gameplay destinations or input timing.
+- [x] Give CLEAVE, STORM, HEAL, dash, armor hits, pickup and death distinct layered effects; prioritize major bursts under load.
+- [x] Carry actual cast identities and boss attack timings through typed party presentation data; animate real peer skills and recipient effects.
+- [x] Replace color-edge noise with depth-based outlines; tune integer pixel resolution, camera framing, floor seams, moss, ruins, banners and torch lighting.
+- [x] Make target labels lighter while retaining collision avoidance, prefix visibility and responsive placement.
+- [x] Expand bilingual enemy/armor/late-word and boss-passage variety, preserve type-specific difficulty and recent-word history through checkpoint restore.
+- [x] Refill reachable combat targets after dashes, add arrival feedback and an empty-arena notice, and recalibrate normal spawn pressure.
+- [ ] Finish final regression, visual captures, timed profile and resource-disposal evidence for the revised source.
+
+Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save format, historical account data, endless progression and levelling rules are preserved. No new runtime dependency or public asset file is introduced.

@@ -103,3 +103,16 @@
 .result-build{font-size:11px;color:#bbc9cf;line-height:1.8}.result-build span{display:inline-block;padding:3px 8px;border:1px solid #7d745f;margin:4px;color:#e8c57e}
 
 .typing-word.long{display:inline;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Floating words keep silhouettes visible; only the locked target gets a backing. */
+.enemy-label{height:50px;padding:2px 7px;background:transparent;border:0;box-shadow:none;text-shadow:1px 2px #080f1e,-1px -1px #080f1e}
+.enemy-label small{font-size:7px;line-height:12px;letter-spacing:1px;color:#b3c6d8;text-shadow:1px 1px #080f1e,-1px -1px #080f1e}
+.enemy-label strong{font-size:21px;line-height:26px;color:#fff3da;paint-order:stroke fill;-webkit-text-stroke:3px #091321;text-shadow:0 3px #07101d;letter-spacing:.2px}
+.enemy-label.locked{border:0;border-bottom:2px solid #91eeff;background:linear-gradient(transparent,#17374caa);box-shadow:0 3px 0 #091321}
+.enemy-label.locked small{color:#b6f2ff}.enemy-label.locked strong{color:#fff9dc}.enemy-label em{-webkit-text-stroke:0;text-shadow:1px 1px #091321;font-size:12px}
+.enemy-label .typed{color:#b2f59b}.armor-stack{margin:1px 12px 0;gap:2px;filter:drop-shadow(0 1px #08111d)}.armor-stack i{height:3px;box-shadow:0 0 0 1px #111b2b}.enemy-label .target-leader{background:#8ed9e7;opacity:.35}
+.skill-card{background:linear-gradient(145deg,#24334aee,#131d2ced);border-color:color-mix(in srgb,var(--skill-color) 65%,#26354a);box-shadow:inset 0 0 0 2px #101a2b,0 4px #080e18}
+.skill-card>.glyph{width:38px;height:38px;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--skill-color) 45%,transparent))}.skill-card.unavailable>.glyph{filter:none}.casting .skill-card:not(.unavailable){background:linear-gradient(145deg,#304b60,#182538);box-shadow:inset 0 0 0 2px #101a2b,0 0 12px #67d7ec30,0 4px #080e18}
+.scene-endless .scene-shade{background:linear-gradient(#0b14242b,transparent 24%,transparent 78%,#0b142450)}
+@media(max-width:600px){.enemy-label strong{font-size:18px;line-height:26px}.enemy-label small{font-size:6px;letter-spacing:.6px}.skill-card>.glyph{width:28px;height:28px}.skill-card{min-height:78px}.scene-dojo .scene-shade{background:#101a2514}}
+.target-labels.tight .enemy-label{height:42px}.target-labels.tight .enemy-label strong{font-size:16px;line-height:22px}

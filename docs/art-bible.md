@@ -63,12 +63,12 @@ These are initial engineering caps, not measured results. Changing them requires
 | --- | --- |
 | Simulation | Fixed 30 Hz; timestamped input applied promptly; clamp catch-up after stalls |
 | Presentation | Target 60 FPS on measured desktop; adaptive 30 FPS fallback, no 120 FPS promise |
-| Drawing buffer | Adaptive pixel target up to 640 × 480, DPR capped at 1 initially |
-| Dungeon | Recycle a 3 × 3 chunk ring; chunk layout starts at 32 × 32 tiles with instanced/merged geometry |
+| Drawing buffer | Integer pixel scale (at least 2 CSS pixels), up to 960 × 640 by default; 640 × 480 adaptive and 480 × 360 Reduced Effects; DPR 1 |
+| Dungeon | Recycle a 3 × 3 chunk ring; 32 × 32 world units per chunk, 256 two-unit flagstones and at most 192 ruin pieces per chunk |
 | Active enemies | 128 including one boss; shared geometry, bounded actor state |
 | Visible target labels | 6 desktop / 4 compact; prioritize active target |
 | Loose loot | 256, merge same-kind nearby value without losing rewards |
-| Projectiles / transient effects | 64 projectiles, 128 particles, 16 damage texts; recycle/drop cosmetic overflow |
+| Projectiles / transient effects | 64 projectiles (three shared trail segments each); 24 live VFX bursts, 128 spark instances, 24 sword arcs, 24 ground rings, 32 lightning ribbons and 24 glow planes; 16 ambient embers and 16 short death poses; cosmetic overflow drops minor cues first |
 | Materials / textures | Palette-shared; no texture per actor; account explicitly for any new atlas |
 | Draw calls | Target at most 120 crowded desktop / 80 fallback; measure renderer.info |
 | Audio | At most 8 one-shot voices plus 2 ambient/music loops |
@@ -79,5 +79,7 @@ Screen-space glow, emissive color and short additive effects may supply the look
 After warmup, live entities/geometry/material/texture counts must plateau within caps. A repeated-navigation GC check targets less than 8 MiB retained heap growth after six cycles; record browser support and baseline variance. Profile a full 15-minute run, crowded boss phase, reduced-effects mode and WebGL context recovery. Report p50/p95 frame times and hardware; low-end physical phones and WAN capacity remain unproven until measured.
 
 ## Measured calibration
+
+The original measurements below predate the 2026-10-16 visual revision. New evidence belongs in `verification/dungeon-visual-2026-10-16`; do not use the original 44-call result as the revised renderer's budget measurement. The visual revision adds chamfered character forms, independently posed arms, tapered sword trails, differentiated skills, short death poses, depth-based outlines, two small procedurally authored textures, ruin returns, wind-deformed banners and torch fixtures, spawn rings and brief impact stars. These replace the earlier one-box-per-event effects. Contact damage, HP, dash destinations and XP rules are preserved. Word pools and the spawn director now follow the revised game design; the bounded word history is backward compatible with version-1 saves; room events now preserve the accepted cast's skill name, and the effect-history cap retains cast cues during full-horde hits.
 
 The [verification record](verification/dungeon-2026-10-16/README.md) contains hardware-labelled 900-second and final-build follow-up reports. The original long session measured render p95 18.0 ms on Radeon 860M. The final short capped scene remains 44 calls / p95 18.0 ms; Reduced Effects is 42 calls / p95 34.9 ms after avoiding clean-frame scheduling delays. These are local measurements, not a universal frame-rate guarantee or low-end phone calibration. Live entity limits stay unchanged.

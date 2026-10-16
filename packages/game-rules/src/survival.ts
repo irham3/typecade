@@ -25,7 +25,7 @@ export function createDungeonState(seed: string, language: DungeonLanguage): Dun
  return {
   version: 1, seed, rng: 0, language, phase: "ready", resumePhase: "arena", time: 0, worldTime: 0, nextBoss: B.bossInterval, spawnAt: 2, nextId: 1, biome: 0,
   player: { x: 0, z: 0, hp: B.hp, maxHp: B.hp, mana: 100, invincible: 0, dashFrom: { x: 0, z: 0 }, dashAt: -10 },
-  enemies: [], loot: [], projectiles: [], effects: [], target: null, prefix: "", command: "", queue: [], labelLimit: 6,
+  enemies: [], loot: [], projectiles: [], effects: [], recentWords: [], target: null, prefix: "", command: "", queue: [], labelLimit: 6,
   level: 1, xp: 0, totalXp: 0, gold: 0, kills: 0, words: 0, correct: 0, errors: 0, streak: 0, bestStreak: 0,
   skills: { cleave: { level: 1, cooldown: 0 }, storm: { level: 1, cooldown: 0 }, heal: { level: 1, cooldown: 0 } },
   relics: { lightning: 0, magnet: 0, switch: 0, vowels: 0, overclock: 0, glasses: 0, execute: 0 },
@@ -47,7 +47,8 @@ export class SurvivalRun {
  private pick<T>(list: readonly T[]) { return list[Math.floor(this.random() * list.length)]! }
  private effect(kind: DungeonState["effects"][number]["kind"], at: Point, value = 0) {
   const s = this.state
-  if (s.effects.length >= B.effects) s.effects.shift()
+  // A full horde must not evict its cast cue with 128 subsequent hit/pickup cues.
+  if (s.effects.length >= B.effects) {const minor=s.effects.findIndex(fx=>fx.kind==="shatter"||fx.kind==="pickup"||fx.kind==="hit");s.effects.splice(Math.max(0,minor),1)}
   s.effects.push({ id: s.nextId++, kind, x: at.x, z: at.z, life: .55, value })
  }
  start() { if (this.state.phase === "ready") this.state.phase = "arena" }
@@ -64,26 +65,32 @@ export class SurvivalRun {
   const s = this.state
   if (s.enemies.length >= B.enemies || kind === "boss" && s.boss !== null) return
   const angle = this.random() * Math.PI * 2
-  let position = at ?? { x: s.player.x + Math.sin(angle) * B.spawnRadius, z: s.player.z + Math.cos(angle) * B.spawnRadius }
-  for (let i = 0; i < 8 && !dungeonWalkable(position); i++) position = { x: s.player.x + Math.sin(angle + i + 1) * B.spawnRadius, z: s.player.z + Math.cos(angle + i + 1) * B.spawnRadius }
-  if (!dungeonWalkable(position)) return
-  const pool = dungeonWords[s.language][kind]
-  const used = s.enemies.map(e => e.words[0]?.[0])
-  const available = pool.filter(word => !used.includes(word[0]))
-  const first = this.pick(available.length ? available : pool)
+  const radius=at?B.spawnRadius:6+this.random()*(B.spawnRadius-6)
+  let position = at ?? { x: s.player.x + Math.sin(angle) * radius, z: s.player.z + Math.cos(angle) * radius }
+  const valid=(p:Point)=>dungeonWalkable(p)&&(!!at||reachable(s.player,p)&&!s.enemies.some(e=>distance(e,p)<1))
+  for (let i = 0; i < 16 && !valid(position); i++) position = { x: s.player.x + Math.sin(angle + (i + 1)*2.399) * radius, z: s.player.z + Math.cos(angle + (i + 1)*2.399) * radius }
+  if (!valid(position)) return
   const layers = kind === "boss" ? 3 + Math.min(2, s.biome) : kind === "minotaur" ? Math.min(5, 3 + Math.floor(s.time / 900)) : kind === "guard" ? 2 : 1
-  const words = Array.from({ length: layers }, (_, i) => this.modifyWord(i === 0 ? first : pool[i % pool.length]!, kind, layers - i))
+  const words = Array.from({ length: layers }, (_, i) => this.drawWord(kind,layers-i,i===0))
   const health = kind === "boss" ? B.bossHealth * (1 + s.biome * .5) : layers
   const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: objects.includes(kind) ? 0 : B.speed * (kind === "goblin" ? 1.3 : 1) * (1 + Math.min(2, s.time / 900)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 8 : 0, health, maxHealth: health }
   s.enemies.push(enemy)
   if (kind === "boss") { s.boss = enemy.id; s.notice = "Obsidian Minotaur — break its armor." }
   return enemy
  }
+ private drawWord(kind:EnemyKind,layers:number,first:boolean) {
+  const s=this.state,source=s.time>=900&&(kind==="skeleton"||kind==="goblin")?dungeonLongWords[s.language]:dungeonWords[s.language][kind]
+  const pool=[...new Set(source.map(word=>this.modifyWord(word,kind,layers)))],used=s.enemies.map(e=>e.words[0]?.[0])
+  const unique=first?pool.filter(word=>!used.includes(word[0])):pool,candidates=unique.length?unique:pool
+  const fresh=candidates.filter(word=>!s.recentWords.includes(word)),oldest=Math.min(...candidates.map(word=>s.recentWords.indexOf(word)))
+  const word=this.pick(fresh.length?fresh:candidates.filter(word=>s.recentWords.indexOf(word)===oldest))
+  s.recentWords.push(word);if(s.recentWords.length>24)s.recentWords.shift()
+  return word
+ }
  private modifyWord(word: string, kind: EnemyKind, layers: number) {
   const s = this.state
   if (s.relics.glasses && (kind === "mage" || kind === "bomber")) word = word.replace(/[^\p{L}\p{N}]/gu, "")
   if (s.relics.execute && layers === 1 && (kind === "minotaur" || kind === "boss")) word = word.slice(0, 3)
-  if (s.time >= 900 && (kind === "skeleton" || kind === "goblin")) word = this.pick(dungeonLongWords[s.language])
   return word
  }
  refreshQueue() {
@@ -298,7 +305,7 @@ export class SurvivalRun {
    s.stagger = Math.max(0, s.stagger - real)
    if (!s.stagger) {
     const boss = s.enemies.find(e => e.id === s.boss)!
-    boss.words = [...dungeonWords[s.language].boss]; s.phase = "arena"; this.openDraft()
+    const layers=3+Math.min(2,s.biome);boss.words=Array.from({length:layers},(_,i)=>this.drawWord("boss",layers-i,i===0));s.phase = "arena"; this.openDraft()
    }
    return
   }
@@ -308,8 +315,10 @@ export class SurvivalRun {
   }
   s.spawnAt -= dt
   if (s.spawnAt <= 0) {
-   const roster: EnemyKind[] = s.time < 150 ? ["skeleton", "goblin", "skeleton", "chest", "barrel"] : ["skeleton", "goblin", "guard", "minotaur", "bomber", "mage"]
-   this.spawn(this.pick(roster)); s.spawnAt = Math.max(.45, B.spawnInterval / (1 + s.time / 180 + s.level * .06))
+   const roster:EnemyKind[]=s.time<90?["skeleton","goblin","skeleton"]:s.time<150?["skeleton","goblin","guard"]:["skeleton","goblin","skeleton","goblin","skeleton","goblin","guard","guard","minotaur","bomber","mage"]
+   const deficit=4-this.targets().filter(e=>!objects.includes(e.kind)).length
+   for(let i=0;i<Math.max(1,Math.min(3,deficit));i++)this.spawn(this.pick(deficit>0?roster:[...roster,"barrel","chest"]))
+   s.spawnAt = Math.max(.65, B.spawnInterval / (1 + s.time / 360 + s.level * .03))
   }
   for (const e of [...s.enemies]) {
    if (e.frozen > 0) { e.frozen -= dt; continue }
@@ -331,10 +340,12 @@ export class SurvivalRun {
      }
     }
    }
-   if (d > 28 && e.id !== s.target && e.id !== s.boss) s.enemies = s.enemies.filter(enemy => enemy !== e)
+   if (d > 18 && e.id !== s.target && e.id !== s.boss) s.enemies = s.enemies.filter(enemy => enemy !== e)
   }
   s.projectiles = s.projectiles.filter(p => { p.x += p.vx * dt; p.z += p.vz * dt; p.life -= dt; if (distance(p, s.player) < .6) { this.damage(1); return false }; return p.life > 0 })
   this.collectLoot(); this.openDraft(); this.refreshQueue()
+  // Preserve scripted spawn holds; shorten only the director's normal countdown.
+  if(s.spawnAt<=B.spawnInterval&&this.targets().filter(e=>!objects.includes(e.kind)).length<4)s.spawnAt=Math.min(s.spawnAt,.3)
  }
  serialize() { return JSON.stringify(this.state) }
 }
@@ -344,6 +355,7 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
  try {
   const s: DungeonState = JSON.parse(raw)
   if(s?.version===1&&s.legendaryDrafts===undefined)s.legendaryDrafts=0
+  if(s?.version===1&&s.recentWords===undefined)s.recentWords=[]
   const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value)
   if (!s || s.version !== 1 || typeof s.seed !== "string" || s.seed.length > 200 || !["en", "id"].includes(s.language) || !["ready", "arena", "skills", "draft", "overdrive", "paused", "dead"].includes(s.phase)) return null
   const base = createDungeonState(s.seed, s.language)
@@ -352,6 +364,7 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   if (!s.player || ![s.player.x, s.player.z, s.player.hp, s.player.maxHp, s.player.mana, s.player.invincible, s.player.dashAt, s.player.dashFrom?.x, s.player.dashFrom?.z].every(finite) || s.player.hp < 0 || s.player.hp > s.player.maxHp || s.player.maxHp > 100 || s.player.mana < 0 || s.player.mana > 100) return null
   if(![s.player.x,s.player.z,s.player.dashFrom.x,s.player.dashFrom.z].every(n=>Math.abs(n)<=1_000_000)||s.player.maxHp<1||!dungeonWalkable(s.player))return null
   if (!Array.isArray(s.enemies) || s.enemies.length > B.enemies || !Array.isArray(s.loot) || s.loot.length > B.loot || !Array.isArray(s.projectiles) || s.projectiles.length > B.projectiles || !Array.isArray(s.effects) || s.effects.length > B.effects) return null
+  if(!Array.isArray(s.recentWords)||s.recentWords.length>24||s.recentWords.some(word=>typeof word!=="string"||!word.length||word.length>40))return null
   if (s.enemies.some(e => !e || !Object.hasOwn(dungeonWords.en, e.kind) || ![e.id, e.x, e.z, e.speed, e.frozen, e.attack, e.health, e.maxHealth].every(finite) || !Array.isArray(e.words) || e.words.length > 5 || e.words.some(w => typeof w !== "string" || !w.length || w.length > 40))) return null
   if (new Set(s.enemies.map(e => e.id)).size !== s.enemies.length || s.loot.some(e => !e || ![e.id, e.x, e.z, e.xp, e.gold, e.mana].every(finite) || e.xp < 0 || e.gold < 0 || e.mana < 0)) return null
   if(s.enemies.some(e=>e.id>=s.nextId||!Number.isSafeInteger(e.id)||e.id<1||Math.abs(e.x)>1_000_000||Math.abs(e.z)>1_000_000||e.speed<0||e.speed>10)||s.loot.some(e=>e.xp>100_000_000||e.gold>100_000_000||e.mana>100_000))return null

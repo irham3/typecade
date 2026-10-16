@@ -16,6 +16,7 @@ const browserCdp=await browser.newBrowserCDPSession()
 const gpu=await browserCdp.send("SystemInfo.getInfo")
 const errors=[]
 page.on("pageerror",error=>errors.push(error.message))
+page.on("console",message=>{if(message.type()==="error")errors.push(message.text())})
 const samples=[]
 const intervals={}
 const renderer=()=>page.getByTestId("dungeon-canvas")
@@ -57,20 +58,24 @@ try{
  }
  await page.getByRole("button",{name:"Enter the keep"}).click();await page.getByRole("button",{name:"Begin run"}).click()
  await collect()
- let active=0,lastClock=0,nextSample=30,deaths=0
+ let active=0,lastClock=0,nextSample=30,deaths=0,lastCast=-30,emptySince=0,longestEmptyArenaMs=0
+ const casts={heal:0,storm:0}
  while(active<seconds){
   assert(Date.now()-started<seconds*2000+120000,"Active simulation failed to make progress")
   const ui=await page.evaluate(()=>{
    const clock=document.querySelector(".hud-topline strong")?.textContent??"00:00"
    const [m,s]=clock.split(":").map(Number)
    const locked=document.querySelector(".enemy-label.locked"),target=locked??document.querySelector(".enemy-label")
-   return {clock:m*60+s,upgrade:document.querySelector('[data-testid="upgrade-keyword"]')?.textContent,word:target?.getAttribute("data-word")?.slice(locked?.querySelector(".typed")?.textContent?.length??0),boss:[...document.querySelectorAll('.boss-passage .next,.boss-passage .ghost')].map(n=>n.textContent).join("").slice(0,8),dead:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Try another run"),paused:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Resume run")}
+   return {clock:m*60+s,upgrade:document.querySelector('[data-testid="upgrade-keyword"]')?.textContent,word:target?.getAttribute("data-word")?.slice(locked?.querySelector(".typed")?.textContent?.length??0),boss:[...document.querySelectorAll('.boss-passage .next,.boss-passage .ghost')].map(n=>n.textContent).join("").slice(0,8),hp:document.querySelectorAll('.hearts .filled').length,heal:document.querySelector('.skill-heal:not(.unavailable)')!==null,storm:document.querySelector('.skill-storm:not(.unavailable)')!==null,labels:document.querySelectorAll('.enemy-label').length,dead:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Try another run"),paused:[...document.querySelectorAll("dialog button")].some(b=>b.textContent==="Resume run")}
   })
   active+=Math.max(0,ui.clock-lastClock);lastClock=ui.clock
-  if(ui.dead){deaths++;await page.getByRole("button",{name:"Try another run"}).click();await page.getByRole("button",{name:"Begin run"}).click();lastClock=0}
+  if(!ui.labels&&!ui.boss&&!ui.upgrade&&!ui.dead&&!ui.paused){if(!emptySince)emptySince=Date.now();longestEmptyArenaMs=Math.max(longestEmptyArenaMs,Date.now()-emptySince)}else emptySince=0
+  if(ui.dead){deaths++;await page.getByRole("button",{name:"Try another run"}).click();await page.getByRole("button",{name:"Begin run"}).click();lastClock=0;lastCast=-30}
   else if(ui.paused)await page.getByRole("button",{name:"Resume run"}).click()
   else if(ui.upgrade)await page.keyboard.type(ui.upgrade,{delay:65})
   else if(ui.boss)await page.keyboard.type(ui.boss,{delay:65})
+  else if(ui.hp<=3&&ui.heal){await page.keyboard.press("Tab");await page.keyboard.type("HEAL",{delay:65});casts.heal++}
+  else if(ui.labels>=6&&ui.storm&&ui.clock-lastCast>=20){await page.keyboard.press("Tab");await page.keyboard.type("STORM",{delay:65});lastCast=ui.clock;casts.storm++}
   else if(ui.word)await page.keyboard.type(ui.word,{delay:65})
   else await page.waitForTimeout(100)
   if(active>=nextSample){await sample("survival");nextSample+=30}
@@ -85,9 +90,9 @@ try{
  const after=await memory();assert(after-before<8*1024*1024,`Retained heap grew ${after-before}`)
  const capped=await page.evaluate(()=>{
   const s=JSON.parse(localStorage.getItem("typecade:dungeon:run:v1"))
-  s.phase="paused";s.resumePhase=s.afterDraft="arena";s.target=null;s.prefix=s.command=s.paragraph="";s.cursor=s.stagger=s.pendingDrafts=s.legendaryDrafts=0;s.offers=[];s.player.x=s.player.z=0;s.player.hp=s.player.maxHp;s.player.invincible=60;s.nextId=1000;s.boss=128
+  s.phase="paused";s.resumePhase=s.afterDraft="arena";s.target=null;s.prefix=s.command=s.paragraph="";s.cursor=s.stagger=s.pendingDrafts=s.legendaryDrafts=0;s.offers=[];s.player.x=s.player.z=0;s.player.hp=s.player.maxHp;s.player.mana=100;s.player.invincible=60;s.nextId=1000;s.boss=128;s.skills.storm.cooldown=s.skills.cleave.cooldown=0;s.skills.storm.level=s.skills.cleave.level=1
   const kinds=["skeleton","goblin","guard","mage","minotaur","barrel","chest","bomber"],words=["slash","dash","BLOCK","hex_bolt!","CRUSH","IGNITE","OPEN","detonate-3"]
-  s.enemies=Array.from({length:128},(_,i)=>({id:i+1,kind:i===127?"boss":kinds[i%8],x:Math.cos(i)*5,z:Math.sin(i)*5,words:i===127?["BREAK","CRUSH","ARMOR"]:[words[i%8]],speed:0,frozen:0,attack:20,health:i===127?260:1,maxHealth:i===127?260:1}))
+  s.enemies=Array.from({length:128},(_,i)=>({id:i+1,kind:i===127?"boss":kinds[i%8],x:Math.cos(i)*5,z:Math.sin(i)*5,words:i===127?["BREAK","CRUSH","ARMOR"]:[words[i%8],"ARMOR","BREAK"],speed:0,frozen:0,attack:20,health:i===127?260:3,maxHealth:i===127?260:3}))
   s.queue=[1,2,3,4,5,6]
   s.loot=Array.from({length:256},(_,i)=>({id:200+i,x:Math.cos(i)*4,z:Math.sin(i)*4,xp:1,gold:1,mana:0}))
   s.projectiles=Array.from({length:64},(_,i)=>({id:500+i,x:Math.cos(i)*3,z:Math.sin(i)*3,vx:0,vz:0,life:8}))
@@ -96,11 +101,11 @@ try{
  })
  assert(capped.enemies.length===128)
  await page.reload();await expect(renderer()).toHaveAttribute("data-renderer-state","ready");await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
- await collect();await page.waitForTimeout(4000);await finishFrames("crowded-boss");await page.screenshot({path:`${output}/crowded-boss.png`});await page.keyboard.press("Escape");await sample("crowded-boss")
+ await collect();await page.keyboard.press("Tab");await page.keyboard.type("STORM");await page.keyboard.press("Tab");await page.keyboard.type("CLEAVE");await page.screenshot({path:`${output}/crowded-burst.png`});await page.waitForTimeout(4000);await finishFrames("crowded-boss");await page.screenshot({path:`${output}/crowded-boss.png`});await page.keyboard.press("Escape");await sample("crowded-boss")
  await page.getByRole("button",{name:"Settings",exact:true}).click();await page.getByLabel("Reduced Effects",{exact:true}).check();await page.getByRole("button",{name:"Done",exact:true}).click();await page.getByRole("button",{name:"Resume run"}).click()
  await collect();await page.waitForTimeout(3000);await finishFrames("reduced");await page.keyboard.press("Escape");await sample("reduced")
  assert(errors.length===0,errors.join("\n"))
- const report={url,browser:browser.version(),hardware:{platform:os.platform(),release:os.release(),cpu:os.cpus()[0]?.model,cores:os.cpus().length,memoryGiB:Math.round(os.totalmem()/1024**3),gpuRenderer,gpu:gpu.gpu.devices},activeSeconds:active,wallSeconds:Math.round((Date.now()-started)/1000),deaths,intervals,navigation:{cycles:6,before,after,retained:after-before},samples,errors}
+ const report={url,browser:browser.version(),hardware:{platform:os.platform(),release:os.release(),cpu:os.cpus()[0]?.model,cores:os.cpus().length,memoryGiB:Math.round(os.totalmem()/1024**3),gpuRenderer,gpu:gpu.gpu.devices},activeSeconds:active,wallSeconds:Math.round((Date.now()-started)/1000),deaths,casts,longestEmptyArenaMs,intervals,navigation:{cycles:6,before,after,retained:after-before},samples,errors}
  await writeFile(`${output}/report.json`,JSON.stringify(report,null,2))
  console.log(JSON.stringify({complete:true,activeSeconds:active,deaths,intervals,retainedHeap:after-before}))
 }finally{await browser.close()}

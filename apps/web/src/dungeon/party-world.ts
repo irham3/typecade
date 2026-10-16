@@ -15,5 +15,6 @@ export function partyWorld(room:RaceRoomSnapshot|null,ownId:string|null,casting:
   return {id:p.id,name:p.name,x:x+focus.x,z,color:colors[index%4]!,hp:room.combat?.players[p.id]?.hp??100,action:action?.kind??"idle",actionAt:action?.at??0,target:action?.target??null,role:room.combat?.players[p.id]?.role??p.role??"dps"}
  })
  const obstacles:NonNullable<PartyWorld["obstacles"]>=room.config.mode==="sprint"&&own?room.text.slice(own.cursor).split(" ").slice(0,6).map((word,i)=>({x:focus.x+2+i*2,z:-2.7,word,kind:["DODGE","LOMPAT"].includes(word)?"barrier" as const:["IGNITE","LEDAKKAN"].includes(word)?"barrel" as const:"goblin" as const})):[]
- return {mode:room.config.mode??"sprint",phase:room.phase,casting,ownId,players,obstacles,boss:room.config.mode==="raid"&&room.combat?{hp:room.combat.bossHp,maxHp:room.combat.bossMaxHp}:null,now:room.serverNow,focus}
+ const bossAction=room.combat?.actions.findLast(action=>action.kind==="boss-hit")
+ return {mode:room.config.mode??"sprint",phase:room.phase,casting,ownId,players,obstacles,boss:room.config.mode==="raid"&&room.combat?{hp:room.combat.bossHp,maxHp:room.combat.bossMaxHp,nextAttack:room.combat.nextAttack,attackAt:bossAction?.at??-1000,target:bossAction?.target??null}:null,now:room.serverNow,focus}
 }

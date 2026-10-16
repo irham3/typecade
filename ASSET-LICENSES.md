@@ -8,6 +8,7 @@ Updated 2026-10-15. The [asset audit](docs/asset-audit.md) lists all runtime fil
 | `apps/web/public/assets/dungeon/crest.svg` | Original project SVG | Application icon |
 | `apps/web/src/game/DungeonModels.ts` | Original procedural geometry | Knights, enemies, boss, dummy and Sensei |
 | `apps/web/src/game/DungeonScene.ts` | Original procedural rendering/effects | Recycled ruins, torches, loot, projectiles and combat |
+| `apps/web/src/game/DungeonVfx.ts` | Original procedural geometry and 64 × 64 canvas light mask | Bounded combat trails, lightning, healing, fragments and glow; no downloaded sprites |
 | `apps/web/src/dungeon/Glyph.tsx` | Original SVG glyphs | Shared game HUD and shell |
 | `apps/web/src/game/DungeonAudio.ts` | Native synthesis; no external samples | Typing, impacts, skills and pickups |
 | `docs/reference/dungeon/*.jpg` | User-supplied visual references | Reference only, outside public assets |

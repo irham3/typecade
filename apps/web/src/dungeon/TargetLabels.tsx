@@ -16,7 +16,7 @@ export function TargetLabels({ view, bridge }: { view: DungeonState; bridge: Gam
  return <div className={`target-labels ${tight?"tight":""}`} ref={layer} aria-label="Enemy targets">{ids.map(id => {
   const e = view.enemies.find(e => e.id === id), point = points.find(p => p.id === id)
   if (!e || !point || !e.words.length) return null
-  const word = e.words[0]!, active = id === view.target, w = Math.max(88, Math.min(width - pad * 2, word.length * (compact ? 10 : 12) + 38)), h = tight?46:58
+  const word = e.words[0]!, active = id === view.target, w = Math.max(88, Math.min(width - pad * 2, word.length * (compact ? 10 : 12) + 30)), h = tight?42:50
   let x = Math.max(pad, Math.min(width - w - pad, point.x - w / 2)), y = Math.max(top, Math.min(height - bottom - h, point.y - 44))
   const intersects = (a: {x:number;y:number;w:number;h:number}) => x < a.x + a.w + 8 && x + w + 8 > a.x && y < a.y + a.h + 8 && y + h + 8 > a.y
   for (let i=0; i<24 && used.some(intersects); i++) {
