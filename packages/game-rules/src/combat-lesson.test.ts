@@ -8,7 +8,7 @@ for(const language of ["en","id"] as const)it(`teaches actual combat and upgrade
  expect(lesson.next()).toBe(false);expect(lesson.complete).toBe(false)
  lesson.input("?");expect(lesson.run.state.errors).toBe(1)
  lesson.input("Escape");const time=lesson.run.state.time;lesson.advance(.1);expect(lesson.run.state.time).toBe(time);lesson.input("Escape")
- type(words.strike);expect(lesson.complete).toBe(true);expect(lesson.run.state.kills).toBe(1);expect(lesson.run.state.player.x).toBe(2)
+ type(words.strike);expect(lesson.complete).toBe(true);expect(lesson.run.state.kills).toBe(1);expect(lesson.run.state.player.x).toBe(1)
  lesson.input("a");expect(lesson.run.state.errors).toBe(1);tick();expect(lesson.next()).toBe(true)
  type(words.armor[0]!);expect(lesson.complete).toBe(false);expect(lesson.run.state.enemies[0]!.words).toHaveLength(1);type(words.armor[1]!);expect(lesson.complete).toBe(true);lesson.next()
  type(words.treasure);expect(lesson.run.state.gold).toBe(25);expect(lesson.run.state.totalXp).toBe(50);lesson.next()

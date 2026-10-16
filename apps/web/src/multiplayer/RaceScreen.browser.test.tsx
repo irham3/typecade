@@ -81,6 +81,7 @@ describe("multiplayer race screen browser coverage", () => {
   current.config.mode="raid";current.combat=createArenaCombat("raid",players,0);delete current.combat.players.peer
   for(const role of ["healer","tank"] as const){current.combat.players.host!.role=role;await act(()=>socket.deliver(current));expect(host.textContent).toContain(role==="healer"?"WORDS HEAL":"WORDS GUARD")}
   current.config.mode=undefined;current.combat=undefined;current.phase="waiting";await act(()=>socket.deliver(current));expect(host.textContent).toContain("Start race")
+  current.phase="finished";current.players[0]!.status="out";await act(()=>socket.deliver(current));current.players=[];await act(()=>socket.deliver(current))
  })
 
 	it("keeps a 100-captain fleet searchable and closes the board with Escape", async () => {

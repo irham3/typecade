@@ -158,3 +158,15 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Add Caps Lock and exact-case/modifier highlights to the existing on-screen keyboard; explain case in ready, draft and skill controls.
 - [x] EN/ID rule, multiplayer and keyboard regression checks; 179 tests/25 files at unchanged 100% global coverage, lint, both TypeScript checks and build pass locally.
 - [ ] Finish current-source browser checks and confirm GitHub validation after enabling an Xvfb display for Firefox WebGL on the Linux runner.
+
+
+## M13 - Boss continuity, readable combat and local history, 2026-10-17
+
+- [x] Preserve the full finite boss combo through ten-second retaliation cycles; gate lethal damage at the last letter and defer upgrade drafts until boss defeat.
+- [x] Add boss guard/counter feedback and safe separation, varied blade poses, directed passive attacks/cooldowns, real chest rewards and resource/level/rank popups.
+- [x] Expand authored EN/ID packs, character details, bounded weather/landmark dressing and the heraldic main menu.
+- [x] Add bounded local history for Survival, Dojo and real multiplayer rounds; retain save/account isolation.
+- [x] Focused real-browser boss/tutorial/gameplay checks: seven Chromium cases passed; earlier 63-case result belongs to the pre-polish source.
+- [x] Current-source local checks: 188 tests/27 files, unchanged 100% coverage, lint, app/server types, build, audit and Worker dry-run. See verification/dungeon-polish-2026-10-17.
+- [ ] Finish full browser CI and timed production resource evidence before claiming release verification.
+- [ ] Supabase backup, migrations, cloud history and leaderboard changes: explicitly postponed by the user until after non-Supabase work.

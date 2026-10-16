@@ -1,4 +1,12 @@
 const paths = {
+ heart: "M2 5l3-3h4l3 4 3-4h4l3 3v7L12 23 2 12z",
+ bolt: "M13 1L3 14h7l-1 9 12-15h-8z",
+ flame: "M13 1l2 7 4-3 3 10-3 7H5l-3-7 7-9-1 7 4-4z",
+ eye: "M1 12l6-7h10l6 7-6 7H7zm7 0 4 4 4-4-4-4z",
+ clock: "M6 2h12l5 6v9l-5 5H6l-5-5V8zm5 3v9h7v-3h-4V5z",
+ switch: "M2 3h20v5H2zm2 7h16v10H4zm5 2v6h6v-6z",
+ finish: "M10 1h4v13l5-4 3 3-10 10L2 13l3-3 5 4z",
+ history: "M4 2h16v20H4zm3 4v3h10V6zm0 6v2h10v-2zm0 5v2h7v-2z",
  tower: "M3 22v-4h3V9H3V2h4v3h3V2h4v3h3V2h4v7h-3v9h3v4H3zm7-4h4v-7h-4z",
  sword: "M4 21l6-6-2-2 2-2 2 2L21 2l1 1-8 12 2 2-2 2-2-2-6 6z",
  storm: "M2 4h20v3H6v3h13v3H9v3h7v3h-4v3H9v-3H6v-3H3v-3h3v-3H2z",

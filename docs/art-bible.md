@@ -104,3 +104,10 @@ Shield pickups use a cyan kite silhouette; health is a red glass bottle with a c
 Bats have separate wing meshes and flight height; mages hover without walking legs. Ground actors retain distinct gaits and seeded steering. Charge windup commits a visible orange ground lane; mage cast warnings use violet floor markers. Reduced Effects keeps silhouettes, stationary shield/orbit indicators, active tower and static warning lanes readable. Five extra actor types reuse the existing instanced batching and shared shape cache; one 12-instance orbital batch, one 128-instance warning batch, six party shields and one sentry mesh are bounded and disposed through the existing renderer lifecycle. Enemy, loot, projectile, corpse and transient VFX caps remain unchanged.
 
 Music gain is increased from 0.65 to 1.55 relative to unchanged SFX, with a new music preference default of 0.85. Saved per-bus and master/mute settings remain respected. This is an implementation gain change, not a measured loudness claim.
+
+
+## 2026-10-17 action readability and dressing
+
+Primary strikes alternate authored slash, thrust and uppercut poses; a three-instance shared knight-body echo batch sells dash travel. Impacts linger briefly, death fragments are larger, body/limbs separate along bounded eased death poses, and major slam/blast/treasure cues receive priority in the existing 24-burst pool. Resource captions last up to 1.35 simulation seconds with a 1.25-second CSS rise/fade; numbers reflect actual healing/mana/absorption and include a heart glyph.
+
+The 48-instance decorative weather batch and 18-instance architectural landmark batch recycle with the existing nine chunks. Seasonal palettes change every 120 active seconds, also offset by boss depth, without moving collision footprints. Reduced Effects removes weather/echo motion, retaining silhouettes, warnings and readable feedback. No new asset files, postprocessing passes or runtime libraries are introduced. Main menu uses an authored crossed-blade crest, forged frame/rivets and a high-contrast brass action; all controls retain keyboard focus.

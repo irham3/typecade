@@ -59,7 +59,7 @@ Tab during arena play stores target ID/prefix, sets simulation speed to **0.5**,
 
 Cooldown counts **completed target words**; no seconds or character-based substitute. Casts and their kills do not grant typed-word cooldown credit. Display e.g. `3w` with explanation. Mana is separate and finite.
 
-Keep clocks explicit: normal world motion uses full delta, Tab mode uses half delta for enemy movement/projectiles/countdowns, while the unpaused survival clock and typing metrics use real elapsed active time. Thus holding Tab cannot postpone the five-minute boss schedule. Drafts, pause and hidden-tab suspension advance neither clock. Boss stagger uses ten seconds of active real time and cannot enter Tab mode. Do not use slowed world time to inflate WPM.
+Keep clocks explicit: normal world motion uses full delta, Tab mode uses half delta for enemy movement/projectiles/countdowns, while the unpaused survival clock and typing metrics use real elapsed active time. Thus holding Tab cannot postpone the five-minute boss schedule. Drafts, pause and hidden-tab suspension advance neither clock. Boss retaliation uses ten seconds of active real time and cannot enter Tab mode; the combo text persists across counterattacks. Do not use slowed world time to inflate WPM.
 
 Area damage removes queued layers from the tail, preserving the current locked word/prefix. If a locked enemy has only its active layer left, reserve it for typing; skill/relic damage cannot delete that prefix. Other trash can die normally. Any future forced target death must explicitly clear the lock and announce it, never redirect remaining letters silently.
 
@@ -80,10 +80,10 @@ Level gain produces a golden character pulse and an animated frozen draft. Cards
 | Family | Required effect |
 | --- | --- |
 | Active evolutions | Upgrade Cleave, Storm and Heal toward their maximum forms |
-| Chain lightning | Every tenth accepted combat character hits two seeded eligible targets |
+| Chain lightning | Every tenth accepted combat character chains to two unlocked nearby targets; four-second cooldown |
 | XP magnet | Increased pickup radius; explicit bounded tuning for WPM XP bonus |
 | Thocky Mechanical Switch | Completed words emit local knockback |
-| Vowel Spitfires | Accepted vowels fire at a seeded nearby mob |
+| Vowel Spitfires | Accepted vowels fire a visible bolt at a seeded unlocked nearby mob; 2.4-second cooldown |
 | 100+ WPM Overclock | Above 100 WPM, double mana recovery and word cooldown reduction |
 | Programmer's Glasses | Remove punctuation from future eligible bomber/mage words |
 | Execute Shortener | Future final elite words contain at most three letters in both languages |
@@ -103,9 +103,11 @@ For the first 90 seconds the director aims for two reachable combat labels withi
 
 Difficulty grows within entity caps: queued/offscreen spawns follow deterministic admission rules, then layers/speed/composition increase pressure. Never evict a locked target. Only one main boss is active; further scheduled bosses wait for encounter resolution.
 
-Obsidian Minotaur has layered armor and separate health. Armor loss triggers **ARMOR BREAK** and a **ten-second stagger**. Skill cards slide away and a rolling paragraph appears. Correct characters deal deterministic damage with phantom slashes; embedded `BLIZZARD` triggers once per occurrence.
+Obsidian Minotaur has layered armor and separate health. Armor loss starts a finite **BREAK COMBO** ending with `BLIZZARD`; the hero retreats to a safe 3.5-unit presentation/combat distance when too close. Correct characters damage the boss, but health cannot fall below one until the final displayed character. Completing a nonlethal line reforms armor; completing a lethal line grants the boss reward once. Never append an unseen continuation or discard a partially typed line.
 
-Append seeded continuation if the passage ends early. Kill resolves relic/biome once, returns to horde and keeps the run going; otherwise armor reforms at stagger expiry. Pause/hidden tabs freeze the timer. Nested skill mode cannot extend stagger. Damage/XP text reflects actual rules; never copy fake `999 CRIT` values from concept art.
+Every ten active seconds the exposed boss retaliates with a telegraphed hammer slam. Preserve the paragraph and cursor through this counterattack. Completing a word grants 0.8 seconds of guard; a guarded retaliation has a PARRY cue, otherwise actual HP loss and hurt feedback apply. Pause/hidden tabs freeze the timer. Level XP can accumulate during an encounter, but bank all upgrade choices until the boss dies. The HUD distinguishes armor, combo progress and next retaliation. This replaces the earlier ten-second phase cutoff after the user's 2026-10-17 playtest report.
+
+Normal armored combat alternates committed charges with close hammer-slam patterns. Domain events identify blade/cleave/storm/lightning/firebolt/sentry/blast damage; bounded world captions, directed bolts and distinct attack poses explain the outcome. Automatic relics exclude the locked target and show actual cooldowns. Peti/chest labels promise +25 gold/+50 XP and opening/collection feedback uses those real rewards.
 
 ## 8. Other modes
 
@@ -142,3 +144,12 @@ Each spawn gets a seeded 88-112% speed variation on its type's multiplier. Skele
 Four non-hostile, uppercase, typed world supplies join chest and explosive barrel. A blue kite shield grants two shield HP up to four; shield absorbs before health and uses the normal non-stacking hit grace. A red cross-marked bottle restores up to two hearts. A faceted blue-violet mana crystal restores up to 40 mana. A gold/steel sentry deploys one visible stationary tower for 18 world seconds, firing at one reachable foe within seven units every 1.8 world seconds. Replacing a sentry refreshes its location and lifetime; it never stacks. The tower preserves the active target's word/prefix and cannot collect supplies. Skill/relic area damage also leaves supplies available for deliberate typing. Item collection is not an enemy kill; supplies do not satisfy threat floors. One uncollected pickup of each supply kind is admitted at a time; sentries enter the optional pool after 90 seconds.
 
 The HUD shows current shield 0-4, collected supplies and used/active/expired state, plus acquired relic ranks. The knight visibly carries a shield while charges remain; existing offensive relics get corresponding orbiting motes, and the tower and beam show actual sentry shots. Party shields display only authoritative room shield values. Small screens retain a focusable horizontally scrollable equipment row. Version-1 checkpoints without the new supply, shield or sentry fields receive empty defaults; present values, telegraphs and beam endpoints are validated before restore. Existing checkpoint language and partially typed words remain intact; the new-run selector defaults to ID. Music bus gain rises from 0.65 to 1.55 (about 7.5 dB) relative to unchanged effects; new music defaults to 0.85, retaining saved controls and mute preferences.
+
+
+## 2026-10-17 presentation and local history
+
+Terrain dressing rotates through ash, crypt, ember, frost and verdant palettes every 120 active seconds, added to boss depth progression. Recycle the same nine chunks, one 18-instance landmark batch and a 48-instance weather batch; geometry remains inside the existing solid ruin footprint. Weather is decorative, disabled by Reduced Effects, and never changes pathfinding. Character silhouettes, attack poses, directional proc traces, resource/level/rank captions and a heraldic title screen use authored geometry/CSS without new assets or dependencies.
+
+Store up to 50 local run records under `typecade:dungeon:history:v1`, keyed by run seed or room/round/player identity. Update resumed solo runs rather than duplicating them; record saved/retired/fallen states, Dojo results and authoritative multiplayer results with mode, language, duration and metrics. Keep tutorial results out of history. Supabase backup, DDL rework, cloud history and global leaderboard changes are explicitly deferred by the user; preserve the existing Auth/account integration.
+
+Clean word strikes land outside contact range: 1 unit for final hits and objects, 2.2 for remaining armor, 3.5 for bosses. Heavy armor hits interrupt minotaur/boss attacks with one second of recovery. Candidate landing points must be walkable and connected to the target; blocked candidates rotate around the target, then retain the current player position if none is safe. Loot outside the normal pickup radius stays on the floor.

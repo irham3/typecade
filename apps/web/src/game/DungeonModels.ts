@@ -73,6 +73,8 @@ export class DungeonModels {
    arm.push([color, 0, -.52, .28, .46, .65, .13], [gold, 0, -.52, .37, .11, .52, .05])
    if (kind === "guard") arm.push([0x766040, 0, -.44, .37, .72, 1.08, .16], [gold, 0, -.44, .47, .12, .98, .04])
   }
+  if(kind==="knight"||kind==="guard")body.push([gold,-.43,2.46,0,.12,.14,.85],[gold,.43,2.46,0,.12,.14,.85],[0x6cabc3,0,2.76,-.14,.22,.52,.35,"cone"],[leather,-.32,.95,.38,.18,.27,.15],[gold,0,1.25,.43,.16,.25,.04])
+  if(kind==="boss"||kind==="minotaur")body.push([bone,-.91,2.61,0,.21,1.12,.21,"cone",-.95],[bone,.91,2.61,0,.21,1.12,.21,"cone",.95],[gold,-.68,1.55,.02,.30,.22,.78],[gold,.68,1.55,.02,.30,.22,.78],[0xff9b55,0,1.4,.52,.24,.30,.07],[0x363b4e,0,1.15,-.5,.96,1.1,.2])
   const result = { body: this.geometry(body), leg: leg ? this.geometry(leg) : null, arm: arm ? this.geometry(arm) : null, weapon: weapon ? this.geometry(weapon) : null, scale: size }
   this.cache.set(key, result); return result
  }

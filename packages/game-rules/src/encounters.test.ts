@@ -53,7 +53,7 @@ it("restores old saves safely and rejects malformed shield, equipment, tower, te
 
 it("pushes only safe nearby targets with the switch and resolves equidistant tower shots stably",()=>{
  const r=run(),s=r.state;s.relics.switch=1
- const target=r.spawn("skeleton",{x:1,z:0})!,near=r.spawn("guard",{x:2,z:0})!,zero=r.spawn("guard",{x:1,z:0})!;r.spawn("guard",{x:8,z:0});target.words=["go"];near.words=["Near","Guard"];zero.words=["Zero","Guard"];r.refreshQueue();for(const key of "go")r.input(key);expect(near.x).toBe(3);expect(zero.x).toBe(1)
+ const target=r.spawn("skeleton",{x:1,z:0})!,near=r.spawn("guard",{x:2,z:0})!,zero=r.spawn("guard",{x:0,z:0})!;r.spawn("guard",{x:8,z:0});target.words=["go"];near.words=["Near","Guard"];zero.words=["Zero","Guard"];r.refreshQueue();for(const key of "go")r.input(key);expect(near.x).toBe(3);expect(zero.x).toBe(0)
  s.enemies=[];s.queue=[];s.player.x=3;s.player.z=6;const edge=r.spawn("skeleton",{x:4.5,z:7.3})!,blocked=r.spawn("guard",{x:5.4,z:7.6})!;edge.words=["go"];blocked.words=["Safe","Guard"];r.refreshQueue();for(const key of "go")r.input(key);expect(blocked.x).toBe(5.4)
  blocked.x=10;blocked.z=10;const before={x:blocked.x,z:blocked.z};(r as unknown as {moveEnemy:(e:typeof blocked,dt:number)=>void}).moveEnemy(blocked,.1);expect({x:blocked.x,z:blocked.z}).toEqual(before)
  const t=run();t.state.sentry={x:0,z:0,life:18,cooldown:0};const first=t.spawn("guard",{x:2,z:0})!,second=t.spawn("guard",{x:-2,z:0})!;first.speed=second.speed=0;tick(t,.04);expect(first.words).toHaveLength(1);expect(second.words).toHaveLength(2)
@@ -63,4 +63,55 @@ it("keeps supplies stationary under knockback and reserves lightning hits for el
  const r=run(),s=r.state;s.relics.switch=s.relics.lightning=1
  const supply=r.spawn("shield",{x:2,z:0})!,health=r.spawn("potion",{x:3,z:0})!,a=r.spawn("guard",{x:3,z:1})!,b=r.spawn("guard",{x:3,z:-1})!,target=r.spawn("skeleton",{x:1,z:0})!;target.words=["go"];s.correct=9;s.streak=s.bestStreak=9;r.refreshQueue();r.input("g");expect(a.words).toHaveLength(1);expect(b.words).toHaveLength(1);r.input("o");expect(supply.x).toBe(2);expect(health.x).toBe(3)
  const barrel=r.spawn("barrel",{x:3,z:0})!;r.cancel();r.refreshQueue();for(const key of barrel.words[0]!)r.input(key);expect(s.enemies).toContain(supply);expect(s.enemies).toContain(health)
+})
+
+it("telegraphs boss hammer slams and protects a typed target from automatic relic shots",()=>{
+ const r=run(),s=r.state;s.player.invincible=0
+ const boss=r.spawn("boss",{x:2.5,z:0})!;boss.attack=0;s.worldTime=0;r.advance(.1);expect(boss.motion).toBe("windup");expect(boss.aim).toEqual({x:boss.x,z:boss.z})
+ for(let i=0;i<12;i++)r.advance(.1)
+ expect(s.effects.some(f=>f.kind==="slam")).toBe(true);expect(s.player.hp).toBeLessThan(s.player.maxHp)
+ for(let i=0;i<20;i++)r.advance(.1);expect(boss.motion).toBeUndefined()
+ s.enemies=[];s.boss=null;s.queue=[];s.relics.vowels=s.relics.lightning=1
+ const locked=r.spawn("skeleton",{x:2,z:0})!,other=r.spawn("goblin",{x:3,z:0})!;locked.words=["aeon"];other.words=["cut"];r.refreshQueue();s.correct=9;r.input("a")
+ expect(s.target).toBe(locked.id);expect(s.prefix).toBe("a");expect(s.enemies).toContain(locked);expect(s.enemies).not.toContain(other);expect(s.effects.some(f=>f.kind==="lightning"&&f.to)).toBe(true);expect(s.procs.lightning).toBe(4)
+ const next=r.spawn("goblin",{x:3,z:0})!;r.input("e");expect(s.effects.some(f=>f.kind==="firebolt")).toBe(true);expect(s.enemies).not.toContain(next);expect(s.procs.vowels).toBe(2.4)
+ r.advance(.1);expect(s.procs.vowels).toBeLessThan(2.4)
+ const loaded=restoreDungeonRun(r.serialize());expect(loaded?.state.procs).toEqual(s.procs)
+ for(const field of ["lightning","vowels"] as const){for(const bad of [-1,5,"bad",null]){const raw=JSON.parse(r.serialize());raw.procs[field]=bad;expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()}}
+ const raw=JSON.parse(r.serialize());raw.effects=[{id:1,kind:"shatter",source:"invalid",x:0,z:0,life:.5,value:1}];expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()
+})
+
+it("keeps a boss combo through retaliation, allows word guards and restores old proc-free checkpoints",()=>{
+ const r=run(),s=r.state;const boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");expect(s.phase).toBe("overdrive");expect(Math.hypot(s.player.x-boss.x,s.player.z-boss.z)).toBeGreaterThan(3)
+ const text=s.paragraph;r.input(text[0]!);const cursor=s.cursor;s.stagger=.01;s.player.invincible=0;r.advance(.1)
+ expect(s.cursor).toBe(cursor);expect(s.paragraph).toBe(text);expect(s.phase).toBe("overdrive");expect(s.player.hp).toBe(5)
+ s.stagger=.01;s.player.invincible=1;r.advance(.1);expect(s.player.hp).toBe(5);expect(s.effects.some(e=>e.kind==="block"&&e.value===0)).toBe(true)
+ const legacy=JSON.parse(r.serialize());delete legacy.procs;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.procs).toEqual({lightning:0,vowels:0})
+ // A malformed in-memory boss location must not move the hero into blocked terrain.
+ s.phase="arena";boss.x=10;boss.z=10;s.player.x=10;s.player.z=10;boss.words=["A"];s.target=boss.id;s.prefix="";r.input("A");expect(s.player.x).toBe(10)
+ const far=run();const distant=far.spawn("boss",{x:7,z:0})!;distant.words=["A"];far.input("Tab");far.cast("storm");expect(far.state.phase).toBe("overdrive");expect(far.state.player.x).toBe(0)
+})
+
+it("settles overlapping barrel chain reactions once without duplicate rewards",()=>{
+ const r=run(),s=r.state,first=r.spawn("barrel",{x:1,z:0})!,second=r.spawn("barrel",{x:2,z:0})!,foe=r.spawn("skeleton",{x:2,z:1})!
+ r.refreshQueue();for(const key of first.words[0]!)r.input(key)
+ expect(s.enemies).not.toContain(first);expect(s.enemies).not.toContain(second);expect(s.enemies).not.toContain(foe);expect(s.kills).toBe(1);expect(s.totalXp).toBe(50);expect(s.loot.reduce((sum,drop)=>sum+drop.xp,0)).toBe(25)
+ expect(s.effects.filter(e=>e.kind==="blast")).toHaveLength(2)
+})
+
+it("never starts a boss combo from passive lightning or tower fire during another word",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:2,z:0})!,locked=r.spawn("skeleton",{x:1,z:0})!;boss.words=["BREAK"];locked.words=["aeon"];s.relics.lightning=1;s.correct=9;s.streak=s.bestStreak=9;s.sentry={x:0,z:0,life:18,cooldown:0};r.refreshQueue();r.input("a");r.advance(.1)
+ expect(s.phase).toBe("arena");expect(s.target).toBe(locked.id);expect(s.prefix).toBe("a");expect(boss.words).toEqual(["BREAK"])
+})
+
+it("lands outside contact range and interrupts heavy retaliation after a clean armor hit",()=>{
+ for(const kind of ["guard","minotaur","boss"] as const){
+  const r=run(),s=r.state,e=r.spawn(kind,{x:4,z:0})!;s.player.invincible=0;e.words=["A","B"];r.refreshQueue()
+  r.input("A");expect(e.words).toEqual(["B"]);expect(Math.hypot(s.player.x-e.x,s.player.z-e.z)).toBeCloseTo(kind==="boss"?3.5:2.2)
+  expect(dungeonWalkable(s.player)).toBe(true);if(kind!=="guard")expect(e.motion).toBe("recover")
+  tick(r,.9);expect(s.player.hp).toBe(s.player.maxHp)
+  r.input("B");expect(kind==="boss"?s.phase:s.kills).toBe(kind==="boss"?"overdrive":1)
+ }
+ // A strike from within an overlapping actor uses the previous approach direction.
+ const r=run(),e=r.spawn("guard",{x:0,z:0})!;e.words=["A","B"];r.refreshQueue();r.input("A");expect(Math.hypot(r.state.player.x,r.state.player.z)).toBeCloseTo(2.2)
 })

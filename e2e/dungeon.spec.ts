@@ -37,7 +37,7 @@ test("a real dungeon run supports typing, dash, skill interruption, draft and pa
  await page.setViewportSize({width:1440,height:900})
  await page.goto('/')
  await expect(page.getByTestId('dungeon-canvas')).toHaveAttribute('data-renderer-state','ready')
- await expect(page.getByRole('heading',{name:'Every word. A fighting chance.'})).toBeVisible()
+ await expect(page.getByRole('heading',{name:/TYPECADE/})).toBeVisible()
  await page.screenshot({path:info.outputPath('dungeon-title.png')})
  await page.getByRole('button',{name:'Enter the keep'}).click()
  await expect(page.getByRole('button',{name:'Begin run'})).toBeFocused()

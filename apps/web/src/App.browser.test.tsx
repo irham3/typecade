@@ -1,3 +1,4 @@
+import "./styles.css"
 import { act } from "react"
 import { userEvent } from "vitest/browser"
 import { createRoot, type Root } from "react-dom/client"
@@ -24,7 +25,7 @@ async function click(text:string){const button=[...host.querySelectorAll<HTMLBut
 it("offers a skippable, replayable combat tutorial without replacing the saved run",async()=>{
  const saved=new SurvivalRun("keep-my-save","en");saved.state.time=2;const raw=saved.serialize();localStorage.setItem("typecade:dungeon:run:v1",raw)
  await mount();await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING");await click("Skip tutorial")
- expect(host.textContent).toContain("Every word.");expect(localStorage.getItem("typecade:dungeon:run:v1")).toBe(raw)
+ expect(host.textContent).toContain("THE RUINED KEEP");expect(localStorage.getItem("typecade:dungeon:run:v1")).toBe(raw)
  await click("Typing Dojo");await click("Combat tutorial");expect(host.textContent).toContain("Your word is your movement");await click("Skip tutorial");expect(host.textContent).toContain("Typing Dojo");await click("Main menu")
  await click("Enter the keep");await click("Try combat tutorial");await click("Skip tutorial");expect(host.textContent).toContain("The keep is listening.")
 })
@@ -61,7 +62,7 @@ it("explains max-rank restorative drafts and applies their actual heart and mana
 })
 it("opens a live game shell, settings, account and both secondary modes",async()=>{
  localStorage.setItem("typecade:ocean-typing-rpg:m1","old data")
- await mount();await act(()=>host.querySelector("a")!.click());expect(host.textContent).toContain("A fighting chance.");expect(runTime(125)).toBe("02:05")
+ await mount();await act(()=>host.querySelector("a")!.click());expect(host.textContent).toContain("TYPECADE");expect(runTime(125)).toBe("02:05");expect(getComputedStyle(host.querySelector(".start-button")!).backgroundColor).not.toBe("rgba(0, 0, 0, 0)")
  await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click());expect(host.querySelector("dialog")?.textContent).toContain("Reduced Effects")
  await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Reduced Effects"]')!.click());await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
  expect(host.getAttribute("data-reduced-effects")).not.toBe("false");await click("Account");expect(host.textContent).toContain("Local progress");await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
@@ -107,7 +108,7 @@ it("loads touch settings, casts evolved skills and keeps forms and browser short
 })
 it("renders armor breaks, typed upgrades and final results from valid checkpoints",async()=>{
  const r=new SurvivalRun("boss-ui","en"),s=r.state;r.start();s.time=s.worldTime=300;s.nextBoss=600;const boss=r.spawn("boss",{x:2,z:0})!;boss.words=[];s.phase="overdrive";s.stagger=10;s.paragraph="strike BLIZZARD ";s.player.hp=2
- localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run");expect(host.textContent).toContain("ARMOR BREAK")
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run");expect(host.textContent).toContain("BREAK COMBO")
  const input=host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!;await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"s",bubbles:true})))
  await act(()=>input.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Save and return")
  await act(()=>root.unmount());root=createRoot(host);r.state.phase="arena";r.state.relics.lightning=1;r.state.player.hp=1;r.state.player.invincible=0;r.state.boss=null;r.state.enemies=[];r.spawn("skeleton",{x:0,z:0});r.refreshQueue();localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run");await act(async()=>{await new Promise(resolve=>setTimeout(resolve,180))});expect(host.textContent).toContain("The keep remembers");expect(host.querySelector('[aria-label="Run build"]')?.textContent).toContain("Chain Lightning");await click("Try another run");await click("Back to title")
@@ -132,9 +133,21 @@ it("handles deep links, invalid settings bounds and late renderer failures after
 })
 
 it("shows acquired supplies, active shield, expired sentry and real relic ranks while new runs default to Indonesian",async()=>{
- const r=new SurvivalRun("equipment","id"),s=r.state;r.start();s.time=s.worldTime=1;s.player.invincible=1000;s.player.shield=2;s.supplies={shield:2,potion:1,mana:3,sentry:1};s.sentry={x:0,z:0,life:.15,cooldown:1};s.relics.lightning=s.relics.magnet=s.relics.switch=1;s.notice="Aegis Shield acquired. +2 shield"
+ const r=new SurvivalRun("equipment","id"),s=r.state;r.start();s.time=s.worldTime=1;s.player.invincible=1000;s.player.shield=2;s.supplies={shield:2,potion:1,mana:3,sentry:1};s.sentry={x:0,z:0,life:.15,cooldown:1};s.relics.lightning=s.relics.magnet=s.relics.switch=s.relics.vowels=s.relics.overclock=s.relics.glasses=s.relics.execute=1;s.procs.lightning=2;s.notice="Aegis Shield acquired. +2 shield"
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();expect(host.querySelector<HTMLSelectElement>('[aria-label="Word language"]')!.value).toBe("id")
  await click("Continue run");await click("Resume run");expect(host.querySelector('[aria-label="Shield"]')?.getAttribute("value")).toBe("2")
  expect(host.querySelector('[aria-label="Acquired equipment"]')?.textContent).toContain("2/4 SHIELD");expect(host.textContent).toContain("SUPPLY COLLECTED");expect(host.textContent).toContain("ACTIVE · RANK 1")
  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,400))});expect(host.textContent).toContain("EXPIRED")
+})
+
+it("shows empty and saved local histories without requiring an account",async()=>{
+ await mount();await click("Run history");expect(host.textContent).toContain("No runs yet");await click("Back to game")
+ await click("Run history");await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
+ await click("Enter the keep");await click("Begin run");await act(async()=>{await new Promise(resolve=>setTimeout(resolve,180))});await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="Pause game"]')!.click());await click("Save and return")
+ await click("Run history");expect(host.querySelectorAll(".history-list article").length).toBeGreaterThan(0);expect(host.textContent).toContain("SAVED");await click("Back to game")
+})
+
+it("banks level choices while a boss still has armor",async()=>{
+ const r=new SurvivalRun("boss-bank"),s=r.state;r.start();s.time=301;s.nextBoss=600;s.pendingDrafts=1;r.spawn("boss",{x:4,z:0});r.refreshQueue();localStorage.setItem("typecade:dungeon:run:v1",r.serialize())
+ await mount();await click("Continue run");await click("Resume run");expect(host.textContent).toContain("UPGRADES BANKED");expect(host.querySelector(".upgrade-card")).toBeNull()
 })

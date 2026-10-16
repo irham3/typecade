@@ -8,16 +8,17 @@ export type UpgradeId = SkillId | RelicId
 export interface Point { x: number; z: number }
 export interface DungeonEnemy extends Point {
  id: number; kind: EnemyKind; words: string[]; speed: number; frozen: number; attack: number; health: number; maxHealth: number
- waypoint?: Point; motion?: "windup" | "charge" | "recover"; motionTime?: number; aim?: Point
+ waypoint?: Point; motion?: "windup" | "charge" | "slam" | "recover"; motionTime?: number; aim?: Point
 }
 export interface DungeonLoot extends Point { id: number; xp: number; gold: number; mana: number }
 export interface DungeonProjectile extends Point { id: number; vx: number; vz: number; life: number }
-export interface DungeonEffect extends Point { id: number; kind: "slash" | "hit" | "storm" | "heal" | "pickup" | "shatter" | "magnet" | "block" | "shield" | "mana" | "deploy" | "sentry"; life: number; value: number; to?: Point }
+export type DamageSource = "blade" | "cleave" | "storm" | "lightning" | "vowels" | "sentry" | "explosion"
+export interface DungeonEffect extends Point { id: number; kind: "slash" | "hit" | "storm" | "heal" | "pickup" | "shatter" | "magnet" | "block" | "shield" | "mana" | "deploy" | "sentry" | "lightning" | "firebolt" | "blast" | "treasure" | "slam" | "level" | "upgrade"; source?: DamageSource; life: number; value: number; to?: Point }
 export interface DungeonState {
  version: 1; seed: string; rng: number; language: DungeonLanguage; phase: RunPhase; resumePhase: RunPhase
  time: number; worldTime: number; nextBoss: number; spawnAt: number; nextId: number; biome: number
  player: Point & { hp: number; maxHp: number; mana: number; shield: number; invincible: number; dashFrom: Point; dashAt: number }
- supplies: Record<SupplyKind, number>; sentry: (Point & { life: number; cooldown: number }) | null
+ procs: { lightning: number; vowels: number }; supplies: Record<SupplyKind, number>; sentry: (Point & { life: number; cooldown: number }) | null
  enemies: DungeonEnemy[]; loot: DungeonLoot[]; projectiles: DungeonProjectile[]; effects: DungeonEffect[]; recentWords: string[]
  target: number | null; prefix: string; command: string; queue: number[]; labelLimit: number
  level: number; xp: number; totalXp: number; gold: number; kills: number; words: number; correct: number; errors: number; streak: number; bestStreak: number

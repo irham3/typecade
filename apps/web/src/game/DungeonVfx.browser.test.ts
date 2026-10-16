@@ -28,6 +28,12 @@ it("gives slash, lightning and healing different geometry and bounds simultaneou
   vfx.clear();for(let i=0;i<24;i++)vfx.emit("storm",0,0);vfx.emit("dust",0,0);expect(vfx.count).toBe(24)
   for(const kind of ["storm","slash","heal"] as const){for(let i=0;i<24;i++)vfx.emit(kind,0,0);vfx.update(.01,false)}
   expect(vfx.bolts.count).toBeLessThanOrEqual(32);expect(vfx.arcs.count).toBeLessThanOrEqual(24)
+  for(const kind of ["firebolt","lightning","blast","treasure","slam","thrust","uppercut"] as const){
+   vfx.clear();vfx.emit(kind,0,0,.4,1,{x:4,z:3});vfx.update(.08,false)
+   expect(vfx.sparks.count+vfx.bolts.count+vfx.rings.count+vfx.arcs.count).toBeGreaterThan(0)
+   vfx.update(.08,true)
+   expect(vfx.sparks.count).toBeLessThanOrEqual(128)
+  }
   const geometryDisposals=[vfx.sparks,vfx.arcs,vfx.rings,vfx.bolts,vfx.glows].map(m=>vi.spyOn(m.geometry,"dispose"))
   vfx.dispose();for(const spy of geometryDisposals)expect(spy).toHaveBeenCalledOnce()
   expect(scene.children).toHaveLength(0)

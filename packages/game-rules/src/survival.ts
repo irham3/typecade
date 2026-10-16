@@ -1,4 +1,4 @@
-import type { DungeonEnemy, DungeonLanguage, DungeonState, EnemyKind, Point, RelicId, RunPhase, SkillId, SupplyKind, UpgradeId } from "../../contracts/src/survival"
+import type { DamageSource, DungeonEnemy, DungeonLanguage, DungeonState, EnemyKind, Point, RelicId, RunPhase, SkillId, SupplyKind, UpgradeId } from "../../contracts/src/survival"
 import { bossPassages, dungeonBalance as B, dungeonTerrain as T, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonSupplies, dungeonObjects, enemySpeed, skillRules } from "../../content/src/dungeon"
 import { createSeededRng } from "./rng"
 
@@ -34,7 +34,7 @@ export function createDungeonState(seed: string, language: DungeonLanguage): Dun
  return {
   version: 1, seed, rng: 0, language, phase: "ready", resumePhase: "arena", time: 0, worldTime: 0, nextBoss: B.bossInterval, spawnAt: 2, nextId: 1, biome: 0,
   player: { x: 0, z: 0, hp: B.hp, maxHp: B.hp, mana: 100, shield: 0, invincible: 0, dashFrom: { x: 0, z: 0 }, dashAt: -10 },
-  supplies:{shield:0,potion:0,mana:0,sentry:0},sentry:null,
+  procs:{lightning:0,vowels:0},supplies:{shield:0,potion:0,mana:0,sentry:0},sentry:null,
   enemies: [], loot: [], projectiles: [], effects: [], recentWords: [], target: null, prefix: "", command: "", queue: [], labelLimit: 6,
   level: 1, xp: 0, totalXp: 0, gold: 0, kills: 0, words: 0, correct: 0, errors: 0, streak: 0, bestStreak: 0,
   skills: { cleave: { level: 1, cooldown: 0 }, storm: { level: 1, cooldown: 0 }, heal: { level: 1, cooldown: 0 } },
@@ -55,11 +55,11 @@ export class SurvivalRun {
  }
  private random() { const s = this.state; return createSeededRng(`${s.seed}:${s.rng++}`).nextFloat() }
  private pick<T>(list: readonly T[]) { return list[Math.floor(this.random() * list.length)]! }
- private effect(kind: DungeonState["effects"][number]["kind"], at: Point, value = 0, to?:Point) {
+ private effect(kind: DungeonState["effects"][number]["kind"], at: Point, value = 0, to?:Point, source?: DamageSource) {
   const s = this.state
   // A full horde must not evict its cast cue with 128 subsequent hit/pickup cues.
   if (s.effects.length >= B.effects) {const minor=s.effects.findIndex(fx=>fx.kind==="shatter"||fx.kind==="pickup"||fx.kind==="hit");s.effects.splice(Math.max(0,minor),1)}
-  s.effects.push({ id: s.nextId++, kind, x: at.x, z: at.z, life: .55, value, ...(to?{to:{...to}}:{}) })
+  s.effects.push({ id: s.nextId++, kind, x: at.x, z: at.z, life: ["heal","mana","shield","pickup","treasure","level","upgrade","block"].includes(kind)?1.35:.55, value, ...(to?{to:{x:to.x,z:to.z}}:{}),...(source?{source}:{}) })
  }
  start() { if (this.state.phase === "ready") this.state.phase = "arena" }
  pause() {
@@ -121,14 +121,15 @@ export class SurvivalRun {
   if (s.phase === "overdrive") {
    if (key !== s.paragraph[s.cursor]) { this.typo(); return }
    s.cursor++; this.correct(key)
+   if(key===" ")s.player.invincible=Math.max(s.player.invincible,.8)
    const boss = s.enemies.find(e => e.id === s.boss)!
-   {
-    const ultimate = s.paragraph.slice(0, s.cursor).endsWith("BLIZZARD")
-    const damage = ultimate ? 45 : 2
-    boss.health -= damage; this.effect(ultimate ? "storm" : "slash", boss, damage)
-    if (boss.health <= 0) this.kill(boss)
+   const ultimate = s.paragraph.slice(0, s.cursor).endsWith("BLIZZARD"), complete = s.cursor === s.paragraph.length
+   boss.health = Math.max(complete ? 0 : 1, boss.health - (ultimate ? 45 : 2))
+   this.effect(ultimate ? "storm" : "slash", boss, ultimate ? 45 : 2)
+   if (complete) {
+    if (boss.health === 0) this.kill(boss)
+    else { this.rearmBoss(boss); s.notice = "Combo complete. Break the next armor set." }
    }
-   if (s.cursor >= s.paragraph.length) s.paragraph += this.pick(bossPassages[s.language])
    return
   }
   if (s.target === null) {
@@ -146,11 +147,14 @@ export class SurvivalRun {
   s.words++; s.player.mana = Math.min(100, s.player.mana + 5)
   const reduction = s.relics.overclock && runWpm(s) > 100 ? 2 : 1
   skillIds.forEach(id => { s.skills[id].cooldown = Math.max(0, s.skills[id].cooldown - reduction) })
-  s.player.dashFrom = { x: s.player.x, z: s.player.z }; s.player.x = target.x; s.player.z = target.z
+  s.player.dashFrom = { x: s.player.x, z: s.player.z }
+  const landing=this.strikePosition(target,target.kind==="boss"?3.5:target.words.length>1?2.2:1)
+  s.player.x=landing.x;s.player.z=landing.z
   s.player.dashAt = s.worldTime; s.player.invincible = Math.max(s.player.invincible, B.dashGrace)
   this.effect("slash", target, 1); s.target = null; s.prefix = ""
   if (s.relics.switch) for (const e of s.enemies.filter(e=>!objects.includes(e.kind))) { const d = distance(e, s.player); if (d > 0 && d < 4) { const next={x:e.x+(e.x-s.player.x)/d,z:e.z+(e.z-s.player.z)/d};if(dungeonWalkable(next)){e.x=next.x;e.z=next.z} } }
   this.hit(target, 1, false)
+  if(target.words.length&&(target.kind==="boss"||target.kind==="minotaur")){target.motion="recover";target.motionTime=1;target.aim={x:s.player.x,z:s.player.z}}
   this.collectLoot()
   this.openDraft()
   this.refreshQueue()
@@ -173,10 +177,15 @@ export class SurvivalRun {
   const s = this.state
   s.correct++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak)
   if (s.streak % 50 === 0) { this.collectLoot(true); this.effect("magnet", s.player); s.notice = "50 clean characters — XP magnet!" }
-  if (s.relics.lightning && s.correct % 10 === 0) this.area(7, 1, 2)
-  if (s.relics.vowels && /[aeiou]/i.test(key)) {
-   const candidates = s.enemies.filter(e => e.id !== s.boss && !objects.includes(e.kind) && distance(e, s.player) < 8)
-   if (candidates.length) { const e = this.pick(candidates); this.effect("hit", e, 1); this.hit(e, 1, true) }
+  if (s.phase === "overdrive") return
+  if (s.relics.lightning && s.correct % 10 === 0 && !s.procs.lightning) {
+   const victims=s.enemies.filter(e=>e.id!==s.target&&e.id!==s.boss&&!objects.includes(e.kind)&&distance(e,s.player)<7).slice(0,2)
+   for(const e of victims){this.effect("lightning",s.player,1,e,"lightning");this.hit(e,1,true,"lightning")}
+   if(victims.length)s.procs.lightning=4
+  }
+  if (s.relics.vowels && !s.procs.vowels && /[aeiou]/i.test(key)) {
+   const candidates = s.enemies.filter(e => e.id !== s.boss && e.id !== s.target && !objects.includes(e.kind) && distance(e, s.player) < 8)
+   if (candidates.length) { const e = this.pick(candidates); this.effect("firebolt", s.player, 1, e, "vowels"); this.hit(e, 1, true, "vowels"); s.procs.vowels=2.4 }
   }
  }
  skillBlocked(id: SkillId) {
@@ -193,12 +202,12 @@ export class SurvivalRun {
   const level = s.skills[id].level
   s.player.mana -= this.skillCost(id); s.skills[id].cooldown = skillRules[id].words
   if (id === "heal") {
-   s.player.hp = Math.min(s.player.maxHp, s.player.hp + 2)
+   const restored=Math.min(2,s.player.maxHp-s.player.hp);s.player.hp += restored
    if (level === 3) s.player.invincible = Math.max(s.player.invincible, 4)
-   this.effect("heal", s.player, 2)
+   this.effect("heal", s.player, restored)
   } else {
    this.effect(id === "storm" ? "storm" : "slash", s.player, level === 3 ? 2 : 1)
-   this.area(id === "storm" ? 12 : 4 * (1 + .4 * (level - 1)), level === 3 && id === "cleave" ? 2 : 1)
+   this.area(id === "storm" ? 12 : 4 * (1 + .4 * (level - 1)), level === 3 && id === "cleave" ? 2 : 1, id)
    if (id === "cleave" && level === 3) this.collectLoot(true)
    if (id === "storm" && level === 3) for (const e of s.enemies) {
     e.frozen = 5
@@ -210,10 +219,10 @@ export class SurvivalRun {
   else this.openDraft()
   this.refreshQueue(); return true
  }
- private area(radius: number, layers: number, count: number = B.enemies) {
-  for (const e of [...this.state.enemies].filter(e => !(e.kind in dungeonSupplies) && distance(e, this.state.player) < radius).slice(0, count)) this.hit(e, layers, true)
+ private area(radius: number, layers: number, source: DamageSource) {
+  for (const e of [...this.state.enemies].filter(e => !(e.kind in dungeonSupplies) && distance(e, this.state.player) < radius)) this.hit(e, layers, true, source)
  }
- private hit(enemy: DungeonEnemy, layers: number, preserve: boolean) {
+ private hit(enemy: DungeonEnemy, layers: number, preserve: boolean, source: DamageSource = "blade") {
   const s = this.state
   if (!s.enemies.includes(enemy) || !enemy.words.length) return
   const amount = Math.min(layers, Math.max(0, enemy.words.length - (preserve && enemy.id === s.target ? 1 : 0)))
@@ -221,7 +230,7 @@ export class SurvivalRun {
   if(preserve&&enemy.kind in dungeonSupplies)return
   if (preserve) enemy.words.splice(enemy.id === s.target ? 1 : 0, amount)
   else enemy.words.splice(0, amount)
-  this.effect("shatter", enemy, amount)
+  this.effect("shatter", enemy, amount, undefined, source)
   if (!enemy.words.length) {
    if (enemy.kind === "boss") { if (s.phase !== "skills") this.staggerBoss() }
    else this.kill(enemy)
@@ -234,7 +243,7 @@ export class SurvivalRun {
    const kind=enemy.kind as SupplyKind;s.supplies[kind]=Math.min(1000000,s.supplies[kind]+1)
    if(kind==="shield"){s.player.shield=Math.min(4,s.player.shield+2);this.effect("shield",s.player,s.player.shield)}
    if(kind==="potion"){const restored=Math.min(2,s.player.maxHp-s.player.hp);s.player.hp+=restored;this.effect("heal",s.player,restored)}
-   if(kind==="mana"){s.player.mana=Math.min(100,s.player.mana+40);this.effect("mana",s.player,40)}
+   if(kind==="mana"){const restored=Math.min(40,100-s.player.mana);s.player.mana+=restored;this.effect("mana",s.player,restored)}
    if(kind==="sentry"){s.sentry={x:enemy.x,z:enemy.z,life:18,cooldown:.3};this.effect("deploy",enemy,18)}
    s.notice=`${dungeonSupplies[kind].name} acquired. ${dungeonSupplies[kind].benefit}`
    this.effect("pickup",enemy,0);this.refreshQueue();return
@@ -245,20 +254,36 @@ export class SurvivalRun {
   const drop = { id: s.nextId++, x: enemy.x, z: enemy.z, xp: value, gold: boss ? 100 : enemy.kind === "chest" ? 25 : 3, mana: enemy.kind === "mage" ? 20 : 0 }
   if (s.loot.length < B.loot) s.loot.push(drop)
   else { const existing = s.loot[0]!; existing.xp += drop.xp; existing.gold += drop.gold; existing.mana += drop.mana }
-  this.effect("hit", enemy, value)
+  this.effect(enemy.kind === "chest" ? "treasure" : "hit", enemy, value)
+  if(enemy.kind === "chest")s.notice="Chest opened. +25 gold · +50 XP. Rewards collected on your dash."
   if (boss) {
    s.boss = null; s.stagger = 0; s.biome++; s.phase = "arena"; s.notice = "Boss defeated — a new depth opens. Legendary draft!"
    s.pendingDrafts++;s.legendaryDrafts++; this.collectLoot(true); this.openDraft()
   } else if (enemy.kind === "bomber" || enemy.kind === "barrel") {
-   this.effect("storm", enemy, 1)
-   for (const e of [...s.enemies]) if (distance(e, enemy) < 4) this.hit(e, 1, true)
+   this.effect("blast", enemy, 1)
+   for (const e of [...s.enemies]) if (distance(e, enemy) < 4) this.hit(e, 1, true, "explosion")
   }
   this.refreshQueue()
  }
+ private strikePosition(enemy: DungeonEnemy, spacing: number): Point {
+  const p=this.state.player,from=distance(p,enemy)>.1?p:p.dashFrom
+  const angle=Math.atan2(from.x-enemy.x,from.z-enemy.z)
+  for(let i=0;i<12;i++){
+   const point={x:enemy.x+Math.sin(angle+i*Math.PI/6)*spacing,z:enemy.z+Math.cos(angle+i*Math.PI/6)*spacing}
+   if(dungeonWalkable(point)&&reachable(enemy,point))return point
+  }
+  return {x:p.x,z:p.z}
+ }
  private staggerBoss() {
   const s = this.state
+  const boss=s.enemies.find(e=>e.id===s.boss)!
+  if(distance(s.player,boss)<3){const retreat=this.strikePosition(boss,3.5);s.player.x=retreat.x;s.player.z=retreat.z}
   s.phase = "overdrive"; s.stagger = B.stagger; s.target = null; s.prefix = ""; s.command = ""; s.cursor = 0
-  s.paragraph = this.pick(bossPassages[s.language]); s.notice = "ARMOR BREAK — every letter is a strike!"
+  s.paragraph = this.pick(bossPassages[s.language]).split(" BLIZZARD")[0]+" BLIZZARD"; s.notice = "ARMOR BREAK — every letter is a strike!"
+ }
+ private rearmBoss(boss: DungeonEnemy) {
+  const s=this.state,layers=3+Math.min(2,s.biome)
+  boss.words=Array.from({length:layers},(_,i)=>this.drawWord("boss",layers-i,i===0));s.phase="arena";s.stagger=0;s.paragraph="";s.cursor=0
  }
  private moveEnemy(e:DungeonEnemy,dt:number,player:Point=this.state.player,speed=e.speed) {
   if(e.waypoint&&(distance(e,e.waypoint)<.3||reachable(e,player)))delete e.waypoint
@@ -280,15 +305,19 @@ export class SurvivalRun {
   if(e.kind==="minotaur"||e.kind==="boss"){
    if(e.motion){
     e.motionTime=Math.max(0,(e.motionTime??0)-dt)
-    if(e.motion==="windup"&&e.motionTime===0){e.motion="charge";e.motionTime=1.3}
+    if(e.motion==="windup"&&e.motionTime===0){
+     if(e.aim&&distance(e,e.aim)<.1){e.motion="slam";e.motionTime=.6;this.effect("slam",e,3);if(d<3)this.damage(1)}
+     else {e.motion="charge";e.motionTime=1.3}
+    }
     else if(e.motion==="charge"){
      if(e.aim)this.moveEnemy(e,dt,e.aim,e.speed*5)
      if(e.motionTime===0||e.aim&&distance(e,e.aim)<.2){e.motion="recover";e.motionTime=.85}
-    }else if(e.motion==="recover"&&e.motionTime===0){delete e.motion;delete e.motionTime;delete e.aim;e.attack=6+e.id%3}
+    }else if(e.motion==="slam"&&e.motionTime===0){e.motion="recover";e.motionTime=.85}
+    else if(e.motion==="recover"&&e.motionTime===0){delete e.motion;delete e.motionTime;delete e.aim;e.attack=6+e.id%3}
     return
    }
    e.attack-=dt
-   if(e.speed&&e.attack<=0&&d>2&&d<8&&reachable(e,p)){e.motion="windup";e.motionTime=1.1;e.aim={x:p.x,z:p.z};return}
+   if(e.speed&&e.attack<=0&&d>2&&d<8&&reachable(e,p)){e.motion="windup";e.motionTime=1.1;e.aim=e.kind==="boss"&&Math.floor(s.worldTime/7)%2===0?{x:e.x,z:e.z}:{x:p.x,z:p.z};return}
   }
   if(!e.speed)return
   let goal:Point=p,speed=e.speed*(e.id===s.target ? .65:1)
@@ -304,9 +333,11 @@ export class SurvivalRun {
  }
  gainXp(value: number) {
   const s = this.state
+  const before=s.level
   const bonus = s.relics.magnet && runWpm(s) > 60 ? 1.2 : 1
   s.xp += Math.floor(value * bonus); s.totalXp += Math.floor(value * bonus)
   while (s.xp >= xpThreshold(s.level)) { s.xp -= xpThreshold(s.level); s.level++; s.pendingDrafts++ }
+  if(s.level>before)this.effect("level",s.player,s.level)
  }
  private collectLoot(all = false) {
   const s = this.state
@@ -319,7 +350,7 @@ export class SurvivalRun {
  }
  private openDraft() {
   const s = this.state
-  if (!s.pendingDrafts || s.phase === "overdrive" || s.phase === "dead" || s.phase === "draft") return
+  if (!s.pendingDrafts || s.boss !== null || s.phase === "overdrive" || s.phase === "dead" || s.phase === "draft") return
   s.afterDraft = s.phase; s.phase = "draft"; s.command = ""
   const eligible = (Object.keys(dungeonUpgrades) as UpgradeId[]).filter(id => this.upgradeLevel(id) < dungeonUpgrades[id].max&&(!s.legendaryDrafts||relicIds.includes(id as RelicId)))
   s.offers = []
@@ -331,10 +362,10 @@ export class SurvivalRun {
  chooseUpgrade(id: UpgradeId) {
   const s = this.state
   if (s.phase !== "draft" || !s.offers.includes(id)) return false
-  if (skillIds.includes(id as SkillId)) { s.skills[id as SkillId].level = Math.min(3, s.skills[id as SkillId].level + 1); s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1); s.player.mana = Math.min(100, s.player.mana + 15) }
+  if (skillIds.includes(id as SkillId)) { const hp=s.player.hp,mana=s.player.mana; s.skills[id as SkillId].level = Math.min(3, s.skills[id as SkillId].level + 1); s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1); s.player.mana = Math.min(100, s.player.mana + 15);this.effect("heal",s.player,s.player.hp-hp);this.effect("mana",s.player,s.player.mana-mana) }
   else s.relics[id as RelicId]++
   s.pendingDrafts--;s.legendaryDrafts=Math.max(0,s.legendaryDrafts-1); s.phase = s.afterDraft; s.command = ""; s.offers = []; s.notice = `${dungeonUpgrades[id].name} acquired. Rank ${this.upgradeLevel(id)} — ${dungeonUpgrades[id].description}${skillIds.includes(id as SkillId)?" Restore up to 1 heart and 15 mana.":""}`
-  this.openDraft(); return true
+  this.effect("upgrade",s.player,this.upgradeLevel(id));this.openDraft(); return true
  }
  damage(amount: number) {
   const s = this.state
@@ -343,21 +374,23 @@ export class SurvivalRun {
   if(absorbed){this.effect("block",s.player,absorbed);s.notice=s.player.shield?`Shield absorbed ${absorbed} damage.`:"Shield broken — health is exposed."}
   amount-=absorbed
   if(!amount){s.player.invincible=B.contactGrace;return}
-  s.player.hp = Math.max(0, s.player.hp - amount); s.player.invincible = B.contactGrace; this.effect("hit", s.player, -amount)
+  const lost=Math.min(s.player.hp,amount);s.player.hp-=lost; s.player.invincible = B.contactGrace; this.effect("hit", s.player, -lost)
   if (s.player.hp === 0) { s.phase = "dead"; s.notice = "The keep claimed this run. Your best is saved." }
  }
  advance(seconds: number) {
   const s = this.state
   if (!["arena", "skills", "overdrive"].includes(s.phase) || !Number.isFinite(seconds) || seconds <= 0) return
   const real = Math.min(seconds, .1), dt = real * (s.phase === "skills" ? .5 : 1)
-  s.time += real; s.worldTime += dt; s.player.invincible = Math.max(0, s.player.invincible - dt)
+  s.time += real; s.worldTime += dt; s.procs.lightning=Math.max(0,s.procs.lightning-dt);s.procs.vowels=Math.max(0,s.procs.vowels-dt); s.player.invincible = Math.max(0, s.player.invincible - dt)
   s.player.mana = Math.min(100, s.player.mana + real * B.manaRegen * (s.relics.overclock && runWpm(s) > 100 ? 2 : 1))
   s.effects = s.effects.filter(fx => { fx.life -= dt; return fx.life > 0 })
   if (s.phase === "overdrive") {
    s.stagger = Math.max(0, s.stagger - real)
    if (!s.stagger) {
     const boss = s.enemies.find(e => e.id === s.boss)!
-    const layers=3+Math.min(2,s.biome);boss.words=Array.from({length:layers},(_,i)=>this.drawWord("boss",layers-i,i===0));s.phase = "arena"; this.openDraft()
+    this.effect("slam",boss,3);s.stagger=B.stagger
+    if(s.player.invincible>0){this.effect("block",s.player,0);s.notice="PARRIED — keep typing the same line."}
+    else {this.damage(1);s.notice="Boss retaliation! Finish words to guard. Your line is preserved."}
    }
    return
   }
@@ -396,8 +429,8 @@ export class SurvivalRun {
     if (e.attack <= 0) {
      if (e.kind === "bomber") {
       if (d < 4) this.damage(2)
-      if (e.id === s.target) this.cancel()
-      s.enemies = s.enemies.filter(enemy => enemy !== e); this.effect("storm", e, -2)
+      if (e.id === s.target) {this.cancel();s.notice="Fuse detonated. Choose another word."}
+      s.enemies = s.enemies.filter(enemy => enemy !== e); this.effect("blast", e, -2)
      } else {
       if (s.projectiles.length < B.projectiles && reachable(e,s.player)) s.projectiles.push({ id: s.nextId++, x: e.x, z: e.z, vx: (s.player.x - e.x) / Math.max(.1, d) * 2, vz: (s.player.z - e.z) / Math.max(.1, d) * 2, life: 8 })
       e.attack = 5.5+e.id%3*.4
@@ -411,8 +444,8 @@ export class SurvivalRun {
    const tower=s.sentry;tower.life=Math.max(0,tower.life-dt);tower.cooldown-=dt
    if(!tower.life)s.sentry=null
    else if(tower.cooldown<=0){
-    const enemy=s.enemies.filter(e=>!objects.includes(e.kind)&&e.words.length>(e.id===s.target?1:0)&&distance(e,tower)<7&&reachable(tower,e)).sort((a,b)=>distance(a,tower)-distance(b,tower)||a.id-b.id)[0]
-    if(enemy){this.effect("sentry",tower,1,enemy);this.hit(enemy,1,true);tower.cooldown=1.8}else tower.cooldown=.25
+    const enemy=s.enemies.filter(e=>!objects.includes(e.kind)&&e.id!==s.boss&&e.words.length>(e.id===s.target?1:0)&&distance(e,tower)<7&&reachable(tower,e)).sort((a,b)=>distance(a,tower)-distance(b,tower)||a.id-b.id)[0]
+    if(enemy){this.effect("sentry",tower,1,enemy);this.hit(enemy,1,true,"sentry");tower.cooldown=1.8}else tower.cooldown=.25
    }
   }
   this.collectLoot(); this.openDraft(); this.refreshQueue()
@@ -430,7 +463,9 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   if(s?.version===1&&s.recentWords===undefined)s.recentWords=[]
   if(s?.version===1&&s.player?.shield===undefined&&s.player)s.player.shield=0
   if(s?.version===1&&s.supplies===undefined)s.supplies={shield:0,potion:0,mana:0,sentry:0}
+  if(s?.version===1&&s.procs===undefined)s.procs={lightning:0,vowels:0}
   if(s?.version===1&&s.sentry===undefined)s.sentry=null
+  if(!s?.procs||![s.procs.lightning,s.procs.vowels].every(v=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=4))return null
   const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value)
   if (!s || s.version !== 1 || typeof s.seed !== "string" || s.seed.length > 200 || !["en", "id"].includes(s.language) || !["ready", "arena", "skills", "draft", "overdrive", "paused", "dead"].includes(s.phase)) return null
   const base = createDungeonState(s.seed, s.language)
@@ -447,9 +482,10 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   if(s.enemies.some(e=>e.waypoint&&(![e.waypoint.x,e.waypoint.z].every(finite)||Math.abs(e.waypoint.x)>1_000_000||Math.abs(e.waypoint.z)>1_000_000||!dungeonWalkable(e.waypoint))))return null
   if(!s.supplies||Object.keys(dungeonSupplies).some(kind=>{const n=s.supplies[kind as SupplyKind];return !Number.isSafeInteger(n)||n<0||n>1000000}))return null
   if(s.sentry!==null&&(![s.sentry.x,s.sentry.z,s.sentry.life,s.sentry.cooldown].every(finite)||Math.abs(s.sentry.x)>1000000||Math.abs(s.sentry.z)>1000000||!dungeonWalkable(s.sentry)||s.sentry.life<=0||s.sentry.life>18||s.sentry.cooldown<0||s.sentry.cooldown>1.8))return null
-  if(s.enemies.some(e=>e.motion!==undefined&&(!["minotaur","boss"].includes(e.kind)||!["windup","charge","recover"].includes(e.motion)||!finite(e.motionTime)||e.motionTime!<0||e.motionTime!>1.3||!e.aim||![e.aim.x,e.aim.z].every(finite)||!dungeonWalkable(e.aim)||Math.abs(e.aim.x)>1000000||Math.abs(e.aim.z)>1000000)||e.motion===undefined&&(e.aim!==undefined||e.motionTime!==undefined)))return null
+  if(s.enemies.some(e=>e.motion!==undefined&&(!["minotaur","boss"].includes(e.kind)||!["windup","charge","slam","recover"].includes(e.motion)||!finite(e.motionTime)||e.motionTime!<0||e.motionTime!>1.3||!e.aim||![e.aim.x,e.aim.z].every(finite)||!dungeonWalkable(e.aim)||Math.abs(e.aim.x)>1000000||Math.abs(e.aim.z)>1000000)||e.motion===undefined&&(e.aim!==undefined||e.motionTime!==undefined)))return null
+  if(s.effects.some(e=>e.source!==undefined&&!["blade","cleave","storm","lightning","vowels","sentry","explosion"].includes(e.source)))return null
   if(s.effects.some(e=>e.to!==undefined&&(![e.to.x,e.to.z].every(finite)||Math.abs(e.to.x)>1000000||Math.abs(e.to.z)>1000000)))return null
-  if (s.projectiles.some(e => !e || ![e.id, e.x, e.z, e.vx, e.vz, e.life].every(finite)) || s.effects.some(e => !e || ![e.id, e.x, e.z, e.life, e.value].every(finite) || !["slash", "hit", "storm", "heal", "pickup", "shatter", "magnet", "block", "shield", "mana", "deploy", "sentry"].includes(e.kind))) return null
+  if (s.projectiles.some(e => !e || ![e.id, e.x, e.z, e.vx, e.vz, e.life].every(finite)) || s.effects.some(e => !e || ![e.id, e.x, e.z, e.life, e.value].every(finite) || !["slash", "hit", "storm", "heal", "pickup", "shatter", "magnet", "block", "shield", "mana", "deploy", "sentry", "lightning", "firebolt", "blast", "treasure", "slam", "level", "upgrade"].includes(e.kind))) return null
   if (!s.skills || skillIds.some(id => !s.skills[id] || !Number.isInteger(s.skills[id].level) || s.skills[id].level < 1 || s.skills[id].level > 3 || !finite(s.skills[id].cooldown) || s.skills[id].cooldown < 0) || !s.relics || relicIds.some(id => !Number.isInteger(s.relics[id]) || s.relics[id] < 0 || s.relics[id] > dungeonUpgrades[id].max)) return null
   if (!Array.isArray(s.offers) || s.offers.length > 3 || s.offers.some(id => !Object.hasOwn(dungeonUpgrades, id)) || typeof s.prefix !== "string" || typeof s.command !== "string" || s.command.length > 40 || typeof s.paragraph !== "string" || s.paragraph.length > 100_000 || !Number.isInteger(s.cursor) || s.cursor > s.paragraph.length || typeof s.notice !== "string") return null
   if (!Array.isArray(s.queue) || s.queue.length > 6 || s.queue.some(id => !s.enemies.some(e => e.id === id)) || ![4, 6].includes(s.labelLimit)) return null

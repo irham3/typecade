@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { defaultRaceConfig, generateRaceText, parseRaceConfig, type RaceConfig } from "@typecade/race-rules"
 import { PracticeSession, type PracticeStyle, type TypingSessionSnapshot } from "@typecade/typing-engine"
 import { TypingInput, TypingPassage } from "../TypingField"
+import { rememberResult } from "../run-history"
 import { readStorage, writeStorage } from "../storage"
 import { PracticeKeyboard } from "./PracticeKeyboard"
 
@@ -121,6 +122,10 @@ export function PracticeScreen({ onBack, onActivity, onTutorial }: { onBack: () 
 	}
 
 	const updateConfig = <K extends keyof RaceConfig>(key: K, value: RaceConfig[K]) => setConfig((current) => ({ ...current, [key]: value }))
+ useEffect(()=>{
+  if((phase!=="finished"&&phase!=="out")||!snapshot)return
+  rememberResult({id:seed.current,mode:"dojo",at:Date.now(),language:config.language,seconds:Math.floor(snapshot.metrics.elapsedMs/1000),level:1,kills:0,gold:0,depth:0,wpm:snapshot.metrics.wpm,accuracy:snapshot.metrics.accuracy,status:phase==="out"?"fallen":"complete"})
+ },[phase,snapshot,config.language])
 	const currentText = snapshot?.targetText ?? passage
 	const cursor = snapshot?.cursor ?? 0
 	useEffect(()=>{onActivity?.(snapshot?.metrics.correctKeystrokes??0,currentText.slice(0,cursor).split(/\s+/).length-1,snapshot?.metrics.incorrectKeystrokes??0)},[onActivity,snapshot?.metrics.correctKeystrokes,snapshot?.metrics.incorrectKeystrokes,currentText,cursor])

@@ -920,3 +920,18 @@ Playtest report (Zaim): skill and level-up keywords are displayed in capitals, y
 - Regression tests: lowercase skill and upgrade keywords are rejected in rules and in the multiplayer dock; Caps Lock and case highlighting on the pixel keyboard.
 - Current Windows source: 179 tests in 25 files pass with unchanged 100% statements (4270), branches (3875), functions (665) and lines (2328); production build, full ESLint and both TypeScript checks pass. E2E is running; the previous interrupted profile is not completion evidence.
 - Previous CI run 38908395817 passed coverage/build but failed 11 Firefox browser cases with the renderer reporting error; all Chromium/WebKit cases passed. Linux CI now runs the real headed browsers under Xvfb for Firefox WebGL, uploads browser failure evidence, and also validates pushes to main. The renderer assertions, test limits and coverage gates remain unchanged; final GitHub results must be read from PR #10.
+
+
+## 2026-10-17 - Boss combo continuity, combat attribution, visual dressing and local history
+
+The user found that boss typing ended mid-paragraph, upgrades interrupted encounters, and automatic damage/deaths were unclear. Replaced the phase timeout with a retaliation clock that preserves text/cursor; lethal health waits for the final combo character. Completed words guard brief counters. Bank draft choices until the boss falls and separate overlapping actors when armor breaks.
+
+Added damage-source events/captions and directed passive traces/cooldowns; authored stab/uppercut/slash and boss hammer poses; distinct resource/rank/level pickups; explicit chest +25G/+50XP; expanded bilingual enemy packs. Rotating ash/frost/verdant dressing, bounded landmark/weather batches, character details and a heraldic title menu retain existing draw/entity caps and Reduced Effects.
+
+Local browser history stores at most 50 Survival/Dojo/multiplayer records, updates resumed runs by identity and preserves older unrelated saves. Supabase work is postponed at the user's request: no DDL/Auth/database mutation was performed. Only read-only project/schema discovery occurred; no complete SQL dump is claimed.
+
+Six focused Chromium E2E cases passed, including a boss with one HP that survives a retaliation and remains active until the final paragraph letter. Full current-source checks/resource evidence are recorded when finished; previous 63-browser-test evidence belongs to the earlier source.
+
+Clean word strikes land outside contact range: 1 unit for final hits and objects, 2.2 for remaining armor, 3.5 for bosses. Heavy armor hits interrupt minotaur/boss attacks with one second of recovery. Candidate landing points must be walkable and connected to the target; blocked candidates rotate around the target, then retain the current player position if none is safe. Loot outside the normal pickup radius stays on the floor.
+
+Current-source local checks: 188 tests/27 files at unchanged 100% coverage (4495 statements, 4243 branches, 691 functions, 2433 lines); seven focused Chromium cases; lint, app/server types, build, zero-vulnerability audit, Worker dry-run and retirement/headless audits passed. Final CI and timed profile remain pending; see verification/dungeon-polish-2026-10-17.

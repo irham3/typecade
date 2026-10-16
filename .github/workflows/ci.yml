@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npx playwright install --with-deps chromium
       - run: npm audit
       - run: npm run lint -- --ignore-pattern test.js
       - run: npx tsc --noEmit
@@ -28,12 +28,31 @@ jobs:
       - run: npm run test:coverage
       - run: npm run build
       - run: npx wrangler deploy --dry-run
-      # Firefox needs an X display for its real WebGL context on the Linux runner.
-      - run: xvfb-run --auto-servernum npm run test:e2e -- --headed
+
+  browsers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      LIBGL_ALWAYS_SOFTWARE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run build
+      # Firefox uses a real X display; the other engines retain headless operation.
+      - run: xvfb-run --auto-servernum npx playwright test --project=${{ matrix.browser }} --reporter=line
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: browser-failure-evidence
+          name: browser-failure-${{ matrix.browser }}
           path: |
             playwright-report/
             test-results/

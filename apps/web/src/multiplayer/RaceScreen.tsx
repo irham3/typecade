@@ -4,6 +4,7 @@ import { TypingInput, TypingPassage } from "../TypingField"
 import { skillRules } from "@typecade/content"
 import type { SkillId } from "@typecade/contracts"
 import { Glyph } from "../dungeon/Glyph"
+import { rememberResult } from "../run-history"
 import { readStorage, writeStorage } from "../storage"
 
 const ticketKey = "typecade:dungeon:room:v1"
@@ -118,6 +119,13 @@ export function RaceScreen({ onBack, onWorld }: { onBack: () => void; onWorld?: 
 
 	useEffect(() => { if (phase === "racing" && connected && !showBoard) inputRef.current?.focus() }, [phase, connected, showBoard])
 
+ useEffect(()=>{
+  if(snapshot?.phase!=="finished"||!ticket)return
+  const own=snapshot.players.find(p=>p.id===ticket.playerId)
+  if(!own)return
+  const seconds=Math.max(1,(snapshot.serverNow-(snapshot.startsAt??snapshot.serverNow))/1000)
+  rememberResult({id:`${snapshot.code}:${snapshot.startsAt}:${ticket.playerId}`,mode:snapshot.config.mode??"sprint",at:Date.now(),language:snapshot.config.language,seconds:Math.floor(seconds),level:1,kills:0,gold:0,depth:0,wpm:Math.round(own.cursor/5/(seconds/60)),accuracy:raceAccuracy(own),status:own.status==="out"?"fallen":"complete"})
+ },[snapshot,ticket])
 	const ownServer = snapshot?.players.find((player) => player.id === ticket?.playerId)
 	const own = useMemo(() => {
 		if (!snapshot || !ownServer) return null

@@ -131,7 +131,7 @@ it("bounds death afterimages, reacts to damage and armor, and presents authorita
   expect(visual.actors.size).toBe(0)
   s.boss=null;const boss=run.spawn("boss",{x:2,z:2})!;s.boss=boss.id;frame();s.phase="overdrive";frame()
   expect(visual.vfx.bolts.count).toBeGreaterThan(0)
-  s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.cursor=1;s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.phase="arena";frame()
+  s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.cursor=1;s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.cursor=3;s.effects=[{id:s.nextId++,kind:"slash",x:2,z:2,life:.55,value:2}];frame();s.phase="arena";frame()
   s.enemies=[];s.queue=[];s.boss=null;s.phase="overdrive";frame();s.phase="arena";frame()
   bridge.emit("screen","multiplayer")
   const party:PartyWorld={mode:"raid",phase:"racing",casting:false,ownId:"a",now:1000,focus:{x:0,z:0},obstacles:[],boss:{hp:100,maxHp:100,nextAttack:1500,attackAt:-1000,target:null},players:[{id:"a",name:"Knight",x:0,z:0,color:0x4999d4,hp:100,action:"idle",actionAt:0,target:null,role:"dps"},{id:"b",name:"Tank",x:2,z:0,color:0xd06b62,hp:100,action:"idle",actionAt:0,target:null,role:"tank"}]}
@@ -166,7 +166,14 @@ it("renders flying enemies, supply silhouettes, shield gear, sentry beams and ch
   const transform=new Matrix4();visual.batches.get("bat")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThanOrEqual(1.25);visual.batches.get("mage")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThanOrEqual(1);bridge.emit("settings",{reduced:false,volume:0});frame()
   expect(visual.heroShield.visible).toBe(true);expect(visual.sentryMesh.visible).toBe(true);expect(visual.orbitals.count).toBe(4);expect(visual.telegraphs.count).toBe(2)
   s.effects=[{id:s.nextId++,kind:"sentry",x:0,z:0,life:.55,value:1,to:{x:2,z:2}},{id:s.nextId++,kind:"block",x:0,z:0,life:.55,value:1}];frame()
-  minotaur.motion="charge";frame();s.enemies=[];s.queue=[];frame()
+  for(const words of [2,3,4]){s.words=words;s.player.dashAt+=1;s.effects=[{id:s.nextId++,kind:"slash",x:0,z:0,life:.55,value:1}];frame()}
+  minotaur.aim={x:minotaur.x,z:minotaur.z};frame();minotaur.aim={x:0,z:0}
+  for(const time of [360,480]){s.time=time;frame()}
+  s.effects=[{id:s.nextId++,kind:"lightning",x:0,z:0,life:.55,value:1}];frame()
+  s.procs.lightning=2;s.procs.vowels=1
+  for(const kind of ["lightning","firebolt","blast","treasure","slam","level","upgrade"] as const){s.effects=[{id:s.nextId++,kind,x:0,z:0,life:.55,value:2,to:{x:2,z:2}}];frame()}
+  const boss=r.spawn("boss",{x:3,z:0})!;s.phase="overdrive";s.stagger=1.5;frame();s.effects=[{id:s.nextId++,kind:"slam",x:3,z:0,life:.55,value:3}];frame();bridge.emit("settings",{reduced:true,volume:0});frame();s.phase="arena";s.boss=null;s.enemies=s.enemies.filter(e=>e!==boss);bridge.emit("settings",{reduced:false,volume:0})
+  minotaur.motion="slam";frame();minotaur.motion="charge";frame();s.enemies=[];s.queue=[];frame()
   for(const kind of ["shield","potion","mana","sentry","chest"] as const){s.enemies=[];s.queue=[];const item=r.spawn(kind,{x:1,z:0})!;frame();s.enemies=[];s.effects=[{id:s.nextId++,kind:"hit",x:item.x,z:item.z,life:.55,value:0}];frame()}
   s.relics.lightning=s.relics.vowels=0;s.sentry=null;bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.orbitals.count).toBe(0);expect(visual.sentryMesh.visible).toBe(false)
  }finally{game.destroy();bridge.clear();host.remove()}

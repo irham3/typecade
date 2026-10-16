@@ -13,7 +13,7 @@ describe("real-time typing survival", () => {
   for(const language of ["en","id"] as const){
    const r=new SurvivalRun("lexicon",language);r.state.enemies=[]
    for(const kind of Object.keys(dungeonWords[language]) as EnemyKind[]){
-    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(dungeonObjects.includes(kind)?8:20)
+    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(dungeonObjects.includes(kind)?8:40)
     const seen:string[]=[]
     for(let i=0;i<30;i++){r.state.enemies=[];r.state.boss=null;const e=r.spawn(kind,{x:2,z:0})!;expect(pool).toContain(e.words[0]);seen.push(...e.words)}
     expect(new Set(seen).size).toBeGreaterThanOrEqual(Math.min(pool.length,20))
@@ -102,7 +102,7 @@ describe("real-time typing survival", () => {
   const r = arena(), e = r.spawn("guard", { x: 2, z: 0 })!; r.refreshQueue(); const word = e.words[0]!
   r.input(word[0]!.toLowerCase()); expect(r.state.errors).toBe(1); expect(r.state.target).toBeNull()
   r.input(word[0]!); expect(r.state.target).toBe(e.id); r.input("~"); expect(r.state.prefix).toBe(word[0]); type(r, word.slice(1))
-  expect(e.words).toHaveLength(1); expect(r.state.player.x).toBe(e.x); expect(r.state.kills).toBe(0)
+  expect(e.words).toHaveLength(1); expect(Math.hypot(r.state.player.x-e.x,r.state.player.z-e.z)).toBeCloseTo(2.2); expect(r.state.kills).toBe(0)
   type(r, e.words[0]!); expect(r.state.kills).toBe(1); expect(r.state.totalXp).toBe(25); expect(r.state.loot).toHaveLength(0)
   expect(runAccuracy(r.state)).toBeLessThan(100); expect(runWpm(r.state)).toBeGreaterThan(0)
  })
@@ -175,11 +175,14 @@ describe("real-time typing survival", () => {
   const boss = r.state.enemies.find(e => e.id === r.state.boss)!; expect(r.spawn("boss")).toBeUndefined()
   while (boss.words.length) { r.refreshQueue(); type(r, boss.words[0]!) }
   expect(r.state.phase).toBe("overdrive"); expect(r.state.stagger).toBe(10)
-  r.input("?"); type(r, r.state.paragraph.slice(0, r.state.paragraph.indexOf("BLIZZARD") + 8)); expect(boss.health).toBeLessThan(boss.maxHealth)
-  r.state.paragraph = "a"; r.state.cursor = 0; r.input("a"); expect(r.state.paragraph.length).toBeGreaterThan(1)
-  tick(r, 10.1); expect(r.state.phase).toBe("arena"); expect(boss.words.length).toBe(3)
-  while (boss.words.length) { r.refreshQueue(); type(r, boss.words[0]!) }
-  boss.health = 1; r.input(r.state.paragraph[0]!); expect(r.state.boss).toBeNull(); expect(r.state.biome).toBe(1); expect(r.state.phase).toBe("draft")
+  r.input("?"); type(r, r.state.paragraph.slice(0,4)); expect(boss.health).toBeLessThan(boss.maxHealth)
+  r.state.pendingDrafts=1;const cursor=r.state.cursor;tick(r,10.1);expect(r.state.phase).toBe("overdrive");expect(r.state.cursor).toBe(cursor);expect(r.state.offers).toHaveLength(0);expect(r.state.effects.some(e=>e.kind==="slam")).toBe(true)
+  r.state.paragraph=r.state.paragraph.slice(r.state.cursor);r.state.cursor=0
+  const first=r.state.paragraph;type(r,first);expect(r.state.phase).toBe("arena");expect(r.state.paragraph).toBe("");expect(boss.words).toHaveLength(3)
+  while(boss.words.length){r.refreshQueue();type(r,boss.words[0]!)}
+  boss.health=1;const final=r.state.paragraph
+  type(r,final.slice(0,-1));expect(boss.health).toBe(1);expect(r.state.boss).toBe(boss.id);expect(r.state.phase).toBe("overdrive");expect(r.state.offers).toHaveLength(0)
+  r.input(final.at(-1)!);expect(r.state.boss).toBeNull();expect(r.state.biome).toBe(1);expect(r.state.phase).toBe("draft")
   while (r.state.pendingDrafts) r.chooseUpgrade(r.state.offers[0]!); expect(r.state.phase).toBe("arena")
   r.state.time = 600; tick(r, .1); expect(r.state.boss).not.toBeNull()
  })
