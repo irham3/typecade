@@ -66,6 +66,7 @@ describe("multiplayer race screen browser coverage", () => {
   expect(socket.sent.at(-1)).toMatchObject({type:"skill",skill:"storm",text:"STORM",seq:1})
   await key("Tab");await act(()=>{const input=host.querySelector<HTMLInputElement>("input.typing-native-input")!;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"CLEAVE");input.dispatchEvent(new InputEvent("input",{bubbles:true}))})
   expect(socket.sent.at(-1)).toMatchObject({type:"skill",skill:"cleave",text:"CLEAVE",seq:2})
+  await key("Tab");for(const character of "heal")await key(character);expect(host.textContent).toContain("exactly as shown");expect(socket.sent.at(-1)).toMatchObject({text:"CLEAVE",seq:2});await key("Escape")
   await key("Tab",{repeat:true});await key("Tab",{ctrlKey:true});await key("Tab",{metaKey:true});await key("Tab",{altKey:true})
   await act(()=>host.querySelector<HTMLButtonElement>(".party-skill-dock button")!.click());await key("Escape");expect(host.querySelector(".party-skill-dock")!.className).not.toContain("casting")
   current.combat.players.host!.hp=0;current.combat.players.host!.cooldowns.cleave=3;await act(()=>socket.deliver(current));expect(host.textContent).toContain("DOWNED")

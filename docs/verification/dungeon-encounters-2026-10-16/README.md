@@ -18,3 +18,12 @@ Production build and dependency audit passed; npm audit reported zero vulnerabil
 The final renderer keeps flight altitude when frozen or Reduced Effects is enabled; its dedicated matrix assertions are included in the coverage figures above. The new equipment-reload E2E fixture initializes storage only once, preserving the checkpoint it is meant to exercise. Lint, app/server TypeScript checks, headless/retirement audits and Worker dry-run passed locally. The full browser matrix and current GitHub validation are tracked on [PR #10](https://github.com/irham3/typecade/pull/10); this source record does not claim a pending CI check passed. The prior request to defer timed hardware/listening work remains distinct from the subsequently requested CI verification.
 
 Final interaction checks keep supply objects stationary under knockback and exclude them from limited lightning target admission, while barrel chains still leave support items unconsumed. Acquisition notices use a two-line clamp and reserve label space; targeted browser assertions verify the reserved desktop and landscape positions. The full 177-test coverage run and the two focused label checks passed for these final changes.
+
+
+## Exact-case follow-up — 2026-10-17
+
+Removed solo skill/draft and multiplayer skill input uppercasing. Every typing target now matches the displayed case; keyboard Caps Lock and modifier hints preserve usable uppercase entry. EN/ID rule tests reject lowercase/mixed-case commands without spending mana or applying upgrades; multiplayer tests reject lowercase sends; keyboard tests verify exact character output and modifier highlighting. The real tutorial E2E also checks lowercase rejection before the correct skill/upgrade.
+
+Current local coverage: **179 tests / 25 files, 100% statements 4270/4270, branches 3875/3875, functions 665/665 and lines 2328/2328**. Full lint, both TypeScript checks and production build pass. Browser matrix is running and hardware/listening calibration remains unverified.
+
+GitHub run 38908395817 passed coverage/build but failed 11 Firefox cases because the renderer could not initialize; all Chromium and WebKit cases passed. CI now gives the headed browsers an Xvfb display, retains all renderer assertions and uploads failures. Final CI completion is tracked on PR #10.

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, staging]
+    branches: [main, master, staging]
   pull_request:
 
 permissions:
@@ -28,4 +28,13 @@ jobs:
       - run: npm run test:coverage
       - run: npm run build
       - run: npx wrangler deploy --dry-run
-      - run: npm run test:e2e
+      # Firefox needs an X display for its real WebGL context on the Linux runner.
+      - run: xvfb-run --auto-servernum npm run test:e2e -- --headed
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure-evidence
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 3

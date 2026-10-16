@@ -159,9 +159,9 @@ export class SurvivalRun {
   const s = this.state
   const ids: UpgradeId[] = s.phase === "draft" ? s.offers : skillIds
   const keyword = (id: UpgradeId) => s.phase === "draft" ? dungeonUpgrades[id][s.language] : skillRules[id as SkillId][s.language]
-  const next = s.command + key.toUpperCase()
+  const next = s.command + key
   const eligible = ids.filter(id => keyword(id).startsWith(next))
-  if (!eligible.length) { s.command = ""; s.notice = "That keyword does not match. Try again."; return }
+  if (!eligible.length) { s.command = ""; s.notice = "That keyword does not match the displayed case. Use Shift or Caps Lock for capitals."; return }
   s.command = next
   const id = eligible.find(id => keyword(id) === next)
   if (id === undefined) return

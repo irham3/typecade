@@ -115,6 +115,21 @@ describe("real-time typing survival", () => {
   r.input("Tab"); type(r, word.slice(1)); expect(r.state.skills.cleave.cooldown).toBe(2)
   r.input("Tab"); r.input("?"); expect(r.state.command).toBe(""); r.input("Backspace"); r.input("Tab"); r.input("Backspace"); expect(r.state.target).toBeNull()
  })
+ it("requires the displayed capitals for skill and upgrade keywords", () => {
+  for (const language of ["en", "id"] as const) {
+   const r = new SurvivalRun("exact-case", language); r.start(); r.state.player.mana = 100
+   const target = r.targets()[0]!, prefix = target.words[0]![0]!, keyword = skillRules.cleave[language]
+   r.input(prefix); r.input("Tab"); type(r, keyword.toLowerCase())
+   expect(r.state.phase).toBe("skills"); expect(r.state.command).toBe(""); expect(r.state.skills.cleave.cooldown).toBe(0); expect(r.state.player.mana).toBe(100); expect(r.state.notice).toContain("case")
+   type(r, keyword[0]! + keyword.slice(1).toLowerCase()); expect(r.state.command).toBe("")
+   type(r, keyword); expect(r.state.phase).toBe("arena"); expect(r.state.skills.cleave.cooldown).toBeGreaterThan(0); expect(r.state.prefix).toBe(prefix)
+   r.state.phase = "draft"; r.state.pendingDrafts = 1; r.state.offers = ["magnet"]
+   const upgrade = dungeonUpgrades.magnet[language], time = r.state.time
+   type(r, upgrade.toLowerCase()); r.advance(1)
+   expect(r.state.phase).toBe("draft"); expect(r.state.relics.magnet).toBe(0); expect(r.state.time).toBe(time)
+   type(r, upgrade); expect(r.state.relics.magnet).toBe(1)
+  }
+ })
  it("never consumes a single partially typed layer with AoE", () => {
   const r = arena(), e = r.spawn("skeleton", { x: 1, z: 0 })!; r.refreshQueue(); r.input(e.words[0]![0]!); r.input("Tab"); r.cast("storm")
   expect(e.words).toHaveLength(1); expect(r.state.prefix).toHaveLength(1)

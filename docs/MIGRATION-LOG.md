@@ -909,3 +909,14 @@ PR #8 merged into main at 9229079 under the user's explicit merge request while 
 - Added four readable typed supply shapes and real shield/potion/mana/sentry effects, bounded tower attacks with active-word protection, equipment/status HUD, carried shield/orbitals and authoritative party shield display. Version-1 saves receive validated missing-field defaults, preserving existing language/progress.
 - New runs default to ID. Music bus rises by approximately 7.5 dB relative to the prior mix; existing mute/master/bus preferences remain intact.
 - Unchanged global coverage gates now pass at 100% in all four metrics, with 177 tests in 25 files. The prior coverage failure was repaired with meaningful audio/lifecycle, gameplay, restore validation and renderer/UI cases; no threshold or scope exclusion was added. See verification/dungeon-encounters-2026-10-16 for final checks and outstanding listening/hardware limitations.
+
+## 2026-10-17 - Exact-case skill and upgrade keywords
+
+Playtest report (Zaim): skill and level-up keywords are displayed in capitals, yet lowercase input activated them, unlike enemy and chest words.
+
+- Root cause: `SurvivalRun.commandKey` and the multiplayer skill dock uppercased each key before matching, while enemy, loot and passage input compared exact characters. Both normalizations were removed; the server already compared skill text exactly. `docs/game-design.md` already required exact shown capitalization, so no rule changed.
+- The ready dialog, draft eyebrow, skill dock and rejection notices now say to match case and to use Shift or Caps Lock. The on-screen keyboard gained a Caps Lock key and highlights the case change an expected capital needs instead of the lowercase key.
+- Audit: no CSS text-transform; the Press Start 2P pixel font has distinct lowercase glyphs; typing-engine, race passages and arena word bonuses compare exact text (arena uppercasing only classifies an already typed word).
+- Regression tests: lowercase skill and upgrade keywords are rejected in rules and in the multiplayer dock; Caps Lock and case highlighting on the pixel keyboard.
+- Current Windows source: 179 tests in 25 files pass with unchanged 100% statements (4270), branches (3875), functions (665) and lines (2328); production build, full ESLint and both TypeScript checks pass. E2E is running; the previous interrupted profile is not completion evidence.
+- Previous CI run 38908395817 passed coverage/build but failed 11 Firefox browser cases with the renderer reporting error; all Chromium/WebKit cases passed. Linux CI now runs the real headed browsers under Xvfb for Firefox WebGL, uploads browser failure evidence, and also validates pushes to main. The renderer assertions, test limits and coverage gates remain unchanged; final GitHub results must be read from PR #10.

@@ -150,3 +150,11 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Current-source lint, app/server TypeScript, build, dependency audit, headless/retirement audits and Worker dry-run.
 - [ ] Finish the 63-case browser matrix and confirm final GitHub validation; live evidence is on PR #10.
 - [ ] Timed 900-active-second hardware profile and headphone/speaker calibration remain deferred; do not infer hardware performance from CI.
+
+
+## M12 - Exact-case typing consistency, 2026-10-17
+
+- [x] Match skill, draft, enemy/item and passage input to the exact displayed case; remove silent command uppercasing in solo and multiplayer.
+- [x] Add Caps Lock and exact-case/modifier highlights to the existing on-screen keyboard; explain case in ready, draft and skill controls.
+- [x] EN/ID rule, multiplayer and keyboard regression checks; 179 tests/25 files at unchanged 100% global coverage, lint, both TypeScript checks and build pass locally.
+- [ ] Finish current-source browser checks and confirm GitHub validation after enabling an Xvfb display for Firefox WebGL on the Linux runner.
