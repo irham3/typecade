@@ -12,7 +12,7 @@ export function TargetLabels({ view, bridge, tutorial=false }: { view: DungeonSt
  useEffect(() => bridge.on("projected", setPoints), [bridge])
  useEffect(() => { const node=layer.current!; const observer=new ResizeObserver(()=>setSize({width:node.clientWidth,height:node.clientHeight}));observer.observe(node);return()=>observer.disconnect() },[])
  const {width,height}=size
- const compact = width < 700, landscape=height<520, tight=height<360, pad = 12, top = tutorial&&compact&&!landscape?300:tight?74:landscape ? 106 : compact ? 145 : 116, bottom = tight?8:landscape ? 20 : compact ? 148 : 164
+ const compact = width < 700, landscape=height<520, tight=height<360, pad = 12, top = tutorial&&compact&&!landscape?300:view.notice.includes(" acquired.")?(landscape?166:212):tight?74:landscape ? 106 : compact ? 145 : 116, bottom = tight?8:landscape ? 20 : compact ? 148 : 164
  const used: Array<{ x: number; y: number; w: number; h: number }> = []
  const ids = [...view.queue].sort((a,b) => Number(b === view.target) - Number(a === view.target))
  return <div className={`target-labels ${tight?"tight":""}`} ref={layer} aria-label="Enemy targets">{ids.map(id => {

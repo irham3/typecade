@@ -146,7 +146,7 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Add seeded speed variation, per-type steering, flying bats/hovering mages, ranged cast cues and committed minotaur charge/recovery telegraphs.
 - [x] Add typed shield/potion/mana/sentry supplies with distinct models/labels, real shield absorption, one timed attacking tower, visible equipment and compatible save defaults/validation.
 - [x] Default new solo vocabulary/selector to Indonesian and raise the music bus without overwriting saved mute/master preferences.
-- [x] Restore 100% statements/branches/functions/lines coverage without lowering thresholds: 176 tests, 25 files; see verification/dungeon-encounters-2026-10-16.
+- [x] Restore 100% statements/branches/functions/lines coverage without lowering thresholds: 177 tests, 25 files; see verification/dungeon-encounters-2026-10-16.
 - [x] Current-source lint, app/server TypeScript, build, dependency audit, headless/retirement audits and Worker dry-run.
 - [ ] Finish the 63-case browser matrix and confirm final GitHub validation; live evidence is on PR #10.
 - [ ] Timed 900-active-second hardware profile and headphone/speaker calibration remain deferred; do not infer hardware performance from CI.

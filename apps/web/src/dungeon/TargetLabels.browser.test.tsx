@@ -43,10 +43,13 @@ it("names each supply benefit and makes flying, casting and charge warnings dist
  const root=createRoot(host),r=new SurvivalRun("item-labels"),s=r.state,bridge=new GameEventBridge()
  try{
   await act(()=>root.render(<TargetLabels view={s} bridge={bridge}/>))
+  s.notice="Aegis Shield acquired. +2 shield"
   for(const kind of ["shield","potion","mana","sentry","bat","mage","minotaur"] as const){
    s.enemies=[];s.queue=[];const e=r.spawn(kind,{x:0,z:2})!;s.queue=[e.id];if(kind==="mage")e.attack=.5;if(kind==="minotaur"){e.motion="windup";e.motionTime=1}
-   await act(()=>{root.render(<TargetLabels view={{...s}} bridge={bridge}/>);bridge.emit("projected",[{id:e.id,x:500,y:500,visible:true}])})
+   await act(()=>{root.render(<TargetLabels view={{...s}} bridge={bridge}/>);bridge.emit("projected",[{id:e.id,x:500,y:130,visible:true}])})
    expect(host.querySelector(".enemy-label")?.textContent).toMatch(kind==="shield"?/SHIELD/:kind==="potion"?/HP/:kind==="mana"?/MP/:kind==="sentry"?/SENTRY/:kind==="minotaur"?/CHARGE/:/AIR/)
+   expect(parseInt(host.querySelector<HTMLElement>(".enemy-label")!.style.top)).toBeGreaterThanOrEqual(212)
+   if(kind==="shield"){host.style.height="390px";await act(async()=>{root.render(<TargetLabels view={{...s}} bridge={bridge}/>);await new Promise(resolve=>setTimeout(resolve,30))});expect(parseInt(host.querySelector<HTMLElement>(".enemy-label")!.style.top)).toBeGreaterThanOrEqual(166);host.style.height="900px";await act(async()=>{await new Promise(resolve=>setTimeout(resolve,30))})}
    if(kind==="mage"){e.attack=2;await act(()=>root.render(<TargetLabels view={{...s}} bridge={bridge}/>));expect(host.textContent).toContain("MAGE")}
   }
  }finally{await act(()=>root.unmount());host.remove();bridge.clear()}

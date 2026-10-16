@@ -10,9 +10,11 @@ Checkpoint PR #8 was merged into main at 9229079 while GitHub validation was pen
 
 ## Current-source verification
 
-`npm run test -- --coverage`: **176 passed across 25 files**, **100% statements 4261/4261, branches 3859/3859, functions 663/663 and lines 2323/2323**. No threshold, exclusion or coverage-ignore workaround was added. Repeated audio gesture/resume/mute/state transitions, actual cue families, voice budgets, creature steering, shield/tower outcomes, save validation, equipment rendering, labels and shared controls are exercised.
+`npm run test -- --coverage`: **177 passed across 25 files**, **100% statements 4262/4262, branches 3865/3865, functions 664/664 and lines 2323/2323**. No threshold, exclusion or coverage-ignore workaround was added. Repeated audio gesture/resume/mute/state transitions, actual cue families, voice budgets, creature steering, shield/tower outcomes, save validation, equipment rendering, labels and shared controls are exercised.
 
 Production build and dependency audit passed; npm audit reported zero vulnerabilities. Final lint/both TypeScript checks, the three-browser E2E matrix, Worker dry-run, timed production profile and GitHub check are recorded below when complete. Headphone/speaker loudness calibration remains unverified.
 
 
 The final renderer keeps flight altitude when frozen or Reduced Effects is enabled; its dedicated matrix assertions are included in the coverage figures above. The new equipment-reload E2E fixture initializes storage only once, preserving the checkpoint it is meant to exercise. Lint, app/server TypeScript checks, headless/retirement audits and Worker dry-run passed locally. The full browser matrix and current GitHub validation are tracked on [PR #10](https://github.com/irham3/typecade/pull/10); this source record does not claim a pending CI check passed. The prior request to defer timed hardware/listening work remains distinct from the subsequently requested CI verification.
+
+Final interaction checks keep supply objects stationary under knockback and exclude them from limited lightning target admission, while barrel chains still leave support items unconsumed. Acquisition notices use a two-line clamp and reserve label space; targeted browser assertions verify the reserved desktop and landscape positions. The full 177-test coverage run and the two focused label checks passed for these final changes.

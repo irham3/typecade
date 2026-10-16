@@ -149,7 +149,7 @@ export class SurvivalRun {
   s.player.dashFrom = { x: s.player.x, z: s.player.z }; s.player.x = target.x; s.player.z = target.z
   s.player.dashAt = s.worldTime; s.player.invincible = Math.max(s.player.invincible, B.dashGrace)
   this.effect("slash", target, 1); s.target = null; s.prefix = ""
-  if (s.relics.switch) for (const e of s.enemies) { const d = distance(e, s.player); if (d > 0 && d < 4) { const next={x:e.x+(e.x-s.player.x)/d,z:e.z+(e.z-s.player.z)/d};if(dungeonWalkable(next)){e.x=next.x;e.z=next.z} } }
+  if (s.relics.switch) for (const e of s.enemies.filter(e=>!objects.includes(e.kind))) { const d = distance(e, s.player); if (d > 0 && d < 4) { const next={x:e.x+(e.x-s.player.x)/d,z:e.z+(e.z-s.player.z)/d};if(dungeonWalkable(next)){e.x=next.x;e.z=next.z} } }
   this.hit(target, 1, false)
   this.collectLoot()
   this.openDraft()
@@ -211,7 +211,7 @@ export class SurvivalRun {
   this.refreshQueue(); return true
  }
  private area(radius: number, layers: number, count: number = B.enemies) {
-  for (const e of [...this.state.enemies].filter(e => distance(e, this.state.player) < radius).slice(0, count)) this.hit(e, layers, true)
+  for (const e of [...this.state.enemies].filter(e => !(e.kind in dungeonSupplies) && distance(e, this.state.player) < radius).slice(0, count)) this.hit(e, layers, true)
  }
  private hit(enemy: DungeonEnemy, layers: number, preserve: boolean) {
   const s = this.state

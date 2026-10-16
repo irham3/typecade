@@ -58,3 +58,9 @@ it("pushes only safe nearby targets with the switch and resolves equidistant tow
  blocked.x=10;blocked.z=10;const before={x:blocked.x,z:blocked.z};(r as unknown as {moveEnemy:(e:typeof blocked,dt:number)=>void}).moveEnemy(blocked,.1);expect({x:blocked.x,z:blocked.z}).toEqual(before)
  const t=run();t.state.sentry={x:0,z:0,life:18,cooldown:0};const first=t.spawn("guard",{x:2,z:0})!,second=t.spawn("guard",{x:-2,z:0})!;first.speed=second.speed=0;tick(t,.04);expect(first.words).toHaveLength(1);expect(second.words).toHaveLength(2)
 })
+
+it("keeps supplies stationary under knockback and reserves lightning hits for eligible targets",()=>{
+ const r=run(),s=r.state;s.relics.switch=s.relics.lightning=1
+ const supply=r.spawn("shield",{x:2,z:0})!,health=r.spawn("potion",{x:3,z:0})!,a=r.spawn("guard",{x:3,z:1})!,b=r.spawn("guard",{x:3,z:-1})!,target=r.spawn("skeleton",{x:1,z:0})!;target.words=["go"];s.correct=9;s.streak=s.bestStreak=9;r.refreshQueue();r.input("g");expect(a.words).toHaveLength(1);expect(b.words).toHaveLength(1);r.input("o");expect(supply.x).toBe(2);expect(health.x).toBe(3)
+ const barrel=r.spawn("barrel",{x:3,z:0})!;r.cancel();r.refreshQueue();for(const key of barrel.words[0]!)r.input(key);expect(s.enemies).toContain(supply);expect(s.enemies).toContain(health)
+})
