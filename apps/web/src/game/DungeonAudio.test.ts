@@ -1,18 +1,20 @@
 import { expect, it, vi } from "vitest"
 import { sfxRecipes } from "./audio/sfxRecipes"
-import { depthTracks } from "./audio/musicTracks"
-import { schedulePercussion } from "./audio/percussion"
+import { depthTracks, titleTrack, bossTrack, type MusicTrack } from "./audio/musicTracks"
+import { Orchestra, type VoiceHost } from "./audio/instruments"
+import { createStoneHall } from "./audio/reverb"
+import { playScoreStep } from "./audio/score"
 import { DungeonAudio } from "./DungeonAudio"
 
 function device() {
  const parameter = () => ({value:0,setValueAtTime:vi.fn(),setTargetAtTime:vi.fn(),exponentialRampToValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),cancelScheduledValues:vi.fn()})
  const sources:Array<ReturnType<typeof source>>=[]
- function source() { return {type:"",frequency:parameter(),playbackRate:parameter(),buffer:null,connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null as (()=>void)|null} }
- const node = () => ({connect:vi.fn(),disconnect:vi.fn()})
+ function source() { return {type:"",frequency:parameter(),playbackRate:parameter(),buffer:null,connect:vi.fn(target=>target),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null as (()=>void)|null} }
+ const node = () => { const n={connect:vi.fn(),disconnect:vi.fn()};n.connect.mockImplementation(target=>target);return n }
  const context = {state:"running",currentTime:0,sampleRate:48000,destination:{},resume:vi.fn(async()=>{}),suspend:vi.fn(async()=>{}),close:vi.fn(async()=>{}),
   createGain:()=>({...node(),gain:parameter()}),createStereoPanner:()=>({...node(),pan:parameter()}),createBiquadFilter:()=>({...node(),type:"",frequency:parameter(),Q:parameter()}),
   createDynamicsCompressor:()=>({...node(),threshold:parameter(),knee:parameter(),ratio:parameter(),attack:parameter(),release:parameter()}),
-  createBuffer:()=>({getChannelData:()=>new Float32Array(48000)}),createOscillator:()=>{const s=source();sources.push(s);return s},createBufferSource:()=>{const s=source();sources.push(s);return s}}
+  createConvolver:()=>({...node(),buffer:null}),createBuffer:(...sizes:number[])=>({getChannelData:()=>new Float32Array(sizes[1]??48000)}),createOscillator:()=>{const s=source();sources.push(s);return s},createBufferSource:()=>{const s=source();sources.push(s);return s}}
  vi.stubGlobal("AudioContext",class{constructor(){return context}})
  return {context,sources}
 }
@@ -93,8 +95,6 @@ it("sounds all weapon and enemy recipes and changes themes only at musical bound
  try{
   audio.unlock()
   for(const kind of Object.keys(sfxRecipes)){context.currentTime+=2;audio.play(kind);for(const source of sources)source.onended?.()}
-  const hit=vi.fn();for(const energy of [0,.3,.5,1])for(const boss of [false,true])for(let step=0;step<64;step++)schedulePercussion(hit,step,0,energy,boss)
-  expect(hit).toHaveBeenCalled()
   for(let depth=0;depth<depthTracks.length;depth++){
    audio.setScene({mood:"arena",depth});a.step=128;a.nextBeat=context.currentTime+.02;a.schedule();expect(a.track.name).toBe(depthTracks[depth]!.name)
    for(const source of sources)source.onended?.()
@@ -115,4 +115,52 @@ it("supports optional sweep shaping and disconnects vibrato voices on suspension
   expect(sources.some(source=>source.frequency.value===6)).toBe(true)
   audio.suspend();expect(sources.every(source=>source.disconnect.mock.calls.length>0)).toBe(true)
  }finally{delete sfxRecipes["sweep-contract"];audio.dispose();vi.useRealTimers();vi.unstubAllGlobals()}
+})
+
+
+it("schedules every ensemble with mood-specific melody and percussion",()=>{
+ const parts={pluck:vi.fn(),choir:vi.fn(),strings:vi.fn(),horn:vi.fn(),flute:vi.fn(),bell:vi.fn(),organ:vi.fn(),drum:vi.fn()}
+ const orchestra=parts as unknown as Orchestra
+ const tracks=[titleTrack,...depthTracks,bossTrack,...(["lute","organ"] as const).map(lead=>({...titleTrack,ensemble:{...titleTrack.ensemble,lead}} satisfies MusicTrack))]
+ for(const track of tracks)for(const energy of [0,.5,1])for(let step=0;step<128;step++){
+  playScoreStep(orchestra,track,step,step*.15,.15,{energy,calm:energy===0,title:track===titleTrack,hushed:false,boss:track===bossTrack})
+ }
+ for(const part of Object.values(parts))expect(part).toHaveBeenCalled()
+ for(const part of Object.values(parts))part.mockClear()
+ playScoreStep(orchestra,titleTrack,2,0,.15,{energy:0,calm:true,title:true,hushed:true,boss:false})
+ expect(parts.pluck).not.toHaveBeenCalled();expect(parts.drum).not.toHaveBeenCalled()
+})
+
+it("builds finite instrument graphs and discards every node when the voice budget rejects a note",()=>{
+ const {context,sources}=device(),adopt=vi.fn(()=>true),destination=context.createGain()
+ const host={ctx:context,noise:context.createBuffer(),destination,adopt} as unknown as VoiceHost
+ const orchestra=new Orchestra(host)
+ try{
+  orchestra.pluck(60,0,.4,.1);orchestra.strings(48,0,1,.1);orchestra.horn(60,0,.5,.1);orchestra.flute(72,0,.4,.1);orchestra.bell(72,0,.1)
+  orchestra.choir([60,64,67],0,1,.1);orchestra.organ([60,64,67],0,1,.1)
+  for(const kind of ["war","tom","anvil","frame","shaker"] as const)orchestra.drum(kind,0,.1)
+  expect(adopt).toHaveBeenCalledTimes(14)
+  for(const source of sources){expect(source.start).toHaveBeenCalledWith(0);expect(source.stop).toHaveBeenCalled()}
+  const accepted=sources.length;adopt.mockReturnValue(false);orchestra.pluck(60,0,.4,.1)
+  for(const source of sources.slice(accepted)){expect(source.start).not.toHaveBeenCalled();expect(source.disconnect).toHaveBeenCalled()}
+  const shortHall=createStoneHall(context as unknown as AudioContext,.001)
+  expect(shortHall.buffer).not.toBeNull()
+ }finally{vi.unstubAllGlobals()}
+})
+
+it("rejects instrument notes while muted or paused and keeps total voices within the shared cap",()=>{
+ vi.useFakeTimers();const {context,sources}=device(),audio=new DungeonAudio()
+ const a=audio as unknown as {voiceHost:(ctx:AudioContext)=>VoiceHost;orchestra:Orchestra;voices:Set<{bus:string}>}
+ try{
+  audio.unlock();const host=a.voiceHost(context as unknown as AudioContext)
+  audio.setMix(.7,0,1);expect(host.adopt(context.createOscillator() as unknown as OscillatorNode,[])).toBe(false)
+  audio.setMix(.7,1,1);audio.setScene({mood:"paused"});expect(host.adopt(context.createOscillator() as unknown as OscillatorNode,[])).toBe(false)
+  audio.setScene({mood:"arena"})
+  for(let i=0;i<50;i++)a.orchestra.pluck(60,0,.4,.1)
+  expect([...a.voices].filter(v=>v.bus==="music")).toHaveLength(40)
+  for(let i=0;i<40;i++){context.currentTime+=1;audio.play("hurt")}
+  a.orchestra.pluck(60,0,.4,.1);expect(a.voices.size).toBe(56)
+  audio.suspend();expect(a.voices.size).toBe(0)
+  expect(sources.filter(s=>s.start.mock.calls.length).every(s=>s.disconnect.mock.calls.length>0)).toBe(true)
+ }finally{audio.dispose();vi.useRealTimers();vi.unstubAllGlobals()}
 })

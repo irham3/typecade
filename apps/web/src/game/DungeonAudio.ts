@@ -1,5 +1,7 @@
 import { sfxRecipes, hasSfxRecipe } from "./audio/sfxRecipes"
-import { schedulePercussion } from "./audio/percussion"
+import { Orchestra, type VoiceHost } from "./audio/instruments"
+import { createStoneHall } from "./audio/reverb"
+import { playScoreStep } from "./audio/score"
 import { mixLevels } from "./audio/mixLevels"
 import { bossTrack, depthTracks, titleTrack, type MusicTrack } from "./audio/musicTracks"
 
@@ -28,6 +30,8 @@ export class DungeonAudio {
  private resuming = false
  private masterVolume: number = mixLevels.defaultVolume
  private limiter: DynamicsCompressorNode | null = null
+ private orchestra: Orchestra | null = null
+ private reverbNodes: AudioNode[] = []
  private musicVolume = .85
  private effectsVolume = 1
  private nextBeat = 0
@@ -71,6 +75,8 @@ export class DungeonAudio {
     const data = this.noise.getChannelData(0)
     let seed = 7321
     for (let i = 0; i < data.length; i++) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; data[i] = seed / 2147483648 - 1 }
+    this.connectStoneHall(ctx)
+    this.orchestra = new Orchestra(this.voiceHost(ctx))
    }
    this.transport()
   } catch { this.dispose() /* Audio is optional when the browser has no device. */ }
@@ -80,6 +86,28 @@ export class DungeonAudio {
   node.threshold.value = settings.threshold; node.knee.value = settings.knee; node.ratio.value = settings.ratio
   node.attack.value = settings.attack; node.release.value = settings.release
   return node
+ }
+ /** Music and a little of the effects feed a stone-hall convolution reverb that returns to the master. */
+ private connectStoneHall(ctx: AudioContext) {
+  const hall = createStoneHall(ctx), musicSend = ctx.createGain(), effectsSend = ctx.createGain(), wet = ctx.createGain()
+  musicSend.gain.value = mixLevels.hallSend.music; effectsSend.gain.value = mixLevels.hallSend.effects; wet.gain.value = mixLevels.hallSend.return
+  this.buses.music!.connect(musicSend); this.buses.effects!.connect(effectsSend)
+  musicSend.connect(hall); effectsSend.connect(hall); hall.connect(wet); wet.connect(this.master!)
+  this.reverbNodes = [hall, musicSend, effectsSend, wet]
+ }
+ /** Lets instrument graphs share the music bus voice budget and cleanup. */
+ private voiceHost(ctx: AudioContext): VoiceHost {
+  const music = this.buses.music!
+  return {
+   ctx, noise: this.noise!, destination: music,
+   adopt: (source, nodes) => {
+    if (!this.musicVolume || this.scene.mood === "paused" || this.voices.size >= 56 || [...this.voices].filter(v => v.bus === "music").length >= mixLevels.musicVoices) return false
+    const voice: Voice = { source, nodes, bus: "music", priority: 0 }
+    this.voices.add(voice)
+    source.onended = () => this.release(voice)
+    return true
+   },
+  }
  }
  setScene(scene: DungeonSoundscape) {
   const previous = this.scene
@@ -150,9 +178,6 @@ export class DungeonAudio {
   source.onended = () => this.release(voice)
   source.start(at); source.stop(at + duration + .02)
  }
- private note(midi: number, duration: number, level: number, at: number, type: OscillatorType = "triangle", pan = 0) {
-  this.sound(hz(midi), duration, level * mixLevels.musicVoiceGain, "music", at, type, hz(midi), pan)
- }
  private schedule() {
   const ctx = this.context
   if (!ctx || ctx.state !== "running") return
@@ -161,25 +186,14 @@ export class DungeonAudio {
   while (this.nextBeat < ctx.currentTime + .14) {
    const wanted = this.themeFor(this.scene)
    if (wanted !== this.track && (this.step % 128 === 0 || (wanted === bossTrack && this.step % 16 === 0))) this.track = wanted
-   const track = this.track, at = this.nextBeat, index = this.step % 16, bar = Math.floor(this.step / 16) % 8, root = track.roots[bar]!
-   const arena = this.scene.mood === "arena", quiet = this.scene.mood === "draft" || this.scene.mood === "dojo"
+   const track = this.track, at = this.nextBeat, index = this.step % 16, bar = Math.floor(this.step / 16) % 8
+   const arena = this.scene.mood === "arena"
    this.intensity += ((arena ? Math.max(this.scene.boss ? 1 : this.scene.critical ? .75 : .2, this.scene.pressure ?? 0) : 0) - this.intensity) * .08
-   const energy = this.intensity, third = track.majorBars.includes(bar) ? 4 : 3
-   if (index === 0) {
-    for (const [n, offset] of [0, third, 7].entries()) this.note(root + 24 + offset, 1.75, quiet ? .018 : .028, at + n * .035, "sine", (n - 1) * .4)
-    this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
-   }
+   const energy = this.intensity
+   if (index === 0) this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
    if (index === 5 || index === 13) this.sound(1900, .04, .025, "ambience", at, "noise", 1900, index === 5 ? -.4 : .4)
-   if (index % (quiet ? 8 : 4) === 0) this.note(root + (index === 12 ? 7 : 0), .32, quiet ? .08 : .16, at)
-   if (index % 2 === 0 && this.scene.mood !== "draft") {
-    const n = track.melody[bar]![index / 2]!
-    if (n) this.note(n - (this.scene.mood === "title" ? 12 : 0), .3, this.scene.mood === "dojo" ? .025 : this.scene.critical ? .035 : track.lead === "square" || track.lead === "sawtooth" ? .032 : .055, at, track.lead, index % 4 ? .22 : -.22)
-   }
-   if (arena && energy > .3 && index % 2 === 1) this.note(root + 24 + [0, 7, 12, third][Math.floor(index / 2) % 4]!, .12, .035 * energy, at, "triangle", -.3)
+   if (this.orchestra && this.musicVolume) playScoreStep(this.orchestra, track, this.step, at, 60 / track.tempo / 4, { energy, calm: !arena, title: this.scene.mood === "title", hushed: this.scene.mood === "draft", boss: !!this.scene.boss })
    if (arena) {
-    schedulePercussion((f, d, l, type, end, time, pan) => this.sound(f, d, l, "music", time, type, end, pan), this.step, at, energy, !!this.scene.boss)
-    if (index % (energy > .65 ? 2 : 4) === 2) this.sound(6700, .045, .045 * energy, "music", at, "noise", 6700, .25)
-    if (this.scene.boss && index % 4 === 0) this.note(root + 12, .22, .045, at, "sawtooth", -.2)
     if (this.scene.critical && index % 8 === 0) {
      this.sound(105, .13, .23, "effects", at, "triangle", 62, 0, 2)
      this.sound(88, .1, .14, "effects", at + .19, "triangle", 55, 0, 2)
@@ -249,8 +263,8 @@ export class DungeonAudio {
  }
  dispose() {
   this.disposed = true; this.suspend()
-  for (const node of [...Object.values(this.buses), this.duck, this.master, this.compressor, this.limiter]) node?.disconnect()
+  for (const node of [...Object.values(this.buses), ...this.reverbNodes, this.duck, this.master, this.compressor, this.limiter]) node?.disconnect()
   if (this.context) void this.context.close().catch(() => {})
-  this.context = null; this.noise = null; this.buses = {}; this.duck = this.master = null; this.compressor = this.limiter = null
+  this.context = null; this.noise = null; this.buses = {}; this.duck = this.master = null; this.compressor = this.limiter = null; this.orchestra = null; this.reverbNodes = []
  }
 }

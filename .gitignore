@@ -60,6 +60,7 @@ tsc-errors.txt
 /.vscode/
 /.idea/
 /.cursor/
+/.claude/
 /.ai/
 /.agents/skills/
 /skills-lock.json
