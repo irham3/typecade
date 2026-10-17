@@ -33,7 +33,7 @@ export class DungeonModels {
   const key = `${kind}:${color}`; const cached = this.cache.get(key); if (cached) return cached
   const blueprint = monsterBlueprints[kind as EnemyKind]?.()
   if (blueprint) {
-   const built = { body: this.geometry(blueprint.body), leg: blueprint.leg ? this.geometry(blueprint.leg) : null, arm: blueprint.arm ? this.geometry(blueprint.arm) : null, weapon: blueprint.weapon ? this.geometry(blueprint.weapon) : null, scale: blueprint.scale }
+   const built = { body: this.geometry(blueprint.body), leg: this.geometry(blueprint.leg), arm: blueprint.arm ? this.geometry(blueprint.arm) : null, weapon: blueprint.weapon ? this.geometry(blueprint.weapon) : null, scale: blueprint.scale }
    this.cache.set(key, built); return built
   }
   const ink = 0x111b2b, bone = 0xeadbb2, leather = 0x543c36, steel = 0xbed4df, gold = 0xe8b966

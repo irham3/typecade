@@ -111,22 +111,6 @@ export class TextureFactory {
   floor(): SurfaceTextures { return this.track(surface("tex:floor", 32, paintFlagstones, stoneTint, 2.2)) }
   wall(): SurfaceTextures { return this.track(surface("tex:wall", 32, paintBricks, stoneTint, 2.8)) }
 
-  /** Soft radial sprite used for halos under glowing loot and lights. */
-  halo(): CanvasTexture {
-    const canvas = document.createElement("canvas")
-    canvas.width = canvas.height = 64
-    const context = canvas.getContext("2d")!
-    const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32)
-    gradient.addColorStop(0, "#ffffffff")
-    gradient.addColorStop(.25, "#ffffff88")
-    gradient.addColorStop(1, "#ffffff00")
-    context.fillStyle = gradient
-    context.fillRect(0, 0, 64, 64)
-    const texture = new CanvasTexture(canvas)
-    this.owned.add(texture)
-    return texture
-  }
-
   dispose() { this.owned.forEach(texture => texture.dispose()); this.owned.clear() }
 
   private track(textures: SurfaceTextures) {

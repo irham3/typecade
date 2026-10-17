@@ -7,16 +7,18 @@ import type { DungeonEvents, PartyWorld } from "@typecade/contracts"
 import { partyWorld } from "../dungeon/party-world"
 import type { DungeonVfx } from "./DungeonVfx"
 import { Matrix4,type InstancedMesh,type MeshStandardMaterial,type ShaderMaterial } from "three"
+import type { DamageSource } from "@typecade/contracts"
+import { bestiary } from "@typecade/content"
 
 it("marks actual player damage, level gain and acquired power with distinct visual feedback",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1000px;height:700px";document.body.append(host)
  const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("hit-and-level","en")
- const visual=game as unknown as {tick:(t:number)=>void;heroMaterial:MeshStandardMaterial;post:ShaderMaterial;vfx:DungeonVfx}
+ const visual=game as unknown as {tick:(t:number)=>void;heroMaterial:MeshStandardMaterial;post:{grade:ShaderMaterial};vfx:DungeonVfx}
  try{
   await game.ready;game.renderer.setAnimationLoop(null);run.start();bridge.emit("screen","endless");bridge.emit("frame",run.state)
   let now=performance.now()+100;const frame=()=>{now+=50;bridge.emit("frame",run.state);visual.tick(now)}
-  run.damage(1);frame();expect(visual.post.uniforms.hurt.value).toBeGreaterThan(0);expect(visual.heroMaterial.emissiveIntensity).toBeGreaterThan(0)
-  for(let i=0;i<20;i++)frame();expect(visual.post.uniforms.hurt.value).toBe(0)
+  run.damage(1);frame();expect(visual.post.grade.uniforms.hurt.value).toBeGreaterThan(0);expect(visual.heroMaterial.emissiveIntensity).toBeGreaterThan(0)
+  for(let i=0;i<20;i++)frame();expect(visual.post.grade.uniforms.hurt.value).toBe(0)
   run.gainXp(130);run.advance(.01);frame();expect(run.state.phase).toBe("draft");expect(visual.vfx.rings.count).toBeGreaterThan(0)
   run.chooseUpgrade(run.state.offers[0]!);frame();expect(visual.vfx.count).toBeGreaterThan(0)
   host.style.height="390px";await new Promise(resolve=>setTimeout(resolve,30));bridge.emit("screen","tutorial");run.spawn("skeleton",{x:3,z:0});frame();run.state.player.invincible=0;run.damage(1);frame();bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.heroMaterial.emissiveIntensity).toBeGreaterThan(0)
@@ -77,6 +79,46 @@ it("ignores pending readiness after immediate renderer disposal",async()=>{
  const host=document.createElement("div"),bridge=new GameEventBridge<DungeonEvents>(),ready=vi.fn();bridge.on("renderer",ready)
  const game=new DungeonScene(host,bridge);game.destroy();await game.ready;expect(ready).not.toHaveBeenCalled()
 })
+
+it("reduces expensive lighting and duplicate outlines when a diverse horde exceeds the draw budget",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:960px;height:640px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),r=new SurvivalRun("dense-render"),s=r.state
+ const v=game as unknown as {tick:(t:number)=>void;adaptive:boolean}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);r.start();s.enemies=[];s.queue=[];bridge.emit("screen","endless")
+  for(const entry of bestiary)r.spawn(entry.kind,{x:Math.sin(s.nextId)*3,z:Math.cos(s.nextId)*3})
+  bridge.emit("frame",s);v.tick(performance.now()+100)
+  expect(v.adaptive).toBe(true);expect(game.renderer.shadowMap.enabled).toBe(false)
+  expect(game.renderer.info.render.calls).toBeLessThanOrEqual(120)
+  bridge.emit("settings",{reduced:false,volume:0});expect(game.renderer.shadowMap.enabled).toBe(false)
+ }finally{game.destroy();bridge.clear();host.remove()}
+},20000)
+
+it("presents new attack sources, heavy finishers, surge cues and overloads without changing combat state",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:960px;height:640px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),run=new SurvivalRun("spectacle-check","en"),s=run.state
+ const v=game as unknown as {tick:(time:number)=>void;elapsed:number;focusAt:number;hitStopUntil:number;walls:InstancedMesh;terrain:(x:number,z:number)=>void;post:{render:(delta:number)=>void;composer:{readBuffer:{depthTexture:unknown};renderTarget1:{depthTexture:unknown}}}}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);run.start();s.enemies=[];s.queue=[];bridge.emit("screen","endless")
+  let now=performance.now()+100;const frame=()=>{now+=50;bridge.emit("frame",s);v.tick(now)}
+  frame()
+  for(const [i,kind]of (["gargoyle","mimic","sporeling","ghoul","deathknight"] as const).entries())run.spawn(kind,{x:i-2,z:2})
+  frame()
+  for(const source of ["blade","cleave","storm","lightning","vowels","sentry","explosion","orbit","nova","meteor","frost","whirl","finisher"] as DamageSource[]){s.effects=[{id:s.nextId++,kind:"shatter",source,x:0,z:2,life:1,value:1}];frame()}
+  for(const kind of ["nova","frost","meteor","finisher","spore"] as const){s.player.dashAt+=1;s.effects=[{id:s.nextId++,kind,x:0,z:2,life:1,value:1}];frame()}
+  expect(v.hitStopUntil).toBeGreaterThan(0)
+  v.focusAt=v.elapsed+1;frame();v.focusAt=v.elapsed-.5;frame()
+  for(const time of [85,98]){s.time=s.worldTime=time;frame()}
+  s.phase="overdrive";s.cursor=1;s.effects=[{id:s.nextId++,kind:"slash",x:1,z:1,life:1,value:0}];frame()
+  s.cursor=3;frame()
+  s.phase="arena";s.queue=s.enemies.map(e=>e.id);s.enemies[0]!.maxHealth=3;s.enemies[0]!.health=3;frame();s.effects=[{id:s.nextId++,kind:"shatter",x:s.enemies[0]!.x,z:s.enemies[0]!.z,life:1,value:1}];s.enemies.shift();s.queue=s.enemies.map(e=>e.id);frame();s.player.dashAt+=1;s.effects=[{id:s.nextId++,kind:"slash",x:0,z:2,life:1,value:1},{id:s.nextId++,kind:"whirl",x:0,z:2,life:1,value:1}];frame();s.effects=[{id:s.nextId++,kind:"storm",x:0,z:0,life:1,value:1}];frame()
+  const capacity=v.walls.instanceMatrix.count
+  Object.defineProperty(v.walls.instanceMatrix,"count",{value:1,configurable:true});v.terrain(500,500);expect(v.walls.count).toBe(1)
+  Object.defineProperty(v.walls.instanceMatrix,"count",{value:capacity,configurable:true});v.terrain(0,0)
+  v.post.composer.readBuffer.depthTexture=null;v.post.render(1/60)
+  expect(s.kills).toBe(0)
+ }finally{game.destroy();bridge.clear();host.remove()}
+},20000)
 
 it("plays a cleave independently of dash, keeps death poses briefly and expires effects without changing rules",async()=>{
  const host=document.createElement("div");host.style.cssText="width:1440px;height:900px";document.body.append(host)

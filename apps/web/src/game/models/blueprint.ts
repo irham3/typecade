@@ -6,11 +6,11 @@ export type Part = [color: number, x: number, y: number, z: number, sx: number, 
 
 /**
  * Declarative actor description. `leg`, `arm` and `weapon` are animated limbs the scene
- * mounts at fixed sockets; `null` means the actor has no such limb.
+ * mounts at fixed sockets; arms and weapons may be null when absent.
  */
 export interface ActorBlueprint {
   body: Part[]
-  leg: Part[] | null
+  leg: Part[]
   arm: Part[] | null
   weapon: Part[] | null
   scale: number
