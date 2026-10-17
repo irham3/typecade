@@ -17,7 +17,7 @@ export interface DungeonEnemy extends Point {
 export interface DungeonLoot extends Point { id: number; xp: number; gold: number; mana: number }
 export interface DungeonProjectile extends Point { id: number; vx: number; vz: number; life: number }
 export type DamageSource = "blade" | "cleave" | "storm" | "lightning" | "vowels" | "sentry" | "explosion" | "orbit" | "nova" | "meteor" | "frost" | "whirl" | "finisher"
-export interface DungeonEffect extends Point { id: number; kind: "slash" | "hit" | "storm" | "heal" | "pickup" | "shatter" | "magnet" | "block" | "shield" | "mana" | "deploy" | "sentry" | "lightning" | "firebolt" | "blast" | "treasure" | "slam" | "level" | "upgrade" | "barrier" | "ward" | "summon" | "blink" | "nova" | "meteor" | "frost" | "whirl" | "finisher" | "spore"; source?: DamageSource; life: number; value: number; to?: Point }
+export interface DungeonEffect extends Point { id: number; kind: "slash" | "hit" | "storm" | "heal" | "pickup" | "shatter" | "magnet" | "block" | "shield" | "mana" | "deploy" | "sentry" | "lightning" | "firebolt" | "blast" | "treasure" | "slam" | "level" | "upgrade" | "barrier" | "ward" | "summon" | "blink" | "nova" | "meteor" | "frost" | "whirl" | "finisher" | "spore" | "gold"; source?: DamageSource; life: number; value: number; to?: Point }
 export interface DungeonState {
  version: 1; seed: string; rng: number; language: DungeonLanguage; phase: RunPhase; resumePhase: RunPhase
  time: number; worldTime: number; nextBoss: number; spawnAt: number; nextId: number; biome: number
@@ -40,9 +40,13 @@ export interface PartyWorld {
  boss:{hp:number;maxHp:number;nextAttack:number;attackAt:number;target:string|null}|null;now:number;focus:Point
  obstacles:Array<Point & {kind:"barrel"|"goblin"|"barrier";word:string}>
 }
+/** Hero customization slots; values are cosmetic item ids from the content catalog. */
+export type HeroSlot = "head" | "face" | "body" | "legs" | "back" | "weapon" | "offhand" | "dye"
+export type HeroLoadout = Readonly<Record<HeroSlot, string>>
 export interface DungeonEvents {
+ appearance: HeroLoadout
  frame: DungeonState
- screen: "title" | "endless" | "dojo" | "multiplayer" | "tutorial"
+ screen: "title" | "endless" | "dojo" | "multiplayer" | "tutorial" | "armory"
  settings: { reduced: boolean; volume: number; music?: number; effects?: number }
  projected: DungeonLabel[]
  training: { correct: number; words: number; errors: number }

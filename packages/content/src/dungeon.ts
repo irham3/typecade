@@ -3,7 +3,7 @@ import type { DungeonLanguage, EnemyKind, SupplyKind, SkillId, UpgradeId, Weapon
 export const dungeonBalance = {
  tick: 1 / 30, enemies: 128, loot: 256, projectiles: 64, effects: 128,
  hp: 6, contactGrace: 1.2, dashGrace: .3, pickupRadius: 2.2,
- spawnRadius: 8.5, spawnInterval: 2, speed: .37, manaRegen: 2.5,
+ spawnRadius: 8.5, spawnInterval: 2, labelRadius: 13, speed: .37, manaRegen: 2.5,
  openingSeconds: 90, openingThreats: 4, openingInterval: 4,
  learningSeconds: 180, learningThreats: 8, learningInterval: 2.2, preBossThreats: 18,
  bossInterval: 300, stagger: 3.2, bossHealth: 260, barrierHp: 30, barrierRadius: 5.5,
