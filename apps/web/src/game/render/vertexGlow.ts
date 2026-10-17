@@ -1,4 +1,5 @@
 import type { MeshStandardMaterial } from "three"
+import { environmentGrade } from "./environmentGrade"
 
 /**
  * Colours that read as light sources (eyes, runes, embers, crystals). Parts painted in
@@ -14,7 +15,7 @@ export const glowColors: ReadonlySet<number> = new Set([
 /** Name of the per-vertex 0..1 emission weight written by `DungeonModels.geometry`. */
 export const GLOW_ATTRIBUTE = "glow"
 
-const EMISSION_GAIN = "2.2"
+const EMISSION_GAIN = environmentGrade.post.emissionGain.toFixed(2)
 
 /**
  * Adds vertex-weighted self-illumination to a standard material without a custom shader.
