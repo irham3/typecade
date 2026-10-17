@@ -93,7 +93,7 @@ export function App() {
  useEffect(()=>{bridge.emit("appearance",profile.loadout)},[bridge,profile.loadout])
  // Pay each finished endless run once (keyed by seed); the result screen shows what was earned.
  const [payout,setPayout]=useState<{earned:number;bonus:number}|null>(null)
- useEffect(()=>{if(screen==="endless"&&phase==="dead"){const result=heroProfileStore.payOut(view.seed,view);if(result.earned||result.bonus)setPayout({earned:result.earned,bonus:result.bonus})}else if(phase!=="dead")setPayout(null)},[screen,phase,view])
+ useEffect(()=>{if(screen==="endless"&&phase==="dead"){const result=heroProfileStore.payOut(view.seed,view);if(result.earned||result.bonus)queueMicrotask(()=>setPayout({earned:result.earned,bonus:result.bonus}))}else if(phase!=="dead")queueMicrotask(()=>setPayout(null))},[screen,phase,view])
  return <main className={`dungeon-app scene-${screen}`} data-testid="dungeon-shell" data-reduced-effects={settings.reduced}>
   <div className="dungeon-canvas" ref={host} data-testid="dungeon-canvas" data-renderer-state={renderer} data-draw-calls={stats.calls} data-geometries={stats.geometries} data-textures={stats.textures}/>
   <div className="scene-shade" aria-hidden="true"/>
