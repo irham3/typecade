@@ -1,13 +1,13 @@
 import { sfxRecipes, hasSfxRecipe } from "./audio/sfxRecipes"
 import { schedulePercussion } from "./audio/percussion"
+import { mixLevels } from "./audio/mixLevels"
+import { bossTrack, depthTracks, titleTrack, type MusicTrack } from "./audio/musicTracks"
 
 type Mood = "title" | "dojo" | "arena" | "draft" | "dead" | "paused"
 type Bus = "music" | "effects" | "ambience"
 type Voice = { source: AudioScheduledSourceNode; nodes: AudioNode[]; bus: Bus; priority: number }
-export interface DungeonSoundscape { mood: Mood; pressure?: number; critical?: boolean; boss?: boolean }
+export interface DungeonSoundscape { mood: Mood; pressure?: number; critical?: boolean; boss?: boolean; depth?: number }
 const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12)
-const roots = [38, 34, 41, 36, 43, 34, 33, 33]
-const melody = [[74,0,77,81,79,77,76,0],[74,77,81,0,82,81,77,0],[72,0,77,79,81,79,77,0],[76,79,84,0,82,79,76,0],[79,0,82,86,84,82,81,0],[77,81,82,0,81,77,74,0],[76,0,73,76,81,79,76,73],[74,0,0,77,76,73,69,0]]
 
 /** Original D-minor score, synthesized locally; the audio clock owns its beat grid. */
 export class DungeonAudio {
@@ -23,7 +23,8 @@ export class DungeonAudio {
  private visible = true
  private disposed = false
  private resuming = false
- private masterVolume = .28
+ private masterVolume: number = mixLevels.defaultVolume
+ private limiter: DynamicsCompressorNode | null = null
  private musicVolume = .85
  private effectsVolume = 1
  private nextBeat = 0
@@ -31,16 +32,18 @@ export class DungeonAudio {
  private variation = 0
  private cooldowns = new Map<string, number>()
  private intensity = 0
+ /** Theme currently playing; changes are deferred to the next 8-bar phrase so they never cut mid-melody. */
+ private track: MusicTrack = titleTrack
  get volume() { return this.masterVolume }
  set volume(value: number) { this.setMix(value, this.musicVolume, this.effectsVolume) }
  setMix(volume: number, music = .85, effects = 1) {
   this.masterVolume = this.clamp(volume); this.musicVolume = this.clamp(music); this.effectsVolume = this.clamp(effects)
   if (this.context && this.master) {
    const now = this.context.currentTime
-   this.master.gain.setTargetAtTime(this.masterVolume * .8, now, .04)
-   this.buses.effects!.gain.setTargetAtTime(this.effectsVolume, now, .04)
-   this.buses.music!.gain.setTargetAtTime(this.musicVolume * 1.55, now, .15)
-   this.buses.ambience!.gain.setTargetAtTime(this.musicVolume * .15, now, .2)
+   this.master.gain.setTargetAtTime(this.masterVolume * mixLevels.masterGain, now, .04)
+   this.buses.effects!.gain.setTargetAtTime(this.effectsVolume * mixLevels.effectsBus, now, .04)
+   this.buses.music!.gain.setTargetAtTime(this.musicVolume * mixLevels.musicBus, now, .15)
+   this.buses.ambience!.gain.setTargetAtTime(this.musicVolume * mixLevels.ambienceBus, now, .2)
   }
   this.transport()
  }
@@ -50,15 +53,15 @@ export class DungeonAudio {
   try {
    if (!this.context) {
     const ctx = this.context = new AudioContext({ latencyHint: "interactive" })
-    this.master = ctx.createGain(); this.master.gain.value = this.masterVolume * .8
-    this.compressor = ctx.createDynamicsCompressor()
-    this.compressor.threshold.value = -12; this.compressor.knee.value = 10; this.compressor.ratio.value = 6
-    this.compressor.attack.value = .003; this.compressor.release.value = .16
-    this.master.connect(this.compressor); this.compressor.connect(ctx.destination)
+    this.master = ctx.createGain(); this.master.gain.value = this.masterVolume * mixLevels.masterGain
+    // Glue compressor then limiter: loud enough to hear over the horde, never clipping when hits stack.
+    this.compressor = this.dynamics(ctx, mixLevels.glue)
+    this.limiter = this.dynamics(ctx, mixLevels.limiter)
+    this.master.connect(this.compressor); this.compressor.connect(this.limiter); this.limiter.connect(ctx.destination)
     this.duck = ctx.createGain(); this.duck.connect(this.master)
     for (const bus of ["music", "effects", "ambience"] as const) {
      const node = this.buses[bus] = ctx.createGain()
-     node.gain.value = bus === "effects" ? this.effectsVolume : this.musicVolume * (bus === "music" ? 1.55 : .15)
+     node.gain.value = bus === "effects" ? this.effectsVolume * mixLevels.effectsBus : this.musicVolume * (bus === "music" ? mixLevels.musicBus : mixLevels.ambienceBus)
      node.connect(bus === "effects" ? this.master : this.duck)
     }
     this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
@@ -68,6 +71,12 @@ export class DungeonAudio {
    }
    this.transport()
   } catch { this.dispose() /* Audio is optional when the browser has no device. */ }
+ }
+ private dynamics(ctx: AudioContext, settings: { threshold: number; knee: number; ratio: number; attack: number; release: number }) {
+  const node = ctx.createDynamicsCompressor()
+  node.threshold.value = settings.threshold; node.knee.value = settings.knee; node.ratio.value = settings.ratio
+  node.attack.value = settings.attack; node.release.value = settings.release
+  return node
  }
  setScene(scene: DungeonSoundscape) {
   const previous = this.scene
@@ -103,9 +112,9 @@ export class DungeonAudio {
   if (!ctx || ctx.state !== "running" || !this.visible || !this.masterVolume || this.scene.mood === "paused") return
   if ((bus === "effects" ? this.effectsVolume : this.musicVolume) === 0) return
   // Reserve headroom and voices for damage/casts; swarm chatter may be dropped.
-  const busLimit = bus === "effects" ? 20 : bus === "music" ? 22 : 2
+  const busLimit = bus === "effects" ? 30 : bus === "music" ? 24 : 2
   const fullBus = [...this.voices].filter(v => v.bus === bus).length >= busLimit
-  if (fullBus || this.voices.size >= 40) {
+  if (fullBus || this.voices.size >= 56) {
    const minor = [...this.voices].find(v => v.priority < priority && (!fullBus || v.bus === bus))
    if (!minor) return
    this.release(minor, true)
@@ -132,7 +141,7 @@ export class DungeonAudio {
   source.start(at); source.stop(at + duration + .02)
  }
  private note(midi: number, duration: number, level: number, at: number, type: OscillatorType = "triangle", pan = 0) {
-  this.sound(hz(midi), duration, level, "music", at, type, hz(midi), pan)
+  this.sound(hz(midi), duration, level * mixLevels.musicVoiceGain, "music", at, type, hz(midi), pan)
  }
  private schedule() {
   const ctx = this.context
@@ -140,10 +149,12 @@ export class DungeonAudio {
   // Never catch up missed bars after a throttled/background tab.
   if (this.nextBeat < ctx.currentTime) this.nextBeat = ctx.currentTime + .02
   while (this.nextBeat < ctx.currentTime + .14) {
-   const at = this.nextBeat, index = this.step % 16, bar = Math.floor(this.step / 16) % 8, root = roots[bar]!
+   const wanted = this.themeFor(this.scene)
+   if (wanted !== this.track && (this.step % 128 === 0 || (wanted === bossTrack && this.step % 16 === 0))) this.track = wanted
+   const track = this.track, at = this.nextBeat, index = this.step % 16, bar = Math.floor(this.step / 16) % 8, root = track.roots[bar]!
    const arena = this.scene.mood === "arena", quiet = this.scene.mood === "draft" || this.scene.mood === "dojo"
    this.intensity += ((arena ? Math.max(this.scene.boss ? 1 : this.scene.critical ? .75 : .2, this.scene.pressure ?? 0) : 0) - this.intensity) * .08
-   const energy = this.intensity, third = bar === 2 || bar === 3 || bar >= 6 ? 4 : 3
+   const energy = this.intensity, third = track.majorBars.includes(bar) ? 4 : 3
    if (index === 0) {
     for (const [n, offset] of [0, third, 7].entries()) this.note(root + 24 + offset, 1.75, quiet ? .018 : .028, at + n * .035, "sine", (n - 1) * .4)
     this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
@@ -151,8 +162,8 @@ export class DungeonAudio {
    if (index === 5 || index === 13) this.sound(1900, .04, .025, "ambience", at, "noise", 1900, index === 5 ? -.4 : .4)
    if (index % (quiet ? 8 : 4) === 0) this.note(root + (index === 12 ? 7 : 0), .32, quiet ? .08 : .16, at)
    if (index % 2 === 0 && this.scene.mood !== "draft") {
-    const n = melody[bar]![index / 2]!
-    if (n) this.note(n - (this.scene.mood === "title" ? 12 : 0), .3, this.scene.mood === "dojo" ? .025 : this.scene.critical ? .035 : .055, at, "triangle", index % 4 ? .22 : -.22)
+    const n = track.melody[bar]![index / 2]!
+    if (n) this.note(n - (this.scene.mood === "title" ? 12 : 0), .3, this.scene.mood === "dojo" ? .025 : this.scene.critical ? .035 : track.lead === "square" || track.lead === "sawtooth" ? .032 : .055, at, track.lead, index % 4 ? .22 : -.22)
    }
    if (arena && energy > .3 && index % 2 === 1) this.note(root + 24 + [0, 7, 12, third][Math.floor(index / 2) % 4]!, .12, .035 * energy, at, "triangle", -.3)
    if (arena) {
@@ -164,8 +175,14 @@ export class DungeonAudio {
      this.sound(88, .1, .14, "effects", at + .19, "triangle", 55, 0, 2)
     }
    }
-   this.step++; this.nextBeat += 60 / 112 / 4
+   this.step++; this.nextBeat += 60 / track.tempo / 4
   }
+ }
+ /** Title and calm moods use the title theme, boss fights the duel theme, runs one theme per depth. */
+ private themeFor(scene: DungeonSoundscape): MusicTrack {
+  if (scene.mood === "title" || scene.mood === "dojo") return titleTrack
+  if (scene.boss) return bossTrack
+  return depthTracks[(scene.depth ?? 0) % depthTracks.length]!
  }
  play(kind: string, pan = 0) {
   const ctx = this.context
@@ -176,11 +193,11 @@ export class DungeonAudio {
   if (kind.startsWith("enemy-")) { if (now - (this.cooldowns.get("enemy") ?? -10) < .65) return; this.cooldowns.set("enemy", now) }
   this.cooldowns.set(kind, now); this.variation++
   const pitch = [1, 1.035, .97, 1.015, .985][this.variation % 5]!, priority = kind === "hurt" || kind === "defeat" ? 4 : major ? 3 : kind === "tick" || kind.startsWith("enemy-") ? 0 : 1
-  const tone = (freq: number, duration: number, level: number, type: OscillatorType | "noise", end = freq, delay = 0) => this.sound(freq * pitch, duration, level, "effects", now + delay, type, end * pitch, pan, priority)
+  const tone = (freq: number, duration: number, level: number, type: OscillatorType | "noise", end = freq, delay = 0) => this.sound(freq * pitch, duration, level * mixLevels.effectsRecipeGain, "effects", now + delay, type, end * pitch, pan, priority)
   const chime = (notes: number[], level:number, spacing:number) => notes.forEach((n, i) => tone(hz(n), .3, level, "sine", hz(n), i * spacing))
   if (major && this.duck) {
    this.duck.gain.cancelScheduledValues(now); this.duck.gain.setValueAtTime(this.duck.gain.value, now)
-   this.duck.gain.linearRampToValueAtTime(.38, now + .025); this.duck.gain.setTargetAtTime(1, now + .12, .16)
+   this.duck.gain.linearRampToValueAtTime(mixLevels.duckTo, now + .025); this.duck.gain.setTargetAtTime(1, now + .12, .16)
   }
   if (hasSfxRecipe(kind)) { sfxRecipes[kind]!({ tone: (f, d, l, type, end = f, delay = 0) => tone(f, d, l, type, end, delay), chime }); return }
   switch (kind) {
@@ -244,8 +261,8 @@ export class DungeonAudio {
  }
  dispose() {
   this.disposed = true; this.suspend()
-  for (const node of [...Object.values(this.buses), this.duck, this.master, this.compressor]) node?.disconnect()
+  for (const node of [...Object.values(this.buses), this.duck, this.master, this.compressor, this.limiter]) node?.disconnect()
   if (this.context) void this.context.close().catch(() => {})
-  this.context = null; this.noise = null; this.buses = {}; this.duck = this.master = null; this.compressor = null
+  this.context = null; this.noise = null; this.buses = {}; this.duck = this.master = null; this.compressor = this.limiter = null
  }
 }
