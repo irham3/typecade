@@ -12,7 +12,7 @@ export function partyWorld(room:RaceRoomSnapshot|null,ownId:string|null,casting:
   const gap=room.combat?(room.combat.players[p.id]?.distance??0)-(room.combat.players[ownId??""]?.distance??0):p.cursor-(own?.cursor??0)
   const x=sprint?Math.max(-7,Math.min(7,gap*.4)):clash?Math.sin(index*Math.PI*2/order.length)*4:(index%2?-2:1)
   const z=sprint?(i-1.5)*1.8:clash?Math.cos(index*Math.PI*2/order.length)*4:(index<2?1:4)
-  return {id:p.id,name:p.name,x:x+focus.x,z,color:colors[index%4]!,hp:room.combat?.players[p.id]?.hp??100,action:action?.kind??"idle",actionAt:action?.at??0,target:action?.target??null,role:room.combat?.players[p.id]?.role??p.role??"dps"}
+  return {id:p.id,name:p.name,x:x+focus.x,z,color:colors[index%4]!,hp:room.combat?.players[p.id]?.hp??100,shield:room.combat?.players[p.id]?.shield??0,action:action?.kind??"idle",actionAt:action?.at??0,target:action?.target??null,role:room.combat?.players[p.id]?.role??p.role??"dps"}
  })
  const obstacles:NonNullable<PartyWorld["obstacles"]>=room.config.mode==="sprint"&&own?room.text.slice(own.cursor).split(" ").slice(0,6).map((word,i)=>({x:focus.x+2+i*2,z:-2.7,word,kind:["DODGE","LOMPAT"].includes(word)?"barrier" as const:["IGNITE","LEDAKKAN"].includes(word)?"barrel" as const:"goblin" as const})):[]
  const bossAction=room.combat?.actions.findLast(action=>action.kind==="boss-hit")

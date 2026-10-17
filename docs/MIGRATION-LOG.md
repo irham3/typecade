@@ -899,3 +899,51 @@ The user asked to pause testing and prioritize a lively, state-responsive soundt
 - Actual domain/party events now select differentiated player damage, swing/cleave, armor, creature/death, explosive, pickup/chest/magnet and skill cues. Small pitch variation, repeat cooldowns, panning, priority voice admission and music ducking keep feedback bounded under crowds.
 - Retained the existing saved master volume; added optional music/effects fields to the settings bridge and backward-compatible local settings. No run/account schema or dependency/asset download changes. Audio resources remain owned by the renderer lifecycle.
 - Caps and scheduling/mixing details are recorded in the art bible. The audio fixture and settings fixture were updated, but automated suites and the 900-active-second profile remain deferred by the user's explicit request. Final source compiles/builds; listening and hardware loudness/performance are not verified.
+
+
+## 2026-10-16 - Enemy patterns, visible supplies and coverage repair
+
+PR #8 merged into main at 9229079 under the user's explicit merge request while validation was pending. The later CI coverage failure was acknowledged; the user then requested current CI verification, superseding the earlier test deferral.
+
+- Added deterministic speed variation and steering, flying bats/hovering ranged mages, projectile line-of-sight/walls and committed minotaur charge/recovery with renderer-only flight/telegraphs.
+- Added four readable typed supply shapes and real shield/potion/mana/sentry effects, bounded tower attacks with active-word protection, equipment/status HUD, carried shield/orbitals and authoritative party shield display. Version-1 saves receive validated missing-field defaults, preserving existing language/progress.
+- New runs default to ID. Music bus rises by approximately 7.5 dB relative to the prior mix; existing mute/master/bus preferences remain intact.
+- Unchanged global coverage gates now pass at 100% in all four metrics, with 177 tests in 25 files. The prior coverage failure was repaired with meaningful audio/lifecycle, gameplay, restore validation and renderer/UI cases; no threshold or scope exclusion was added. See verification/dungeon-encounters-2026-10-16 for final checks and outstanding listening/hardware limitations.
+
+## 2026-10-17 - Exact-case skill and upgrade keywords
+
+Playtest report (Zaim): skill and level-up keywords are displayed in capitals, yet lowercase input activated them, unlike enemy and chest words.
+
+- Root cause: `SurvivalRun.commandKey` and the multiplayer skill dock uppercased each key before matching, while enemy, loot and passage input compared exact characters. Both normalizations were removed; the server already compared skill text exactly. `docs/game-design.md` already required exact shown capitalization, so no rule changed.
+- The ready dialog, draft eyebrow, skill dock and rejection notices now say to match case and to use Shift or Caps Lock. The on-screen keyboard gained a Caps Lock key and highlights the case change an expected capital needs instead of the lowercase key.
+- Audit: no CSS text-transform; the Press Start 2P pixel font has distinct lowercase glyphs; typing-engine, race passages and arena word bonuses compare exact text (arena uppercasing only classifies an already typed word).
+- Regression tests: lowercase skill and upgrade keywords are rejected in rules and in the multiplayer dock; Caps Lock and case highlighting on the pixel keyboard.
+- Current Windows source: 179 tests in 25 files pass with unchanged 100% statements (4270), branches (3875), functions (665) and lines (2328); production build, full ESLint and both TypeScript checks pass. E2E is running; the previous interrupted profile is not completion evidence.
+- Previous CI run 38908395817 passed coverage/build but failed 11 Firefox browser cases with the renderer reporting error; all Chromium/WebKit cases passed. Linux CI now runs the real headed browsers under Xvfb for Firefox WebGL, uploads browser failure evidence, and also validates pushes to main. The renderer assertions, test limits and coverage gates remain unchanged; final GitHub results must be read from PR #10.
+
+
+## 2026-10-17 - Boss combo continuity, combat attribution, visual dressing and local history
+
+The user found that boss typing ended mid-paragraph, upgrades interrupted encounters, and automatic damage/deaths were unclear. Replaced the phase timeout with a retaliation clock that preserves text/cursor; lethal health waits for the final combo character. Completed words guard brief counters. Bank draft choices until the boss falls and separate overlapping actors when armor breaks.
+
+Added damage-source events/captions and directed passive traces/cooldowns; authored stab/uppercut/slash and boss hammer poses; distinct resource/rank/level pickups; explicit chest +25G/+50XP; expanded bilingual enemy packs. Rotating ash/frost/verdant dressing, bounded landmark/weather batches, character details and a heraldic title menu retain existing draw/entity caps and Reduced Effects.
+
+Local browser history stores at most 50 Survival/Dojo/multiplayer records, updates resumed runs by identity and preserves older unrelated saves. Supabase work is postponed at the user's request: no DDL/Auth/database mutation was performed. Only read-only project/schema discovery occurred; no complete SQL dump is claimed.
+
+Six focused Chromium E2E cases passed, including a boss with one HP that survives a retaliation and remains active until the final paragraph letter. Full current-source checks/resource evidence are recorded when finished; previous 63-browser-test evidence belongs to the earlier source.
+
+Clean word strikes land outside contact range: 1 unit for final hits and objects, 2.2 for remaining armor, 3.5 for bosses. Heavy armor hits interrupt minotaur/boss attacks with one second of recovery. Candidate landing points must be walkable and connected to the target; blocked candidates rotate around the target, then retain the current player position if none is safe. Loot outside the normal pickup radius stays on the floor.
+
+Current-source local checks: 188 tests/27 files at unchanged 100% coverage (4495 statements, 4243 branches, 691 functions, 2433 lines); seven focused Chromium cases; lint, app/server types, build, zero-vulnerability audit, Worker dry-run and retirement/headless audits passed. Final CI and timed profile remain pending; see verification/dungeon-polish-2026-10-17.
+
+Indonesian command cleanup: UP-SAPU becomes SABET; supply/object commands stay alphabetic without synthetic prefixes. Corrected PERTAHAN, Kubuh, PELETUP and TEMUKAN loot wording. Mage/bomber punctuation remains an explicit enemy difficulty rule, separate from items. Existing save IDs/ranks are unchanged; only authored labels/keywords change.
+
+## 2026-10-17 - Active boss duel and breakable barricade
+
+User steering replaces the stationary paragraph presentation with actual boss pursuit, correct-letter knockback, typo rush, safe word sidesteps and close-range telegraphed attacks. Ordinary foes continue moving/attacking a 24-HP, radius-5.5 barricade, capped to one damage per 0.8 seconds; after breach they can hurt the player without clearing the text or opening drafts. Save version 1 receives a validated optional bossArena default; old saves and account/Auth data remain intact. Dark block weather becomes a smaller transparent plane batch anchored to world cells.
+
+The pre-duel source (production code 89828a6) completed 900 active seconds before this steering: zero deaths, 284876 bytes retained after six navigation cycles, normal render p95 18.7 ms on the recorded local hardware. Its report is preserved as verification/dungeon-polish-2026-10-17/profile-before-active-duel.json and is historical, not M14 verification.
+
+Final PR must target master, superseding the earlier main request. Commits remain separated by completed concern; final build/checks follow implementation.
+
+CI regression diagnosis: the four-player room renderer failed when Reduced Effects was already persisted before startup. Weather instance colors had never been allocated (zero instances), but startup still marked the null buffer for upload. Guarded empty weather/fence color buffers and added an initial-Reduced-Effects WebGL/party-projection regression. The earlier focus helper alone did not resolve this root cause. Coverage/assertions/time limits remain intact.

@@ -4,7 +4,7 @@ import { loadDungeonAccount, uploadDungeonCheckpoint } from "./dungeon-account"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 it("validates checkpoints and revisions, uses isolated tables and propagates conflicts",async()=>{
- const run=new SurvivalRun("cloud"),rpc=vi.fn(async()=>({data:2,error:null as unknown}))
+ const run=new SurvivalRun("cloud","en"),rpc=vi.fn(async()=>({data:2,error:null as unknown}))
  const client={rpc} as unknown as SupabaseClient
  expect(await uploadDungeonCheckpoint(client,run.serialize(),1,"<Knight>")).toBe(2)
  expect(rpc).toHaveBeenCalledWith("save_dungeon_checkpoint",expect.objectContaining({expected_revision:1,knight_name:"Knight"}))
@@ -14,7 +14,7 @@ it("validates checkpoints and revisions, uses isolated tables and propagates con
  rpc.mockResolvedValueOnce({data:0,error:null});await expect(uploadDungeonCheckpoint(client,run.serialize(),0,"")).rejects.toThrow("revision")
 })
 it("loads ownership-scoped saves, achievements and public reported records without touching older data",async()=>{
- const value={checkpoint:{save_data:JSON.parse(new SurvivalRun("load").serialize()),revision:1}},error=null as unknown
+ const value={checkpoint:{save_data:JSON.parse(new SurvivalRun("load","en").serialize()),revision:1}},error=null as unknown
  const query={select:vi.fn(()=>query),eq:vi.fn(()=>query),maybeSingle:vi.fn(async()=>({data:value.checkpoint,error})),then:(resolve:(v:unknown)=>void)=>resolve({data:[],error:null})}
  const from=vi.fn<(table:string)=>typeof query>().mockReturnValue(query),rpc=vi.fn(async()=>({data:[],error:null as unknown})),client={from,rpc} as unknown as SupabaseClient
  expect((await loadDungeonAccount(client,"own-id")).checkpoint?.revision).toBe(1)

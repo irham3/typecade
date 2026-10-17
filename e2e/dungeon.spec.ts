@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test"
 import { SurvivalRun } from "../packages/game-rules/src/survival"
 
 test("successive dashes keep varied reachable words available without an unexplained wait",async({page})=>{
- const run=new SurvivalRun("flow-e2e");run.start();run.state.time=run.state.worldTime=1
+ const run=new SurvivalRun("flow-e2e","en");run.start();run.state.time=run.state.worldTime=1
  await page.addInitScript(raw=>localStorage.setItem("typecade:dungeon:run:v1",raw),run.serialize())
- await page.goto("/");await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
+ await page.goto("/");await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-renderer-state","ready",{timeout:20000});await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
  const words:string[]=[]
  for(let i=0;i<20;i++){
   const draft=page.getByTestId("upgrade-keyword").first()
@@ -20,12 +20,12 @@ test("successive dashes keep varied reachable words available without an unexpla
 test("the dungeon shell, Dojo and combat remain usable across small viewports",async({page},info)=>{
  for(const [width,height] of [[320,640],[844,390],[768,1024]]){
   await page.setViewportSize({width,height});await page.goto("/")
-  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-renderer-state","ready")
-  await expect(page.getByRole("button",{name:"Enter the keep"})).toBeInViewport()
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-renderer-state","ready",{timeout:20000})
+  await expect(page.getByRole("button",{name:/^Start run/})).toBeInViewport()
   await page.screenshot({path:info.outputPath(`title-${width}.png`)})
   await page.getByRole("button",{name:"Typing Dojo"}).click();await expect(page.getByTestId("practice-screen")).toBeVisible()
   await page.screenshot({path:info.outputPath(`dojo-${width}.png`)})
-  await page.goto("/");await page.getByRole("button",{name:"Enter the keep"}).click();await page.getByRole("button",{name:"Begin run"}).click()
+  await page.goto("/");await page.getByRole("button",{name:/^Start run/}).click();await page.getByRole("button",{name:"Begin run"}).click()
   await expect(page.getByTestId("enemy-label")).toHaveCount(4)
   const labels=await page.getByTestId("enemy-label").evaluateAll(nodes=>nodes.map(node=>{const b=node.getBoundingClientRect();return {left:b.left,right:b.right,top:b.top,bottom:b.bottom}}))
   for(const [i,b] of labels.entries()){expect(b.left).toBeGreaterThanOrEqual(0);expect(b.right).toBeLessThanOrEqual(width);expect(b.bottom).toBeLessThanOrEqual(height);for(const a of labels.slice(i+1))expect(b.left<a.right&&b.right>a.left&&b.top<a.bottom&&b.bottom>a.top).toBe(false)}
@@ -36,10 +36,10 @@ test("the dungeon shell, Dojo and combat remain usable across small viewports",a
 test("a real dungeon run supports typing, dash, skill interruption, draft and paused resume",async({page},info)=>{
  await page.setViewportSize({width:1440,height:900})
  await page.goto('/')
- await expect(page.getByTestId('dungeon-canvas')).toHaveAttribute('data-renderer-state','ready')
- await expect(page.getByRole('heading',{name:'Every word. A fighting chance.'})).toBeVisible()
+ await expect(page.getByTestId('dungeon-canvas')).toHaveAttribute('data-renderer-state','ready',{timeout:20000})
+ await expect(page.getByRole('heading',{name:/TYPECADE/})).toBeVisible()
  await page.screenshot({path:info.outputPath('dungeon-title.png')})
- await page.getByRole('button',{name:'Enter the keep'}).click()
+ await page.getByRole('button',{name:/^Start run/}).click()
  await expect(page.getByRole('button',{name:'Begin run'})).toBeFocused()
  await page.keyboard.press('Enter')
  const input=page.getByTestId('dungeon-input')
@@ -50,7 +50,7 @@ test("a real dungeon run supports typing, dash, skill interruption, draft and pa
  await expect(page.locator('.enemy-label.locked')).toContainText(word)
  await page.keyboard.press('Tab')
  await expect(page.locator('.skill-dock')).toHaveClass(/casting/)
- await page.keyboard.type('CLEAVE')
+ await page.keyboard.type('SAPU')
  await expect(page.locator('.skill-dock')).not.toHaveClass(/casting/)
  await expect(page.locator('.enemy-label.locked .typed')).toHaveText(word[0]!)
  await page.keyboard.type(word.slice(1))

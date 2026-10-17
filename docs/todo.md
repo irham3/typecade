@@ -138,3 +138,113 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Differentiate hurt, strikes, armor, creature/death, explosive, loot, chest, heal, magnet, level, upgrade, victory and defeat feedback; duck music beneath major cues and bound repeating voices.
 - [x] Add compatible persisted master/music/effects controls; stop sources/scheduling when paused, muted, hidden or context-lost and dispose with the renderer.
 - [ ] Listening on headphones/speakers, current-source automated suites and timed resource profile. User explicitly deferred testing during this implementation; earlier coverage and partial E2E results do not verify the audio revision.
+
+
+## M11 - Enemy patterns, readable supplies, equipment and CI repair
+
+- [x] Merge checkpoint PR #8 into main through GitHub's normal merge endpoint at 9229079; CI was pending, not claimed passing.
+- [x] Add seeded speed variation, per-type steering, flying bats/hovering mages, ranged cast cues and committed minotaur charge/recovery telegraphs.
+- [x] Add typed shield/potion/mana/sentry supplies with distinct models/labels, real shield absorption, one timed attacking tower, visible equipment and compatible save defaults/validation.
+- [x] Default new solo vocabulary/selector to Indonesian and raise the music bus without overwriting saved mute/master preferences.
+- [x] Restore 100% statements/branches/functions/lines coverage without lowering thresholds: 177 tests, 25 files; see verification/dungeon-encounters-2026-10-16.
+- [x] Current-source lint, app/server TypeScript, build, dependency audit, headless/retirement audits and Worker dry-run.
+- [ ] Finish the 63-case browser matrix and confirm final GitHub validation; live evidence is on PR #10.
+- [ ] Timed 900-active-second hardware profile and headphone/speaker calibration remain deferred; do not infer hardware performance from CI.
+
+
+## M12 - Exact-case typing consistency, 2026-10-17
+
+- [x] Match skill, draft, enemy/item and passage input to the exact displayed case; remove silent command uppercasing in solo and multiplayer.
+- [x] Add Caps Lock and exact-case/modifier highlights to the existing on-screen keyboard; explain case in ready, draft and skill controls.
+- [x] EN/ID rule, multiplayer and keyboard regression checks; 179 tests/25 files at unchanged 100% global coverage, lint, both TypeScript checks and build pass locally.
+- [ ] Finish current-source browser checks and confirm GitHub validation after enabling an Xvfb display for Firefox WebGL on the Linux runner.
+
+
+## M13 - Boss continuity, readable combat and local history, 2026-10-17
+
+- [x] Preserve the full finite boss combo through ten-second retaliation cycles; gate lethal damage at the last letter and defer upgrade drafts until boss defeat.
+- [x] Add boss guard/counter feedback and safe separation, varied blade poses, directed passive attacks/cooldowns, real chest rewards and resource/level/rank popups.
+- [x] Expand authored EN/ID packs, character details, bounded weather/landmark dressing and the heraldic main menu.
+- [x] Add bounded local history for Survival, Dojo and real multiplayer rounds; retain save/account isolation.
+- [x] Focused real-browser boss/tutorial/gameplay checks: seven Chromium cases passed; earlier 63-case result belongs to the pre-polish source.
+- [x] Current-source local checks: 188 tests/27 files, unchanged 100% coverage, lint, app/server types, build, audit and Worker dry-run. See verification/dungeon-polish-2026-10-17.
+- [ ] Finish full browser CI and timed production resource evidence before claiming release verification.
+- [ ] Supabase backup, migrations, cloud history and leaderboard changes: explicitly postponed by the user until after non-Supabase work.
+
+## M14 - Active boss duel, barricade and natural Indonesian commands
+
+- [x] Replace artificial Indonesian item/upgrade commands and add an alphabetic command-pack invariant.
+- [x] Keep boss movement and horde siege active during paragraph input; correct-input retreat, typo rush, word sidestep, telegraphs and a real breakable protective fence preserve the entire line.
+- [x] Replace dark block weather with restrained world-anchored ash, leaves and snow; retain Reduced Effects and instance bounds.
+- [ ] Final current-source coverage, build, types/lint, browser matrix and timed production profile. The completed pre-duel profile is historical and does not verify M14.
+- [ ] Final PR title/body and target master, per the latest user instruction; preserve the existing branch and finish checks first.
+
+## M15 - Rhythm-based duel pressure, per-break barricade and Indonesian word review, 2026-10-17
+
+- [x] Correct duel letters add calm (0.55s each, cap 1.5s); while calm, the boss holds a 3.4-unit standoff outside hammer reach and cannot wind up. Hesitation drains calm; typos clear it and trigger the rush. Simulated hammer damage per duel: 40 WPM 1.10 -> 0.45, 30 WPM 3.05 -> 0.90; 15% typo rate still costs about 2.5.
+- [x] Each armor break raises a fresh barricade centred on the hero (fixes a stale wall position and inherited near-zero HP in later combos). Barricade HP 24 -> 30 (about 24-27s under sustained pressure); stakes topple progressively; HUD reads the balance constant.
+- [x] Replace non-standard Indonesian words (e.g. dobrakkan, LULUHLANTAK, GEMPAKAN, KELAMNYA, Angkuh, nokta). BLIZZARD stays as the GDD-defined ultimate keyword.
+- [x] 198 tests/27 files at 100% coverage, lint, both TypeScript checks and build pass locally.
+- [ ] Browser E2E (boss barricade timeout raised to 45s for the larger wall) and the timed production profile; deferred to the final test pass.
+
+## M16 - Bestiary expansion, place weather, controls sheet and onboarding, 2026-10-17
+
+- [x] Fifteen new combatants with distinct movement, attack style, speed, armor, XP, unlock time and depth favourites; models, gait, labels and audio cues.
+- [x] Fix black loot/embers/projectiles/telegraphs (missing vertex colour attribute); weather bound to the current depth with per-place motifs; HUD depth name matches.
+- [x] Keyboard controls sheet (title, ready, pause), before-run primer with opt-out, and a Backspace cancel lesson with animated visuals.
+- [x] Boss duel staged on open floor (no ruins inside the ring), items and shots cleared, horde kept outside the intact fence; BOSS INCOMING / BOSS DUEL banners.
+- [x] Boss lines are attributed quotations and peribahasa; everyday vocabulary pack mixed into enemy words.
+- [x] 206 tests/27 files at 100% coverage, lint, both TypeScript checks and build pass locally (Chromium headless for browser tests).
+- [ ] Playwright E2E matrix and timed production profile.
+
+## M17 - Spectacle pass: weapons, new foes, PBR environment, ornate UI, 2026-10-17
+
+- [x] Automatic weapons (Spirit Blades orbit, Arcane Nova, Meteor Rain, Frost Aura), ranks 1-5, in `packages/game-rules/src/weapons.ts` behind a `CombatPort`; first drafts lead with a weapon. Spawn table moved to `roster.ts` and driven by bestiary unlock times (new silhouette roughly every 30s from the first minute).
+- [x] Five new foes (Gargoyle, Mimic, Sporeling, Ghoul, Death Knight); guard redesigned as an Orc Warden so no large foe resembles the hero. Blueprint registry in `apps/web/src/game/models/`.
+- [x] Fatality on the final layer of armored foes (shockwave), whirlwind every 8th word; hero move set (slash, thrust, uppercut, twin, leap, whirl, finisher) with hit-stop, flash and zoom punch.
+- [x] Native three.js post chain (outline/grade, UnrealBloomPass, OutputPass), procedural albedo+normal textures, vertex-glow emissive parts, sun shadows, rim light; walk-through floor decor (bones, rubble, grass, glowshrooms, candles, crystals, puddles, cracks, runes).
+- [x] Cross shapes removed (title crest, heal glyph, shield, potion, banner, dummy, helmet).
+- [x] Bestiary with in-engine portraits; title screen, HUD, and all dialogs (pause, defeat, draft, settings, history, controls) restyled with an ornate frame system; SFX recipes and adaptive percussion.
+- [x] Push review: production build, web TypeScript, rooms TypeScript and scoped ESLint (`apps/web/src packages e2e`) passed on 2026-10-17; staged diffs checked for whitespace and new module imports.
+- [ ] Unit/browser/E2E tests, coverage and production profile were not rerun for M17 at the user's request to stop implementation and push; title markup/model snapshot compatibility and CI remain unverified.
+
+## M18 - Readability, varied ruins and wave director, 2026-10-17
+
+- [x] Contrast pass centralised in `apps/web/src/game/render/environmentGrade.ts`: darker low-noise floor/walls, bloom limited to light sources (threshold 0.92), no grade lift, lower emission, stronger silhouette outline and contact shadows; fatality uses an impact-focus dim instead of a white flash.
+- [x] `packages/game-rules/src/terrain.ts`: seeded per-slot ruin archetypes (keep wall, broken arch, watchtower, shrine, palisade, crypt) with their own footprints, ~32% open slots; collision, pathing and rendering (`scene/RuinBuilder.ts`) share it. Footprints are subsets of the legacy rectangle, so old saves stay valid.
+- [x] `packages/game-rules/src/director.ts`: opening, then 60s cycles of build-up, surge (themed pack from one direction, faster spawns, +6 threat cap, 15% haste) and breather; an elite leads every third surge. Speed curve retuned (base 0.37, growth capped at +70% plus depth step).
+- [x] New committed attacks for skeleton, goblin, slime, bat and spider after their unlock times; veteran archers fire three-arrow fans. `scene/EnemyMotion.ts` adds anticipation/charge/leap/dive/slam poses; HUD wave chip and SURGE banner.
+- [ ] Tests, lint, typecheck and production profile not run (per request).
+
+## M19 - Targeted effects, enemy voices and music themes, 2026-10-17
+
+- [x] Every damage source draws on its target: chain lightning and sentry use jagged caster→target arcs (`zap`), Storm drops a sky bolt on each struck enemy, weapons/cleave/explosions leave source-coloured impact bursts (`vfx/signatureEffects.ts`, `hitMarkers` in the scene).
+- [x] `audio/enemyVoices.ts`: arrival call and death cry per kind (skeleton rattle, ghoul groan, spider skitter, wolf howl, …); kill confirm and elite kill; layered explosion (sub, crack, rumble, debris) and thunder; surge horn and breather chime.
+- [x] `audio/musicTracks.ts`: five depth themes plus title and boss duel themes with their own key, tempo and lead; switches on phrase boundaries (boss cuts in on the next bar).
+- [x] `gradeBiome` normalises each depth's floor and fog luminance so the contrast grade holds as depths change.
+- [ ] Tests, lint, typecheck and production profile not run (per request).
+
+## M20 - Audible mix and title layout, 2026-10-17
+
+- [x] Gain staging in `apps/web/src/game/audio/mixLevels.ts` (default volume 0.7, effect and music voice make-up gain, glue compressor + limiter). Saved settings without `mix: 2` are lifted to the new default once; an explicit mute is kept. Measured at the limiter output in Chromium: combat RMS peaks about -12.5 dB, true peak about -1.2 dB, music bed about -28.7 dB (was about -41 dB).
+- [x] Title menu fills the space between nav and footer (no overlap at 1280×640, 1366×768, 1920×1080); language and controls moved to the footer; duplicate nav wordmark and decorative depth card removed.
+- [x] Plain copy for menu, dialogs, settings and bestiary in place of dramatic filler.
+- [ ] Tests, lint, typecheck and production profile not run (per request). Copy changes will break text-based assertions in existing tests.
+
+Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript (`npx tsc --noEmit`) and staged whitespace checks passed for M18-M20. Full tests, coverage, lint, server TypeScript, E2E and the timed profile were not rerun during this push-only checkpoint.
+
+## M21 - Clean surge audio, distinct kill sounds, build pressure, modal scrolling, 2026-10-17
+
+- [x] Audio: new `sweep` voice primitive (one oscillator, pitch glide, LFO vibrato, soft attack) replaces chopped multi-note glides that clicked when a surge pack called at once; surge cue is a soft two-voice horn with drum hits and ducks music. Death cries ×1.9 with a quiet kill tick, so each kind's death is what you hear. Measured at the limiter during a surge: avg -18.4 dB, peak -0.9 dB.
+- [x] Build-scaled pressure (`director.pressureFor`, `buildPowerScore`): weapons/relics/skills raise threat cap, spawn rate, haste and the chance of an extra armor word on regular foes; mid-game spawn intervals tightened. Headless probe (scripted typist, 3 seeds, 7 min): 40 WPM survives ~4 min, 60 WPM needs heals from ~5 min, 90 WPM takes hits from ~6 min.
+- [x] Dialogs: frame no longer scrolls (decorations caused 4 px overflow and scrollbars on every modal); content lives in `.dialog-body`, which scrolls only when needed; Bestiary has a single scroll area with a pinned close button.
+- [ ] Tests, lint, typecheck and production profile not run (per request).
+
+
+## M22 - Verification and merge checkpoint, 2026-10-17
+
+- [x] Reviewed and split current changes into Conventional Commits for combat pressure/caps, compact label metadata and dialog focus/scrolling, continuous enemy audio, limb batching/adaptive rendering, browser regression coverage and CI triggers.
+- [x] Current-source lint, web TypeScript, rooms TypeScript, production build, zero-vulnerability npm audit, Worker dry-run and retirement/headless audits passed locally. Audit matches were vocabulary, compatibility save keys and test fixtures; no retired renderer dependency or gameplay DOM/RNG violation was found.
+- [x] 230 unit/browser tests passed in the latest completed coverage run. Lines/functions reached 100%; the remaining restorative-draft statement/two branches now have a regression that exhausts weapon/relic ranks. A fresh full coverage run is in progress; no threshold was lowered.
+- [ ] Complete the fresh coverage run, cross-browser E2E and 900-active-second production profile. An initial Chromium tutorial assertion expected 7 lessons instead of 8; its fixture is corrected and needs rerun. Other completed initial Chromium scenarios passed. Do not treat running checks as successful evidence.
+- [ ] Confirm GitHub CI on the merged master commit. The user requested PR creation and merge before the remaining verification finishes. Supabase backup/schema work remains deferred; no database/Auth changes are part of this checkpoint.

@@ -43,3 +43,11 @@ Performance targets and fallback policy are in [art bible](art-bible.md). Profil
 ## Out of this implementation sequence
 
 Steam/Tauri/Electron packaging, monetization, ranked matchmaking seasons and new analytics services have no implementation gate here. Global public ranking is part of the final account integration gate and requires separate validated dungeon result storage; never reuse trusted Ocean XP or claim offline browser scores are authoritative.
+
+## Active boss duel acceptance — 2026-10-17 steering
+
+- Paragraph input keeps boss and horde simulation alive. Correct letters visibly push the boss back; a typo creates a bounded rush; completed words drive safe sidesteps and guard. Hammer attacks have a visible committed windup and real range/cooldown.
+- A visible wooden barricade with actual HP protects the paragraph duel from non-boss contact/projectiles. Assailants move and attack it. Sustained pressure can breach it; breach preserves text/cursor and exposes the player to the horde. Upgrade drafts remain banked until the boss falls.
+- Indonesian item/upgrade commands are natural alphabetic words with exact displayed case. Explicit enemy symbol/digit difficulty stays separate.
+- Environmental ash/snow/leaves use restrained world-anchored flat shapes, never dark falling balls; Reduced Effects removes them.
+- Preserve bounded pools, compatible checkpoints, keyboard-only play and unchanged 100% coverage. Final PR targets master; Supabase remains postponed.

@@ -1,29 +1,46 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { CSSProperties, ReactNode } from "react"
-import type { DungeonEvents, DungeonLanguage, RelicId, SkillId } from "@typecade/contracts"
-import { dungeonBiomes, dungeonUpgrades, skillRules } from "@typecade/content"
-import { SurvivalRun, runAccuracy, runWpm, xpThreshold } from "@typecade/game-rules"
+import type { CSSProperties } from "react"
+import type { DungeonEvents, DungeonLanguage, SkillId } from "@typecade/contracts"
+import { bossPassages, bossPassageSources, combatLessons, dungeonBalance, dungeonBiomes, skillRules } from "@typecade/content"
+import { SurvivalRun, waveAt } from "@typecade/game-rules"
 import { useSurvivalRun } from "./hooks/useSurvivalRun"
 import { useCombatLesson } from "./hooks/useCombatLesson"
 import { PracticeScreen } from "./practice/PracticeScreen"
 import { PracticeKeyboard } from "./practice/PracticeKeyboard"
 import { RaceScreen } from "./multiplayer/RaceScreen"
 import { TypingInput, TypingPassage } from "./TypingField"
+import { CombatFeedback } from "./dungeon/CombatFeedback"
 import { TargetLabels } from "./dungeon/TargetLabels"
 import { Glyph } from "./dungeon/Glyph"
+import { ControlsGuide, HowToPlay, LessonVisual } from "./dungeon/ControlsGuide"
 import { PartyLabels } from "./dungeon/PartyLabels"
+import { DungeonDialog } from "./dungeon/ui/DungeonDialog"
+import { MIX_VERSION, mixLevels } from "./game/audio/mixLevels"
+import { TitleScreen } from "./dungeon/TitleScreen"
+import { BuildStrip, RunHud } from "./dungeon/RunHud"
+import { DefeatDialog, DraftDialog, PauseDialog } from "./dungeon/RunDialogs"
+import { Bestiary } from "./dungeon/Bestiary"
+
+export { DungeonDialog }
 import { partyWorld } from "./dungeon/party-world"
 import type { RaceRoomSnapshot } from "@typecade/race-rules"
+import { readRunHistory } from "./run-history"
 import { readStorage, writeStorage } from "./storage"
 import { getAccountClient } from "./account/client"
 import { achievementNames, loadDungeonAccount, uploadDungeonCheckpoint } from "./account/dungeon-account"
 import type { User } from "@supabase/supabase-js"
 type Screen = DungeonEvents["screen"]
-interface Settings { reduced: boolean; volume: number; music: number; effects: number; keyboard: boolean }
+interface Settings { reduced: boolean; volume: number; music: number; effects: number; keyboard: boolean; mix: number }
 const settingsKey = "typecade:dungeon:settings:v1"
+const introKey = "typecade:dungeon:intro-hidden:v1"
+/** Saves from the old quiet mix (no `mix` version) are lifted to the new default once; an explicit mute is kept. */
+function migratedVolume(saved: { volume?: unknown; mix?: unknown } | null) {
+ const volume=typeof saved?.volume==="number"&&saved.volume>=0&&saved.volume<=1?saved.volume:mixLevels.defaultVolume
+ return saved?.mix===MIX_VERSION||volume===0?volume:Math.max(volume,mixLevels.defaultVolume)
+}
 function loadSettings(): Settings {
- try { const s=JSON.parse(readStorage("localStorage",settingsKey)??"null");return {reduced:typeof s?.reduced==="boolean"?s.reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,volume:typeof s?.volume==="number"&&s.volume>=0&&s.volume<=1?s.volume:.28,music:typeof s?.music==="number"&&s.music>=0&&s.music<=1?s.music:.7,effects:typeof s?.effects==="number"&&s.effects>=0&&s.effects<=1?s.effects:1,keyboard:s?.keyboard===true} }
- catch { return {reduced:false,volume:.28,music:.7,effects:1,keyboard:false} }
+ try { const s=JSON.parse(readStorage("localStorage",settingsKey)??"null");return {reduced:typeof s?.reduced==="boolean"?s.reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,volume:migratedVolume(s),music:typeof s?.music==="number"&&s.music>=0&&s.music<=1?s.music:.85,effects:typeof s?.effects==="number"&&s.effects>=0&&s.effects<=1?s.effects:1,keyboard:s?.keyboard===true,mix:MIX_VERSION} }
+ catch { return {reduced:false,volume:mixLevels.defaultVolume,music:.85,effects:1,keyboard:false,mix:MIX_VERSION} }
 }
 export const runTime = (seconds:number) => `${Math.floor(seconds/60).toString().padStart(2,"0")}:${Math.floor(seconds%60).toString().padStart(2,"0")}`
 export function App() {
@@ -31,10 +48,13 @@ export function App() {
  const [screen,setScreen]=useState<Screen>(()=>new URLSearchParams(location.search).has("race")?"multiplayer":"title")
  const [renderer,setRenderer]=useState<"loading"|"ready"|"lost"|"error">("loading")
  const [attempt,setAttempt]=useState(0), [settings,setSettings]=useState(loadSettings)
- const [panel,setPanel]=useState<"settings"|"account"|null>(null)
+ const [panel,setPanel]=useState<"settings"|"account"|"history"|"controls"|"howto"|"bestiary"|null>(null)
+ const [introHidden,setIntroHidden]=useState(()=>readStorage("localStorage",introKey)==="1")
+ const hideIntro=(hidden:boolean)=>{setIntroHidden(hidden);writeStorage("localStorage",introKey,hidden?"1":"0")}
+ const [skipIntro,setSkipIntro]=useState(false)
  const [attract]=useState(()=>new SurvivalRun("castle-title"))
  const savedRun=useSurvivalRun(screen==="endless"&&renderer==="ready")
- const [language,setLanguage]=useState<DungeonLanguage>(savedRun.view.language)
+ const [language,setLanguage]=useState<DungeonLanguage>("id")
  const lesson=useCombatLesson(screen==="tutorial",language,savedRun.bridge)
  const run=screen==="tutorial"?{...savedRun,view:lesson.view,input:lesson.input,pause:lesson.pause,resume:lesson.resume}:savedRun
  const {view,bridge,pause}=run
@@ -59,41 +79,30 @@ export function App() {
  const type=(key:string)=>{run.input(key)}
  const castMode=()=>{if(view.phase==="arena")type("Tab");inputRef.current?.focus()}
  const boss=view.enemies.find(e=>e.id===view.boss)
+ // Remounting on each boss arrival or duel replays the CSS announcement; it fades out on its own.
+ const banner=screen==="endless"&&view.boss!==null?view.phase==="overdrive"?{key:`duel:${view.boss}:${view.paragraph}`,title:"BOSS DUEL",detail:"Type the full passage to finish the boss"}:{key:`boss:${view.boss}`,title:"BOSS INCOMING",detail:"Obsidian Minotaur · break its armor to start the duel"}:surgeBanner(screen==="endless",view.time,view.notice)
  const train=useCallback((correct:number,words:number,errors:number)=>bridge.emit("training",{correct,words,errors}),[bridge])
  const party=useCallback((room:RaceRoomSnapshot|null,own:string|null,casting:boolean)=>bridge.emit("party",partyWorld(room,own,casting)),[bridge])
  const phase=view.phase
  return <main className={`dungeon-app scene-${screen}`} data-testid="dungeon-shell" data-reduced-effects={settings.reduced}>
   <div className="dungeon-canvas" ref={host} data-testid="dungeon-canvas" data-renderer-state={renderer} data-draw-calls={stats.calls} data-geometries={stats.geometries} data-textures={stats.textures}/>
   <div className="scene-shade" aria-hidden="true"/>
-  {screen==="title"&&<>
-   <header className="title-nav"><a href="#" className="wordmark" onClick={e=>e.preventDefault()}>TYPECADE<span>THE RUINED KEEP</span></a><div><button className="quiet" onClick={()=>setPanel("account")}>Account</button><button className="icon-button" aria-label="Settings" onClick={()=>setPanel("settings")}><Glyph name="gear"/></button></div></header>
-   <section className="title-menu">
-    <span className="eyebrow"><i/> A TYPING ROGUELIKE</span>
-    <h1>Every word.<br/><span>A fighting chance.</span></h1>
-    <p>The keep has no end. Your blade follows your words.<br className="desktop-break"/> Build your strength. Hold back the dark.</p>
-    <div className="title-actions"><button className="start-button" autoFocus onClick={fresh}><Glyph name="sword"/><span>Enter the keep<small>ENDLESS SURVIVAL</small></span><kbd>↵</kbd></button>
-     {view.time>0&&phase!=="dead"&&<button className="continue-button" onClick={()=>setScreen("endless")}>Continue run <span>LV {view.level} · {runTime(view.time)}</span></button>}
-     <div className="secondary-modes"><button onClick={()=>setScreen("dojo")}><Glyph name="book"/>Typing Dojo</button><button onClick={()=>setScreen("multiplayer")}><Glyph name="flag"/>Multiplayer</button><button className="tutorial-entry" onClick={()=>tutorial("title")}><Glyph name="shield"/>Combat tutorial <small>TRY / SKIP ANYTIME</small></button></div>
-    </div>
-    <label className="title-language">Word language <select aria-label="Word language" value={language} onChange={e=>setLanguage(e.target.value as DungeonLanguage)}><option value="en">English</option><option value="id">Bahasa Indonesia</option></select></label>
-    <div className="title-footnote"><kbd>TYPE</kbd> to strike <span>·</span><kbd>TAB</kbd> to cast <span>·</span> no movement keys</div>
-   </section>
-   <aside className="title-world-note"><span>DEPTH 01</span><strong>The Ashen Courtyard</strong><small>A blue blade against the endless.</small></aside>
-   <footer className="title-footer"><span>LOCAL BEST <strong>{runTime(run.best)}</strong></span><span>EN / ID <i/> KEYBOARD FIRST <i/> SOLO + PARTY</span><button className="quiet" onClick={()=>setSettings({...settings,volume:settings.volume?0:.28})}>{settings.volume?"Sound on":"Sound off"}</button></footer>
-  </>}
+  {screen==="title"&&<TitleScreen language={language} onLanguage={setLanguage} onStart={fresh} onContinue={view.time>0&&phase!=="dead"?()=>setScreen("endless"):null} continueLabel={`LV ${view.level} · ${runTime(view.time)}`} onDojo={()=>setScreen("dojo")} onMultiplayer={()=>setScreen("multiplayer")} onTutorial={()=>tutorial("title")} onPanel={setPanel} bestTime={runTime(run.best)} soundOn={settings.volume>0} onToggleSound={()=>setSettings({...settings,volume:settings.volume?0:mixLevels.defaultVolume})}/>}
   {(screen==="endless"||screen==="tutorial")&&<>
-   <header className="run-hud">
-    <section className="combat-metrics"><div className="hud-topline"><button aria-label="Pause game" className="pause-button" onClick={run.pause}>Ⅱ</button><span title={dungeonBiomes[view.biome%dungeonBiomes.length]!.name}>DEPTH {String(view.biome+1).padStart(2,"0")}</span><strong>{runTime(view.time)}</strong></div><div className="metric-values"><span><b>{runWpm(view)}</b> WPM</span><span><b>{runAccuracy(view)}%</b> ACC</span><span className={view.streak>=50?"streak-hot":""}><b>{view.streak}×</b> STREAK</span></div></section>
-    <section className="vitals" aria-label="Player status"><div className="health-row"><span>HP</span><div className="hearts" aria-label={`${view.player.hp} of ${view.player.maxHp} hearts`}>{Array.from({length:view.player.maxHp},(_,i)=><i key={i} className={i<view.player.hp?"filled":""}/>)}</div><strong>{view.gold}g</strong></div><div className="resource-row"><span>MP</span><meter min="0" max="100" value={view.player.mana} aria-label="Mana"/><small>{Math.floor(view.player.mana)}</small></div><div className="resource-row xp-row"><span>LV {view.level}</span><progress max={xpThreshold(view.level)} value={view.xp} aria-label="Experience"/><small>{view.xp}/{xpThreshold(view.level)}</small></div></section>
-   </header>
-   {screen==="tutorial"&&<section className="lesson-panel pixel-panel" aria-label="Combat tutorial"><header><span>SAFE TRAINING · {lesson.step+1}/7</span><button onClick={leave}>Skip tutorial</button></header><h2>{lesson.lesson.title}</h2><p>{lesson.complete?lesson.lesson.success:lesson.lesson.help.replace("HEAL",skillRules.heal[language]).replace("STORM",skillRules.storm[language])}</p>{lesson.complete&&(lesson.step<6?<button className="primary-action" onClick={()=>{lesson.next();inputRef.current?.focus()}}>Next lesson · Enter</button>:<button className="primary-action" onClick={leave}>Finish tutorial</button>)}</section>}
+   <RunHud view={view} onPause={run.pause}/>
+   <BuildStrip view={view}/>
+   {screen==="tutorial"&&<section className="lesson-panel pixel-panel" aria-label="Combat tutorial"><header><span>SAFE TRAINING · {lesson.step+1}/{combatLessons.length}</span><button onClick={leave}>Skip tutorial</button></header><h2>{lesson.lesson.title}</h2><LessonVisual kind={lesson.lesson.id} language={language}/><p>{lesson.complete?lesson.lesson.success:lesson.lesson.help.replace("HEAL",skillRules.heal[language]).replace("STORM",skillRules.storm[language])}</p>{lesson.complete&&(lesson.step<combatLessons.length-1?<button className="primary-action" onClick={()=>{lesson.next();inputRef.current?.focus()}}>Next lesson · Enter</button>:<button className="primary-action" onClick={leave}>Finish tutorial</button>)}</section>}
+   <CombatFeedback view={view} bridge={bridge}/>
    {view.effects.filter(fx=>fx.kind==="hit"&&fx.value<0).slice(-1).map(fx=><div key={fx.id} className="damage-response" aria-hidden="true"><span>-{Math.abs(fx.value)} HP</span></div>)}
-   {view.notice.includes(" acquired.")&&<aside key={`${view.level}:${view.notice}`} className="upgrade-acquired" aria-hidden="true"><Glyph name="gem"/><span>UPGRADE ACTIVE<strong>{view.notice}</strong></span></aside>}
-   {boss&&<div className="boss-hud"><strong>OBSIDIAN MINOTAUR</strong><progress max={boss.maxHealth} value={Math.max(0,boss.health)} aria-label="Boss health"/><small>{phase==="overdrive"?`ARMOR BREAK · ${view.stagger.toFixed(1)}s`:`ARMOR ×${boss.words.length}`}</small></div>}
+   {view.notice.includes(" acquired.")&&<aside key={`${view.level}:${view.notice}`} className="upgrade-acquired" aria-hidden="true"><Glyph name="gem"/><span>{view.notice.includes("Rank ")?"UPGRADE ACTIVE":"SUPPLY COLLECTED"}<strong>{view.notice}</strong></span></aside>}
+   <div className="depth-weather" aria-hidden="true">{dungeonBiomes[view.biome%dungeonBiomes.length]!.name}</div>
+   {banner&&<div key={banner.key} className="boss-banner" role="status"><strong>{banner.title}</strong><span>{banner.detail}</span></div>}
+   {boss&&<div className="boss-hud"><strong>OBSIDIAN MINOTAUR</strong><progress max={boss.maxHealth} value={Math.max(0,boss.health)} aria-label="Boss health"/><small>{phase==="overdrive"?`COMBO ${view.cursor}/${view.paragraph.length} · ${boss.motion==="windup"?"HAMMER WINDUP":view.bossArena?.rage?"BOSS RUSH":"KEEP YOUR DISTANCE"}`:`ARMOR ×${boss.words.length}${view.pendingDrafts?" · UPGRADES BANKED":""}`}</small></div>}
    {["arena","skills"].includes(phase)&&<TargetLabels view={view} bridge={bridge} tutorial={screen==="tutorial"}/>}
    {active&&phase!=="draft"&&<div className="run-input-owner" onKeyDownCapture={e=>{if(e.key==="Tab"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&["arena","skills"].includes(phase)){e.preventDefault();e.stopPropagation();if(!e.repeat)type("Tab")}}}><TypingInput inputRef={inputRef} label="Dungeon typing input" testId="dungeon-input" onType={type} onEscape={()=>type("Escape")} inputMode={settings.keyboard?"none":undefined}/></div>}
    {["arena","skills"].includes(phase)&&<footer className={`skill-dock ${phase==="skills"?"casting":""}`}>
-    <p className="skill-mode-hint">{phase==="skills"?"TIME SLOWED · TYPE A SKILL · TAB TO CANCEL":view.queue.length===0?screen==="tutorial"?"SAFE TRAINING - FOLLOW THE LESSON":"REINFORCEMENTS APPROACHING · HOLD YOUR GROUND":"TYPE AN ENEMY WORD TO DASH · TAB FOR SKILLS"}</p>
+    <button type="button" className="skill-key-hint" onClick={()=>{type("Tab");inputRef.current?.focus()}} aria-label={phase==="skills"?"Press Tab to go back":"Press Tab to use skills"}><kbd>TAB</kbd><span>{phase==="skills"?"Back":"Skills"}</span></button>
+    <p className="skill-mode-hint">{phase==="skills"?"Time slowed · type a skill name":view.queue.length===0?screen==="tutorial"?"Follow the lesson":"More enemies incoming":"Type an enemy's word to attack"}</p>
     <div className="skill-cards">{(["cleave","storm","heal"] as SkillId[]).map((id,i)=>{
      const skill=view.skills[id], rules=skillRules[id], word=rules[view.language], typed=phase==="skills"&&word.startsWith(view.command)?view.command.length:0
      const cost=Math.max(10,rules.cost-(skill.level-1)*5), blocked=skill.cooldown>0||view.player.mana<cost||id==="heal"&&view.player.hp===view.player.maxHp
@@ -101,24 +110,24 @@ export function App() {
     })}</div>
     <p className="run-notice" role="status">{view.notice}</p>
    </footer>}
-   {phase==="overdrive"&&<section className="boss-overdrive pixel-panel"><header><strong>ARMOR BREAK</strong><span>{view.stagger.toFixed(1)}s · EVERY LETTER STRIKES</span></header><TypingPassage text={view.paragraph} cursor={view.cursor} rollingLines={2} className="boss-passage" testId="boss-passage" fontSize={24} monospace/></section>}
+   {phase==="overdrive"&&<section className="boss-overdrive pixel-panel"><header><strong>BREAK COMBO · FINISH THE LINE</strong><span>{view.bossArena?.hp?`BARRICADE ${view.bossArena.hp}/${dungeonBalance.barrierHp}`:"HORDE CAN REACH YOU"} · {view.cursor}/{view.paragraph.length}</span></header><p className="boss-instruction">Steady typing holds the boss back; pausing lets it close in and typos make it rush. Finish words to sidestep and guard; the horde is attacking your barricade.</p>{view.bossArena&&<div className={`barricade-status ${view.bossArena.hp===0?"breached":""}`}><Glyph name="shield"/><span>{view.bossArena.hp>0?"BARRICADE · HOLD THE LINE":"BREACHED · THE HORDE IS INSIDE"}</span><progress aria-label="Barricade health" max={dungeonBalance.barrierHp} value={view.bossArena.hp}/><strong>{view.bossArena.hp}/{dungeonBalance.barrierHp}</strong></div>}<TypingPassage text={view.paragraph} cursor={view.cursor} rollingLines={2} className="boss-passage" testId="boss-passage" fontSize={24} monospace/>{quoteSource(view.language,view.paragraph)&&<small className="boss-source">— {quoteSource(view.language,view.paragraph)}</small>}</section>}
    {settings.keyboard&&active&&phase!=="draft"&&<div className="combat-keyboard"><PracticeKeyboard onKey={key=>{type(key);inputRef.current?.focus()}}/><button onClick={castMode}>Tab · Skills</button></div>}
-   {phase==="ready"&&!panel&&renderer==="ready"&&<DungeonDialog title="The keep is listening." className="ready-dialog" onCancel={leave}><span className="eyebrow">ENDLESS SURVIVAL · {view.language.toUpperCase()}</span><p>Type a word above a foe to dash and strike. Build a run from fallen enemies. There is no final floor.</p><ul className="control-list"><li><kbd>TYPE</kbd><span>Finish a word. Your blade does the rest.</span></li><li><kbd>TAB</kbd><span>Slow time and type a skill.</span></li><li><kbd>ESC</kbd><span>Pause safely. Backspace cancels a target.</span></li></ul><button className="primary-action" autoFocus onClick={run.start}>Begin run</button><button onClick={()=>tutorial("endless")}>Try combat tutorial</button><button className="quiet" onClick={leave}>Back to title</button></DungeonDialog>}
-   {phase==="paused"&&!panel&&renderer==="ready"&&<DungeonDialog title="Take a breath." onCancel={run.resume}><span className="eyebrow">RUN PAUSED · INPUT SAVED</span><p>Depth {view.biome+1} · Level {view.level} · {runTime(view.time)}</p><button className="primary-action" autoFocus onClick={run.resume}>Resume run</button><button onClick={()=>setPanel("settings")}>Settings</button><button className="quiet" onClick={leave}>{screen==="tutorial"?"Exit tutorial":"Save and return to title"}</button></DungeonDialog>}
-   {phase==="draft"&&!panel&&renderer==="ready"&&<DungeonDialog title={view.legendaryDrafts?"A relic from the fallen.":`Level ${view.level}. Choose your edge.`} className="draft-dialog" onCancel={run.pause}><span className="eyebrow">{view.legendaryDrafts?"BOSS RELIC · TYPE TO PICK":"TIME FROZEN · TYPE TO PICK"}</span><div className="upgrade-cards">{view.offers.map(id=>{const offer=dungeonUpgrades[id],rank=id in view.skills?view.skills[id as SkillId].level:view.relics[id as RelicId],word=offer[view.language],count=word.startsWith(view.command)?view.command.length:0;return <article key={id} className="upgrade-card"><Glyph name={id==="heal"?"heal":id==="storm"||id==="lightning"?"storm":id==="magnet"?"gem":"sword"}/><h3>{offer.name}</h3><small>{rank>=offer.max?"MAX RANK · RESTORE":`RANK ${rank} → ${rank+1}`}</small><p>{offer.description}</p><strong data-testid="upgrade-keyword"><span className="typed">{word.slice(0,count)}</span>{word.slice(count)}</strong></article>})}</div><TypingInput inputRef={inputRef} label="Upgrade typing input" onType={type} onEscape={run.pause}/><p className="run-notice">{view.notice}</p></DungeonDialog>}
-   {phase==="dead"&&!panel&&<DungeonDialog title="The keep remembers." onCancel={leave}><span className="eyebrow">RUN ENDED · ANOTHER BLADE WILL RISE</span><div className="result-values"><div><b>{runTime(view.time)}</b><span>SURVIVED</span></div><div><b>{view.level}</b><span>LEVEL</span></div><div><b>{view.kills}</b><span>DEFEATED</span></div></div><p>{runWpm(view)} WPM · {runAccuracy(view)}% accuracy · {view.gold} gold</p><p className="result-build" aria-label="Run build">Cleave {view.skills.cleave.level} · Storm {view.skills.storm.level} · Heal {view.skills.heal.level}{Object.entries(view.relics).filter(([,level])=>level>0).map(([id])=><span key={id}>{dungeonUpgrades[id as keyof typeof dungeonUpgrades].name}</span>)}</p><p className="muted">Local best {runTime(run.best)} · Your temporary build resets for the next run.</p><button className="primary-action" autoFocus onClick={fresh}>Try another run</button><button className="quiet" onClick={leave}>Return to title</button></DungeonDialog>}
-   {renderer!=="ready"&&<DungeonDialog title={renderer==="loading"?"Opening the keep…":"The scene needs a moment."} onCancel={leave}><p role="status">{renderer==="loading"?"Preparing the dungeon. The run clock is stopped.":"Your run is paused and saved. Restore the scene to continue."}</p>{renderer!=="loading"&&<button className="primary-action" onClick={()=>{setRenderer("loading");setAttempt(n=>n+1)}}>Restore scene</button>}<button onClick={leave}>Return to title</button></DungeonDialog>}
+   {phase==="ready"&&!panel&&renderer==="ready"&&screen==="endless"&&!introHidden&&<DungeonDialog title="How to play" className="howto-dialog" onCancel={leave}><span className="eyebrow">QUICK GUIDE</span><HowToPlay language={view.language}/><label className="intro-optout"><input type="checkbox" checked={skipIntro} onChange={e=>setSkipIntro(e.target.checked)}/><span>Do not show this before runs<small>You can reopen it from the ready screen.</small></span></label><button className="primary-action" autoFocus onClick={()=>{if(skipIntro)hideIntro(true);else setIntroHidden(true);run.start()}}>Begin run</button><button onClick={()=>{if(skipIntro)hideIntro(true);else setIntroHidden(true);tutorial("endless")}}>Play the interactive tutorial</button><div className="dialog-links"><button className="quiet" onClick={()=>setPanel("controls")}>Keyboard controls</button><button className="quiet" onClick={leave}>Back to title</button></div></DungeonDialog>}
+   {phase==="ready"&&!panel&&renderer==="ready"&&(screen!=="endless"||introHidden)&&<DungeonDialog title="Ready" className="ready-dialog" onCancel={leave}><span className="eyebrow">ENDLESS SURVIVAL · {view.language.toUpperCase()}</span><p>Type the word above an enemy to dash and hit it. Level up, pick upgrades and see how long you last.</p><ul className="control-list"><li><kbd>TYPE</kbd><span>Match the displayed case. Finish a word to strike.</span></li><li><kbd>BACKSPACE</kbd><span>Cancel a locked target and choose another word.</span></li><li><kbd>TAB</kbd><span>Slow time and type a skill.</span></li><li><kbd>ESC</kbd><span>Pause safely.</span></li></ul><button className="primary-action" autoFocus onClick={run.start}>Begin run</button><button onClick={()=>tutorial("endless")}>Try combat tutorial</button><div className="dialog-links"><button className="quiet" onClick={()=>setPanel("howto")}>How to play</button><button className="quiet" onClick={()=>setPanel("controls")}>Keyboard controls</button><button className="quiet" onClick={leave}>Back to title</button></div></DungeonDialog>}
+   {phase==="paused"&&!panel&&renderer==="ready"&&<PauseDialog view={view} leaveLabel={screen==="tutorial"?"Exit tutorial":"Save and return to title"} onResume={run.resume} onSettings={()=>setPanel("settings")} onControls={()=>setPanel("controls")} onLeave={leave}/>}
+   {phase==="draft"&&!panel&&renderer==="ready"&&<DraftDialog view={view} onPause={run.pause} input={<TypingInput inputRef={inputRef} label="Upgrade typing input" onType={type} onEscape={run.pause}/>}/>}
+   {phase==="dead"&&!panel&&<DefeatDialog view={view} best={run.best} onRetry={fresh} onLeave={leave}/>}
+   {renderer!=="ready"&&<DungeonDialog title={renderer==="loading"?"Loading…":"Graphics paused"} onCancel={leave}><p role="status">{renderer==="loading"?"Loading the dungeon. The run timer is stopped.":"Your run is paused and saved. Restore the scene to continue."}</p>{renderer!=="loading"&&<button className="primary-action" onClick={()=>{setRenderer("loading");setAttempt(n=>n+1)}}>Restore scene</button>}<button onClick={leave}>Return to title</button></DungeonDialog>}
   </>}
   {screen==="dojo"&&<PracticeScreen onBack={()=>setScreen("title")} onActivity={train} onTutorial={()=>tutorial("dojo")}/>}
   {screen==="multiplayer"&&<><PartyLabels bridge={bridge}/><RaceScreen onWorld={party} onBack={()=>{history.replaceState(null,"",location.pathname);setScreen("title")}}/></>}
-  {panel==="settings"&&<DungeonDialog title="Settings" onCancel={()=>setPanel(null)}><label className="settings-row"><span>Reduced Effects<small>Less ambient motion, no outline pass or particles.</small></span><input aria-label="Reduced Effects" type="checkbox" checked={settings.reduced} onChange={e=>setSettings({...settings,reduced:e.target.checked})}/></label><label className="settings-row"><span>Master volume<small>Music starts after your first click or key press.</small></span><input aria-label="Sound volume" type="range" min="0" max="1" step="0.05" value={settings.volume} onChange={e=>setSettings({...settings,volume:Number(e.target.value)})}/></label>{(["music","effects"] as const).map(bus=><label className="settings-row" key={bus}><span>{bus==="music"?"Music & ambience":"Sound effects"}<small>{bus==="music"?"Adaptive dungeon score and torch ambience.":"Combat, enemies, loot and low-health heartbeat."}</small></span><input aria-label={bus==="music"?"Music volume":"Effects volume"} type="range" min="0" max="1" step="0.05" value={settings[bus]} onChange={e=>setSettings({...settings,[bus]:Number(e.target.value)})}/></label>)}<label className="settings-row"><span>On-screen keyboard<small>Optional touch input; physical keys remain active.</small></span><input aria-label="On-screen keyboard" type="checkbox" checked={settings.keyboard} onChange={e=>setSettings({...settings,keyboard:e.target.checked})}/></label><button className="primary-action" onClick={()=>setPanel(null)}>Done</button></DungeonDialog>}
+  {panel==="history"&&<DungeonDialog title="Run history" onCancel={()=>setPanel(null)} className="history-dialog" tone="info"><p>Your last 50 runs on this browser. Saved runs update when you resume them.</p><div className="history-list">{readRunHistory().length?readRunHistory().map(r=><article key={r.id}><header><strong>{r.mode.toUpperCase()} · LV {r.level}</strong><span>{r.status.toUpperCase()} · {r.language.toUpperCase()}</span></header><p>{new Date(r.at).toLocaleString()} · {runTime(r.seconds)}</p><div><b>{r.kills} defeated</b><span>{r.wpm} WPM · {r.accuracy}% ACC · {r.gold}g</span></div></article>):<p>No runs yet. Enter the keep to begin your first record.</p>}</div><button onClick={()=>setPanel(null)}>Back to game</button></DungeonDialog>}
+  {panel==="settings"&&<DungeonDialog title="Settings" onCancel={()=>setPanel(null)} tone="info" className="settings-dialog"><label className="settings-row"><span>Reduced Effects<small>Less ambient motion, no outline pass or particles.</small></span><input aria-label="Reduced Effects" type="checkbox" checked={settings.reduced} onChange={e=>setSettings({...settings,reduced:e.target.checked})}/></label><label className="settings-row"><span>Master volume<small>Music starts after your first click or key press.</small></span><input aria-label="Sound volume" type="range" min="0" max="1" step="0.05" value={settings.volume} onChange={e=>setSettings({...settings,volume:Number(e.target.value)})}/></label>{(["music","effects"] as const).map(bus=><label className="settings-row" key={bus}><span>{bus==="music"?"Music & ambience":"Sound effects"}<small>{bus==="music"?"Background music; changes with depth and boss fights.":"Hits, enemy sounds, pickups and the low-health warning."}</small></span><input aria-label={bus==="music"?"Music volume":"Effects volume"} type="range" min="0" max="1" step="0.05" value={settings[bus]} onChange={e=>setSettings({...settings,[bus]:Number(e.target.value)})}/></label>)}<label className="settings-row"><span>On-screen keyboard<small>Optional touch input; physical keys remain active.</small></span><input aria-label="On-screen keyboard" type="checkbox" checked={settings.keyboard} onChange={e=>setSettings({...settings,keyboard:e.target.checked})}/></label><button className="primary-action" onClick={()=>setPanel(null)}>Done</button></DungeonDialog>}
+  {panel==="controls"&&<DungeonDialog title="Keyboard controls" className="controls-dialog" tone="info" onCancel={()=>setPanel(null)}><span className="eyebrow">EVERYTHING WORKS FROM THE KEYBOARD</span><ControlsGuide language={screen==="title"?language:view.language}/><button className="primary-action" onClick={()=>setPanel(null)}>Done</button></DungeonDialog>}
+  {panel==="howto"&&<DungeonDialog title="How to play" className="howto-dialog" onCancel={()=>setPanel(null)}><span className="eyebrow">THE FOUR KEYS YOU NEED</span><HowToPlay language={view.language}/><label className="intro-optout"><input type="checkbox" checked={!introHidden} onChange={e=>hideIntro(!e.target.checked)}/><span>Show this before every run</span></label><button className="primary-action" onClick={()=>setPanel(null)}>Done</button></DungeonDialog>}
+  {panel==="bestiary"&&<Bestiary onClose={()=>setPanel(null)}/>}
   {panel==="account"&&<AccountPanel onClose={()=>setPanel(null)} checkpoint={run.checkpoint} onRestore={run.restore}/>}
  </main>
-}
-export function DungeonDialog({title,children,onCancel,className=""}:{title:string;children:ReactNode;onCancel:()=>void;className?:string}) {
- const ref=useRef<HTMLDialogElement>(null), heading=title.toLowerCase().replace(/[^a-z0-9]/g,"-")
- useEffect(()=>{const dialog=ref.current!;dialog.showModal();dialog.querySelector<HTMLElement>('input:not([disabled]),.primary-action')?.focus({preventScroll:true})},[])
- return <dialog className={`dungeon-dialog pixel-panel ${className}`} ref={ref} aria-labelledby={heading} onCancel={e=>{e.preventDefault();onCancel()}}><header><h2 id={heading}>{title}</h2><button className="dialog-close" aria-label="Close dialog" onClick={onCancel}>×</button></header>{children}</dialog>
 }
 export function AccountPanel({onClose,checkpoint,onRestore}:{onClose:()=>void;checkpoint:()=>string;onRestore:(raw:string)=>boolean}) {
  const [client]=useState(getAccountClient), [email,setEmail]=useState(""), [password,setPassword]=useState(""), [name,setName]=useState(""), [signup,setSignup]=useState(false)
@@ -148,4 +157,17 @@ export function AccountPanel({onClose,checkpoint,onRestore}:{onClose:()=>void;ch
   finally {setBusy(false)}
  },[client,email,password,name,signup])
  return <DungeonDialog title="Your account" onCancel={onClose}><p className="muted">Existing account data is kept. Dungeon records use a separate save version.</p>{user?<><p>Signed in as <strong>{user}</strong></p><div className="account-progress"><h3>Dungeon checkpoint</h3><p>Load the cloud record before uploading. Uploading also publishes your best community record.</p><button disabled={busy} onClick={()=>void refresh()}>Load cloud record</button>{cloud&&<><p>{cloud.checkpoint?`Cloud revision ${cloud.checkpoint.revision}`:"No cloud checkpoint yet."}</p><button disabled={busy} onClick={()=>void upload()}>Upload local run</button>{cloud.checkpoint&&<button disabled={busy} onClick={()=>{if(onRestore(JSON.stringify(cloud.checkpoint!.save_data)))setStatus("Cloud run restored locally. Continue it from the title.");else setStatus("Incompatible checkpoint. Your local run is unchanged.")}}>Replace local run with cloud checkpoint</button>}<h3>Achievements</h3><p>{cloud.achievements.length?cloud.achievements.map(a=>achievementNames[a.achievement_id]??a.achievement_id).join(" · "):"No dungeon achievements yet."}</p><h3>Community records</h3><small>Browser reported · casual · unverified</small><ol>{cloud.board.map((entry,i)=><li key={i}>{entry.display_name} · {runTime(entry.best_seconds)} · LV {entry.best_level} · {entry.best_kills} defeated</li>)}</ol></>}</div><button onClick={()=>{void client!.auth.signOut().then(({error})=>{if(error)setStatus(error.message)}).catch(()=>setStatus("Could not sign out."))}}>Sign out</button></>:<form onSubmit={e=>{e.preventDefault();void submit()}}>{signup&&<label>Display name<input value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={24} autoComplete="nickname" required/></label>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={signup?8:undefined} autoComplete={signup?"new-password":"current-password"} required/></label><button className="primary-action" disabled={!client||busy}>{busy?"Please wait…":signup?"Create account":"Sign in"}</button><button type="button" className="quiet" onClick={()=>setSignup(!signup)}>{signup?"I have an account":"Create an account"}</button></form>}<p role="status">{status}</p></DungeonDialog>
+}
+
+/** Announces each wave surge once (keyed by cycle); the pack name comes from the simulation's notice. */
+function surgeBanner(endless: boolean, time: number, notice: string) {
+ const wave=waveAt(time)
+ if(!endless||wave.phase!=="surge")return null
+ return {key:`surge:${wave.cycle}`,title:"SURGE",detail:notice.startsWith("SURGE")?notice.replace(/^SURGE — /,""):"The horde surges · hold the line"}
+}
+
+/** Attribution for the current boss line, when it is one of the authored quotations. */
+function quoteSource(language: DungeonLanguage, paragraph: string) {
+ const index=bossPassages[language].findIndex(line=>line.split(" BLIZZARD")[0]+" BLIZZARD"===paragraph)
+ return index<0?"":bossPassageSources[language][index]!
 }

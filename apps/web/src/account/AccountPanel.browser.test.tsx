@@ -11,7 +11,7 @@ import type { Session,SupabaseClient } from "@supabase/supabase-js"
 vi.mock("./client",()=>({getAccountClient:vi.fn()}))
 vi.mock("./dungeon-account",async original=>({...await original<typeof import("./dungeon-account")>(),loadDungeonAccount:vi.fn(),uploadDungeonCheckpoint:vi.fn()}))
 let host:HTMLDivElement,root:Root,notify:((event:string,session:Session|null)=>void)|undefined
-const saved=new SurvivalRun("account").serialize(),session={user:{id:"own",email:"knight@example.com",user_metadata:{display_name:"Blue"}}} as unknown as Session
+const saved=new SurvivalRun("account","en").serialize(),session={user:{id:"own",email:"knight@example.com",user_metadata:{display_name:"Blue"}}} as unknown as Session
 const auth={getSession:vi.fn(),onAuthStateChange:vi.fn((callback:(event:string,session:Session|null)=>void)=>{notify=callback;return{data:{subscription:{unsubscribe:vi.fn()}}}}),signInWithPassword:vi.fn(),signUp:vi.fn(),signOut:vi.fn()}
 beforeEach(()=>{
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});host=document.createElement("div");document.body.append(host);root=createRoot(host)

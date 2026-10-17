@@ -1,0 +1,142 @@
+/* In-run HUD: gilded plates, hero medallion with XP ring, jewelled bars, weapon tray and skill dock. */
+.hud-plate {
+  position: relative; overflow: visible;
+  background: linear-gradient(180deg, #17233bee, #0c1424ee) !important;
+  border: 1px solid #e9bf6a55 !important;
+  box-shadow: 0 0 0 1px #05080f, 0 10px 24px #000a, inset 0 1px #ffffff12, 0 0 22px #b48cff1a !important;
+}
+.hud-plate .corner-flourish { width: 16px; height: 16px }
+
+.combat-metrics .hud-topline span { color: #c9a46a; letter-spacing: 2px }
+.combat-metrics .hud-topline strong { font-family: KeepPixel, monospace; color: #fff3d6; text-shadow: 0 0 10px #ff8a3d66 }
+.metric-values b { font-family: KeepPixel, monospace; color: #fff3d6; text-shadow: 0 2px #0008 }
+.metric-values .streak-hot { color: #ffb066 }
+.metric-values .streak-hot b { color: #ffd27a; text-shadow: 0 0 12px #ff8a3d }
+.metric-values .streak-hot .glyph { width: 14px; height: 14px; color: #ff8a3d; filter: drop-shadow(0 0 6px #ff8a3d); animation: flame-flicker .3s steps(2) infinite; vertical-align: -2px; margin-right: 3px }
+@keyframes flame-flicker { 50% { transform: scale(1.15) translateY(-1px) } }
+.pause-button { background: radial-gradient(circle at 35% 30%, #2f4266, #0d1424) !important; border: 1px solid var(--gild-lo) !important; color: var(--gild) !important }
+
+/* Vitals: medallion + bars side by side */
+.vitals.hud-plate { display: grid !important; grid-template-columns: auto 1fr; align-items: center; gap: 12px }
+.vitals-bars { display: grid; gap: 6px; min-width: 0 }
+.hero-medallion { position: relative; width: 62px; height: 62px; display: grid; place-items: center }
+.medallion-ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--cyan) calc(var(--xp) * 360deg), #1d2a44 0); box-shadow: 0 0 14px #7fe8ff55; mask: radial-gradient(circle, transparent 54%, #000 56%); -webkit-mask: radial-gradient(circle, transparent 54%, #000 56%) }
+.medallion-face { position: absolute; inset: 7px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #3b5a8c, #111b30 75%); border: 2px solid var(--gild); box-shadow: inset 0 0 10px #000 }
+.medallion-face .glyph { width: 24px; height: 24px; color: #9fd3ff; opacity: .5 }
+.hero-medallion b { position: relative; font: 16px KeepPixel, monospace; color: #fff3d6; text-shadow: 0 2px #000, 0 0 10px #7fe8ff }
+
+.health-row .hearts i { width: 15px; height: 14px; background: #2a1c26; clip-path: polygon(50% 100%, 0 45%, 0 15%, 20% 0, 50% 18%, 80% 0, 100% 15%, 100% 45%); border: 0; box-shadow: none }
+.health-row .hearts i.filled { background: linear-gradient(180deg, #ff8a95, #e0283f 60%, #a0132a); filter: drop-shadow(0 0 4px #ff3a55aa) }
+.gold-count { display: inline-flex; align-items: center; gap: 4px; color: #ffd27a !important; text-shadow: 0 0 8px #e9bf6a88 }
+.gold-count .glyph { width: 12px; height: 12px; color: #ffd27a }
+
+.resource-row meter, .resource-row progress { appearance: none; -webkit-appearance: none; height: 9px; border: 1px solid #05080f; background: #0a1120; box-shadow: inset 0 1px 3px #000, 0 0 0 1px #2c3a58 }
+.resource-row meter::-webkit-meter-bar { background: #0a1120; border: 0 }
+.resource-row progress::-webkit-progress-bar { background: #0a1120 }
+.mana-row meter::-webkit-meter-optimum-value, .mana-row meter::-webkit-meter-suboptimum-value, .mana-row meter::-webkit-meter-even-less-good-value { background: linear-gradient(180deg, #a9c2ff, #4f6cf0 60%, #3346b8); box-shadow: 0 0 8px #6f8cff }
+.mana-row meter::-moz-meter-bar { background: linear-gradient(180deg, #a9c2ff, #4f6cf0) }
+.shield-row meter::-webkit-meter-optimum-value, .shield-row meter::-webkit-meter-suboptimum-value, .shield-row meter::-webkit-meter-even-less-good-value { background: linear-gradient(180deg, #c8fbff, #4fd3e6 60%, #2e97ad) }
+.shield-row meter::-moz-meter-bar { background: linear-gradient(180deg, #c8fbff, #4fd3e6) }
+.xp-row progress::-webkit-progress-value { background: linear-gradient(90deg, #6fe0a0, #7fe8ff 60%, #e7fbff); box-shadow: 0 0 10px #7fe8ff }
+.xp-row progress::-moz-progress-bar { background: linear-gradient(90deg, #6fe0a0, #7fe8ff) }
+.resource-row > span { color: #c9a46a; letter-spacing: 1px }
+
+/* Build strip: weapons first, with level pips and a conic charge ring */
+.equipment-badge { background: linear-gradient(180deg, #19263fe6, #0d1526e6) !important; border: 1px solid #3a4d73 !important; box-shadow: 0 6px 14px #0008 }
+.weapon-badge { border-color: color-mix(in srgb, var(--accent) 55%, #3a4d73) !important; box-shadow: 0 6px 14px #0008, 0 0 14px color-mix(in srgb, var(--accent) 25%, transparent) }
+.weapon-icon { position: relative; display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: conic-gradient(var(--accent) calc(var(--charge) * 360deg), #1a2640 0) }
+.weapon-icon::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2b3d63, #0b1220) }
+.weapon-icon .glyph { position: relative; width: 16px; height: 16px; color: var(--accent); filter: drop-shadow(0 0 4px var(--accent)) }
+.weapon-badge.evolved { animation: evolved-glow 1.4s ease-in-out infinite }
+@keyframes evolved-glow { 50% { box-shadow: 0 6px 14px #0008, 0 0 24px var(--accent) } }
+
+/* Skill dock */
+.skill-dock .skill-card { background: linear-gradient(180deg, #1b2945f2, #0e1628f2) !important; border: 1px solid color-mix(in srgb, var(--skill-color) 50%, #34466b) !important; box-shadow: 0 8px 18px #000a, inset 0 1px #ffffff14, 0 0 16px color-mix(in srgb, var(--skill-color) 18%, transparent) !important }
+.skill-dock .skill-card > .glyph { padding: 6px; width: 38px !important; height: 38px !important; background: radial-gradient(circle at 35% 30%, #2f4266, #0b1220); border: 1px solid var(--skill-color); color: var(--skill-color); filter: drop-shadow(0 0 6px var(--skill-color)) }
+.skill-dock .skill-card.unavailable > .glyph { filter: grayscale(.7); opacity: .6 }
+/* Skill mode (Tab): must out-rank the base card styles above, which use !important. */
+.skill-dock.casting::before {
+  content: ""; position: absolute; inset: -10px -12px; z-index: -1; pointer-events: none;
+  border: 1px solid #7fe8ff88; background: radial-gradient(80% 120% at 50% 100%, #2a6a8a55, #0b122000 70%);
+  box-shadow: 0 0 28px #7fe8ff44; animation: cast-frame 1.2s ease-in-out infinite alternate;
+}
+.skill-dock.casting .skill-mode-hint { color: #bff6ff; font-weight: 700; letter-spacing: 2px; text-shadow: 0 0 10px #7fe8ff }
+.skill-dock.casting .skill-card:not(.unavailable) {
+  transform: translateY(-6px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--skill-color) 30%, #1b2945), #0e1628) !important;
+  border-color: var(--skill-color) !important;
+  box-shadow: 0 10px 20px #000a, 0 0 0 1px var(--skill-color), 0 0 26px color-mix(in srgb, var(--skill-color) 70%, transparent) !important;
+  animation: skill-ready .8s ease-in-out infinite alternate;
+}
+.skill-dock.casting .skill-card:not(.unavailable) strong { color: #fff; text-shadow: 0 0 10px var(--skill-color) }
+.skill-dock.casting .skill-card:not(.unavailable) strong b { color: var(--skill-color); text-shadow: 0 0 12px var(--skill-color) }
+.skill-dock.casting .skill-card.unavailable { opacity: .45; filter: grayscale(.6) }
+@keyframes skill-ready { to { transform: translateY(-8px) } }
+@keyframes cast-frame { to { box-shadow: 0 0 40px #7fe8ff77; border-color: #bff6ffcc } }
+[data-reduced-effects="true"] .skill-dock.casting .skill-card, [data-reduced-effects="true"] .skill-dock.casting::before { animation: none }
+
+/* Enemy labels: gilded name plates */
+.enemy-label { background: linear-gradient(180deg, #0f1a2e66, #0a112040) !important; border: 1px solid #7f95bd40 !important; border-radius: 3px; box-shadow: 0 4px 10px #0004 !important; backdrop-filter: blur(1.5px) }
+.enemy-label.object-label { background: linear-gradient(180deg, #2a1e0c55, #14100833) !important; border-color: #e9bf6a55 !important }
+.enemy-label.locked { background: linear-gradient(180deg, #17374c88, #0b182866) !important; border-color: var(--gild) !important; box-shadow: 0 4px 10px #0005, 0 0 16px #e9bf6a66 !important }
+.enemy-label .current-letter { color: var(--gild-hi); text-shadow: 0 0 10px var(--gild) }
+
+/* Combat captions per source */
+.combat-caption.source-finisher { font: 18px KeepPixel, monospace; color: #ffe39a; text-shadow: 0 0 14px #ffb347, 0 3px #5b3a16; animation: fatality-pop .9s cubic-bezier(.2, 1.6, .4, 1) both }
+.combat-caption.source-orbit { color: var(--cyan) }
+.combat-caption.source-nova { color: var(--violet) }
+.combat-caption.source-meteor { color: var(--ember) }
+.combat-caption.source-frost { color: #c8fbff }
+.combat-caption.source-whirl { color: #bfefff }
+@keyframes fatality-pop { from { transform: scale(2.2); opacity: 0 } 30% { transform: scale(1); opacity: 1 } }
+
+@media (max-width: 600px) {
+  .hero-medallion { width: 44px; height: 44px }
+  .hero-medallion b { font-size: 12px }
+  .medallion-face .glyph { display: none }
+  .vitals.hud-plate { gap: 6px }
+  .health-row .hearts i { width: 11px; height: 10px }
+}
+
+/* Wave director chip */
+.wave-chip { position: relative; overflow: hidden; padding: 2px 8px; font-size: 8px; letter-spacing: 2px; color: #cfe0f5; border: 1px solid #4b5e82; background: #0b1220 }
+.wave-chip::before { content: ""; position: absolute; inset: 0; width: calc(var(--progress) * 100%); background: currentColor; opacity: .18 }
+.wave-build { color: #f0c46a; border-color: #8a6534 }
+.wave-surge { color: #ff6b6b; border-color: #ff6b6b; box-shadow: 0 0 10px #ff5a6a77; animation: surge-pulse .6s ease-in-out infinite alternate }
+.wave-breather { color: #7fe0a0; border-color: #3f7a55 }
+@keyframes surge-pulse { to { box-shadow: 0 0 18px #ff5a6acc } }
+
+/* Always-visible Tab keycap on the skill dock: the one control new players miss. */
+.skill-key-hint {
+  position: absolute; left: 50%; top: -34px; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px !important;
+  font: 700 12px KeepPixel, monospace; letter-spacing: 1px; color: #fff3d6;
+  background: linear-gradient(180deg, #1d2a46f2, #0e1628f2) !important; border: 1px solid var(--gild) !important;
+  box-shadow: 0 4px 12px #000a, 0 0 14px #e9bf6a44 !important;
+}
+.skill-key-hint kbd {
+  padding: 3px 8px; font: 700 11px KeepPixel, monospace; color: #241809;
+  background: linear-gradient(180deg, #fff0c8, #e2ab55); border: 1px solid #ffe7b0; border-bottom-width: 3px; border-radius: 3px;
+}
+.skill-dock.casting .skill-key-hint { border-color: var(--cyan) !important; box-shadow: 0 4px 12px #000a, 0 0 18px #7fe8ff77 !important }
+.skill-dock.casting .skill-key-hint kbd { background: linear-gradient(180deg, #e8fbff, #7fd6ff); border-color: #c8f6ff }
+.skill-dock .skill-mode-hint { text-transform: uppercase }
+
+/* Enemy words: text only. Readability comes from a heavy outline and drop shadow, not a plate. */
+.target-labels .enemy-label, .target-labels .enemy-label.object-label, .target-labels .enemy-label.locked {
+  height: auto !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
+}
+.target-labels .enemy-label strong {
+  display: inline-flex; align-items: center; gap: 0;
+  font-size: 22px; line-height: 26px; color: #fff6e2;
+  -webkit-text-stroke: 4px #060b14; paint-order: stroke fill;
+  text-shadow: 0 2px 0 #060b14, 0 0 10px #000c;
+}
+.target-labels .enemy-label strong .glyph { width: 15px; height: 15px; margin-right: 5px; color: var(--gild); filter: drop-shadow(0 1px 0 #060b14) drop-shadow(0 0 4px #000) }
+.target-labels .enemy-label.object-label strong { color: #ffe39a }
+.target-labels .enemy-label .typed { color: #7fe8ff }
+.target-labels .enemy-label.locked strong { color: #fff; text-shadow: 0 2px 0 #060b14, 0 0 14px #e9bf6acc }
+.target-labels .enemy-label.locked .current-letter { color: var(--gild-hi); text-decoration: underline 3px var(--gild); text-underline-offset: 4px }
+.target-labels .enemy-label em { margin-right: 4px; font-size: 12px; -webkit-text-stroke: 3px #060b14; color: #ffb066 }
+.target-labels .enemy-label .armor-stack { margin: 0 }

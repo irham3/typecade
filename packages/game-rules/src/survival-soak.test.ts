@@ -32,14 +32,14 @@ for(const wpm of [20,50,90,130])it(`keeps a ${wpm} WPM seeded playthrough progre
 },20000)
 
 it("never presents ambiguous first letters, including a late horde",()=>{
- const r=new SurvivalRun("initials");r.start();r.state.time=901
+ const r=new SurvivalRun("initials","en");r.start();r.state.time=901
  for(let i=0;i<40;i++)r.spawn(i%2?"goblin":"skeleton",{x:2,z:2})
  r.refreshQueue();const words=r.targets().map(e=>e.words[0]!)
  expect(new Set(words.map(w=>w[0])).size).toBe(words.length)
  expect(words.length).toBeGreaterThanOrEqual(4)
 })
 it("routes pursuers around a solid ruin without entering the walls or getting stuck",()=>{
- const r=new SurvivalRun("path"),s=r.state;r.start();s.enemies=[];s.spawnAt=10000;s.nextBoss=10000;s.player.x=0;s.player.z=10;s.player.invincible=1000
+ const r=new SurvivalRun("path","en"),s=r.state;r.start();s.enemies=[];s.spawnAt=10000;s.nextBoss=10000;s.player.x=0;s.player.z=10;s.player.invincible=1000
  const enemy=r.spawn("skeleton",{x:15,z:10})!;enemy.speed=2
  for(let i=0;i<450;i++){r.advance(B.tick);expect(dungeonWalkable(enemy)).toBe(true)}
  expect(Math.hypot(enemy.x-s.player.x,enemy.z-s.player.z)).toBeLessThan(1)

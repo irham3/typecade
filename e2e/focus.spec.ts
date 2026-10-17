@@ -1,7 +1,7 @@
 import { expect,test } from "@playwright/test"
 
 test("background clicks preserve combat typing while menus keep normal focus",async({page})=>{
- await page.goto("/");await page.getByRole("button",{name:"Enter the keep"}).click();await page.getByRole("button",{name:"Begin run"}).click()
+ await page.goto("/");await page.getByRole("button",{name:/^Start run/}).click();await page.getByRole("button",{name:"Begin run"}).click()
  const input=page.getByTestId("dungeon-input")
  await page.mouse.click(10,300);await expect(input).toBeFocused()
  const word=(await page.getByTestId("enemy-label").first().getAttribute("data-word"))!

@@ -20,7 +20,7 @@ export default defineConfig({
 			name: "chromium",
 			use: { ...devices["Desktop Chrome"], launchOptions: { args: process.platform === "win32" ? ["--enable-gpu", "--use-angle=d3d11"] : [] } },
 		},
-		{ name: "firefox", use: { ...devices["Desktop Firefox"] } },
+		{ name: "firefox", use: { ...devices["Desktop Firefox"], headless: !(process.env.CI && process.platform === "linux"), launchOptions: { firefoxUserPrefs: { "webgl.force-enabled": true } } } },
 		{ name: "webkit", use: { ...devices["Desktop Safari"] } },
 	],
 	webServer: [

@@ -36,7 +36,7 @@ Implementation authorized after pushing the planning checkpoint on 2026-10-15. F
 
 - Normal horde play uses 4–6 stable, non-overlapping labels and no bottom paragraph. Preserve active target and prefix across Tab skill mode.
 - Completing a word drives movement and combat. No required mouse, WASD or arrows for fighting, casting or upgrade selection.
-- Every 50 clean characters activates XP magnet. Bosses are scheduled every five minutes; armor break opens a ten-second paragraph phase. Drafting pauses simulation.
+- Every 50 clean characters activates XP magnet. Bosses are scheduled every five minutes; armor break opens an active finite paragraph duel with a breakable barricade, boss chase/telegraphs and typing-driven spacing. Preserve the paragraph/cursor until completion; bank drafts until the boss falls. Drafting pauses simulation.
 - Scope keyboard capture to active gameplay. Preserve browser navigation, focus handling, IME/accessibility fallback and Escape pause.
 - Recycle chunks; pool enemies, loot, projectiles and particles. Document caps and overload behavior. Lazy-load/dispose the renderer; pause hidden tabs and provide Reduced Effects.
 - Art-bible performance targets require measurement; do not claim 60–120 FPS on untested hardware.

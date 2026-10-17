@@ -18,3 +18,8 @@ it("reproduces random choices and rejects empty pools",()=>{
  for(let i=0;i<100;i++){expect(a.nextFloat()).toBe(b.nextFloat());expect(a.nextInt(2,4)).toBe(b.nextInt(2,4));expect(a.pick([1,2,3])).toBe(b.pick([1,2,3]))}
  expect(()=>a.pick([])).toThrow("Cannot pick from an empty list")
 })
+
+it("uses natural alphabetic Indonesian item and upgrade commands without artificial prefixes",()=>{
+ const words=[...Object.values(dungeonUpgrades).map(u=>u.id),...Object.values(skillRules).map(u=>u.id),...(["shield","potion","mana","sentry","chest","barrel"] as const).flatMap(kind=>dungeonWords.id[kind])]
+ expect(words.every(word=>/^[A-Z]+$/.test(word))).toBe(true);expect(dungeonUpgrades.cleave.id).toBe("SABET")
+})

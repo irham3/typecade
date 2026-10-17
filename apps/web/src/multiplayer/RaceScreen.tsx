@@ -4,6 +4,7 @@ import { TypingInput, TypingPassage } from "../TypingField"
 import { skillRules } from "@typecade/content"
 import type { SkillId } from "@typecade/contracts"
 import { Glyph } from "../dungeon/Glyph"
+import { rememberResult } from "../run-history"
 import { readStorage, writeStorage } from "../storage"
 
 const ticketKey = "typecade:dungeon:room:v1"
@@ -118,6 +119,13 @@ export function RaceScreen({ onBack, onWorld }: { onBack: () => void; onWorld?: 
 
 	useEffect(() => { if (phase === "racing" && connected && !showBoard) inputRef.current?.focus() }, [phase, connected, showBoard])
 
+ useEffect(()=>{
+  if(snapshot?.phase!=="finished"||!ticket)return
+  const own=snapshot.players.find(p=>p.id===ticket.playerId)
+  if(!own)return
+  const seconds=Math.max(1,(snapshot.serverNow-(snapshot.startsAt??snapshot.serverNow))/1000)
+  rememberResult({id:`${snapshot.code}:${snapshot.startsAt}:${ticket.playerId}`,mode:snapshot.config.mode??"sprint",at:Date.now(),language:snapshot.config.language,seconds:Math.floor(seconds),level:1,kills:0,gold:0,depth:0,wpm:Math.round(own.cursor/5/(seconds/60)),accuracy:raceAccuracy(own),status:own.status==="out"?"fallen":"complete"})
+ },[snapshot,ticket])
 	const ownServer = snapshot?.players.find((player) => player.id === ticket?.playerId)
 	const own = useMemo(() => {
 		if (!snapshot || !ownServer) return null
@@ -162,8 +170,8 @@ export function RaceScreen({ onBack, onWorld }: { onBack: () => void; onWorld?: 
   if(castingRef.current&&snapshot){
    if(key==="Backspace"){commandRef.current="";setCommand("");return}
    if(Array.from(key).length!==1)return
-   const next=commandRef.current+key.toUpperCase(),ids=(["cleave","storm","heal"] as SkillId[]),matches=ids.filter(id=>skillRules[id][snapshot.config.language].startsWith(next))
-   if(!matches.length){commandRef.current="";setCommand("");setError("Type a skill keyword shown on the cards.");return}
+   const next=commandRef.current+key,ids=(["cleave","storm","heal"] as SkillId[]),matches=ids.filter(id=>skillRules[id][snapshot.config.language].startsWith(next))
+   if(!matches.length){commandRef.current="";setCommand("");setError("Type a skill keyword exactly as shown. Use Shift or Caps Lock for capitals.");return}
    commandRef.current=next;setCommand(next)
    const id=matches.find(id=>skillRules[id][snapshot.config.language]===next)
    if(id){send({type:"skill",skill:id,text:next,seq:++skillSeq.current});resetCasting(false)}
@@ -244,7 +252,7 @@ function RacePlay({ room, own, ticket, now, inputRef, onType, onOpenBoard, conne
 			<div className="race-stage" aria-label="Dungeon multiplayer arena"><BattleHud room={room} own={own}/><div className="race-buoy">{room.config.mode==="raid"?"OBSIDIAN MINOTAUR":room.config.mode==="clash"?"BRIDGE CLASH":"CASTLE SPRINT"}</div></div>
 			<div className="race-type panel-chrome"><div className="race-type-top"><strong>{ownRank}/{ranked.length} · {Math.round(progress(own, room.text,room.combat) * 100)}%</strong><span>{room.config.format === "time" ? `Time ${remaining}s` : `Safety timer ${remaining}s`} · Accuracy {raceAccuracy(own)}% · Typos {own.errors}{room.config.variant !== "classic" ? ` · Lives ${own.lives}` : ""}</span></div><TypingPassage text={room.text} cursor={own.cursor} className="race-passage" testId="race-passage" fontSize={fontSize} monospace={monospace} rollingLines={2} /><label className="race-input-label">{own.status === "out" ? "You are out. Watch the remaining knights." : own.status === "finished" ? "Finished. Waiting for the others." : "Retype the highlighted character after a typo."}<TypingInput inputRef={inputRef} label="Race typing input" onType={onType} disabled={own.status !== "racing" || !connected || room.combat?.players[own.id]?.hp===0} onEscape={onCancelSkills} /></label></div>
 		</div>
-  <div className={`party-skill-dock ${casting?"casting":""}`}><p>{casting?"TYPE A SKILL · YOUR WORD IS SAVED":"TAB TO CAST · COMPLETE WORDS TO RECHARGE"}</p><div>{(["cleave","storm","heal"] as SkillId[]).map(id=><button key={id} onClick={onToggleSkills} disabled={own.status!=="racing"||!connected||room.combat?.players[own.id]?.hp===0}><Glyph name={id==="cleave"?"sword":id==="storm"?"storm":"heal"}/><strong><span className="typed">{casting&&skillRules[id][room.config.language].startsWith(command)?command:""}</span>{casting&&skillRules[id][room.config.language].startsWith(command)?skillRules[id][room.config.language].slice(command.length):skillRules[id][room.config.language]}</strong><small>{room.combat?.players[own.id]?.cooldowns[id]?`${room.combat.players[own.id]!.cooldowns[id]}w`:`${skillRules[id].cost} MP`}</small></button>)}</div></div>
+  <div className={`party-skill-dock ${casting?"casting":""}`}><p>{casting?"MATCH CASE · YOUR WORD IS SAVED":"TAB TO CAST · COMPLETE WORDS TO RECHARGE"}</p><div>{(["cleave","storm","heal"] as SkillId[]).map(id=><button key={id} onClick={onToggleSkills} disabled={own.status!=="racing"||!connected||room.combat?.players[own.id]?.hp===0}><Glyph name={id==="cleave"?"sword":id==="storm"?"storm":"heal"}/><strong><span className="typed">{casting&&skillRules[id][room.config.language].startsWith(command)?command:""}</span>{casting&&skillRules[id][room.config.language].startsWith(command)?skillRules[id][room.config.language].slice(command.length):skillRules[id][room.config.language]}</strong><small>{room.combat?.players[own.id]?.cooldowns[id]?`${room.combat.players[own.id]!.cooldowns[id]}w`:`${skillRules[id].cost} MP`}</small></button>)}</div></div>
 		<aside className="race-side panel-chrome"><div className="race-side-head"><h2>Standings</h2><button onClick={onOpenBoard}>Full leaderboard</button></div><p>Your position follows server validated characters. The arena shows the nearby knights.</p><ol className="race-nearby">{nearby.map((player) => <li key={player.id} className={player.id === ticket.playerId ? "you" : ""}><span>#{ranked.indexOf(player) + 1} {player.name}</span><strong>{Math.round(progress(player, room.text,room.combat) * 100)}%</strong></li>)}</ol><h3>Course map</h3><div className="race-minimap" aria-label="Knight distribution by progress">{bins.map((count, index) => <div key={index} title={`${index * 10}–${index * 10 + 10}%: ${count} players`}><i style={{ height: `${Math.max(8, Math.min(100, count / Math.max(1, ranked.length) * 350))}%` }} /><span>{count || ""}</span></div>)}</div><small>0% → 100% · You: {Math.round(progress(own, room.text,room.combat) * 100)}%</small></aside>
 	</div>
 }
