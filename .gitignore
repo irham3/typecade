@@ -62,7 +62,7 @@ tsc-errors.txt
 /.cursor/
 /.claude/
 /.ai/
-/.agents/skills/
+/.agents/
 /skills-lock.json
 *.swp
 *.swo
