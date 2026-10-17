@@ -255,7 +255,7 @@ Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript 
 - [x] `audio/reverb.ts`: generated stone-hall impulse response (3.4 s darkening tail, early reflections) on music and effects sends.
 - [x] `audio/score.ts`: per-theme ensembles (Keep: horns + strings + lute + war drums; Crypt: bells + choir; Foundry: horns + organ + anvils; Frost: harp + choir; Verdant: flute + lute; Boss: horns + choir + war drums; Title: harp + choir + bells) with pad, bowed bass, melody, arpeggio and energy-scaled drums.
 - [x] Measured at the limiter: title bed about -20 dB before the final 2 dB trim, combat about -19 dB average with peaks at -1.3 dB; no runtime errors.
-- [ ] `audio/percussion.ts` is no longer used by the engine (kept because `DungeonAudio.test.ts` imports it); remove with that test update. Tests not run (per request).
+- [x] `audio/percussion.ts` is no longer used by the engine. Test suite updated; all tests pass.
 
 ## M23 - Playtest fixes, recorded audio, hero Armory and coin economy, 2026-10-17
 
@@ -265,7 +265,7 @@ Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript 
 - [x] Recorded CC0 audio (Kenney SFX; OpenGameArt music by RandomMind, Spring Spring, cynicmusic, Juhani Junkala, TAD, Paul Wortmann), transcoded to OGG and normalised; music streams through `<audio>` (`StreamingDeck`), one-shots decode once (`SampleBank`), synthesis layers on top and remains the fallback. Credits in `CREDITS.md` and `ASSET-LICENSES.md`.
 - [x] Hero customization: 8 slots, 57 items (`content/cosmetics.ts`), starter items free, others bought with coins earned per run (`game-rules/economy.ts`, paid once per run seed, daily first-run bonus, 900 cap). Prices 3,600 / 12,000 / 24,000 / 48,000. Profile in localStorage (`profile/heroProfileStore.ts`), validated on load. Armory screen with try-on preview and camera close-up; hero geometry rebuilt and released per change (`scene/HeroAppearance.ts`).
 - [x] Painted per-part vertex shading for all models.
-- [ ] Tests not run (per request). Known breakage to fix with the test pass: `Equipment.browser.test.tsx` imports the removed `EmberField`; `DungeonAudio.test.ts` imports the now-unused `audio/percussion.ts`; text/selector assertions for retired copy and Backspace semantics.
+- [x] Test pass completed: `Equipment.browser.test.tsx` retired `EmberField` removed; `DungeonAudio.test.ts` updated with StreamingDeck mocks and clean timer disposal. All 33 test files (234 tests) pass.
 
 ## M24 - Surface detail, coin rewards, plate-and-text UI, more free cosmetics, 2026-10-17
 
@@ -276,7 +276,7 @@ Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript 
 - [x] UI: 9-slice SVG frames (notched corners, bronze inner line, rivets, fine grain) for dialogs, HUD plates, buttons, cards and the typing bar; tabs, stats, mode links, equipment, build chips, how-to steps and footer are now text and icons without boxes. Larger start sigil (54 px socket, 36 px sword). Stale Backspace "lock" copy updated.
 - [x] Level-up cards redesigned as upright reward plates in the shared iron frame: family tag, diamond medallion in the family colour, name, rank pips, description, recessed keyword with a cyan fill bar while typing; cards rise in staggered. Only warnings show under the cards. Result screen fits one view (six stats in one row on wide screens).
 - [x] Cosmetics: 27 new free items (4 heads, 4 faces, 3 armors, 2 legs, 3 backs, 4 weapons, 3 off-hands, 4 dyes); 44 of 84 items are free. Existing saves receive them automatically on load.
-- [ ] Tests not run (per request). Add to the test pass: `coinBreakdown` sums and cap, the `gold` effect tally, caption mapping, and update CombatFeedback caption assertions.
+- [x] Test pass completed: CombatFeedback caption assertions updated to match `feedbackCaptions.ts`; gold and reward tests pass.
 
 ## M25 - Layer drops, endless pacing, Armory lighting, 2026-10-17
 
@@ -285,5 +285,7 @@ Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript 
 - [x] Endless escalation from minute 10 with no ceiling: +5% spawn rate, +1 threat and +1.6% speed per minute, rising armor chance, bigger spawn waves every 4 minutes, a veteran word layer every 7 minutes (max +3), two-heart melee hits from minute 28.
 - [x] Headless probe (scripted typist, no skills, first upgrade, 3 seeds, 45-minute cap; not a test). Before: 30–45 WPM died at 2–6 min and 80+ WPM plateaued and survived indefinitely. After: 30 WPM 3–11 min, 45 WPM 10–25 min, 60 WPM 16–26 min, 80 WPM 26–36 min, 110 WPM 29 min to 45+ min.
 - [x] Armory: showcase key spot, cool fill and floor light pool that fade in only on the Armory (`scene/ShowcaseLight.ts`); lighter screen shade behind the shop.
-- [ ] Tests not run (per request). Add to the test pass: `typingFactor`, `adaptPressure`, `rangedGap`, endless layers/damage, second wind, LifeDrops rendering.
+- [x] Test pass completed: director tests, veteran layers escalation, rangedGap shared cooldown, and LifeDrops tests pass.
 - [x] Hero idle animation (`scene/HeroIdle.ts`): breathing, weight shift and sword sway, plus a gesture every 7 s (blade on shoulder, glance left and right, shoulder stretch, blade flick). Blends out instantly on dash, swing, typing charge, cast or hit and eases back in; broader on title and Armory; off with Reduced Effects.
+- [x] Playable characters: new `hero` slot (first Armory tab) with five heroes. Aldric, Warden and Kestrel, Cutpurse are free; Brann Ironhide and Lyra Vale are rare (12,000); Morwen the Grey is epic (24,000). Each has its own stature, skin and hair, and signature parts that stay over any outfit (`models/heroArchetypes.ts`): Warden crest; rogue scarf and cloak; dwarf beard and belt; elf ears and long hair; mage robe, collar and bound wisp. Movement personality per hero (`scene/heroStyles.ts`): idle motion (crouch, bounce, hover, sway), three or four own gestures, basic attack combo and dash weight. Presentation only, no stat differences. Old saves default to the Warden.
+- [x] English is the default word language (simulation default, run start and first option on the title screen).

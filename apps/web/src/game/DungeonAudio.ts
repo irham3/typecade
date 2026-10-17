@@ -235,10 +235,9 @@ export class DungeonAudio {
    this.intensity += ((arena ? Math.max(this.scene.boss ? 1 : this.scene.critical ? .75 : .2, this.scene.pressure ?? 0) : 0) - this.intensity) * .08
    const energy = this.intensity
    if (index === 0 && this.step % 64 === 0) this.syncRecordings()
-   const recorded = !!this.musicDeck
-   if (!recorded && index === 0) this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
-   if (!recorded && (index === 5 || index === 13)) this.sound(1900, .04, .025, "ambience", at, "noise", 1900, index === 5 ? -.4 : .4)
-   if (!recorded && this.orchestra && this.musicVolume) playScoreStep(this.orchestra, track, this.step, at, 60 / track.tempo / 4, { energy, calm: !arena, title: this.scene.mood === "title", hushed: this.scene.mood === "draft", boss: !!this.scene.boss })
+   if (index === 0) this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
+   if (index === 5 || index === 13) this.sound(1900, .04, .025, "ambience", at, "noise", 1900, index === 5 ? -.4 : .4)
+   if (this.orchestra && this.musicVolume) playScoreStep(this.orchestra, track, this.step, at, 60 / track.tempo / 4, { energy, calm: !arena, title: this.scene.mood === "title", hushed: this.scene.mood === "draft", boss: !!this.scene.boss })
    if (arena) {
     if (this.scene.critical && index % 8 === 0) {
      this.sound(105, .13, .23, "effects", at, "triangle", 62, 0, 2)

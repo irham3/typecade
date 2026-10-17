@@ -14,8 +14,16 @@ function device() {
  const context = {state:"running",currentTime:0,sampleRate:48000,destination:{},resume:vi.fn(async()=>{}),suspend:vi.fn(async()=>{}),close:vi.fn(async()=>{}),
   createGain:()=>({...node(),gain:parameter()}),createStereoPanner:()=>({...node(),pan:parameter()}),createBiquadFilter:()=>({...node(),type:"",frequency:parameter(),Q:parameter()}),
   createDynamicsCompressor:()=>({...node(),threshold:parameter(),knee:parameter(),ratio:parameter(),attack:parameter(),release:parameter()}),
-  createConvolver:()=>({...node(),buffer:null}),createBuffer:(...sizes:number[])=>({getChannelData:()=>new Float32Array(sizes[1]??48000)}),createOscillator:()=>{const s=source();sources.push(s);return s},createBufferSource:()=>{const s=source();sources.push(s);return s}}
+  createConvolver:()=>({...node(),buffer:null}),createBuffer:(...sizes:number[])=>({getChannelData:()=>new Float32Array(sizes[1]??48000)}),createOscillator:()=>{const s=source();sources.push(s);return s},createBufferSource:()=>{const s=source();sources.push(s);return s},
+  createMediaElementSource:()=>({...node()})}
  vi.stubGlobal("AudioContext",class{constructor(){return context}})
+ class MockAudio {
+  preload = ""; crossOrigin = ""; src = ""; loop = false; currentTime = 0; paused = true
+  play = vi.fn(async () => { this.paused = false })
+  pause = vi.fn(() => { this.paused = true })
+  load = vi.fn(); removeAttribute = vi.fn(); addEventListener = vi.fn(); removeEventListener = vi.fn()
+ }
+ vi.stubGlobal("Audio", MockAudio)
  return {context,sources}
 }
 it("mixes independent buses, schedules adaptive music and gives health/progression priority without unbounded voices",()=>{

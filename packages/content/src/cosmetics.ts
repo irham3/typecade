@@ -16,6 +16,7 @@ export interface CosmeticItem {
 }
 
 export const heroSlots: readonly { id: HeroSlot; label: string }[] = [
+  { id: "hero", label: "Hero" },
   { id: "head", label: "Head" },
   { id: "face", label: "Face" },
   { id: "body", label: "Armor" },
@@ -33,6 +34,12 @@ const item = (slot: HeroSlot, id: string, name: string, rarity: Rarity, note: st
   ({ id: `${slot}.${id}`, slot, name, rarity, price: rarityPrice[rarity], note })
 
 export const cosmetics: readonly CosmeticItem[] = [
+  item("hero", "warden", "Aldric, Warden", "starter", "Shield-first knight. Square stance, measured swings."),
+  item("hero", "rogue", "Kestrel, Cutpurse", "starter", "Low crouch, quick thrusts, never stands still."),
+  item("hero", "brute", "Brann Ironhide", "rare", "Stout dwarf. Heavy, grounded blows and a great red beard."),
+  item("hero", "duelist", "Lyra Vale", "rare", "Elven duelist. Tall, light on her feet, fast blade work."),
+  item("hero", "mage", "Morwen the Grey", "epic", "Battle mage who hovers above the stones with a bound wisp."),
+
   item("head", "squire", "Squire Cap", "starter", "Padded cloth cap."),
   item("head", "bare", "Bare Head", "starter", "Short hair, no helmet."),
   item("head", "bandana", "Bandana", "starter", "Knotted cloth over the hair."),
@@ -129,7 +136,7 @@ export const cosmetics: readonly CosmeticItem[] = [
 
 /** What a brand-new profile wears. Every id here must be a starter item. */
 export const defaultLoadout: Readonly<Record<HeroSlot, string>> = {
-  head: "head.squire", face: "face.steady", body: "body.gambeson", legs: "legs.boots",
+  hero: "hero.warden", head: "head.squire", face: "face.steady", body: "body.gambeson", legs: "legs.boots",
   back: "back.none", weapon: "weapon.arming", offhand: "offhand.buckler", dye: "dye.keep",
 }
 

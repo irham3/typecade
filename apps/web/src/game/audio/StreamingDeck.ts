@@ -11,6 +11,7 @@ export class StreamingDeck {
   private url: string | null = null
   private playing = false
   private muffled = false
+  private fadeTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(private readonly ctx: AudioContext, destination: AudioNode, private readonly fadeSeconds = 1.6) {
     this.output = ctx.createGain()
@@ -35,7 +36,11 @@ export class StreamingDeck {
     previous.gain.gain.cancelScheduledValues(now)
     previous.gain.gain.setTargetAtTime(0, now, this.fadeSeconds / 4)
     const outgoing = previous.element
-    window.setTimeout(() => { if (this.decks[this.current]!.element !== outgoing) outgoing.pause() }, this.fadeSeconds * 1000 + 200)
+    if (this.fadeTimer !== null) clearTimeout(this.fadeTimer)
+    this.fadeTimer = setTimeout(() => {
+      this.fadeTimer = null
+      if (this.decks[this.current]!.element !== outgoing) outgoing.pause()
+    }, this.fadeSeconds * 1000 + 200)
     if (!url) return
     this.current = 1 - this.current
     const next = this.decks[this.current]!
@@ -65,6 +70,7 @@ export class StreamingDeck {
 
   pause() {
     this.playing = false
+    if (this.fadeTimer !== null) { clearTimeout(this.fadeTimer); this.fadeTimer = null }
     for (const deck of this.decks) deck.element.pause()
   }
 
