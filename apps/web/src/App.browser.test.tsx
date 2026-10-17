@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { App, runTime } from "./App"
 import { SurvivalRun } from "@typecade/game-rules"
-import { combatLessonWords, dungeonUpgrades, skillRules } from "@typecade/content"
+import { bossPassages, combatLessonWords, dungeonUpgrades, skillRules } from "@typecade/content"
 import type { DungeonEvents } from "@typecade/contracts"
 import type { GameEventBridge } from "./bridge/game-event-bridge"
 const scene=vi.hoisted(()=>({destroy:vi.fn(),bridge:null as GameEventBridge<DungeonEvents>|null,fail:false,ready:undefined as Promise<void>|undefined}))
@@ -27,13 +27,14 @@ it("offers a skippable, replayable combat tutorial without replacing the saved r
  await mount();await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING");await click("Skip tutorial")
  expect(host.textContent).toContain("THE RUINED KEEP");expect(localStorage.getItem("typecade:dungeon:run:v1")).toBe(raw)
  await click("Typing Dojo");await click("Combat tutorial");expect(host.textContent).toContain("Your word is your movement");await click("Skip tutorial");expect(host.textContent).toContain("Typing Dojo");await click("Main menu")
- await click("Enter the keep");await click("Try combat tutorial");await click("Skip tutorial");expect(host.textContent).toContain("The keep is listening.")
+ await click("Enter the keep");await click("Play the interactive tutorial");await click("Skip tutorial");expect(host.textContent).toContain("The keep is listening.")
 })
 for(const language of ["en","id"] as const)it(`teaches each real combat action and displays hit and upgrade feedback in ${language}`,async()=>{
  await mount();const select=host.querySelector<HTMLSelectElement>('[aria-label="Word language"]')!;await act(()=>{select.value=language;select.dispatchEvent(new Event("change",{bubbles:true}))});await click("Combat tutorial")
  const words=combatLessonWords[language]
- const type=async(word:string)=>act(()=>{for(const key of (["Tab","Enter"].includes(word)?[word]:word))host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true,cancelable:true}))})
+ const type=async(word:string)=>act(()=>{for(const key of (["Tab","Enter","Backspace"].includes(word)?[word]:word))host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true,cancelable:true}))})
  await type(words.strike);expect(host.textContent).toContain("Enemy defeated.");await type("Enter")
+ expect(host.querySelector(".visual-cancel")).not.toBeNull();await type("Backspace");await type(words.cancel.goal);expect(host.textContent).toContain("Lock released");await type("Enter")
  await type(words.armor[0]!);await act(()=>scene.bridge!.emit("renderer",{status:"lost",calls:0,geometries:0,textures:0}));await click("Restore scene");await click("Resume run");expect(host.textContent).toContain("Two words, two armor layers");await type(words.armor[1]!);await click("Next lesson")
  await type(words.treasure);expect(host.textContent).toContain("Chest opened.");await click("Next lesson")
  await type(words.barrel);expect(host.textContent).toContain("One word, one chain reaction.");await click("Next lesson")
@@ -45,7 +46,7 @@ for(const language of ["en","id"] as const)it(`teaches each real combat action a
  await act(()=>{for(const key of keyword)host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true}))})
  expect(host.querySelector(".upgrade-acquired")?.textContent).toContain("UPGRADE ACTIVE");expect(host.textContent).toContain("Upgrade applied.")
  expect(Object.values(dungeonUpgrades).some(offer=>host.textContent?.includes(offer.name))).toBe(true)
- await click("Finish tutorial");await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING · 1/7")
+ await click("Finish tutorial");await click("Combat tutorial");expect(host.textContent).toContain("SAFE TRAINING · 1/8")
  const hidden=vi.spyOn(document,"hidden","get").mockReturnValue(true);await act(()=>document.dispatchEvent(new Event("visibilitychange")));expect(host.textContent).toContain("Take a breath.");hidden.mockReturnValue(false);await act(()=>document.dispatchEvent(new Event("visibilitychange")));await click("Resume run");await click("Skip tutorial")
 })
 it("announces reinforcements during a temporarily empty arena",async()=>{
@@ -154,11 +155,33 @@ it("banks level choices while a boss still has armor",async()=>{
 
 it("shows live boss windup, typo pressure and barricade breach without replacing the passage",async()=>{
  for(const state of ["windup","rush","breach"] as const){
-  const r=new SurvivalRun("duel-ui-"+state),s=r.state;r.start();s.time=s.worldTime=301;s.nextBoss=600;s.spawnAt=100;s.enemies=[];s.queue=[];const boss=r.spawn("boss",{x:4,z:0})!;boss.words=[];s.phase="overdrive";s.paragraph="tuntaskan BLIZZARD";s.stagger=3.2;s.bossArena={x:0,z:0,hp:state==="breach"?0:24,cooldown:0,rage:state==="rush"?2:0}
+  const r=new SurvivalRun("duel-ui-"+state),s=r.state;r.start();s.time=s.worldTime=301;s.nextBoss=600;s.spawnAt=100;s.enemies=[];s.queue=[];const boss=r.spawn("boss",{x:4,z:0})!;boss.words=[];s.phase="overdrive";s.paragraph="tuntaskan BLIZZARD";s.stagger=3.2;s.bossArena={x:0,z:0,hp:state==="breach"?0:24,cooldown:0,rage:state==="rush"?2:0,calm:0}
   if(state==="windup"){boss.motion="windup";boss.motionTime=.8;boss.aim={x:0,z:0}}
   localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
   expect(host.querySelector('[data-testid="boss-passage"]')!.textContent).toContain("tuntaskan BLIZZARD");expect(host.querySelector('[aria-label="Barricade health"]')?.getAttribute("value")).toBe(state==="breach"?"0":"24")
   expect(host.textContent).toContain(state==="windup"?"HAMMER WINDUP":state==="rush"?"BOSS RUSH":"BREACHED")
   expect(host.querySelector(".upgrade-card")).toBeNull();await act(()=>root.unmount());root=createRoot(host)
  }
+})
+it("primes first runs with a dismissible how-to-play guide and a keyboard controls sheet",async()=>{
+ await mount();await click("All controls");expect(host.querySelector('[aria-label="Keyboard controls"]')).not.toBeNull();expect(host.textContent).toContain("Combat actions");await click("Done")
+ await click("Enter the keep");expect(host.textContent).toContain("How to play");expect(host.querySelector(".visual-cancel")).not.toBeNull()
+ await click("Keyboard controls");expect(host.textContent).toContain("Cancel a locked target");await click("Done")
+ const optOut=host.querySelector<HTMLInputElement>('.intro-optout input')!;await act(()=>optOut.click());await click("Begin run");expect(localStorage.getItem("typecade:dungeon:intro-hidden:v1")).toBe("1")
+ await act(()=>host.querySelector<HTMLInputElement>('[data-testid="dungeon-input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})));await click("Keyboard controls");expect(host.textContent).toContain("Boss break combo");await click("Done");await click("Save and return")
+ await act(()=>root.unmount());root=createRoot(host);localStorage.removeItem("typecade:dungeon:run:v1");await mount();await click("Enter the keep");expect(host.textContent).toContain("The keep is listening.")
+ await click("How to play");const show=host.querySelector<HTMLInputElement>('.intro-optout input')!;expect(show.checked).toBe(false);await act(()=>show.click());expect(localStorage.getItem("typecade:dungeon:intro-hidden:v1")).toBe("0");await click("Done")
+ expect(host.textContent).toContain("How to play");await click("Play the interactive tutorial");expect(host.textContent).toContain("SAFE TRAINING");await click("Skip tutorial");expect(host.textContent).toContain("The keep is listening.")
+ await click("Back to title");await click("Enter the keep");expect(host.textContent).toContain("The keep is listening.")
+ const cancel=async()=>act(()=>{host.querySelector("dialog.controls-dialog, dialog.howto-dialog")!.dispatchEvent(new Event("cancel",{cancelable:true}))})
+ await click("Keyboard controls");await cancel();await click("How to play");await cancel();expect(host.textContent).toContain("The keep is listening.")
+ await click("Try combat tutorial");await click("Skip tutorial")
+ await act(()=>root.unmount());root=createRoot(host);localStorage.clear();await mount();await click("Enter the keep")
+ await act(()=>host.querySelector<HTMLInputElement>('.intro-optout input')!.click());await click("Play the interactive tutorial");expect(localStorage.getItem("typecade:dungeon:intro-hidden:v1")).toBe("1");await click("Skip tutorial")
+})
+it("credits the quotation used for the boss line and announces the duel",async()=>{
+ const r=new SurvivalRun("quote-ui","en"),s=r.state;r.start();s.time=s.worldTime=301;s.nextBoss=600;const boss=r.spawn("boss",{x:4,z:0})!;boss.words=[];s.phase="overdrive";s.stagger=3.2
+ s.paragraph=bossPassages.en[0]!;s.bossArena={x:0,z:0,hp:30,cooldown:0,rage:0,calm:1.5}
+ localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
+ expect(host.querySelector(".boss-source")?.textContent).toContain("Sun Tzu");expect(host.querySelector(".boss-banner")?.textContent).toContain("BOSS DUEL")
 })

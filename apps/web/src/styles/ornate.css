@@ -1,0 +1,176 @@
+/* Shared ornate system: tokens, flourishes, dividers, embers and every modal. Loaded after styles.css. */
+:root {
+  --gild: #e9bf6a;
+  --gild-hi: #ffe3a3;
+  --gild-lo: #8a6534;
+  --night: #0b1220;
+  --night-2: #131d30;
+  --night-3: #1b2943;
+  --violet: #b48cff;
+  --cyan: #7fe8ff;
+  --ember: #ff8a3d;
+  --blood: #ff5a6a;
+  --panel-glow: 0 0 0 1px #00000080, 0 18px 40px #02060ecc, 0 0 32px #b48cff1f;
+}
+
+/* Corner flourishes */
+.corner-flourish { position: absolute; width: 26px; height: 26px; color: var(--gild); pointer-events: none; z-index: 2; filter: drop-shadow(0 0 4px #e9bf6a66) }
+.corner-flourish .flourish-gem { fill: var(--cyan); filter: drop-shadow(0 0 3px var(--cyan)) }
+.corner-tl { top: -3px; left: -3px }
+.corner-tr { top: -3px; right: -3px; transform: scaleX(-1) }
+.corner-bl { bottom: -3px; left: -3px; transform: scaleY(-1) }
+.corner-br { bottom: -3px; right: -3px; transform: scale(-1, -1) }
+
+/* Gem divider */
+.gem-divider { display: flex; align-items: center; gap: 8px; margin: 14px 0; color: var(--gild); font-size: 9px; letter-spacing: 3px }
+.gem-divider i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gild-lo), var(--gild)) }
+.gem-divider i:last-child { background: linear-gradient(270deg, transparent, var(--gild-lo), var(--gild)) }
+.gem-divider b { width: 7px; height: 7px; transform: rotate(45deg); background: var(--cyan); box-shadow: 0 0 8px var(--cyan) }
+.gem-divider span { padding: 0 4px; text-shadow: 0 0 10px #e9bf6a88 }
+
+/* Rising embers */
+.ember-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0 }
+.ember-field i { position: absolute; bottom: -10px; left: calc(mod(var(--i) * 37, 100) * 1%); width: 3px; height: 3px; background: #ffb066; box-shadow: 0 0 6px 1px #ff8a3d; animation: ember-rise calc(5s + var(--i) * .37s) linear calc(var(--i) * -.61s) infinite; opacity: 0 }
+.ember-field i:nth-child(3n) { background: #c9a6ff; box-shadow: 0 0 6px 1px #b48cff }
+.ember-field i:nth-child(4n) { background: #9ff5fa; box-shadow: 0 0 6px 1px #7fe8ff }
+@keyframes ember-rise { 0% { transform: translate(0, 0); opacity: 0 } 10% { opacity: .9 } 70% { opacity: .6 } 100% { transform: translate(calc((var(--i) - 9) * 3px), -110vh); opacity: 0 } }
+[data-reduced-effects="true"] .ember-field { display: none }
+
+/* ---------- Dialog shell ---------- */
+.dungeon-dialog.ornate-dialog {
+  --accent: var(--gild);
+  overflow: visible;
+  border: 2px solid var(--gild-lo);
+  outline: 1px solid #e9bf6a33; outline-offset: 4px;
+  background:
+    radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+    repeating-linear-gradient(45deg, #ffffff04 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, var(--night-3), var(--night) 85%);
+  box-shadow: var(--panel-glow), inset 0 0 0 1px #ffffff0d, inset 0 0 60px #000a;
+  padding-top: 40px;
+  animation: dialog-rise .32s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+.dungeon-dialog.ornate-dialog > * { position: relative; z-index: 1 }
+.dungeon-dialog.ornate-dialog > .ember-field { position: absolute; z-index: 0; border-radius: inherit }
+.dungeon-dialog.ornate-dialog::backdrop { background: radial-gradient(circle at 50% 40%, #1a1030cc, #03060dee 70%); backdrop-filter: blur(3px) saturate(1.2) }
+@keyframes dialog-rise { from { opacity: 0; transform: translateY(18px) scale(.96) } to { opacity: 1; transform: none } }
+
+.dialog-crest {
+  position: absolute !important; top: -30px; left: 50%; transform: translateX(-50%);
+  width: 58px; height: 58px; display: grid; place-items: center; z-index: 3 !important;
+  background: radial-gradient(circle at 35% 30%, #34466a, #0d1424 70%);
+  border: 2px solid var(--gild); border-radius: 50%;
+  box-shadow: 0 0 0 4px #0b1220, 0 0 0 5px var(--gild-lo), 0 0 26px color-mix(in srgb, var(--accent) 70%, transparent);
+  color: var(--accent);
+}
+.dialog-crest .glyph { width: 28px; height: 28px; filter: drop-shadow(0 0 6px currentColor) }
+.ornate-dialog > header { border-bottom: 0; justify-content: center; text-align: center; margin-bottom: 8px }
+.ornate-dialog > header h2 {
+  font-family: KeepPixel, monospace; letter-spacing: 1px; color: var(--gild-hi);
+  text-shadow: 0 2px 0 var(--gild-lo), 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.ornate-dialog .dialog-close { position: absolute; top: 10px; right: 12px; background: #0b1220; border: 1px solid var(--gild-lo); color: var(--gild); width: 30px; height: 30px; padding: 0; display: grid; place-items: center }
+.ornate-dialog .dialog-close:hover { color: #fff; border-color: var(--gild); box-shadow: 0 0 12px #e9bf6a66 }
+.ornate-dialog > .eyebrow { text-align: center; color: color-mix(in srgb, var(--accent) 80%, #fff); letter-spacing: 3px }
+
+.tone-pause { --accent: var(--cyan) }
+.tone-defeat { --accent: var(--blood) }
+.tone-draft { --accent: var(--gild-hi) }
+.tone-relic { --accent: var(--violet) }
+.tone-info { --accent: #9fd3ff }
+.tone-defeat.ornate-dialog { border-color: #7a2c36; background: radial-gradient(120% 70% at 50% -10%, #ff5a6a33, transparent 60%), repeating-linear-gradient(45deg, #ffffff04 0 2px, transparent 2px 6px), linear-gradient(180deg, #2a1424, #0b0a14 85%) }
+
+/* Buttons inside dialogs */
+.ornate-dialog .primary-action {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: linear-gradient(180deg, #f6d48c, #d6a24f 55%, #b07d36);
+  color: #241809; font-weight: 800; letter-spacing: 1px; text-shadow: 0 1px #ffe9b8;
+  overflow: hidden;
+}
+.ornate-dialog .primary-action .glyph { width: 18px; height: 18px }
+.ornate-dialog .primary-action::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, #ffffff88 48%, transparent 66%); transform: translateX(-120%); animation: shimmer 3.2s ease-in-out infinite }
+@keyframes shimmer { 0%, 55% { transform: translateX(-120%) } 85%, 100% { transform: translateX(120%) } }
+.ornate-dialog button:not(.primary-action):not(.quiet):not(.dialog-close) { background: linear-gradient(180deg, #23324e, #172238); border-color: #4b5e82; display: inline-flex; align-items: center; justify-content: center; gap: 8px }
+.ornate-dialog button:not(.primary-action):not(.quiet):not(.dialog-close):hover { border-color: var(--gild); box-shadow: 0 0 14px #e9bf6a33 }
+.ornate-dialog button .glyph { width: 16px; height: 16px }
+.dialog-actions { display: grid; gap: 10px; margin-top: 16px }
+.dialog-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+
+/* Stat tiles */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 }
+.stat-grid.compact { grid-template-columns: repeat(4, 1fr) }
+.stat-tile { position: relative; display: grid; justify-items: center; gap: 4px; padding: 12px 6px; background: linear-gradient(180deg, #1c2a45, #111a2c); border: 1px solid #36486b; box-shadow: inset 0 1px #ffffff12 }
+.stat-tile .glyph { width: 18px; height: 18px; color: var(--accent); filter: drop-shadow(0 0 5px currentColor) }
+.stat-tile b { font: 20px KeepPixel, monospace; color: #fff3d6; text-shadow: 0 2px #0008 }
+.stat-tile span { font-size: 8px; letter-spacing: 2px; color: #9fb0c8 }
+
+/* Level pips and build chips */
+.level-pips { display: inline-flex; gap: 3px; margin-left: 2px; vertical-align: middle }
+.level-pips i { width: 6px; height: 6px; transform: rotate(45deg); background: #2b3a55; border: 1px solid #4a5d82 }
+.level-pips i.on { background: var(--gild-hi); border-color: var(--gild); box-shadow: 0 0 5px var(--gild) }
+.level-pips i.next { background: transparent; border-color: var(--gild); animation: pip-blink 1s steps(2) infinite }
+@keyframes pip-blink { 50% { background: #e9bf6a66 } }
+.build-showcase { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 }
+.build-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; font-size: 10px; background: #15203a; border: 1px solid #3c4f75; border-left: 3px solid var(--chip, var(--gild)) }
+.build-chip .glyph { width: 14px; height: 14px; color: var(--chip, var(--gild)) }
+.chip-weapon { --chip: var(--cyan) }
+.chip-skill { --chip: #ffb85a }
+.chip-relic { --chip: var(--violet) }
+
+/* Defeat result */
+.result-dialog { width: min(620px, calc(100vw - 32px)) }
+.record-ribbon { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 6px auto 0; padding: 6px 18px; width: max-content; font: 10px KeepPixel, monospace; letter-spacing: 2px; color: #241809; background: linear-gradient(90deg, transparent, var(--gild) 15%, var(--gild-hi) 50%, var(--gild) 85%, transparent); animation: ribbon-pop .6s cubic-bezier(.2, 1.6, .4, 1) .3s both }
+.record-ribbon .glyph { width: 14px; height: 14px }
+@keyframes ribbon-pop { from { transform: scale(.4); opacity: 0 } }
+.result-hero { display: grid; place-items: center; margin: 14px 0 4px }
+.result-time { display: grid; justify-items: center; gap: 4px }
+.result-time small { font-size: 9px; letter-spacing: 4px; color: #e4a0a8 }
+.result-time b { font: clamp(36px, 7vw, 54px) KeepPixel, monospace; color: #fff1dc; text-shadow: 0 3px #6b1e2b, 0 0 30px #ff5a6a77 }
+.result-time span { font-size: 10px; color: #b7a7b8 }
+.tone-defeat .stat-tile { background: linear-gradient(180deg, #2b1a2c, #170f1c); border-color: #573247 }
+
+/* Pause */
+.pause-dialog { width: min(520px, calc(100vw - 32px)) }
+
+/* Draft: collectible cards */
+.draft-dialog { width: min(860px, calc(100vw - 24px)) }
+.draft-dialog .upgrade-cards { gap: 14px; margin-top: 14px }
+.draft-dialog .upgrade-card {
+  --accent: var(--gild);
+  position: relative; display: grid; justify-items: center; text-align: center; gap: 8px;
+  padding: 26px 14px 16px;
+  background: radial-gradient(90% 60% at 50% 0%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%), linear-gradient(180deg, #1d2a46, #0f1729);
+  border: 2px solid color-mix(in srgb, var(--accent) 60%, #2a3550);
+  box-shadow: 0 0 0 3px #0b1220, 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent), 0 14px 28px #000a, 0 0 24px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: card-deal .45s cubic-bezier(.2, 1.4, .4, 1) both;
+  transition: transform .15s, box-shadow .15s;
+}
+.draft-dialog .upgrade-card.typing { transform: translateY(-6px) scale(1.03); box-shadow: 0 0 0 3px #0b1220, 0 0 0 4px var(--accent), 0 20px 34px #000c, 0 0 40px color-mix(in srgb, var(--accent) 55%, transparent) }
+@keyframes card-deal { from { opacity: 0; transform: translateY(30px) rotate(-3deg) scale(.9) } }
+.upgrade-family { position: absolute; top: -10px; padding: 3px 10px; font-size: 8px; letter-spacing: 2px; color: #0b1220; background: var(--accent); box-shadow: 0 0 12px var(--accent) }
+.upgrade-medallion { width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #3a4d75, #0f1729 70%); border: 2px solid var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 0 12px #000 }
+.upgrade-medallion .glyph { width: 30px; height: 30px; color: var(--accent); filter: drop-shadow(0 0 6px currentColor) }
+.draft-dialog .upgrade-card > .glyph { display: none }
+.draft-dialog .upgrade-card h3 { font: 12px KeepPixel, monospace; color: #fff3d6; margin: 0 }
+.draft-dialog .upgrade-card p { font-size: 10px; line-height: 1.6; color: #b9c6da; margin: 0 }
+.draft-dialog .upgrade-card > strong { width: 100%; padding: 9px 6px; margin-top: auto; font: 14px KeepPixel, monospace; letter-spacing: 2px; color: #fff; background: #0a101d; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent) }
+.draft-dialog .upgrade-card > strong .typed { color: var(--accent); text-shadow: 0 0 10px var(--accent) }
+.family-weapon .upgrade-family::before { content: "◆ " }
+
+/* Settings, history and other dialogs share the frame; tighten rows */
+.settings-dialog .settings-row { padding: 12px; background: #121c31; border: 1px solid #2c3b5b; margin-bottom: 8px }
+.history-dialog .history-list article { background: linear-gradient(180deg, #1a2742, #111a2c); border: 1px solid #34466b; border-left: 3px solid var(--gild) }
+
+@media (max-width: 600px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr) }
+  .stat-grid.compact { grid-template-columns: repeat(2, 1fr) }
+  .dialog-crest { width: 46px; height: 46px; top: -24px }
+  .draft-dialog .upgrade-card { padding: 20px 10px 12px; grid-template-columns: 1fr }
+  .upgrade-medallion { width: 46px; height: 46px }
+}
+.dungeon-dialog.ornate-dialog > .corner-flourish { position: absolute; z-index: 2 }
+.dungeon-dialog.ornate-dialog > .corner-tl { top: -4px; left: -4px }
+.dungeon-dialog.ornate-dialog > .corner-tr { top: -4px; right: -4px }
+.dungeon-dialog.ornate-dialog > .corner-bl { bottom: -4px; left: -4px }
+.dungeon-dialog.ornate-dialog > .corner-br { bottom: -4px; right: -4px }
+.dungeon-dialog.ornate-dialog > .corner-flourish { width: 34px; height: 34px }

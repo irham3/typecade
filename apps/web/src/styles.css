@@ -166,3 +166,48 @@ button:hover:not(:disabled):not(.quiet){border-top-color:#b0c9ce;box-shadow:inse
 .combat-caption.source-hit{color:#ffc4a8;border-color:#ed836f;background:#492d31}
 
 .barricade-status{display:flex;align-items:center;gap:8px;margin:8px 0 10px;color:#dfc38e;font:10px ui-monospace,monospace}.barricade-status .glyph{width:16px;height:16px}.barricade-status progress{flex:1;min-width:30px;height:8px;accent-color:#c9a26c}.barricade-status.breached{color:#f39b7d}.combat-caption.source-barrier{color:#ffcb97;border-color:#d8a067;background:#412f26}@media(max-width:600px){.barricade-status{font-size:8px}.barricade-status span{max-width:135px}}
+/* Keyboard controls sheet, how-to-play primer and lesson visuals */
+.controls-dialog{width:min(860px,calc(100vw - 28px))}.howto-dialog{width:min(820px,calc(100vw - 28px))}
+.keycap{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 6px;font-size:10px;line-height:1;border:1px solid #4d5a68;border-bottom-width:3px;background:#17222e;color:#8494a3;border-radius:3px;white-space:nowrap}
+.keycap.wide{min-width:58px}.keycap[class*=role-]{color:#f6eedf;font-weight:700}
+.keycap.role-type{background:#6b4524;border-color:#e3a052}.keycap.role-symbol{background:#5a3f2c;border-color:#c99a6a}.keycap.role-case{background:#3f2f5c;border-color:#a98be8}
+.keycap.role-cancel{background:#5f5020;border-color:var(--gold)}.keycap.role-skill{background:#1f4b5a;border-color:var(--blue)}.keycap.role-pause{background:#5a2626;border-color:var(--red)}
+.keycap.role-line{background:#2b4a2b;border-color:var(--green)}.keycap.role-next{background:#2a3644;border-color:#8fa3b5}
+.controls-guide{display:grid;gap:18px}.key-map{display:grid;gap:5px;padding:14px;background:#0f1822;border:1px solid #3b4857;overflow-x:auto}
+.key-row{display:flex;gap:5px}.key-row .keycap{flex:1 0 auto}.key-row.row-1{padding-left:0}.key-row.row-4{justify-content:center}.key-row.row-4 .keycap{flex:0 0 46%}
+.control-groups{display:grid;grid-template-columns:1fr 1fr;gap:18px}.control-group h3{font:11px KeepPixel,monospace;color:#e9a35a;letter-spacing:1px;margin-bottom:10px;text-transform:uppercase}
+.control-group ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}.control-group li{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;color:#c3ced6;border-bottom:1px solid #2c3846;padding-bottom:8px}
+.control-group .keys{display:flex;gap:4px;align-items:center;flex-shrink:0}.through{color:#7f8f9d;font-size:10px}.example{color:var(--blue);font-size:11px}
+.controls-example{font-size:11px;color:#aab8c3;margin:0}.controls-example strong{color:var(--gold)}
+.title-footnote .controls-link{font-size:9px;padding:2px 6px;color:var(--blue);text-decoration:underline}
+.dialog-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:8px}.dialog-links .quiet{font-size:11px;padding:8px 10px}
+.intro-optout{display:flex;align-items:center;gap:12px;margin:18px 0 6px;font-size:11px;color:#c3ced6;grid-template-columns:none}.intro-optout small{display:block;color:#8d9caa;font-size:10px}
+.how-to-play{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.how-step{background:#14202c;border:1px solid #3b4857;padding:12px;display:grid;gap:8px;align-content:start}
+.how-step h3{font-size:12px;margin:0;color:var(--gold)}.how-step p{font-size:10px;line-height:1.7;color:#bac6cf;margin:0}
+.lesson-visual{height:74px;display:flex;align-items:center;justify-content:center;gap:10px;background:radial-gradient(circle at 50% 120%,#2d3d4f,#111b26 70%);border:1px solid #33414f;position:relative;overflow:hidden;margin-bottom:10px}
+.how-step .lesson-visual{margin:0}
+.mini-foe{position:relative;font-size:13px;font-weight:700;padding:5px 8px;background:#0e1620e6;border:1px solid #607080;color:#e9e1d1}.mini-foe b{color:var(--gold)}
+.mini-foe i{position:absolute;top:-14px;left:0;font-size:7px;font-style:normal;color:var(--gold);letter-spacing:1px}
+.mini-foe.locked{border-color:var(--gold);animation:lock-release 3s infinite}.mini-foe.target{animation:target-hit 3s infinite}
+.mini-foe.typing span{animation:type-in 3.2s infinite;color:#e9e1d1}
+.mini-hero{width:14px;height:22px;background:#4999d4;box-shadow:0 -6px 0 -2px #bed4df,inset 0 -6px #263e63;animation:hero-dash 3.2s infinite}
+.visual-cancel .keycap.pressed{animation:key-press 3s infinite}.visual-skill .keycap.pressed,.visual-pause .keycap.pressed{animation:key-press 3s infinite}
+.mini-command{display:flex;font-weight:700;font-size:14px;color:#8fa3b5}.mini-command span{animation:type-in 3s infinite}
+.mini-pause{font:11px KeepPixel,monospace;color:#f3ead7;padding:6px 10px;border:1px solid var(--red);animation:pause-show 3s infinite}
+@keyframes type-in{0%,8%{color:#e9e1d1}12%,78%{color:var(--gold)}90%,100%{color:#e9e1d1}}
+@keyframes hero-dash{0%,55%{transform:translateX(-40px)}70%,85%{transform:translateX(0)}100%{transform:translateX(-40px)}}
+@keyframes lock-release{0%,30%{border-color:var(--gold);opacity:1}40%,100%{border-color:#607080;opacity:.55}}
+@keyframes key-press{0%,25%{transform:none}32%{transform:translateY(2px);border-bottom-width:1px;filter:brightness(1.5)}42%,100%{transform:none}}
+@keyframes target-hit{0%,55%{border-color:#607080;transform:none}62%{border-color:var(--gold);transform:scale(1.12)}75%,100%{opacity:.2;transform:scale(.8)}}
+@keyframes pause-show{0%,30%{opacity:0}40%,90%{opacity:1}100%{opacity:0}}
+.lesson-panel .lesson-visual{height:58px}
+@media(max-width:760px){.control-groups{grid-template-columns:1fr}.how-to-play{grid-template-columns:1fr 1fr}.keycap{min-width:22px;height:26px;font-size:9px;padding:0 3px}.keycap.wide{min-width:44px}.key-map{padding:8px}}
+@media(max-width:420px){.how-to-play{grid-template-columns:1fr}.key-row{gap:3px}.keycap{min-width:18px;padding:0 2px}}
+@media(max-width:700px){.lesson-panel .lesson-visual{display:none}}
+@media(prefers-reduced-motion:reduce){.lesson-visual *{animation:none!important}}
+.control-group .keys>span{display:flex;gap:4px;align-items:center}
+.boss-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:14;pointer-events:none;display:grid;gap:8px;text-align:center;padding:16px 34px;background:linear-gradient(90deg,transparent,#2a1416f0 18%,#2a1416f0 82%,transparent);border-block:2px solid #e9686199;animation:boss-banner 2.8s ease-out forwards;min-width:min(560px,92vw)}
+.boss-banner strong{font:clamp(18px,3vw,30px) KeepPixel,monospace;color:#ffcf7a;letter-spacing:3px;text-shadow:3px 3px #120708}.boss-banner span{font-size:11px;color:#f1ddd0;letter-spacing:1px}
+@keyframes boss-banner{0%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}10%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.boss-banner{animation:none}}
+.boss-source{display:block;text-align:right;font-size:10px;color:#c9b38a;letter-spacing:1px;margin-top:6px}

@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from "react"
 import type { CSSProperties } from "react"
 import type { DungeonEvents, DungeonLabel, DungeonState, SupplyKind } from "@typecade/contracts"
 import type { GameEventBridge } from "../bridge/game-event-bridge"
-import { dungeonObjects, dungeonSupplies } from "@typecade/content"
+import { dungeonObjects, dungeonSupplies, enemyProfiles } from "@typecade/content"
 import { Glyph } from "./Glyph"
+
+/** Gap in pixels between a label's bottom edge and the enemy's projected head. */
+const LABEL_GAP = 18
 
 export function TargetLabels({ view, bridge, tutorial=false }: { view: DungeonState; bridge: GameEventBridge<DungeonEvents>; tutorial?:boolean }) {
  const [points, setPoints] = useState<DungeonLabel[]>([])
@@ -20,7 +23,7 @@ export function TargetLabels({ view, bridge, tutorial=false }: { view: DungeonSt
   if (!e || !point || !e.words.length) return null
   const object=dungeonObjects.includes(e.kind),supply=e.kind in dungeonSupplies?dungeonSupplies[e.kind as SupplyKind]:null
   const word = e.words[0]!, active = id === view.target, w = Math.max(88, Math.min(width - pad * 2, word.length * (compact ? 10 : 12) + (object?48:30))), h = tight?42:50
-  let x = Math.max(pad, Math.min(width - w - pad, point.x - w / 2)), y = Math.max(top, Math.min(height - bottom - h, point.y - 44))
+  let x = Math.max(pad, Math.min(width - w - pad, point.x - w / 2)), y = Math.max(top, Math.min(height - bottom - h, point.y - h - LABEL_GAP))
   const intersects = (a: {x:number;y:number;w:number;h:number}) => x < a.x + a.w + 8 && x + w + 8 > a.x && y < a.y + a.h + 8 && y + h + 8 > a.y
   for (let i=0; i<24 && used.some(intersects); i++) {
    y += h + 10
@@ -30,10 +33,16 @@ export function TargetLabels({ view, bridge, tutorial=false }: { view: DungeonSt
   used.push({x,y,w,h})
   const prefix = active ? view.prefix.length : 0
   return <div key={id} className={`enemy-label kind-${e.kind} ${object?"object-label":"foe-label"} ${active ? "locked" : ""}`} data-testid="enemy-label" data-enemy-id={id} data-word={word} title={supply?`${supply.name} · ${supply.benefit}`:undefined} style={{left:x,top:y,width:w,"--lead-x":`${point.x-x-w/2}px`,"--lead-y":`${Math.max(0,point.y-y-h)}px`} as CSSProperties}>
-   <small>{object&&<Glyph name={supply?supply.icon:e.kind==="chest"?"gem":"storm"}/>} {supply?`ITEM · ${e.kind==="shield"?"+2 SHIELD":e.kind==="potion"?"+2 HP":e.kind==="mana"?"+40 MP":"SENTRY 18s"}`:e.motion==="windup"?`ENEMY · CHARGE ${e.motionTime!.toFixed(1)}s`:e.kind==="mage"?e.attack<1.1?`AIR · CAST ${Math.max(0,e.attack).toFixed(1)}s`:"AIR · MAGE":e.kind==="bat"?"AIR · BAT":e.kind === "bomber" ? `ENEMY · FUSE ${Math.max(0,e.attack).toFixed(1)}s` : e.kind === "boss" ? "BOSS · MINOTAUR" : e.kind === "barrel" ? "OBJECT · EXPLODES" : e.kind === "chest" ? "LOOT · +25G / +50XP" : `${active ? "LOCKED" : "ENEMY"} · ${e.kind.toUpperCase()}`}</small>
+   <small>{object&&<Glyph name={supply?supply.icon:e.kind==="chest"?"gem":"storm"}/>} {supply?`ITEM · ${e.kind==="shield"?"+2 SHIELD":e.kind==="potion"?"+2 HP":e.kind==="mana"?"+40 MP":"SENTRY 18s"}`:e.motion==="windup"?`ENEMY · CHARGE ${e.motionTime!.toFixed(1)}s`:e.kind==="mage"?e.attack<1.1?`AIR · CAST ${Math.max(0,e.attack).toFixed(1)}s`:"AIR · MAGE":e.kind==="bat"?"AIR · BAT":e.kind === "bomber" ? `ENEMY · FUSE ${Math.max(0,e.attack).toFixed(1)}s` : e.kind === "boss" ? "BOSS · MINOTAUR" : e.kind === "barrel" ? "OBJECT · EXPLODES" : e.kind === "chest" ? "LOOT · +25G / +50XP" : enemyProfiles[e.kind] ? profileTag(e) : `${active ? "LOCKED" : "ENEMY"} · ${e.kind.toUpperCase()}`}</small>
    <strong>{e.words.length>1 && <em>×{e.words.length} </em>}<span className="typed">{word.slice(0,prefix)}</span><span className={active ? "current-letter" : ""}>{word[prefix]}</span>{word.slice(prefix+1)}</strong>
    {!object&&<div className="armor-stack">{e.words.map((_,i)=><i key={i} className={i===e.words.length-1 ? "health" : i===0 ? "shield" : "armor"}/>)}</div>}
    {active && <span className="target-leader" aria-hidden="true"/>}
   </div>
  })}</div>
+}
+
+/** Newer foes announce their behaviour; casters also count down the next shot, ward or summon. */
+function profileTag(e: DungeonState["enemies"][number]) {
+ const profile=enemyProfiles[e.kind]!,timed=["archer","imp","shaman","necromancer"].includes(e.kind)&&e.attack<1.1
+ return timed?`${profile.tag} · ${e.kind==="shaman"?"WARD":e.kind==="necromancer"?"SUMMON":"SHOT"} ${Math.max(0,e.attack).toFixed(1)}s`:`${profile.tag} · ${profile.name}`
 }

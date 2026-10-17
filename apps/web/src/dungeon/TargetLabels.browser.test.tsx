@@ -54,3 +54,16 @@ it("names each supply benefit and makes flying, casting and charge warnings dist
   }
  }finally{await act(()=>root.unmount());host.remove();bridge.clear()}
 })
+
+it("announces each new foe's behaviour and counts down casters' next shot, ward or summon",async()=>{
+ Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});const host=document.createElement("div");host.style.cssText="position:relative;width:1440px;height:900px";document.body.append(host)
+ const root=createRoot(host),r=new SurvivalRun("bestiary-labels","en"),s=r.state,bridge=new GameEventBridge()
+ try{
+  await act(()=>root.render(<TargetLabels view={s} bridge={bridge}/>))
+  for(const [kind,attack,expected] of [["wolf",3,/FAST · DIRE WOLF/],["archer",.5,/RANGED · SHOT 0\.5s/],["archer",2,/RANGED · BONE ARCHER/],["imp",.4,/HIT & RUN · SHOT/],["shaman",.6,/SUPPORT · WARD 0\.6s/],["necromancer",-1,/SUMMONER · SUMMON 0\.0s/]] as const){
+   s.enemies=[];s.queue=[];const e=r.spawn(kind,{x:0,z:2})!;e.attack=attack;s.queue=[e.id]
+   await act(()=>{root.render(<TargetLabels view={{...s}} bridge={bridge}/>);bridge.emit("projected",[{id:e.id,x:500,y:300,visible:true}])})
+   expect(host.querySelector(".enemy-label")?.textContent).toMatch(expected)
+  }
+ }finally{await act(()=>root.unmount());host.remove();bridge.clear()}
+})
