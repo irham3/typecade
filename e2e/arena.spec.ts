@@ -15,6 +15,7 @@ async function party(browser:Browser,host:Page,mode:"sprint"|"clash"|"raid",seco
  for(const page of pages)await page.getByRole("button",{name:"I'm ready"}).click()
  await host.getByRole("button",{name:mode==="raid"?"Start raid":mode==="clash"?"Start clash":"Start race"}).click()
  await Promise.all(pages.map(page=>expect(page.getByTestId("race-play")).toBeVisible({timeout:15000})))
+ await host.bringToFront()
  return {pages,close:async()=>{for(const context of contexts)await context.close()}}
 }
 
