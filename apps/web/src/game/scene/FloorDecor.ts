@@ -2,6 +2,7 @@ import { AdditiveBlending, DoubleSide, DynamicDrawUsage, InstancedMesh, MeshBasi
 import { createSeededRng, dungeonWalkable } from "@typecade/game-rules"
 import type { DungeonModels } from "../DungeonModels"
 import type { Part } from "../models/blueprint"
+import { environmentGrade } from "../render/environmentGrade"
 
 /** One kind of walk-through floor dressing. Never blocks movement; purely decorative. */
 interface DecorKind {
@@ -76,9 +77,9 @@ export class FloorDecor {
       { geometry: models.geometry(skull), material: models.material, perChunk: 4, scale: [.8, 1.2], lift: 0 },
       { geometry: models.geometry(rubble), material: models.material, perChunk: 10, scale: [.7, 1.6], lift: 0 },
       { geometry: models.geometry(grass), material: models.material, perChunk: 14, scale: [.8, 1.6], lift: 0 },
-      { geometry: models.geometry(glowshrooms), material: models.material, perChunk: 5, scale: [.9, 1.5], lift: 0 },
-      { geometry: models.geometry(candles), material: models.material, perChunk: 4, scale: [1, 1.4], lift: 0 },
-      { geometry: models.geometry(crystals), material: models.material, perChunk: 3, scale: [1, 1.8], lift: 0 },
+      { geometry: models.geometry(glowshrooms), material: models.material, perChunk: 3, scale: [.9, 1.4], lift: 0 },
+      { geometry: models.geometry(candles), material: models.material, perChunk: 3, scale: [1, 1.3], lift: 0 },
+      { geometry: models.geometry(crystals), material: models.material, perChunk: 2, scale: [1, 1.6], lift: 0 },
       { geometry: models.geometry(fallenBlade), material: models.material, perChunk: 3, scale: [1, 1.3], lift: 0 },
       { geometry: models.keep(new CircleGeometry(1, 9)), material: this.puddleMaterial, perChunk: 4, scale: [.6, 1.4], lift: .012, flat: true },
       { geometry: crack, material: crackMaterial, perChunk: 10, scale: [1.5, 4], lift: .008, flat: true },
@@ -125,7 +126,7 @@ export class FloorDecor {
 
   /** Gentle rune pulse and puddle shimmer; frozen under Reduced Effects. */
   update(elapsed: number, reduced: boolean) {
-    this.runeMaterial.opacity = reduced ? .4 : .38 + Math.sin(elapsed * 1.8) * .18
+    this.runeMaterial.opacity = environmentGrade.decor.runeOpacity + (reduced ? 0 : Math.sin(elapsed * 1.8) * environmentGrade.decor.runePulse)
     this.puddleMaterial.opacity = reduced ? .75 : .72 + Math.sin(elapsed * .9) * .05
   }
 

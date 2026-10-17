@@ -1,5 +1,6 @@
 import { CanvasTexture, NearestFilter, RepeatWrapping, SRGBColorSpace, type Texture } from "three"
 import { createSeededRng } from "@typecade/game-rules"
+import { environmentGrade } from "./environmentGrade"
 
 export interface SurfaceTextures {
   map: CanvasTexture
@@ -98,9 +99,9 @@ const paintBricks: HeightPainter = (height, size, random) => {
 }
 
 const stoneTint = (h: number, random: () => number): [number, number, number] => {
-  const speck = (random() - .5) * .06
+  const speck = (random() - .5) * environmentGrade.surfaces.albedoSpeck * 1.5
   const moss = h < .3 && random() < .35 ? .08 : 0
-  const value = .55 + h * .5 + speck
+  const value = environmentGrade.surfaces.albedoBase + h * environmentGrade.surfaces.albedoRange + speck
   return [value - moss, value + moss * .6, value + .03 - moss]
 }
 

@@ -4,6 +4,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js"
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js"
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js"
+import { environmentGrade } from "./environmentGrade"
 
 /** Depth-edge ink outline, colour grade (saturation + split tone), hurt pulse and vignette in one pass. */
 const GradeShader = {
@@ -13,11 +14,12 @@ const GradeShader = {
     texel: { value: new Vector2(1, 1) },
     outline: { value: 1 },
     hurt: { value: 0 },
-    saturation: { value: 1.22 },
+    saturation: { value: environmentGrade.post.saturation },
+    vignetteStrength: { value: environmentGrade.post.vignette },
     flash: { value: 0 },
   },
   vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
-  fragmentShader: `varying vec2 vUv;uniform sampler2D tDiffuse;uniform sampler2D depth;uniform vec2 texel;uniform float outline;uniform float hurt;uniform float saturation;uniform float flash;
+  fragmentShader: `varying vec2 vUv;uniform sampler2D tDiffuse;uniform sampler2D depth;uniform vec2 texel;uniform float outline;uniform float hurt;uniform float saturation;uniform float flash;uniform float vignetteStrength;
   void main(){
     vec3 c=texture2D(tDiffuse,vUv).rgb;float d=texture2D(depth,vUv).r;
     float edge=step(.0012,abs(d-texture2D(depth,vUv+vec2(texel.x,0.)).r)+abs(d-texture2D(depth,vUv+vec2(0.,texel.y)).r));
@@ -25,7 +27,7 @@ const GradeShader = {
     float luma=dot(c,vec3(.299,.587,.114));
     c=mix(vec3(luma),c,saturation);
     c+=mix(vec3(.0,.012,.035),vec3(.035,.018,.0),smoothstep(.15,.7,luma));
-    float vignette=1.-.28*pow(length((vUv-.5)*1.3),2.);
+    float vignette=1.-vignetteStrength*pow(length((vUv-.5)*1.3),2.);
     c+=vec3(.6,.06,.025)*hurt*smoothstep(.18,.65,length(vUv-.5));
     c=mix(c*vignette,vec3(1.,.95,.82),flash);
     gl_FragColor=vec4(c,1.);
@@ -51,7 +53,7 @@ export class PostProcessing {
     this.composer.addPass(new RenderPass(scene, camera))
     this.grade = new ShaderPass(GradeShader)
     this.composer.addPass(this.grade)
-    this.bloom = new UnrealBloomPass(new Vector2(1, 1), .75, .45, .78)
+    this.bloom = new UnrealBloomPass(new Vector2(1, 1), environmentGrade.post.bloomStrength, environmentGrade.post.bloomRadius, environmentGrade.post.bloomThreshold)
     this.composer.addPass(this.bloom)
     this.composer.addPass(new OutputPass())
   }

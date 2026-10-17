@@ -7,6 +7,7 @@ import { DungeonModels } from "./DungeonModels"
 import { DungeonAudio } from "./DungeonAudio"
 import { DungeonVfx, type VisualEffect } from "./DungeonVfx"
 import { PostProcessing } from "./render/PostProcessing"
+import { environmentGrade } from "./render/environmentGrade"
 import { TextureFactory } from "./render/TextureFactory"
 import { FloorDecor } from "./scene/FloorDecor"
 import { WeaponVisuals } from "./scene/WeaponVisuals"
@@ -147,15 +148,15 @@ export class DungeonScene {
   this.renderer.setPixelRatio(1); this.renderer.info.autoReset = false
   this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = PCFShadowMap
   this.renderer.domElement.style.imageRendering = "pixelated"; this.renderer.domElement.setAttribute("aria-hidden", "true"); host.append(this.renderer.domElement)
-  this.scene.background = new Color(0x17202a); this.scene.fog = new FogExp2(0x17202a, .016)
-  this.scene.add(new HemisphereLight(0xb4cdff, 0x3a2a3e, 1.35))
-  this.sun = new DirectionalLight(0xffe2b8, 2.9); this.sun.position.set(-8, 16, 6); this.sun.castShadow = true
+  this.scene.background = new Color(0x17202a); this.scene.fog = new FogExp2(0x17202a, environmentGrade.fogDensity)
+  this.scene.add(new HemisphereLight(0xb4cdff, 0x3a2a3e, environmentGrade.lights.hemisphere))
+  this.sun = new DirectionalLight(0xffe2b8, environmentGrade.lights.sun); this.sun.position.set(-8, 16, 6); this.sun.castShadow = true
   this.sun.shadow.mapSize.set(1024, 1024); this.sun.shadow.bias = -.0015; this.sun.shadow.normalBias = .04
   Object.assign(this.sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 })
   this.scene.add(this.sun, this.sun.target)
-  const fill = new DirectionalLight(0x6fa8ff, 1.0); fill.position.set(8, 8, 12); this.scene.add(fill)
+  const fill = new DirectionalLight(0x6fa8ff, environmentGrade.lights.fill); fill.position.set(8, 8, 12); this.scene.add(fill)
   // Cool rim from behind the camera's view separates silhouettes from the floor.
-  const rim = new DirectionalLight(0xb48cff, 1.1); rim.position.set(-14, 6, -16); this.scene.add(rim)
+  const rim = new DirectionalLight(0xb48cff, environmentGrade.lights.rim); rim.position.set(-14, 6, -16); this.scene.add(rim)
   this.scene.add(this.knight.root, this.dummy.root, this.sensei.root)
   this.heroMaterial=this.models.material.clone();this.materials.push(this.heroMaterial)
   for(const part of [this.knight.body,...this.knight.legs,this.knight.arm!,this.knight.weapon!]){part.material=this.heroMaterial;part.castShadow=true}
@@ -379,7 +380,7 @@ export class DungeonScene {
     // Quarter-turned tiles break up repetition; rare inlaid tiles add colour to the floor.
     this.matrix.makeRotationY(Math.floor(rng.nextFloat() * 4) * Math.PI / 2).setPosition(bx + tx*2 - 15, -.09 - rng.nextFloat() * .008, bz + tz*2 - 15)
     const inlay=rng.nextFloat()
-    this.tiles.setMatrixAt(tile, this.matrix); this.color.setHex(tone.stone).lerp(this.accent.setHex(inlay<.012?tone.flame:0x4b8f9a),inlay<.024?.18:0).multiplyScalar(.95 + rng.nextFloat() * .14); this.tiles.setColorAt(tile++, this.color)
+    this.tiles.setMatrixAt(tile, this.matrix); this.color.setHex(tone.stone).lerp(this.accent.setHex(inlay<.012?tone.flame:0x4b8f9a),inlay<.024?.18:0).multiplyScalar(environmentGrade.surfaces.tileJitterMin + rng.nextFloat() * environmentGrade.surfaces.tileJitterRange); this.tiles.setColorAt(tile++, this.color)
    }
    for(let i=0;i<12;i++){this.matrix.makeRotationX(-Math.PI/2).scale(this.scale.set(.25+rng.nextFloat()*.65,.18+rng.nextFloat()*.55,1)).setPosition(bx+rng.nextFloat()*28-14,-.024,bz+rng.nextFloat()*28-14);this.moss.setMatrixAt(patch++,this.matrix)}
    for(const offset of [0,-16]){
@@ -387,11 +388,11 @@ export class DungeonScene {
    for (let row = 0; row < 4; row++) for (let block = 0; block < 8; block++) {
     if (row > 1 && rng.nextFloat() > .55) continue
     this.matrix.makeTranslation(bx + offset + 6.3 + block * 1.08 + (row % 2) * .25, .36 + row * .76, bz + offset + 10)
-    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(row === 0 ? 0x7d7a6c : 0x948a82).multiplyScalar(.8 + rng.nextFloat() * .35); this.walls.setColorAt(wall++, this.color)
+    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(row === 0 ? environmentGrade.surfaces.wallBase : environmentGrade.surfaces.wallUpper).multiplyScalar(environmentGrade.surfaces.wallJitterMin + rng.nextFloat() * environmentGrade.surfaces.wallJitterRange); this.walls.setColorAt(wall++, this.color)
    }
    for (const px of [6.5, 13.5]) for (let level = 0; level < 5; level++) {
     this.matrix.makeScale(1.3, 1, 1.5).setPosition(bx + offset + px, .36 + level * .73, bz + offset + 8.8)
-    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(level % 2 ? 0x8a847c : 0x9f9586); this.walls.setColorAt(wall++, this.color)
+    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(level % 2 ? environmentGrade.surfaces.pillarDark : environmentGrade.surfaces.pillarLight); this.walls.setColorAt(wall++, this.color)
    }
    for(const px of [6.5,13.5])for(const [height,size]of [[.12,1.85],[3.75,1.6]] as const){this.matrix.makeScale(size,.35,size).setPosition(bx+offset+px,height,bz+offset+8.8);this.walls.setMatrixAt(wall,this.matrix);this.walls.setColorAt(wall++,this.color.setHex(0x87909c))}
    for(const px of [6.3,13.8])for(let depth=0;depth<3;depth++)for(let row=0;row<3;row++){
@@ -568,7 +569,7 @@ export class DungeonScene {
   }); this.flames.count = torchPoints.length * 2; this.flames.instanceMatrix.needsUpdate = true;this.flames.instanceColor!.needsUpdate=true
   this.torchFixtures.count=torchPoints.length;this.torchFixtures.instanceMatrix.needsUpdate=true
   const near = [...torchPoints].sort((a, b) => a.distanceToSquared(this.focus) - b.distanceToSquared(this.focus))
-  this.lights.forEach((light, i) => { light.visible=this.reduced?i===0:!this.adaptive||i<2;light.position.copy(near[i]!); light.intensity = 15 + (this.reduced ? 0 : Math.sin(this.elapsed * 11 + i) * 2) })
+  this.lights.forEach((light, i) => { light.visible=this.reduced?i===0:!this.adaptive||i<2;light.position.copy(near[i]!); light.intensity = environmentGrade.lights.torch + (this.reduced ? 0 : Math.sin(this.elapsed * 11 + i) * environmentGrade.lights.torchFlicker) })
   const loot = active && s ? s.loot : []
   loot.forEach((item, i) => {
    this.matrix.makeRotationY(this.elapsed + i).setPosition(item.x, .4 + (this.reduced ? 0 : Math.sin(this.elapsed * 3 + i) * .12), item.z)
