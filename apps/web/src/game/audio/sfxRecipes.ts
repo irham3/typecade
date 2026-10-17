@@ -1,9 +1,12 @@
 import { arrivalVoices, deathVoices } from "./enemyVoices"
+import type { VoiceShape } from "../DungeonAudio"
 
 /** Minimal synth surface a recipe may use; implemented by `DungeonAudio`. */
 export interface SfxVoice {
   /** One enveloped voice: start frequency, seconds, peak level, waveform, end frequency, delay seconds. */
   tone(frequency: number, duration: number, level: number, type: OscillatorType | "noise", end?: number, delay?: number): void
+  /** One continuous voice gliding from → to, with optional soft attack and vibrato. */
+  sweep(from: number, to: number, duration: number, level: number, type: OscillatorType, shape?: VoiceShape): void
   /** Arpeggiated sine notes (MIDI numbers) spaced by `spacing` seconds. */
   chime(notes: number[], level: number, spacing: number): void
 }
@@ -14,9 +17,19 @@ type Recipe = (voice: SfxVoice) => void
  * Sound design for new weapons, moves and foes. Each recipe layers a transient
  * (noise click), a body (pitched sweep) and optionally a tail (chime) so hits read as impacts.
  */
+/** Scales every voice a recipe emits; death cries are the main kill feedback, so they sit above arrival calls. */
+const DEATH_CRY_GAIN = 1.9
+function louder(recipe: Recipe, gain: number): Recipe {
+  return voice => recipe({
+    tone: (f, d, l, type, end, delay) => voice.tone(f, d, l * gain, type, end, delay),
+    sweep: (from, to, d, l, type, shape) => voice.sweep(from, to, d, l * gain, type, shape),
+    chime: (notes, l, spacing) => voice.chime(notes, l * gain, spacing),
+  })
+}
+
 const voiceRecipes = Object.fromEntries([
   ...Object.entries(arrivalVoices).map(([kind, recipe]) => [`enemy-${kind}`, recipe]),
-  ...Object.entries(deathVoices).map(([kind, recipe]) => [`death-${kind}`, recipe]),
+  ...Object.entries(deathVoices).map(([kind, recipe]) => [`death-${kind}`, louder(recipe, DEATH_CRY_GAIN)]),
 ]) as Record<string, Recipe>
 
 export const sfxRecipes: Record<string, Recipe> = {
@@ -40,7 +53,7 @@ export const sfxRecipes: Record<string, Recipe> = {
   frost: v => { v.chime([88, 93, 96, 100], .12, .035); v.tone(5200, .35, .1, "noise") },
   spore: v => { v.tone(420, .35, .16, "noise", 420); v.tone(260, .3, .08, "sine", 160) },
   // Kill confirm: punchy thwack + rising sparkle; plays on top of each foe's own death cry.
-  kill: v => { v.tone(180, .09, .22, "triangle", 60); v.tone(2600, .06, .1, "noise"); v.chime([86, 93], .07, .03) },
+  kill: v => { v.tone(2400, .03, .05, "noise"); v.tone(1600, .05, .04, "sine", 2200, .01) },
   "kill-elite": v => { v.tone(120, .3, .3, "sine", 40); v.tone(1500, .25, .2, "noise"); v.chime([74, 81, 86, 93, 98], .12, .05) },
   // Explosion: sub thump, sharp crack, low rumble tail and falling debris.
   explosion: v => {
@@ -61,7 +74,12 @@ export const sfxRecipes: Record<string, Recipe> = {
   firebolt: v => { v.tone(800, .25, .1, "noise", 800); v.tone(300, .2, .09, "sawtooth", 600) },
   sentry: v => { v.tone(1800, .08, .12, "square", 600); v.tone(5000, .04, .1, "noise") },
   // Director cues
-  surge: v => { v.tone(110, .9, .2, "sawtooth", 110); v.tone(165, .9, .14, "sawtooth", 165, .05); v.tone(98, .5, .18, "sawtooth", 98, .55); v.tone(300, .8, .12, "noise", 300) },
+  surge: v => {
+    v.sweep(98, 110, 1.1, .16, "triangle", { attack: .12, vibratoRate: 5, vibratoDepth: .012 })
+    v.sweep(147, 165, 1.1, .1, "triangle", { attack: .14, vibratoRate: 5.5, vibratoDepth: .012, delay: .03 })
+    v.tone(70, .45, .32, "sine", 40, .02)
+    v.tone(70, .45, .28, "sine", 40, .5)
+  },
   breather: v => v.chime([74, 78, 81, 86], .08, .1),
 }
 

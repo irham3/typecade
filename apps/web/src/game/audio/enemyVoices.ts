@@ -3,13 +3,13 @@ import type { SfxVoice } from "./sfxRecipes"
 
 type Recipe = (voice: SfxVoice) => void
 
-/** Wobbling pitch made from short overlapping notes: groans, wails, howls. */
-function glide(v: SfxVoice, from: number, to: number, seconds: number, level: number, type: OscillatorType, wobble = 0, steps = 6) {
-  for (let i = 0; i < steps; i++) {
-    const f0 = from + (to - from) * (i / steps), f1 = from + (to - from) * ((i + 1) / steps)
-    const vibrato = wobble ? (i % 2 ? 1 + wobble : 1 - wobble) : 1
-    v.tone(f0 * vibrato, seconds / steps * 1.6, level, type, f1 * vibrato, i * seconds / steps)
-  }
+/**
+ * Groans, wails and howls as one continuous voice: a pitch glide with LFO vibrato and a soft
+ * attack. (Chaining short notes caused audible clicks when a whole pack called at once.)
+ * `wobble` is vibrato depth as a fraction of pitch; `pulse` is vibrato speed in Hz.
+ */
+function glide(v: SfxVoice, from: number, to: number, seconds: number, level: number, type: OscillatorType, wobble: number, pulse: number) {
+  v.sweep(from, to, seconds, level, type, { attack: Math.min(.08, seconds / 5), vibratoRate: pulse, vibratoDepth: wobble })
 }
 
 /** Rapid dry clicks: bones, legs, claws. */
