@@ -190,7 +190,7 @@ it("gives the expanded bestiary real wards, summons, blinks, regeneration, range
  // Troll regrows an armor word when left alone; a hit resets the timer.
  s.enemies=[];const troll=r.spawn("troll",{x:7,z:0})!;expect(troll.words).toHaveLength(2);troll.words=["Club"];troll.attack=0;r.advance(.05);expect(troll.words).toHaveLength(2)
  // Archer and imp loose real projectiles at different speeds.
- for(const kind of ["archer","imp"] as const){s.enemies=[];s.projectiles=[];const e=r.spawn(kind,{x:5,z:0})!;e.attack=0;r.advance(.05);expect(s.projectiles).toHaveLength(1);expect(Math.hypot(s.projectiles[0]!.vx,s.projectiles[0]!.vz)).toBeCloseTo(kind==="archer"?4.5:3.2)}
+ for(const kind of ["archer","imp"] as const){s.enemies=[];s.projectiles=[];(r as unknown as {shotGate:number}).shotGate=0;const e=r.spawn(kind,{x:5,z:0})!;e.attack=0;r.advance(.05);expect(s.projectiles).toHaveLength(1);expect(Math.hypot(s.projectiles[0]!.vx,s.projectiles[0]!.vz)).toBeCloseTo(kind==="archer"?4.5:3.2)}
  // Wolves, serpents, beetles, assassins and wisps commit to a telegraphed lunge; golems plant a slam.
  for(const kind of ["wolf","serpent","beetle","assassin","wisp","golem"] as const){s.enemies=[];const e=r.spawn(kind,{x:kind==="golem"?2:2.5,z:0})!;e.attack=0;r.advance(.05);expect(e.motion).toBe("windup");if(kind==="golem")expect(e.aim).toEqual({x:e.x,z:e.z})}
  // New armored kinds and XP values come from their profiles.

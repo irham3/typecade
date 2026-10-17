@@ -136,6 +136,7 @@ export class SurvivalRun {
  }
  refreshQueue() {
   const s = this.state
+  if (s.target !== null && !s.enemies.some(e => e.id === s.target)) { s.target = null; s.prefix = "" }
   const priority = (e: DungeonEnemy) => distance(e, s.player) - (e.id === s.target ? 100 : 0) - (e.kind === "bomber" ? 4 : e.kind === "boss" ? 3 : 0) - (s.queue.includes(e.id) ? .6 : 0)
   // Every nearby word is offered, including ones sharing a first letter or standing behind ruins:
   // typing resolves between them (see targeting.ts), so nothing on screen loses its label.
@@ -145,6 +146,7 @@ export class SurvivalRun {
 
  input(key: string) {
   const s = this.state
+  if (s.target !== null && !s.enemies.some(e => e.id === s.target)) { s.target = null; s.prefix = "" }
   if (key === "Escape") { if (s.phase === "paused") this.resume(); else this.pause(); return }
   if (key === "Tab" && (s.phase === "arena" || s.phase === "skills")) { s.phase = s.phase === "arena" ? "skills" : "arena"; s.command = ""; return }
   if (key === "Backspace" && ["arena", "skills", "draft"].includes(s.phase)) { if (s.phase === "arena") this.erase(); else s.command = ""; return }

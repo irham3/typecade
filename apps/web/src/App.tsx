@@ -58,7 +58,7 @@ export function App() {
  const [skipIntro,setSkipIntro]=useState(false)
  const [attract]=useState(()=>new SurvivalRun("castle-title"))
  const savedRun=useSurvivalRun(screen==="endless"&&renderer==="ready")
- const [language,setLanguage]=useState<DungeonLanguage>("id")
+ const [language,setLanguage]=useState<DungeonLanguage>(savedRun.view.language)
  const lesson=useCombatLesson(screen==="tutorial",language,savedRun.bridge)
  const run=screen==="tutorial"?{...savedRun,view:lesson.view,input:lesson.input,pause:lesson.pause,resume:lesson.resume}:savedRun
  const {view,bridge,pause}=run

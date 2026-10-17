@@ -1,5 +1,6 @@
 import { dyePalettes, type HeroSlot } from "@typecade/content"
 import { pair, type ActorBlueprint, type Part } from "./blueprint"
+import { archetypeFor } from "./heroArchetypes"
 
 /** Colors an item draws with. `glow` uses colors registered in vertexGlow so it self-illuminates. */
 interface Palette { cloth: number; trim: number; metal: number; leather: number; glow: number; skin: number; hair: number; ink: number; dark: (hex: number) => number }
@@ -9,9 +10,9 @@ const shade = (hex: number, factor: number) => {
   return c(16) << 16 | c(8) << 8 | c(0)
 }
 
-function palette(dyeId: string): Palette {
+function palette(dyeId: string, skin: number, hair: number): Palette {
   const dye = dyePalettes[dyeId] ?? dyePalettes["dye.keep"]!
-  return { ...dye, glow: dye.glow ?? 0x7fd6ff, skin: 0xd9a57e, hair: 0x4a2f20, ink: 0x10141c, dark: hex => shade(hex, .72) }
+  return { ...dye, glow: dye.glow ?? 0x7fd6ff, skin, hair, ink: 0x10141c, dark: hex => shade(hex, .72) }
 }
 
 /** Hero sockets match DungeonModels.rig: legs at y .7, arms/weapon at shoulder y 1.52. */
@@ -59,7 +60,7 @@ const torso: Record<string, Builder> = {
   "body.plate": p => [[p.metal, 0, 1.22, .02, .96, .8, .7], [p.trim, 0, 1.22, .38, .06, .64, .02], ...pair([p.metal, -.56, 1.56, 0, .42, .3, .5, "round"]), [p.cloth, 0, .76, .1, .92, .3, .62], [p.leather, 0, .9, 0, 1, .12, .72]],
   "body.rangercoat": p => [[p.cloth, 0, 1.06, 0, .94, 1.06, .66], [p.dark(p.cloth), 0, .66, .02, .98, .3, .68], [p.leather, 0, 1.2, .35, .12, 1, .04, "box", .7], ...[1.4, 1.2, 1.0].map(y => [p.trim, .1 - (y - 1) * .5, y, .37, .07, .08, .03] as Part)],
   "body.gilded": p => [[p.metal, 0, 1.22, .02, .96, .8, .7], [p.trim, 0, 1.22, .38, .62, .05, .02], [p.trim, 0, 1.4, .38, .4, .05, .02], ...pair([p.metal, -.56, 1.56, 0, .44, .32, .52, "round"]), ...pair([p.trim, -.56, 1.5, .1, .46, .06, .5]), [p.cloth, 0, .76, .1, .92, .3, .62], [p.trim, 0, .9, 0, 1, .12, .72]],
-  "body.obsidian": _p => [[0x1d1b22, 0, 1.22, .02, .96, .8, .7], [0xff8352, 0, 1.22, .38, .04, .6, .02], [0xff8352, -.2, 1.05, .38, .2, .04, .02, "box", .6], ...pair([0x26232c, -.56, 1.58, 0, .46, .34, .54, "round"]), ...pair([0xff8352, -.56, 1.66, .2, .2, .04, .04]), [0x26232c, 0, .76, .1, .92, .3, .62]],
+  "body.obsidian": () => [[0x1d1b22, 0, 1.22, .02, .96, .8, .7], [0xff8352, 0, 1.22, .38, .04, .6, .02], [0xff8352, -.2, 1.05, .38, .2, .04, .02, "box", .6], ...pair([0x26232c, -.56, 1.58, 0, .46, .34, .54, "round"]), ...pair([0xff8352, -.56, 1.66, .2, .2, .04, .04]), [0x26232c, 0, .76, .1, .92, .3, .62]],
   "body.tunic": p => [[p.cloth, 0, 1.12, 0, .92, .96, .64], [p.trim, 0, 1.5, .33, .44, .08, .02], [p.leather, 0, .9, 0, .96, .1, .68], [p.metal, 0, .9, .35, .12, .1, .03], [p.dark(p.cloth), .3, .72, .3, .1, .3, .03, "box", -.2]],
   "body.brigandine": p => [[p.leather, 0, 1.18, 0, .94, .84, .66], ...[1.02, 1.22, 1.42].flatMap(y => [-.24, 0, .24].map(x => [p.metal, x, y, .34, .06, .06, .02] as Part)), [p.cloth, 0, .76, .04, .9, .24, .62], [p.dark(p.leather), 0, .88, 0, 1, .12, .7], [p.trim, 0, .88, .36, .14, .12, .03]],
   "body.robe": p => [[p.cloth, 0, .9, 0, 1.02, 1.36, .7, "cone"], [p.cloth, 0, 1.3, 0, .9, .6, .62], [p.trim, 0, 1.3, .32, .1, .56, .02], [shade(p.leather, 1.3), 0, .96, 0, .94, .07, .66], [shade(p.leather, 1.3), .16, .78, .34, .05, .3, .03]],
@@ -138,16 +139,14 @@ function toPrimitiveScale(part: Part): Part {
 
 /** Builds the hero blueprint for a loadout. Unknown ids fall back to the starter look. */
 export function heroBlueprint(loadout: Readonly<Record<HeroSlot, string>>): ActorBlueprint {
-  const p = palette(loadout.dye)
+  const archetype = archetypeFor(loadout.hero)
+  const p = palette(loadout.dye, archetype.skin, archetype.hair)
   const closed = closedHelms.has(loadout.head)
   const head: Part[] = closed ? [] : [[p.skin, 0, 2.02, 0, .76, .72, .7]]
   const neck: Part = [p.skin, 0, 1.66, 0, .3, .14, .3]
-  const blueprint: ActorBlueprint = {
-    body: [neck, ...pick(torso, loadout.body, "body.gambeson")(p), ...head, ...pick(heads, loadout.head, "head.squire")(p), ...pick(faces, loadout.face, "face.steady")(p, closed ? .47 : .37), ...pick(backs, loadout.back, "back.none")(p)],
-    leg: pick(legs, loadout.legs, "legs.boots")(p),
-    arm: [...sleeve(p, loadout.body), ...pick(offhands, loadout.offhand, "offhand.buckler")(p)],
-    weapon: [...sleeve(p, loadout.body), ...pick(weapons, loadout.weapon, "weapon.arming")(p)],
-    scale: 1,
-  }
-  return { ...blueprint, body: blueprint.body.map(toPrimitiveScale), leg: blueprint.leg.map(toPrimitiveScale), arm: blueprint.arm?.map(toPrimitiveScale) ?? null, weapon: blueprint.weapon?.map(toPrimitiveScale) ?? null }
+  const body = [neck, ...pick(torso, loadout.body, "body.gambeson")(p), ...head, ...pick(heads, loadout.head, "head.squire")(p), ...pick(faces, loadout.face, "face.steady")(p, closed ? .47 : .37), ...pick(backs, loadout.back, "back.none")(p), ...archetype.signature(p)]
+  const leg = pick(legs, loadout.legs, "legs.boots")(p)
+  const arm = [...sleeve(p, loadout.body), ...pick(offhands, loadout.offhand, "offhand.buckler")(p)]
+  const weapon = [...sleeve(p, loadout.body), ...pick(weapons, loadout.weapon, "weapon.arming")(p)]
+  return { body: body.map(toPrimitiveScale), leg: leg.map(toPrimitiveScale), arm: arm.map(toPrimitiveScale), weapon: weapon.map(toPrimitiveScale), scale: 1 }
 }

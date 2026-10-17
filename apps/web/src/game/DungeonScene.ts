@@ -241,7 +241,7 @@ export class DungeonScene {
   this.aura=new Mesh(this.models.keep(new SphereGeometry(1.3,12,8)),auraMaterial);this.scene.add(this.aura)
   const outline = new MeshBasicMaterial({ color: 0x0a1424, side: BackSide }); this.materials.push(outline)
   const heroOutline = new Mesh(this.knight.body.geometry, outline);heroOutline.scale.setScalar(1.045);this.knight.body.add(heroOutline)
-  this.heroAppearance = new HeroAppearance(this.models, { body: this.knight.body, outline: heroOutline, legs: this.knight.legs, arm: this.knight.arm!, weapon: this.knight.weapon!, afterimages: this.echoes })
+  this.heroAppearance = new HeroAppearance(this.models, { root: this.knight.root, body: this.knight.body, outline: heroOutline, legs: this.knight.legs, arm: this.knight.arm!, weapon: this.knight.weapon!, afterimages: this.echoes })
   const batch = (model: ReturnType<DungeonModels["actor"]>, cap: number): Batch => {
    // Two leg sockets share one draw call per species.
    const legs=model.leg?this.instance(model.leg,this.models.material,cap*2):null
@@ -310,7 +310,7 @@ export class DungeonScene {
   if(dash){
    this.dashFrom.copy(this.knight.root.position);this.dashTo.set(s.player.x,0,s.player.z);this.dashAt=this.swingAt=now;this.swingSide=s.words%2?1:-1
    const landing=newEffects.find(fx=>fx.kind==="slash"||fx.kind==="finisher"),struck=landing?[...this.actors.values()].find(a=>Math.hypot(a.x-landing.x,a.z-landing.z)<.3):undefined
-   this.swingKind=selectMove({wordsCompleted:s.words,targetLayers:struck?.layers??1,finisher:newEffects.some(fx=>fx.kind==="finisher"),whirl:newEffects.some(fx=>fx.kind==="whirl")})
+   this.swingKind=selectMove({wordsCompleted:s.words,targetLayers:struck?.layers??1,finisher:newEffects.some(fx=>fx.kind==="finisher"),whirl:newEffects.some(fx=>fx.kind==="whirl")},this.heroAppearance.style.combo)
    if(this.swingKind!=="slash")this.audio.play(this.swingKind,(s.player.x-this.dashFrom.x)/12)
    if(this.swingKind==="finisher"){this.hitStopUntil=now+.14;this.focusAt=now;this.zoomPunch=1;this.cameraTrauma=Math.max(this.cameraTrauma,.45)}
    else if(this.swingKind==="leap"||this.swingKind==="whirl"){this.zoomPunch=Math.max(this.zoomPunch,.5);this.cameraTrauma=Math.max(this.cameraTrauma,.18)}
@@ -480,8 +480,9 @@ export class DungeonScene {
   if(selected&&(charge>0||s?.phase==="overdrive"))this.heroAngle=Math.atan2(selected.x-hero.position.x,selected.z-hero.position.z)
   const facing=active?this.heroAngle:dojo?1.3:.55,turn=Math.atan2(Math.sin(facing-this.heroFacing),Math.cos(facing-this.heroFacing))
   this.heroFacing+=turn*Math.min(1,delta*22||1);hero.rotation.y=this.heroFacing
-  hero.rotation.x=this.reduced?0:dash*.27+Math.sin(swingAge*18)*swing*.09
-  hero.position.y=this.reduced?0:Math.sin(this.elapsed*2.3)*.025+Math.sin((1-dash)*Math.PI)*.23+Math.sin(celebration*Math.PI)*.55
+  const style=this.heroAppearance.style
+  hero.rotation.x=this.reduced?0:dash*.27*style.lunge+Math.sin(swingAge*18)*swing*.09
+  hero.position.y=this.reduced?0:Math.sin(this.elapsed*2.3)*.025+Math.sin((1-dash)*Math.PI)*.23*style.dashHeight+Math.sin(celebration*Math.PI)*.55
   this.knight.legs.forEach((leg,i)=>{leg.rotation.x=this.reduced?0:Math.sin(this.elapsed*22+i*Math.PI)*dash*.9;leg.rotation.z=this.reduced?0:(i?-.04:.04)-swing*.06})
   const moveProgress=Math.min(1,swingAge/moveDuration[this.swingKind]),pose=heroPose(this.swingKind,this.reduced||moveProgress>=1?0:moveProgress,this.swingSide)
   this.knight.body.rotation.y=this.reduced?0:pose.bodyYaw+Math.sin(celebration*Math.PI)*.3
@@ -496,13 +497,15 @@ export class DungeonScene {
   if(dash>0)for(let i=0;i<3;i++){const t=Math.max(0,1-dash**3-.12-i*.15);this.point.lerpVectors(this.dashFrom,this.dashTo,t);this.rotation.setFromEuler(this.euler.set(.15,this.heroAngle,0));this.matrix.compose(this.point,this.rotation,this.scale.setScalar(1-i*.05));this.echoes.setMatrixAt(this.echoes.count++,this.matrix)}
   this.echoes.instanceMatrix.needsUpdate=true
   this.knight.body.scale.setScalar(!this.reduced&&this.elapsed-this.heroHitAt<.09?1.06:1)
+  // Hovering characters stay off the floor even mid-action.
+  hero.position.y+=this.reduced?0:style.idle.hover
   // Idle: breathing, weight shift and an occasional gesture whenever the knight is not acting.
   const calm=!this.reduced&&dash===0&&swing===0&&charge===0&&casting===0&&celebration===0&&hurt===0
   this.idleWeight+=((calm?1:0)-this.idleWeight)*Math.min(1,delta*(calm?2.5:12)||1)
   if(this.idleWeight>.001){
-   const idle=heroIdlePose(this.elapsed,!active),k=this.idleWeight
+   const idle=heroIdlePose(this.elapsed,!active,style),k=this.idleWeight
    hero.position.y+=idle.lift*k;hero.rotation.x+=idle.lean*k
-   this.knight.body.scale.y*=1+(idle.breath-1)*k
+   this.knight.body.scale.y*=1+idle.breath*k
    this.knight.body.rotation.z+=idle.bodyRoll*k;this.knight.body.rotation.y+=idle.bodyYaw*k
    this.knight.weapon!.rotation.x+=idle.weaponPitch*k;this.knight.weapon!.rotation.z+=idle.weaponRoll*k
    this.knight.arm!.rotation.x+=idle.armPitch*k;this.knight.arm!.rotation.z+=idle.armRoll*k

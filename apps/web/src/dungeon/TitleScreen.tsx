@@ -66,7 +66,7 @@ export function TitleScreen(props: TitleScreenProps) {
       <footer className="title-footer">
         <span>BEST TIME <strong>{bestTime}</strong></span>
         <span className="title-coins" aria-label={`${coins} coins`}><CoinIcon />{coins.toLocaleString("en-US")}</span>
-        <label className="title-language">Words <select aria-label="Word language" value={language} onChange={event => onLanguage(event.target.value as DungeonLanguage)}><option value="id">Bahasa Indonesia</option><option value="en">English</option></select></label>
+        <label className="title-language">Words <select aria-label="Word language" value={language} onChange={event => onLanguage(event.target.value as DungeonLanguage)}><option value="en">English</option><option value="id">Bahasa Indonesia</option></select></label>
         <button className="quiet controls-link" onClick={() => onPanel("controls")}>Controls</button>
         <button className="quiet" onClick={onToggleSound}>{soundOn ? "Sound on" : "Sound off"}</button>
       </footer>

@@ -30,11 +30,11 @@ export const moveDuration: Record<HeroMove, number> = {
 const cycle: HeroMove[] = ["slash", "thrust", "uppercut", "twin"]
 
 /** Priority: fatality > whirlwind > leaping strike on armored targets > rotating basic combo. */
-export function selectMove({ wordsCompleted, targetLayers, finisher, whirl }: MoveContext): HeroMove {
+export function selectMove({ wordsCompleted, targetLayers, finisher, whirl }: MoveContext, combo: readonly HeroMove[] = cycle): HeroMove {
   if (finisher) return "finisher"
   if (whirl) return "whirl"
   if (targetLayers >= 2) return "leap"
-  return cycle[wordsCompleted % cycle.length]!
+  return combo[wordsCompleted % combo.length]!
 }
 
 const arc = (t: number) => Math.sin(t * Math.PI)

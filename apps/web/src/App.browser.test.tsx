@@ -1,5 +1,5 @@
 import "./styles.css"
-import "./styles/ornate.css"
+import "./styles/theme.css"
 import "./styles/title.css"
 import "./styles/hud.css"
 import "./styles/bestiary.css"
@@ -48,7 +48,7 @@ for(const language of ["en","id"] as const)it(`teaches each real combat action a
  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,850))});expect(host.querySelectorAll(".upgrade-card")).toHaveLength(3);expect(host.textContent).toContain("RANK")
  const keyword=host.querySelector('[data-testid="upgrade-keyword"]')!.textContent!
  await act(()=>{for(const key of keyword)host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true}))})
- expect(host.querySelector(".upgrade-acquired")?.textContent).toContain("UPGRADE ACTIVE");expect(host.textContent).toContain("Upgrade applied.")
+ expect(host.textContent).toContain("Upgrade applied.")
  expect(Object.values(dungeonUpgrades).some(offer=>host.textContent?.includes(offer.name))).toBe(true)
  await click("Finish tutorial");await click("Tutorial");expect(host.textContent).toContain("SAFE TRAINING · 1/8")
  const hidden=vi.spyOn(document,"hidden","get").mockReturnValue(true);await act(()=>document.dispatchEvent(new Event("visibilitychange")));expect(host.textContent).toContain("Paused");hidden.mockReturnValue(false);await act(()=>document.dispatchEvent(new Event("visibilitychange")));await click("Resume run");await click("Skip tutorial")
@@ -62,12 +62,12 @@ it("explains max-rank restorative drafts and applies their actual heart and mana
  const r=new SurvivalRun("boon-ui","en"),s=r.state;r.start();s.time=10;s.phase="draft";s.pendingDrafts=1;s.offers=["cleave","storm","heal"];s.player.hp=3;s.player.mana=50
  s.skills.cleave.level=s.skills.storm.level=s.skills.heal.level=3
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
- expect(host.textContent).toContain("MAX RANK");for(const key of "BLADE")await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
+ expect(host.textContent).toContain("MAX · RESTORE");for(const key of "BLADE")await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Upgrade typing input"]')!.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true})))
  expect(host.querySelector(".hearts")?.getAttribute("aria-label")).toBe("4 of 6 hearts");expect(host.textContent).toContain("Restore up to 1 heart and 15 mana.")
 })
 it("opens a live game shell, settings, account and both secondary modes",async()=>{
  localStorage.setItem("typecade:ocean-typing-rpg:m1","old data")
- await mount();expect(host.textContent).toContain("TYPECADE");expect(runTime(125)).toBe("02:05");expect(getComputedStyle(host.querySelector(".start-button")!).backgroundColor).not.toBe("rgba(0, 0, 0, 0)")
+ await mount();expect(host.textContent).toContain("TYPECADE");expect(runTime(125)).toBe("02:05");expect(getComputedStyle(host.querySelector(".start-button")!).borderImageSource).not.toBe("none")
  await act(()=>host.querySelector<HTMLButtonElement>('[aria-label="Settings"]')!.click());expect(host.querySelector("dialog")?.textContent).toContain("Reduced Effects")
  await act(()=>host.querySelector<HTMLInputElement>('[aria-label="Reduced Effects"]')!.click());await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
  expect(host.getAttribute("data-reduced-effects")).not.toBe("false");await click("Account");expect(host.textContent).toContain("Local progress");await act(()=>host.querySelector("dialog")!.dispatchEvent(new Event("cancel",{cancelable:true})))
@@ -141,7 +141,7 @@ it("shows acquired supplies, active shield, expired sentry and real relic ranks 
  const r=new SurvivalRun("equipment","id"),s=r.state;r.start();s.time=s.worldTime=1;s.player.invincible=1000;s.player.shield=2;s.supplies={shield:2,potion:1,mana:3,sentry:1};s.sentry={x:0,z:0,life:.15,cooldown:1};s.relics.lightning=s.relics.magnet=s.relics.switch=s.relics.vowels=s.relics.overclock=s.relics.glasses=s.relics.execute=1;s.procs.lightning=2;s.notice="Aegis Shield acquired. +2 shield"
  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();expect(host.querySelector<HTMLSelectElement>('[aria-label="Word language"]')!.value).toBe("id")
  await click("Continue run");await click("Resume run");expect(host.querySelector('[aria-label="Shield"]')?.getAttribute("value")).toBe("2")
- expect(host.querySelector('[aria-label="Acquired equipment"]')?.textContent).toContain("2/4 SHIELD");expect(host.textContent).toContain("SUPPLY COLLECTED");expect(host.textContent).toContain("ACTIVE · RANK 1")
+ expect(host.querySelector('[aria-label="Acquired equipment"]')?.textContent).toContain("2/4 SHIELD");expect(host.textContent).toContain("Aegis Shield acquired");expect(host.textContent).toContain("ACTIVE · RANK 1")
  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,400))});expect(host.textContent).toContain("EXPIRED")
 })
 

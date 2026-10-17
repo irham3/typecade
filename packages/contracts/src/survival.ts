@@ -41,7 +41,7 @@ export interface PartyWorld {
  obstacles:Array<Point & {kind:"barrel"|"goblin"|"barrier";word:string}>
 }
 /** Hero customization slots; values are cosmetic item ids from the content catalog. */
-export type HeroSlot = "head" | "face" | "body" | "legs" | "back" | "weapon" | "offhand" | "dye"
+export type HeroSlot = "hero" | "head" | "face" | "body" | "legs" | "back" | "weapon" | "offhand" | "dye"
 export type HeroLoadout = Readonly<Record<HeroSlot, string>>
 export interface DungeonEvents {
  appearance: HeroLoadout

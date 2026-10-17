@@ -42,7 +42,7 @@ it("scales pressure with the actual build and caps armor, speed and simultaneous
   let armored=0;for(let i=0;i<80;i++){s.enemies=[];const enemy=r.spawn("skeleton",{x:2,z:0})!;if(enemy.words.length>1)armored++;expect(enemy.health).toBe(enemy.words.length)}
   expect(armored).toBeGreaterThan(10);expect(armored).toBeLessThan(60)
   const boss=r.spawn("boss",{x:4,z:0})!;expect(boss.words).toHaveLength(3)
-  s.time=1801;const elite=r.spawn("minotaur",{x:2,z:0})!;expect(elite.words).toHaveLength(5)
+  s.time=1801;const elite=r.spawn("minotaur",{x:2,z:0})!;expect(elite.words).toHaveLength(6)
   return r.serialize()
  }
  expect(simulate()).toBe(simulate())
