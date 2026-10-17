@@ -1,6 +1,6 @@
 import {expect,it} from "vitest"
 import {SurvivalRun,restoreDungeonRun,dungeonWalkable} from "./survival"
-import {dungeonObjects,dungeonSupplies} from "../../content/src/dungeon"
+import {dungeonBalance as B,dungeonObjects,dungeonSupplies} from "../../content/src/dungeon"
 import type {DungeonState,SupplyKind} from "../../contracts/src/survival"
 const tick=(r:SurvivalRun,t:number)=>{for(let i=0;i<Math.ceil(t*30);i++)r.advance(1/30)}
 function run(){const r=new SurvivalRun("encounters");r.start();r.state.enemies=[];r.state.queue=[];r.state.spawnAt=3600;r.state.nextBoss=3600;r.state.player.invincible=3600;return r}
@@ -125,20 +125,111 @@ it("moves the boss back on correct input, rushes after typos and sidesteps on co
 it("lets the horde break its real barricade without ending the paragraph or opening a draft",()=>{
  const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");const text=s.paragraph;s.pendingDrafts=1;r.input(text[0]!);const cursor=s.cursor
  let elapsed=0;while(s.bossArena!.hp>0&&elapsed<30){r.advance(.1);elapsed+=.1}
- expect(Math.hypot(boss.x-s.player.x,boss.z-s.player.z)).toBeGreaterThanOrEqual(2.1);expect(elapsed).toBeGreaterThan(18);expect(elapsed).toBeLessThan(26);expect(s.bossArena!.hp).toBe(0);expect(s.effects.some(f=>f.kind==="barrier"&&f.value===0)).toBe(true);expect(s.cursor).toBe(cursor);expect(s.paragraph).toBe(text);expect(s.phase).toBe("overdrive");expect(s.offers).toHaveLength(0)
+ expect(Math.hypot(boss.x-s.player.x,boss.z-s.player.z)).toBeGreaterThanOrEqual(2.1);expect(elapsed).toBeGreaterThan(B.barrierHp*.8-1);expect(elapsed).toBeLessThan(B.barrierHp*.8+7);expect(s.bossArena!.hp).toBe(0);expect(s.effects.some(f=>f.kind==="barrier"&&f.value===0)).toBe(true);expect(s.cursor).toBe(cursor);expect(s.paragraph).toBe(text);expect(s.phase).toBe("overdrive");expect(s.offers).toHaveLength(0)
  const foe=s.enemies.find(e=>e.id!==boss.id)!;foe.x=s.player.x;foe.z=s.player.z;s.player.invincible=0;r.advance(.1);expect(s.player.hp).toBeLessThan(s.player.maxHp)
  boss.health=1;for(const c of text.slice(cursor,-1))r.input(c);expect(s.boss).toBe(boss.id);r.input(text.at(-1)!);expect(s.bossArena).toBeNull();expect(s.phase).toBe("draft")
 })
 it("blocks incoming shots at the barricade and validates compatible duel saves",()=>{
  const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");s.enemies=[boss];s.player.invincible=0
  const shot=()=>s.projectiles.push({id:s.nextId++,x:s.player.x,z:s.player.z,vx:0,vz:0,life:3})
- shot();r.advance(.1);expect(s.projectiles).toHaveLength(0);expect(s.bossArena!.hp).toBe(23);expect(s.player.hp).toBe(6)
- shot();r.advance(.1);expect(s.bossArena!.hp).toBe(23);s.bossArena!.hp=0;shot();r.advance(.1);expect(s.player.hp).toBe(5)
+ shot();r.advance(.1);expect(s.projectiles).toHaveLength(0);expect(s.bossArena!.hp).toBe(B.barrierHp-1);expect(s.player.hp).toBe(6)
+ shot();r.advance(.1);expect(s.bossArena!.hp).toBe(B.barrierHp-1);s.bossArena!.hp=0;shot();r.advance(.1);expect(s.player.hp).toBe(5)
  s.stagger=0;expect(restoreDungeonRun(r.serialize())).not.toBeNull()
- const base=JSON.parse(r.serialize());for(const change of [(v:DungeonState)=>{v.bossArena!.hp=-1},(v:DungeonState)=>{v.bossArena!.hp=25},(v:DungeonState)=>{v.bossArena!.hp=.5},(v:DungeonState)=>{v.bossArena!.cooldown=1},(v:DungeonState)=>{v.bossArena!.rage=3},(v:DungeonState)=>{v.bossArena!.x=NaN},(v:DungeonState)=>{v.bossArena!.z=1e7},(v:DungeonState)=>{v.bossArena!.x=1e7},(v:DungeonState)=>{v.bossArena!.x=v.bossArena!.z=10},(v:DungeonState)=>{v.boss=null}]){const raw=structuredClone(base);change(raw);expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()}
+ const base=JSON.parse(r.serialize());for(const change of [(v:DungeonState)=>{v.bossArena!.hp=-1},(v:DungeonState)=>{v.bossArena!.hp=B.barrierHp+1},(v:DungeonState)=>{v.bossArena!.calm=-1},(v:DungeonState)=>{v.bossArena!.calm=B.duelCalmMax+1},(v:DungeonState)=>{v.bossArena!.calm=NaN},(v:DungeonState)=>{v.bossArena!.hp=.5},(v:DungeonState)=>{v.bossArena!.cooldown=1},(v:DungeonState)=>{v.bossArena!.rage=3},(v:DungeonState)=>{v.bossArena!.x=NaN},(v:DungeonState)=>{v.bossArena!.z=1e7},(v:DungeonState)=>{v.bossArena!.x=1e7},(v:DungeonState)=>{v.bossArena!.x=v.bossArena!.z=10},(v:DungeonState)=>{v.boss=null}]){const raw=structuredClone(base);change(raw);expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()}
+ const legacy=structuredClone(base);delete legacy.bossArena.calm;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.bossArena?.calm).toBe(0)
  delete base.bossArena;expect(restoreDungeonRun(JSON.stringify(base))?.state.bossArena).toBeNull()
 })
 
 it("keeps frost meaningful during a boss duel and never moves a frozen boss on a typo",()=>{
  const r=run(),boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");boss.frozen=1;const at={x:boss.x,z:boss.z};r.input("?");tick(r,.5);expect({x:boss.x,z:boss.z}).toEqual(at);expect(boss.frozen).toBeLessThan(1);tick(r,.6);expect(boss.frozen).toBe(0);r.state.bossArena=null;r.input("?");expect(r.state.bossArena).toBeNull();r.advance(.1);expect(r.state.bossArena).not.toBeNull()
+})
+
+it("holds the boss outside hammer reach while typing stays steady, and lets hesitation invite a slam",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");s.enemies=[boss];s.player.invincible=0
+ s.paragraph="a".repeat(200)+" BLIZZARD";s.cursor=0;const gap=()=>Math.hypot(boss.x-s.player.x,boss.z-s.player.z)
+ // A slow but steady 20 WPM rhythm: one correct letter every 0.6 s.
+ let closest=99;for(let i=0;i<60;i++){r.input("a");for(let k=0;k<18;k++){r.advance(1/30);closest=Math.min(closest,gap())}}
+ expect(closest).toBeGreaterThan(2.8);expect(boss.motion).toBeUndefined();expect(s.effects.some(e=>e.kind==="slam")).toBe(false);expect(s.player.hp).toBe(6)
+ // Stopping drains the calm; the boss closes in, telegraphs and strikes.
+ let slammed=false;for(let i=0;i<300&&!slammed;i++){r.advance(1/30);slammed=s.effects.some(e=>e.kind==="slam")}
+ expect(slammed).toBe(true);expect(s.bossArena!.calm).toBe(0);expect(s.player.hp).toBe(5)
+ // A typo removes the remaining calm immediately.
+ r.input("a");expect(s.bossArena!.calm).toBeGreaterThan(0);r.input("?");expect(s.bossArena!.calm).toBe(0);expect(s.bossArena!.rage).toBe(2)
+})
+
+it("raises a fresh barricade around the hero for every armor break",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A")
+ const first={x:s.bossArena!.x,z:s.bossArena!.z};expect(s.bossArena!.hp).toBe(B.barrierHp);s.bossArena!.hp=3
+ for(const c of s.paragraph)r.input(c);expect(s.phase).toBe("arena");expect(s.boss).toBe(boss.id);expect(s.bossArena).toBeNull()
+ s.enemies=[boss];boss.x=s.player.x+9;boss.z=s.player.z;boss.words=["A"];r.refreshQueue();r.input("A");expect(s.phase).toBe("overdrive")
+ expect(s.bossArena!.hp).toBe(B.barrierHp);expect(Math.hypot(s.bossArena!.x-s.player.x,s.bossArena!.z-s.player.z)).toBe(0);expect(Math.hypot(s.bossArena!.x-first.x,s.bossArena!.z-first.z)).toBeGreaterThan(3)
+})
+
+it("keeps duel sidesteps inside the barricade and lets the hero escape telegraphed hammers",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");s.enemies=[boss];s.player.invincible=0
+ s.paragraph="a a a BLIZZARD";s.cursor=0;const dir=Math.atan2(boss.x-s.player.x,boss.z-s.player.z);s.bossArena!.x=s.player.x-Math.sin(dir)*(B.barrierRadius-2.04);s.bossArena!.z=s.player.z-Math.cos(dir)*(B.barrierRadius-2.04)
+ const before={x:s.player.x,z:s.player.z};r.input("a");r.input(" ");expect({x:s.player.x,z:s.player.z}).toEqual(before)
+ // A wound-up hammer that lands after the hero has moved out of reach only shakes the floor.
+ s.bossArena!.calm=0;s.stagger=0;boss.motion="windup";boss.motionTime=.01;boss.aim={x:boss.x,z:boss.z};boss.x=s.player.x+3.5;boss.z=s.player.z;s.player.invincible=0
+ r.advance(.05);expect(s.effects.some(e=>e.kind==="slam")).toBe(true);expect(s.player.hp).toBe(6);expect(boss.motion).toBe("recover")
+ // Outside the duel, a planted slam misses a hero standing beyond its radius.
+ const a=run(),t=a.state,m=a.spawn("minotaur",{x:4,z:0})!;t.player.invincible=0;m.motion="windup";m.motionTime=.01;m.aim={x:m.x,z:m.z}
+ a.advance(.05);expect(m.motion).toBe("slam");expect(t.player.hp).toBe(6)
+})
+
+it("gives the expanded bestiary real wards, summons, blinks, regeneration, ranged shots and packs",()=>{
+ const r=run(),s=r.state;s.player.invincible=0
+ // Shaman wards the nearest unlocked ally with an extra armor word, never the locked target.
+ const shaman=r.spawn("shaman",{x:6,z:0})!,ally=r.spawn("skeleton",{x:5,z:1})!;shaman.attack=0;r.advance(.05)
+ expect(ally.words).toHaveLength(2);expect(s.effects.some(e=>e.kind==="ward")).toBe(true);expect(shaman.attack).toBeGreaterThan(5)
+ // Necromancer raises a skeleton while under the threat cap, and fails quietly at the entity cap.
+ s.enemies=[];const necro=r.spawn("necromancer",{x:6,z:0})!;necro.attack=0;r.advance(.05);expect(s.enemies.filter(e=>e.kind==="skeleton")).toHaveLength(1);expect(s.effects.some(e=>e.kind==="summon")).toBe(true)
+ necro.attack=0;const before=s.enemies.length;const spawn=r.spawn.bind(r);r.spawn=(()=>undefined) as typeof r.spawn;r.advance(.05);r.spawn=spawn;expect(s.enemies.length).toBe(before)
+ // Wraith blinks closer on a walkable path.
+ s.enemies=[];const wraith=r.spawn("wraith",{x:7,z:0})!;wraith.attack=0;const gap=Math.hypot(wraith.x-s.player.x,wraith.z-s.player.z);r.advance(.05);expect(Math.hypot(wraith.x-s.player.x,wraith.z-s.player.z)).toBeLessThan(gap-2);expect(s.effects.some(e=>e.kind==="blink")).toBe(true)
+ // Troll regrows an armor word when left alone; a hit resets the timer.
+ s.enemies=[];const troll=r.spawn("troll",{x:7,z:0})!;expect(troll.words).toHaveLength(2);troll.words=["Club"];troll.attack=0;r.advance(.05);expect(troll.words).toHaveLength(2)
+ // Archer and imp loose real projectiles at different speeds.
+ for(const kind of ["archer","imp"] as const){s.enemies=[];s.projectiles=[];const e=r.spawn(kind,{x:5,z:0})!;e.attack=0;r.advance(.05);expect(s.projectiles).toHaveLength(1);expect(Math.hypot(s.projectiles[0]!.vx,s.projectiles[0]!.vz)).toBeCloseTo(kind==="archer"?4.5:3.2)}
+ // Wolves, serpents, beetles, assassins and wisps commit to a telegraphed lunge; golems plant a slam.
+ for(const kind of ["wolf","serpent","beetle","assassin","wisp","golem"] as const){s.enemies=[];const e=r.spawn(kind,{x:kind==="golem"?2:2.5,z:0})!;e.attack=0;r.advance(.05);expect(e.motion).toBe("windup");if(kind==="golem")expect(e.aim).toEqual({x:e.x,z:e.z})}
+ // New armored kinds and XP values come from their profiles.
+ s.enemies=[];expect(r.spawn("golem",{x:4,z:0})!.words).toHaveLength(3);expect(r.spawn("beetle",{x:-4,z:0})!.words).toHaveLength(2)
+})
+
+it("unlocks the bestiary over time, favours each depth's residents and spawns rats in packs",()=>{
+ const roster=(time:number,biome=0)=>{const r=new SurvivalRun("roster");r.state.time=time;r.state.biome=biome;return (r as unknown as {roster:(o:boolean)=>string[]}).roster(time<90)}
+ expect(roster(10)).not.toContain("slime");expect(roster(50)).toContain("slime");expect(roster(70)).toContain("rat")
+ expect(roster(100)).toContain("wolf");expect(roster(100)).not.toContain("archer");expect(roster(130)).toContain("archer")
+ expect(roster(200)).toContain("shaman");expect(roster(200)).not.toContain("golem");expect(roster(320)).toContain("necromancer")
+ expect(roster(320,1).filter(k=>k==="wraith").length).toBe(2);expect(roster(320,3).filter(k=>k==="wolf").length).toBe(3)
+ const r=new SurvivalRun("rat-pack");r.start();const s=r.state;s.enemies=[];s.queue=[];s.time=200;s.spawnAt=0;s.player.invincible=99
+ let packs=0;for(let i=0;i<400&&!packs;i++){s.enemies=s.enemies.filter(e=>e.kind==="rat");r.advance(.1);s.spawnAt=0;if(s.enemies.filter(e=>e.kind==="rat").length>=2)packs++}
+ expect(packs).toBe(1)
+})
+
+it("stages boss duels on open floor away from ruins, clears loose items and keeps the horde outside the fence",()=>{
+ const r=run(),s=r.state;s.player.x=10;s.player.z=4;expect(dungeonWalkable(s.player)).toBe(true);expect(dungeonWalkable({x:10,z:8})).toBe(false)
+ const boss=r.spawn("boss",{x:13,z:3})!,barrel=r.spawn("barrel",{x:9,z:3})!,chest=r.spawn("chest",{x:11,z:5})!,inside=r.spawn("skeleton",{x:10.5,z:4.5})!
+ s.projectiles.push({id:s.nextId++,x:10,z:5,vx:0,vz:-1,life:3});boss.words=["A"];r.refreshQueue();r.input("A");expect(s.phase).toBe("overdrive")
+ const wall=s.bossArena!
+ for(let a=0;a<24;a++)for(const radius of [B.barrierRadius,B.barrierRadius+1])expect(dungeonWalkable({x:wall.x+Math.sin(a*Math.PI/12)*radius,z:wall.z+Math.cos(a*Math.PI/12)*radius})).toBe(true)
+ expect({x:s.player.x,z:s.player.z}).toEqual({x:wall.x,z:wall.z});expect(s.enemies.some(e=>e===barrel||e===chest)).toBe(false);expect(s.projectiles).toHaveLength(0)
+ expect(s.enemies.filter(e=>e.id!==boss.id).every(e=>Math.hypot(e.x-wall.x,e.z-wall.z)>B.barrierRadius+.4)).toBe(true);expect(s.enemies.includes(inside)).toBe(true);expect(s.notice).toContain("BOSS DUEL")
+ // A foe that appears inside the intact fence is pushed out before it can act; the hero takes no horde damage.
+ const sneak=r.spawn("goblin",{x:wall.x+1,z:wall.z})!;s.player.invincible=0;s.bossArena!.calm=99;boss.frozen=99
+ for(let i=0;i<150;i++){r.advance(1/30);s.bossArena!.calm=1.5;s.bossArena!.hp=B.barrierHp}
+ expect(Math.hypot(sneak.x-wall.x,sneak.z-wall.z)).toBeGreaterThan(B.barrierRadius-.3);expect(s.player.hp).toBe(6)
+ // With no open point outside, a trapped foe is removed rather than left inside.
+ const trapped=r.spawn("rat",{x:wall.x,z:wall.z+1})!;const strike=(r as unknown as {strikePosition:(e:unknown,n:number,f:unknown)=>unknown});const original=strike.strikePosition;strike.strikePosition=()=>({x:wall.x,z:wall.z});r.advance(.05);strike.strikePosition=original
+ expect(s.enemies.includes(trapped)).toBe(false)
+})
+
+it("drops foes it cannot place outside the duel fence and holds reinforcements until there is room",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!,inside=r.spawn("skeleton",{x:1,z:0})!;boss.words=["A"];r.refreshQueue()
+ const hooks=r as unknown as {outsideRing:()=>null;arenaCenter:()=>{x:number;z:number}};hooks.outsideRing=()=>null
+ r.input("A");expect(s.phase).toBe("overdrive");expect(s.enemies.includes(inside)).toBe(false);expect(s.enemies.filter(e=>e.id!==boss.id)).toHaveLength(0)
+ s.spawnAt=0;r.advance(.05);expect(s.enemies.filter(e=>e.id!==boss.id)).toHaveLength(0)
+ // Without any open floor the duel stays where the hero stands.
+ s.player.x=Number.NaN;const at=hooks.arenaCenter();expect(Number.isNaN(at.x)).toBe(true)
 })

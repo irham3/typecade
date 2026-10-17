@@ -31,7 +31,7 @@ test("armor hits leave space and a recovery window before the next boss word",as
 })
 
 test("a moving boss reacts to typing while a real barricade takes the horde's attacks",async({page},info)=>{
- test.setTimeout(60000)
+ test.setTimeout(90000)
  const r=new SurvivalRun("active-duel-e2e","id"),s=r.state;r.start();s.time=s.worldTime=301;s.nextBoss=600;s.spawnAt=100;s.enemies=[];s.queue=[];s.player.invincible=100
  const boss=r.spawn("boss",{x:4,z:0})!;boss.words=["ARMOR"];boss.health=1;r.refreshQueue()
  await page.addInitScript(raw=>{if(!sessionStorage.getItem("duel-seed")){localStorage.setItem("typecade:dungeon:run:v1",raw);sessionStorage.setItem("duel-seed","1")}},r.serialize())
@@ -43,7 +43,7 @@ test("a moving boss reacts to typing while a real barricade takes the horde's at
  await page.keyboard.type("?");await expect(page.locator(".boss-hud")).toContainText("BOSS RUSH");await page.waitForTimeout(500)
  const rushed=await read();expect(rushed.bossArena.rage).toBeGreaterThan(0);expect(rushed.cursor).toBe(4)
  await page.screenshot({path:info.outputPath("living-boss-barricade.png")})
- await expect(page.getByLabel("Barricade health")).toHaveAttribute("value","0",{timeout:30000});await expect(page.getByTestId("boss-passage")).toBeVisible();await expect(page.getByTestId("upgrade-keyword")).toHaveCount(0)
+ await expect(page.getByLabel("Barricade health")).toHaveAttribute("value","0",{timeout:45000});await expect(page.getByTestId("boss-passage")).toBeVisible();await expect(page.getByTestId("upgrade-keyword")).toHaveCount(0)
  await page.screenshot({path:info.outputPath("boss-barricade-breached.png")})
  const last=await read();await page.keyboard.type(last.paragraph.slice(last.cursor));await expect(page.getByTestId("upgrade-keyword")).toHaveCount(3)
 })

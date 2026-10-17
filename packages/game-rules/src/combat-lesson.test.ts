@@ -10,6 +10,11 @@ for(const language of ["en","id"] as const)it(`teaches actual combat and upgrade
  lesson.input("Escape");const time=lesson.run.state.time;lesson.advance(.1);expect(lesson.run.state.time).toBe(time);lesson.input("Escape")
  type(words.strike);expect(lesson.complete).toBe(true);expect(lesson.run.state.kills).toBe(1);expect(lesson.run.state.player.x).toBe(1)
  lesson.input("a");expect(lesson.run.state.errors).toBe(1);tick();expect(lesson.next()).toBe(true)
+ // Cancel lesson: starts with a mistaken lock. Finishing the decoy restarts; Backspace then the other word completes it.
+ const locked=()=>lesson.run.state.enemies.find(e=>e.id===lesson.run.state.target)!
+ expect(locked().words[0]).toBe(words.cancel.decoy);expect(lesson.run.state.prefix).toBe(words.cancel.decoy[0]);expect(lesson.complete).toBe(false)
+ type(words.cancel.goal[0]!);expect(lesson.run.state.errors).toBe(1);type(words.cancel.decoy.slice(1));tick();expect(lesson.complete).toBe(false);expect(locked().words[0]).toBe(words.cancel.decoy)
+ lesson.input("Backspace");expect(lesson.run.state.target).toBeNull();type(words.cancel.goal);expect(lesson.complete).toBe(true);tick();expect(lesson.next()).toBe(true)
  type(words.armor[0]!);expect(lesson.complete).toBe(false);expect(lesson.run.state.enemies[0]!.words).toHaveLength(1);type(words.armor[1]!);expect(lesson.complete).toBe(true);lesson.next()
  type(words.treasure);expect(lesson.run.state.gold).toBe(25);expect(lesson.run.state.totalXp).toBe(50);lesson.next()
  type(words.barrel);expect(lesson.run.state.kills).toBe(2);expect(lesson.complete).toBe(true);lesson.next()

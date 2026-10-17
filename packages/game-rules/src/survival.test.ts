@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { SurvivalRun, createDungeonState, dungeonWalkable, restoreDungeonRun, runAccuracy, runWpm, xpThreshold } from "./survival"
-import { dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonObjects, skillRules } from "../../content/src/dungeon"
+import { commonWords, commonWordStyle, dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonObjects, skillRules } from "../../content/src/dungeon"
 import type { DungeonState, EnemyKind, SkillId, UpgradeId } from "../../contracts/src/survival"
 
 const type = (run: SurvivalRun, word: string) => { for (const key of word) run.input(key) }
@@ -15,7 +15,12 @@ describe("real-time typing survival", () => {
    for(const kind of Object.keys(dungeonWords[language]) as EnemyKind[]){
     const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(dungeonObjects.includes(kind)?8:40)
     const seen:string[]=[]
-    for(let i=0;i<30;i++){r.state.enemies=[];r.state.boss=null;const e=r.spawn(kind,{x:2,z:0})!;expect(pool).toContain(e.words[0]);seen.push(...e.words)}
+    const style=commonWordStyle[kind],borrowed=style?commonWords[language].filter(w=>w.length>=3&&w.length<=style.max).map(w=>style.style==="lower"?w:style.style==="upper"?w.toUpperCase():w[0]!.toUpperCase()+w.slice(1)):[]
+    let mixed=0
+    for(let i=0;i<30;i++){r.state.enemies=[];r.state.boss=null;const e=r.spawn(kind,{x:2,z:0})!;expect([...pool,...borrowed]).toContain(e.words[0]);if(!pool.includes(e.words[0]!))mixed++;seen.push(...e.words)}
+    if(style){expect(mixed).toBeGreaterThan(3);expect(mixed).toBeLessThan(27)}else expect(mixed).toBe(0)
+    if(kind==="skeleton"||kind==="goblin")expect(seen.every(w=>/^[a-z]{3,7}$/.test(w))).toBe(true)
+    if(kind==="guard")expect(seen.every(w=>/^[A-Z][a-z]+$/.test(w))).toBe(true)
     expect(new Set(seen).size).toBeGreaterThanOrEqual(Math.min(pool.length,20))
     if(kind==="skeleton"||kind==="goblin")expect(pool.every(w=>/^[a-z]{3,7}$/.test(w))).toBe(true)
     if(kind==="guard")expect(pool.every(w=>/^[A-Z][a-z]+$/.test(w))).toBe(true)
@@ -26,7 +31,7 @@ describe("real-time typing survival", () => {
    r.state.enemies=[];r.state.recentWords=[];const recent:string[]=[]
    for(let i=0;i<80;i++){const e=r.spawn("skeleton",{x:2,z:0})!;expect(recent.slice(-24)).not.toContain(e.words[0]);recent.push(e.words[0]!);r.state.enemies=[]}
    expect(r.state.recentWords).toHaveLength(24)
-   r.state.time=901;expect(dungeonLongWords[language]).toContain(r.spawn("goblin")!.words[0])
+   r.state.time=901;const late=Array.from({length:12},()=>{r.state.enemies=[];return r.spawn("goblin")!.words[0]!});expect(late.some(w=>dungeonLongWords[language].includes(w))).toBe(true)
    r.refreshQueue();const original=r.serialize(),loaded=restoreDungeonRun(original)!
    expect(loaded.state.recentWords).toEqual(r.state.recentWords);expect(loaded.spawn("guard")?.words).toEqual(r.spawn("guard")?.words)
    const legacy=JSON.parse(original);delete legacy.recentWords;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.recentWords).toEqual([])
@@ -176,7 +181,7 @@ describe("real-time typing survival", () => {
   while (boss.words.length) { r.refreshQueue(); type(r, boss.words[0]!) }
   expect(r.state.phase).toBe("overdrive"); expect(r.state.stagger).toBe(3.2)
   r.input("?"); type(r, r.state.paragraph.slice(0,4)); expect(boss.health).toBeLessThan(boss.maxHealth)
-  r.state.pendingDrafts=1;const cursor=r.state.cursor;tick(r,10.1);expect(r.state.phase).toBe("overdrive");expect(r.state.cursor).toBe(cursor);expect(r.state.offers).toHaveLength(0);expect(r.state.effects.some(e=>e.kind==="slam")).toBe(true)
+  r.state.pendingDrafts=1;const cursor=r.state.cursor;let slammed=false;for(let i=0;i<303;i++){r.advance(1/30);slammed||=r.state.effects.some(e=>e.kind==="slam")}expect(r.state.phase).toBe("overdrive");expect(r.state.cursor).toBe(cursor);expect(r.state.offers).toHaveLength(0);expect(slammed).toBe(true)
   r.state.paragraph=r.state.paragraph.slice(r.state.cursor);r.state.cursor=0
   const first=r.state.paragraph;type(r,first);expect(r.state.phase).toBe("arena");expect(r.state.paragraph).toBe("");expect(boss.words).toHaveLength(3)
   while(boss.words.length){r.refreshQueue();type(r,boss.words[0]!)}
