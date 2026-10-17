@@ -17,7 +17,7 @@ const amount = (value: number) => value.toLocaleString("en-US")
 function useCountUp(target: number) {
   const [shown, setShown] = useState(0)
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches || document.querySelector("[data-reduced-effects=true]")) { setShown(target); return }
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || document.querySelector("[data-reduced-effects=true]")) { queueMicrotask(() => setShown(target)); return }
     let frame = 0
     const start = performance.now()
     const step = (now: number) => {
