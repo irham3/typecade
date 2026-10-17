@@ -7,7 +7,7 @@ import { readStorage, writeStorage } from "../storage"
 
 export const dungeonSaveKey = "typecade:dungeon:run:v1"
 const bestKey = "typecade:dungeon:best:v1"
-export const dungeonSnapshot = (s: DungeonState): DungeonState => ({ ...s, player: { ...s.player }, procs:{...s.procs},supplies:{...s.supplies},sentry:s.sentry?{...s.sentry}:null, enemies: s.enemies.map(e => ({ ...e, words: [...e.words] })), recentWords:[...s.recentWords], queue: [...s.queue], offers: [...s.offers], skills: { cleave: { ...s.skills.cleave }, storm: { ...s.skills.storm }, heal: { ...s.skills.heal } }, relics: { ...s.relics } })
+export const dungeonSnapshot = (s: DungeonState): DungeonState => ({ ...s, player: { ...s.player }, procs:{...s.procs},bossArena:s.bossArena?{...s.bossArena}:null,supplies:{...s.supplies},sentry:s.sentry?{...s.sentry}:null, enemies: s.enemies.map(e => ({ ...e, words: [...e.words] })), recentWords:[...s.recentWords], queue: [...s.queue], offers: [...s.offers], skills: { cleave: { ...s.skills.cleave }, storm: { ...s.skills.storm }, heal: { ...s.skills.heal } }, relics: { ...s.relics } })
 
 export function useSurvivalRun(enabled: boolean) {
  const [initial] = useState(() => restoreDungeonRun(readStorage("localStorage", dungeonSaveKey)) ?? new SurvivalRun(`run-${Date.now()}`))

@@ -937,3 +937,13 @@ Clean word strikes land outside contact range: 1 unit for final hits and objects
 Current-source local checks: 188 tests/27 files at unchanged 100% coverage (4495 statements, 4243 branches, 691 functions, 2433 lines); seven focused Chromium cases; lint, app/server types, build, zero-vulnerability audit, Worker dry-run and retirement/headless audits passed. Final CI and timed profile remain pending; see verification/dungeon-polish-2026-10-17.
 
 Indonesian command cleanup: UP-SAPU becomes SABET; supply/object commands stay alphabetic without synthetic prefixes. Corrected PERTAHAN, Kubuh, PELETUP and TEMUKAN loot wording. Mage/bomber punctuation remains an explicit enemy difficulty rule, separate from items. Existing save IDs/ranks are unchanged; only authored labels/keywords change.
+
+## 2026-10-17 - Active boss duel and breakable barricade
+
+User steering replaces the stationary paragraph presentation with actual boss pursuit, correct-letter knockback, typo rush, safe word sidesteps and close-range telegraphed attacks. Ordinary foes continue moving/attacking a 24-HP, radius-5.5 barricade, capped to one damage per 0.8 seconds; after breach they can hurt the player without clearing the text or opening drafts. Save version 1 receives a validated optional bossArena default; old saves and account/Auth data remain intact. Dark block weather becomes a smaller transparent plane batch anchored to world cells.
+
+The pre-duel source (production code 89828a6) completed 900 active seconds before this steering: zero deaths, 284876 bytes retained after six navigation cycles, normal render p95 18.7 ms on the recorded local hardware. Its report is preserved as verification/dungeon-polish-2026-10-17/profile-before-active-duel.json and is historical, not M14 verification.
+
+Final PR must target master, superseding the earlier main request. Commits remain separated by completed concern; final build/checks follow implementation.
+
+CI regression diagnosis: the four-player room renderer failed when Reduced Effects was already persisted before startup. Weather instance colors had never been allocated (zero instances), but startup still marked the null buffer for upload. Guarded empty weather/fence color buffers and added an initial-Reduced-Effects WebGL/party-projection regression. The earlier focus helper alone did not resolve this root cause. Coverage/assertions/time limits remain intact.

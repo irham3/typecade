@@ -174,7 +174,7 @@ describe("real-time typing survival", () => {
   const r = arena(); r.state.time = 299.99; tick(r, .1); expect(r.state.boss).not.toBeNull()
   const boss = r.state.enemies.find(e => e.id === r.state.boss)!; expect(r.spawn("boss")).toBeUndefined()
   while (boss.words.length) { r.refreshQueue(); type(r, boss.words[0]!) }
-  expect(r.state.phase).toBe("overdrive"); expect(r.state.stagger).toBe(10)
+  expect(r.state.phase).toBe("overdrive"); expect(r.state.stagger).toBe(3.2)
   r.input("?"); type(r, r.state.paragraph.slice(0,4)); expect(boss.health).toBeLessThan(boss.maxHealth)
   r.state.pendingDrafts=1;const cursor=r.state.cursor;tick(r,10.1);expect(r.state.phase).toBe("overdrive");expect(r.state.cursor).toBe(cursor);expect(r.state.offers).toHaveLength(0);expect(r.state.effects.some(e=>e.kind==="slam")).toBe(true)
   r.state.paragraph=r.state.paragraph.slice(r.state.cursor);r.state.cursor=0

@@ -170,3 +170,11 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Current-source local checks: 188 tests/27 files, unchanged 100% coverage, lint, app/server types, build, audit and Worker dry-run. See verification/dungeon-polish-2026-10-17.
 - [ ] Finish full browser CI and timed production resource evidence before claiming release verification.
 - [ ] Supabase backup, migrations, cloud history and leaderboard changes: explicitly postponed by the user until after non-Supabase work.
+
+## M14 - Active boss duel, barricade and natural Indonesian commands
+
+- [x] Replace artificial Indonesian item/upgrade commands and add an alphabetic command-pack invariant.
+- [x] Keep boss movement and horde siege active during paragraph input; correct-input retreat, typo rush, word sidestep, telegraphs and a real breakable protective fence preserve the entire line.
+- [x] Replace dark block weather with restrained world-anchored ash, leaves and snow; retain Reduced Effects and instance bounds.
+- [ ] Final current-source coverage, build, types/lint, browser matrix and timed production profile. The completed pre-duel profile is historical and does not verify M14.
+- [ ] Final PR title/body and target master, per the latest user instruction; preserve the existing branch and finish checks first.

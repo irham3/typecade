@@ -83,9 +83,9 @@ it("telegraphs boss hammer slams and protects a typed target from automatic reli
 
 it("keeps a boss combo through retaliation, allows word guards and restores old proc-free checkpoints",()=>{
  const r=run(),s=r.state;const boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");expect(s.phase).toBe("overdrive");expect(Math.hypot(s.player.x-boss.x,s.player.z-boss.z)).toBeGreaterThan(3)
- const text=s.paragraph;r.input(text[0]!);const cursor=s.cursor;s.stagger=.01;s.player.invincible=0;r.advance(.1)
+ const text=s.paragraph;r.input(text[0]!);const cursor=s.cursor;s.stagger=.01;boss.x=s.player.x+2;boss.z=s.player.z;boss.motion="windup";boss.motionTime=.01;boss.aim={x:s.player.x,z:s.player.z};s.player.invincible=0;r.advance(.1)
  expect(s.cursor).toBe(cursor);expect(s.paragraph).toBe(text);expect(s.phase).toBe("overdrive");expect(s.player.hp).toBe(5)
- s.stagger=.01;s.player.invincible=1;r.advance(.1);expect(s.player.hp).toBe(5);expect(s.effects.some(e=>e.kind==="block"&&e.value===0)).toBe(true)
+ s.stagger=.01;boss.motion="windup";boss.motionTime=.01;s.player.invincible=1;r.advance(.1);expect(s.player.hp).toBe(5);expect(s.effects.some(e=>e.kind==="block"&&e.value===0)).toBe(true)
  const legacy=JSON.parse(r.serialize());delete legacy.procs;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.procs).toEqual({lightning:0,vowels:0})
  // A malformed in-memory boss location must not move the hero into blocked terrain.
  s.phase="arena";boss.x=10;boss.z=10;s.player.x=10;s.player.z=10;boss.words=["A"];s.target=boss.id;s.prefix="";r.input("A");expect(s.player.x).toBe(10)
@@ -114,4 +114,31 @@ it("lands outside contact range and interrupts heavy retaliation after a clean a
  }
  // A strike from within an overlapping actor uses the previous approach direction.
  const r=run(),e=r.spawn("guard",{x:0,z:0})!;e.words=["A","B"];r.refreshQueue();r.input("A");expect(Math.hypot(r.state.player.x,r.state.player.z)).toBeCloseTo(2.2)
+})
+
+it("moves the boss back on correct input, rushes after typos and sidesteps on completed words",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");s.paragraph="tebas kini BLIZZARD";const gap=()=>Math.hypot(boss.x-s.player.x,boss.z-s.player.z)
+ const before=gap();r.input("t");expect(gap()).toBeGreaterThan(before);const pushed=gap();r.input("?");expect(gap()).toBeLessThan(pushed);expect(s.bossArena!.rage).toBe(2);const rushed=gap();tick(r,.5);expect(gap()).toBeLessThan(rushed)
+ const position={x:s.player.x,z:s.player.z};for(const c of "ebas ")r.input(c);expect({x:s.player.x,z:s.player.z}).not.toEqual(position);expect(s.cursor).toBe(6);expect(s.player.invincible).toBeGreaterThan(0)
+ const cursor=s.cursor;r.pause();tick(r,2);expect(s.cursor).toBe(cursor);const frozen=r.serialize();tick(r,1);expect(r.serialize()).toBe(frozen);expect(restoreDungeonRun(frozen)).not.toBeNull()
+})
+it("lets the horde break its real barricade without ending the paragraph or opening a draft",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");const text=s.paragraph;s.pendingDrafts=1;r.input(text[0]!);const cursor=s.cursor
+ let elapsed=0;while(s.bossArena!.hp>0&&elapsed<30){r.advance(.1);elapsed+=.1}
+ expect(Math.hypot(boss.x-s.player.x,boss.z-s.player.z)).toBeGreaterThanOrEqual(2.1);expect(elapsed).toBeGreaterThan(18);expect(elapsed).toBeLessThan(26);expect(s.bossArena!.hp).toBe(0);expect(s.effects.some(f=>f.kind==="barrier"&&f.value===0)).toBe(true);expect(s.cursor).toBe(cursor);expect(s.paragraph).toBe(text);expect(s.phase).toBe("overdrive");expect(s.offers).toHaveLength(0)
+ const foe=s.enemies.find(e=>e.id!==boss.id)!;foe.x=s.player.x;foe.z=s.player.z;s.player.invincible=0;r.advance(.1);expect(s.player.hp).toBeLessThan(s.player.maxHp)
+ boss.health=1;for(const c of text.slice(cursor,-1))r.input(c);expect(s.boss).toBe(boss.id);r.input(text.at(-1)!);expect(s.bossArena).toBeNull();expect(s.phase).toBe("draft")
+})
+it("blocks incoming shots at the barricade and validates compatible duel saves",()=>{
+ const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");s.enemies=[boss];s.player.invincible=0
+ const shot=()=>s.projectiles.push({id:s.nextId++,x:s.player.x,z:s.player.z,vx:0,vz:0,life:3})
+ shot();r.advance(.1);expect(s.projectiles).toHaveLength(0);expect(s.bossArena!.hp).toBe(23);expect(s.player.hp).toBe(6)
+ shot();r.advance(.1);expect(s.bossArena!.hp).toBe(23);s.bossArena!.hp=0;shot();r.advance(.1);expect(s.player.hp).toBe(5)
+ s.stagger=0;expect(restoreDungeonRun(r.serialize())).not.toBeNull()
+ const base=JSON.parse(r.serialize());for(const change of [(v:DungeonState)=>{v.bossArena!.hp=-1},(v:DungeonState)=>{v.bossArena!.hp=25},(v:DungeonState)=>{v.bossArena!.hp=.5},(v:DungeonState)=>{v.bossArena!.cooldown=1},(v:DungeonState)=>{v.bossArena!.rage=3},(v:DungeonState)=>{v.bossArena!.x=NaN},(v:DungeonState)=>{v.bossArena!.z=1e7},(v:DungeonState)=>{v.bossArena!.x=1e7},(v:DungeonState)=>{v.bossArena!.x=v.bossArena!.z=10},(v:DungeonState)=>{v.boss=null}]){const raw=structuredClone(base);change(raw);expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()}
+ delete base.bossArena;expect(restoreDungeonRun(JSON.stringify(base))?.state.bossArena).toBeNull()
+})
+
+it("keeps frost meaningful during a boss duel and never moves a frozen boss on a typo",()=>{
+ const r=run(),boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");boss.frozen=1;const at={x:boss.x,z:boss.z};r.input("?");tick(r,.5);expect({x:boss.x,z:boss.z}).toEqual(at);expect(boss.frozen).toBeLessThan(1);tick(r,.6);expect(boss.frozen).toBe(0);r.state.bossArena=null;r.input("?");expect(r.state.bossArena).toBeNull();r.advance(.1);expect(r.state.bossArena).not.toBeNull()
 })

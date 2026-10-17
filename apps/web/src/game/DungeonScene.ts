@@ -1,6 +1,6 @@
 import { BackSide, BoxGeometry, BufferGeometry, CanvasTexture, CircleGeometry, Color, ConeGeometry, CylinderGeometry, DepthTexture, DirectionalLight, DoubleSide, DynamicDrawUsage, Euler, FogExp2, HemisphereLight, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, NearestFilter, OctahedronGeometry, OrthographicCamera, PlaneGeometry, PointLight, Quaternion, RingGeometry, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three"
 import type { DungeonEnemy, DungeonEvents, DungeonState, EnemyKind, PartyWorld } from "@typecade/contracts"
-import { dungeonTerrain as T, dungeonBiomes, dungeonObjects, dungeonSupplies } from "@typecade/content"
+import { dungeonTerrain as T, dungeonBalance as B, dungeonBiomes, dungeonObjects, dungeonSupplies } from "@typecade/content"
 import { createSeededRng } from "@typecade/game-rules"
 import { GameEventBridge } from "../bridge/game-event-bridge"
 import { DungeonModels } from "./DungeonModels"
@@ -25,6 +25,7 @@ export class DungeonScene {
  private castAt = -10
  private celebrateAt = -10
  private echoes: InstancedMesh
+ private barricade: InstancedMesh
  private weather: InstancedMesh
  private landmarks: InstancedMesh
  private swingSide = 1
@@ -164,6 +165,7 @@ export class DungeonScene {
   this.orbitals=this.instance(this.models.geometry([[0xc1d5df,0,0,0,.58,.12,.15],[0x66503b,-.23,0,0,.10,.38,.12],[0x66503b,.23,0,0,.10,.38,.12],[0xffffff,0,.12,0,.14,.26,.14,"cone"],[0x9c723c,0,-.12,0,.12,.27,.12]]),bright,12)
   const weatherMaterial=new MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.6,side:DoubleSide,depthWrite:false});this.materials.push(weatherMaterial)
   this.weather=this.instance(this.models.keep(new PlaneGeometry(.10,.16)),weatherMaterial,32)
+  this.barricade=this.instance(this.models.geometry([[0x66513c,0,.78,0,.16,1.56,.2],[0xae8b57,0,1.60,0,.20,.25,.23,"cone"],[0x806441,0,.55,0,1.5,.14,.13],[0x9f7d4e,0,1.12,0,1.5,.14,.13],[0xb6a27a,0,.55,.09,.09,.08,.04],[0xb6a27a,0,1.12,.09,.09,.08,.04]]),this.models.material,24)
   this.landmarks=this.instance(this.models.geometry([[0x4c5462,0,0,0,1.6,.24,1.3],[0x897b64,0,.3,0,1.1,.4,1.0],[0x586174,0,1.3,0,.8,1.6,.7],[0xd9be77,0,2.2,0,1.1,.22,.95],[0x74c6dd,0,2.6,0,.35,.6,.35,"cone"],[0x86775a,-.7,.7,0,.2,1.2,.2],[0x86775a,.7,.7,0,.2,1.2,.2]]),this.models.material,18)
   this.telegraphs=this.instance(this.models.keep(new BoxGeometry(1,.025,1)),bright,128)
   this.embers = this.instance(this.models.keep(new BoxGeometry(.12, .12, .12)), bright, 16)
@@ -284,13 +286,14 @@ export class DungeonScene {
   this.lastHp=s.player.hp
   for(const fx of newEffects){
    if(fx.kind==="slash"&&s.phase==="overdrive"&&s.cursor%3!==0)continue
-   let kind:VisualEffect=fx.kind
+   let kind:VisualEffect=fx.kind==="barrier"?fx.value===0?"death":"shatter":fx.kind
+   if(fx.kind==="barrier"){this.audio.play(fx.value===0?"explosion":"armor");if(fx.to)for(const actor of this.actors.values())if(Math.hypot(actor.x-fx.to.x,actor.z-fx.to.z)<.1)actor.strikeAt=now}
    if(fx.kind==="slash"&&dash)kind=this.swingKind
    if(fx.kind==="lightning"||fx.kind==="firebolt"){this.castAt=now;if(fx.to)this.heroAngle=Math.atan2(fx.to.x-s.player.x,fx.to.z-s.player.z)}
    if(fx.kind==="slam"||fx.kind==="blast"){this.cameraTrauma=.18;for(const actor of this.actors.values())if(actor.kind==="boss")actor.strikeAt=now}
    if(fx.kind==="block")this.shieldHitAt=now
    if(fx.kind==="slash"&&!dash&&s.phase!=="overdrive"&&Math.hypot(fx.x-s.player.x,fx.z-s.player.z)<.1){kind="cleave";this.swingAt=now;this.swingKind="cleave";this.cameraTrauma=.12}
-   this.vfx.emit(kind,fx.x,fx.z,this.heroAngle,1,fx.to??(fx.kind==="pickup"?{x:s.player.x,z:s.player.z}:undefined))
+   this.vfx.emit(kind,fx.x,fx.z,this.heroAngle,1,fx.to??(fx.kind==="pickup"?{x:s.player.x,z:s.player.z}:undefined),fx.kind==="barrier"?0xc59b66:undefined)
    if(storm&&fx.kind==="shatter")this.vfx.emit("lightning",fx.x,fx.z,this.heroAngle)
    if(fx.kind==="shatter")this.cameraTrauma=Math.max(this.cameraTrauma,.055)
    if(fx.kind==="slash"&&s.phase==="overdrive"){this.swingAt=now-.07;this.swingSide=s.cursor%2?1:-1;this.heroAngle=Math.atan2(fx.x-s.player.x,fx.z-s.player.z)}
@@ -406,11 +409,11 @@ export class DungeonScene {
   this.heroMaterial.emissive.setHex(0xff5738);this.heroMaterial.emissiveIntensity=hurt*.9;this.post.uniforms.hurt.value=hurt
   const celebration=this.reduced?0:Math.max(0,1-(this.elapsed-this.celebrateAt)/1.0),casting=this.reduced?0:Math.max(0,1-(this.elapsed-this.castAt)/.4)
   const dash=active&&!this.reduced?Math.max(0,1-age/.19):0, swing=this.reduced?0:Math.max(0,1-swingAge/.38)
-  const selected=s?.enemies.find(e=>e.id===s.target),charge=active&&selected?Math.min(1,s!.prefix.length/selected.words[0]!.length):0
+  const selected=s?.enemies.find(e=>e.id===(s.phase==="overdrive"?s.boss:s.target)),charge=active&&selected&&selected.words.length?Math.min(1,s!.prefix.length/selected.words[0]!.length):0
   if(dash>0)hero.position.lerpVectors(this.dashFrom,this.dashTo,1-dash**3)
   else hero.position.set(px,0,pz)
   if(!this.reduced){hero.position.x+=Math.sin(this.heroHurtAngle)*Math.sin(hurt*Math.PI)*.25;hero.position.z+=Math.cos(this.heroHurtAngle)*Math.sin(hurt*Math.PI)*.25}
-  if(selected&&charge>0)this.heroAngle=Math.atan2(selected.x-hero.position.x,selected.z-hero.position.z)
+  if(selected&&(charge>0||s?.phase==="overdrive"))this.heroAngle=Math.atan2(selected.x-hero.position.x,selected.z-hero.position.z)
   const facing=active?this.heroAngle:dojo?1.3:.55,turn=Math.atan2(Math.sin(facing-hero.rotation.y),Math.cos(facing-hero.rotation.y))
   hero.rotation.y+=turn*Math.min(1,delta*22||1)
   hero.rotation.x=this.reduced?0:dash*.27+Math.sin(swingAge*18)*swing*.09
@@ -440,7 +443,7 @@ export class DungeonScene {
    const relics=[...(s.relics.lightning?[0x8ce9fa,0xb9fbff]:[]),...(s.relics.vowels?[0xffbb68,0xff8d54]:[])]
    relics.forEach((hex,i)=>{const a=(this.reduced?0:this.elapsed*1.4)+i*Math.PI*2/relics.length;this.matrix.makeRotationY(a).setPosition(hero.position.x+Math.sin(a)*1.15,1+Math.sin(a*2)*.13,hero.position.z+Math.cos(a)*1.15);this.orbitals.setMatrixAt(i,this.matrix);this.orbitals.setColorAt(i,this.color.setHex(hex))});this.orbitals.count=relics.length
    for(const e of s.enemies){
-    if(e.id===s.boss&&s.phase==="overdrive"&&s.stagger<2){this.matrix.makeScale(3,1,3).setPosition(hero.position.x,.08,hero.position.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xf07855))}
+    if(e.id===s.boss&&s.phase==="overdrive"&&e.motion==="windup"){this.matrix.makeScale(3,1,3).setPosition(hero.position.x,.08,hero.position.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xf07855))}
     if(e.motion==="windup"&&e.aim){const length=Math.hypot(e.aim.x-e.x,e.aim.z-e.z),angle=Math.atan2(e.aim.x-e.x,e.aim.z-e.z);this.matrix.makeRotationY(angle).scale(this.scale.set(length<.1?6:.9,1,length<.1?6:length)).setPosition((e.x+e.aim.x)/2,.075,(e.z+e.aim.z)/2);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xde6948))}
     else if(e.kind==="mage"&&e.attack<1.1){this.matrix.makeScale(.55,1,.55).setPosition(e.x,.08,e.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xc29aff))}
    }
@@ -457,21 +460,21 @@ export class DungeonScene {
    for (const e of enemies) {
     const death=e.deadAt<0?0:Math.min(1,(this.elapsed-e.deadAt)/.65)
     if(death>=1){this.actors.delete(e.id);continue}
-    const hit=Math.max(0,1-(this.elapsed-e.hitAt)/.24),strike=Math.max(0,1-(this.elapsed-e.strikeAt)/.4)
+    const siege=active&&s?.phase==="overdrive"&&s.bossArena&&s.bossArena.hp>0&&e.id!==s.boss&&!dungeonObjects.includes(kind)&&Math.hypot(e.x-s.bossArena.x,e.z-s.bossArena.z)<B.barrierRadius+.8
+    const hit=Math.max(0,1-(this.elapsed-e.hitAt)/.24),strike=Math.max(Math.max(0,1-(this.elapsed-e.strikeAt)/.4),siege&&!this.reduced?Math.max(0,Math.sin(this.elapsed*6+e.id))*.65:0)
     const arrival=this.reduced?1:Math.min(1,(this.elapsed-e.bornAt)/.4)
     const scale = batch.scale*(.4+.6*(1-(1-arrival)**3))*(1-Math.max(0,death-.35)/.65),angle=e.deadAt<0&&Math.hypot(px-e.x,pz-e.z)>.05?Math.atan2(px-e.x,pz-e.z):e.angle,turn=Math.atan2(Math.sin(angle-e.angle),Math.cos(angle-e.angle))
     e.angle+=turn*Math.min(1,delta*7)
     const pace=this.elapsed*(.6+e.speed)*(kind==="goblin"?9:kind==="boss"||kind==="minotaur"?3.5:5)+e.id*1.9
     const walk=this.reduced||e.frozen>0||death>0||dungeonObjects.includes(kind)?0:Math.sin(pace)*(active ? Math.min(.65,Math.hypot(e.x-e.vx,e.z-e.vz)*8) : .16)
     e.vx+=(e.x-e.vx)*Math.min(1,delta*18);e.vz+=(e.z-e.vz)*Math.min(1,delta*18)
-    const recoil=this.reduced?0:hit*.23+(e.deadAt<0?0:(1-(1-death)**3)*1.4),lunge=e.kind==="boss"&&s?.phase==="overdrive"&&!this.reduced?Math.sin(strike*Math.PI)*1.8:0,x=e.vx-Math.sin(angle)*recoil+Math.sin(angle)*lunge,z=e.vz-Math.cos(angle)*recoil+Math.cos(angle)*lunge
+    const recoil=this.reduced?0:hit*.23+(e.deadAt<0?0:(1-(1-death)**3)*1.4),lunge=e.kind==="boss"&&s?.phase==="overdrive"&&!this.reduced?Math.sin(strike*Math.PI)*.4:0,x=e.vx-Math.sin(angle)*recoil+Math.sin(angle)*lunge,z=e.vz-Math.cos(angle)*recoil+Math.cos(angle)*lunge
     const altitude=kind==="mage"?1:kind==="bat"?1.25:0
     const bob=altitude+(this.reduced||death>0||e.frozen>0?0:kind==="mage"?Math.sin(pace*.65)*.18:kind==="bat"?Math.sin(pace*1.3)*.22:kind in dungeonSupplies?.15+Math.sin(pace)*.08:Math.abs(walk)*(kind==="goblin"?.13:.065))
-    const stagger = e.kind === "boss" && s?.phase === "overdrive"
-    const hammer=stagger?Math.max(0,1-s!.stagger/2)*1.5:e.motion==="windup"?.8:e.motion==="slam"?-1.4:0
+    const hammer=e.motion==="windup"?Math.max(0,1-(e.motionTime??0)/.8)*1.5:e.motion==="recover"?-1.1:0
     this.matrix.makeRotationX(-Math.PI/2).scale(this.scale.setScalar(scale*1.1)).setPosition(x,.015,z);this.shadows.setMatrixAt(shadowIndex++,this.matrix)
     this.rotation.setFromEuler(this.euler.set(this.reduced?0:-hit*.22+strike*.22+death*1.3+(e.motion==="windup"?-.2:e.motion==="charge"?.35:0),e.angle,this.reduced?0:walk*.065+death*.6,"YXZ"))
-    this.matrix.compose(this.point.set(x,stagger?Math.max(0,1-(s!.stagger/2))*.5:bob-death*.1,z),this.rotation,this.scale.setScalar(scale))
+    this.matrix.compose(this.point.set(x,bob-death*.1,z),this.rotation,this.scale.setScalar(scale))
     batch.body.setMatrixAt(index,this.matrix);batch.body.setColorAt(index,this.color.setHex(e.frozen>0?0x89c9ef:0xffffff).multiplyScalar(this.reduced?1:hit>.65?2.5:1-death*.55))
     batch.outline.setMatrixAt(index,this.local.makeScale(1.04,1.04,1.04).premultiply(this.matrix))
     for(const [part,sign]of [[batch.left,-1],[batch.right,1]] as const)if(part){if(kind==="bat")this.local.makeRotationZ(this.reduced?sign*.2:sign*(.18+Math.sin(pace*2.6)*.65)).setPosition(.6*sign,1.13,0);else this.local.makeRotationX(walk*sign+death*sign*2).setPosition(.25*sign+death*sign*.5,.7+Math.sin(death*Math.PI)*.45,death*sign*.25);part.setMatrixAt(index,this.local.premultiply(this.matrix))}
@@ -534,6 +537,14 @@ export class DungeonScene {
   }); this.gems.count = this.coins.count = loot.length
   const projectiles = active && s ? s.projectiles : []
   projectiles.forEach((p,i)=>{for(let tail=0;tail<(this.reduced?1:3);tail++){this.matrix.makeRotationY(this.elapsed*3).scale(this.scale.setScalar(1-tail*.28)).setPosition(p.x-p.vx*tail*.11,.9,p.z-p.vz*tail*.11);this.projectiles.setMatrixAt(i*(this.reduced?1:3)+tail,this.matrix);this.projectiles.setColorAt(i*(this.reduced?1:3)+tail,this.color.setHex(tail?0x926fd7:0xf1c5ff))}});this.projectiles.count=projectiles.length*(this.reduced?1:3)
+  const wall=active&&s?.phase==="overdrive"?s.bossArena:null
+  this.barricade.count=wall?24:0
+  if(wall)for(let i=0;i<24;i++){
+   const a=i*Math.PI/12,broken=wall.hp===0,front=Math.sin(a)+Math.cos(a)>0
+   this.rotation.setFromEuler(this.euler.set(broken?1.35:0,a,0));this.matrix.compose(this.point.set(wall.x+Math.sin(a)*B.barrierRadius,broken?.05:0,wall.z+Math.cos(a)*B.barrierRadius),this.rotation,this.scale.set(1,broken?.6:front?.65:1,1))
+   this.barricade.setMatrixAt(i,this.matrix);this.barricade.setColorAt(i,this.color.setHex(wall.cooldown>.55?0xffb37b:wall.hp<8?0xb98d68:0xffffff))
+  }
+  this.barricade.instanceMatrix.needsUpdate=true;if(this.barricade.instanceColor)this.barricade.instanceColor.needsUpdate=true
   const season=((s?.biome??0)+Math.floor((s?.time??0)/120))%dungeonBiomes.length
   this.weather.count=this.reduced?0:season===3?32:season===4?12:18
   for(let i=0;i<this.weather.count;i++){
@@ -557,7 +568,7 @@ export class DungeonScene {
    this.point.set(enemy.x, objectsHeight(enemy.kind) * scale, enemy.z).project(this.camera)
    const x = (this.point.x + 1) * .5 * this.width, y = (1 - this.point.y) * .5 * this.height
    return { id, x, y, visible: x >= 0 && x <= this.width && y >= 0 && y <= this.height }
-  }),...s.effects.filter(effect=>effect.source&&effect.kind==="shatter"||effect.kind==="hit"&&effect.value<0||["blast","treasure","heal","mana","shield","block","pickup","level","upgrade"].includes(effect.kind)).slice(-6).map(effect=>{this.point.set(effect.x,1.6,effect.z).project(this.camera);return {id:effect.id,x:(this.point.x+1)*.5*this.width,y:(1-this.point.y)*.5*this.height,visible:true}})])
+  }),...s.effects.filter(effect=>effect.source&&effect.kind==="shatter"||effect.kind==="hit"&&effect.value<0||["blast","treasure","heal","mana","shield","block","pickup","level","upgrade","barrier"].includes(effect.kind)).slice(-6).map(effect=>{this.point.set(effect.x,1.6,effect.z).project(this.camera);return {id:effect.id,x:(this.point.x+1)*.5*this.width,y:(1-this.point.y)*.5*this.height,visible:true}})])
   if(this.last-this.lastProjection>=33)this.lastProjection=this.last
  }
  private tick(timestamp: number) {

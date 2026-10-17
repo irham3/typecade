@@ -151,3 +151,14 @@ it("banks level choices while a boss still has armor",async()=>{
  const r=new SurvivalRun("boss-bank"),s=r.state;r.start();s.time=301;s.nextBoss=600;s.pendingDrafts=1;r.spawn("boss",{x:4,z:0});r.refreshQueue();localStorage.setItem("typecade:dungeon:run:v1",r.serialize())
  await mount();await click("Continue run");await click("Resume run");expect(host.textContent).toContain("UPGRADES BANKED");expect(host.querySelector(".upgrade-card")).toBeNull()
 })
+
+it("shows live boss windup, typo pressure and barricade breach without replacing the passage",async()=>{
+ for(const state of ["windup","rush","breach"] as const){
+  const r=new SurvivalRun("duel-ui-"+state),s=r.state;r.start();s.time=s.worldTime=301;s.nextBoss=600;s.spawnAt=100;s.enemies=[];s.queue=[];const boss=r.spawn("boss",{x:4,z:0})!;boss.words=[];s.phase="overdrive";s.paragraph="tuntaskan BLIZZARD";s.stagger=3.2;s.bossArena={x:0,z:0,hp:state==="breach"?0:24,cooldown:0,rage:state==="rush"?2:0}
+  if(state==="windup"){boss.motion="windup";boss.motionTime=.8;boss.aim={x:0,z:0}}
+  localStorage.setItem("typecade:dungeon:run:v1",r.serialize());await mount();await click("Continue run");await click("Resume run")
+  expect(host.querySelector('[data-testid="boss-passage"]')!.textContent).toContain("tuntaskan BLIZZARD");expect(host.querySelector('[aria-label="Barricade health"]')?.getAttribute("value")).toBe(state==="breach"?"0":"24")
+  expect(host.textContent).toContain(state==="windup"?"HAMMER WINDUP":state==="rush"?"BOSS RUSH":"BREACHED")
+  expect(host.querySelector(".upgrade-card")).toBeNull();await act(()=>root.unmount());root=createRoot(host)
+ }
+})

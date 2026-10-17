@@ -29,3 +29,21 @@ test("armor hits leave space and a recovery window before the next boss word",as
  await page.getByRole("button",{name:"Resume run"}).click();await page.keyboard.type("BREAK");await expect(page.getByTestId("boss-passage")).toBeVisible()
  await page.screenshot({path:info.outputPath("boss-safe-spacing.png")})
 })
+
+test("a moving boss reacts to typing while a real barricade takes the horde's attacks",async({page},info)=>{
+ test.setTimeout(60000)
+ const r=new SurvivalRun("active-duel-e2e","id"),s=r.state;r.start();s.time=s.worldTime=301;s.nextBoss=600;s.spawnAt=100;s.enemies=[];s.queue=[];s.player.invincible=100
+ const boss=r.spawn("boss",{x:4,z:0})!;boss.words=["ARMOR"];boss.health=1;r.refreshQueue()
+ await page.addInitScript(raw=>{if(!sessionStorage.getItem("duel-seed")){localStorage.setItem("typecade:dungeon:run:v1",raw);sessionStorage.setItem("duel-seed","1")}},r.serialize())
+ await page.goto("/");await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click();await page.keyboard.type("ARMOR");await expect(page.getByLabel("Barricade health")).toBeVisible()
+ const read=async()=>{await page.keyboard.press("Escape");const state=await page.evaluate(()=>JSON.parse(localStorage.getItem("typecade:dungeon:run:v1")!));await page.getByRole("button",{name:"Resume run"}).click();return state}
+ const before=await read(),enemy=before.enemies.find((e:{id:number})=>e.id===before.boss),first=before.paragraph.slice(0,4)
+ await page.keyboard.type(first);const hit=await read(),after=hit.enemies.find((e:{id:number})=>e.id===hit.boss)
+ expect(Math.hypot(after.x-hit.player.x,after.z-hit.player.z)).toBeGreaterThan(Math.hypot(enemy.x-before.player.x,enemy.z-before.player.z))
+ await page.keyboard.type("?");await expect(page.locator(".boss-hud")).toContainText("BOSS RUSH");await page.waitForTimeout(500)
+ const rushed=await read();expect(rushed.bossArena.rage).toBeGreaterThan(0);expect(rushed.cursor).toBe(4)
+ await page.screenshot({path:info.outputPath("living-boss-barricade.png")})
+ await expect(page.getByLabel("Barricade health")).toHaveAttribute("value","0",{timeout:30000});await expect(page.getByTestId("boss-passage")).toBeVisible();await expect(page.getByTestId("upgrade-keyword")).toHaveCount(0)
+ await page.screenshot({path:info.outputPath("boss-barricade-breached.png")})
+ const last=await read();await page.keyboard.type(last.paragraph.slice(last.cursor));await expect(page.getByTestId("upgrade-keyword")).toHaveCount(3)
+})

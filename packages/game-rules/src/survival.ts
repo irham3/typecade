@@ -34,7 +34,7 @@ export function createDungeonState(seed: string, language: DungeonLanguage): Dun
  return {
   version: 1, seed, rng: 0, language, phase: "ready", resumePhase: "arena", time: 0, worldTime: 0, nextBoss: B.bossInterval, spawnAt: 2, nextId: 1, biome: 0,
   player: { x: 0, z: 0, hp: B.hp, maxHp: B.hp, mana: 100, shield: 0, invincible: 0, dashFrom: { x: 0, z: 0 }, dashAt: -10 },
-  procs:{lightning:0,vowels:0},supplies:{shield:0,potion:0,mana:0,sentry:0},sentry:null,
+  bossArena:null,procs:{lightning:0,vowels:0},supplies:{shield:0,potion:0,mana:0,sentry:0},sentry:null,
   enemies: [], loot: [], projectiles: [], effects: [], recentWords: [], target: null, prefix: "", command: "", queue: [], labelLimit: 6,
   level: 1, xp: 0, totalXp: 0, gold: 0, kills: 0, words: 0, correct: 0, errors: 0, streak: 0, bestStreak: 0,
   skills: { cleave: { level: 1, cooldown: 0 }, storm: { level: 1, cooldown: 0 }, heal: { level: 1, cooldown: 0 } },
@@ -59,7 +59,7 @@ export class SurvivalRun {
   const s = this.state
   // A full horde must not evict its cast cue with 128 subsequent hit/pickup cues.
   if (s.effects.length >= B.effects) {const minor=s.effects.findIndex(fx=>fx.kind==="shatter"||fx.kind==="pickup"||fx.kind==="hit");s.effects.splice(Math.max(0,minor),1)}
-  s.effects.push({ id: s.nextId++, kind, x: at.x, z: at.z, life: ["heal","mana","shield","pickup","treasure","level","upgrade","block"].includes(kind)?1.35:.55, value, ...(to?{to:{x:to.x,z:to.z}}:{}),...(source?{source}:{}) })
+  s.effects.push({ id: s.nextId++, kind, x: at.x, z: at.z, life: ["heal","mana","shield","pickup","treasure","level","upgrade","block","barrier"].includes(kind)?1.35:.55, value, ...(to?{to:{x:to.x,z:to.z}}:{}),...(source?{source}:{}) })
  }
  start() { if (this.state.phase === "ready") this.state.phase = "arena" }
  pause() {
@@ -119,10 +119,16 @@ export class SurvivalRun {
   if (Array.from(key).length !== 1 || !["arena", "skills", "draft", "overdrive"].includes(s.phase)) return
   if (s.phase === "draft" || s.phase === "skills") { this.commandKey(key); return }
   if (s.phase === "overdrive") {
-   if (key !== s.paragraph[s.cursor]) { this.typo(); return }
+   if (key !== s.paragraph[s.cursor]) { this.typo();const boss=s.enemies.find(e=>e.id===s.boss)!;if(boss.frozen<=0)this.moveEnemy(boss,1,s.player,Math.min(.55,Math.max(0,distance(boss,s.player)-1.9)));if(s.bossArena)s.bossArena.rage=2;s.stagger=Math.min(s.stagger,.7);return }
    s.cursor++; this.correct(key)
    if(key===" ")s.player.invincible=Math.max(s.player.invincible,.8)
    const boss = s.enemies.find(e => e.id === s.boss)!
+   const d=distance(boss,s.player),retreat={x:boss.x+(boss.x-s.player.x)/Math.max(.1,d)*.14,z:boss.z+(boss.z-s.player.z)/Math.max(.1,d)*.14}
+   if(d<4.5&&dungeonWalkable(retreat)&&reachable(boss,retreat)){boss.x=retreat.x;boss.z=retreat.z}
+   if(key===" "){
+    const side=Math.floor(s.cursor/5)%2?1:-1,range=Math.max(.1,distance(s.player,boss)),step={x:s.player.x+(s.player.z-boss.z)/range*side*.65,z:s.player.z-(s.player.x-boss.x)/range*side*.65}
+    if((!s.bossArena||distance(step,s.bossArena)<B.barrierRadius-2)&&dungeonWalkable(step)&&reachable(s.player,step)){s.player.dashFrom={x:s.player.x,z:s.player.z};s.player.x=step.x;s.player.z=step.z;s.player.dashAt=s.worldTime}
+   }
    const ultimate = s.paragraph.slice(0, s.cursor).endsWith("BLIZZARD"), complete = s.cursor === s.paragraph.length
    boss.health = Math.max(complete ? 0 : 1, boss.health - (ultimate ? 45 : 2))
    this.effect(ultimate ? "storm" : "slash", boss, ultimate ? 45 : 2)
@@ -257,7 +263,7 @@ export class SurvivalRun {
   this.effect(enemy.kind === "chest" ? "treasure" : "hit", enemy, value)
   if(enemy.kind === "chest")s.notice="Chest opened. +25 gold · +50 XP. Rewards collected on your dash."
   if (boss) {
-   s.boss = null; s.stagger = 0; s.biome++; s.phase = "arena"; s.notice = "Boss defeated — a new depth opens. Legendary draft!"
+   s.boss = null; s.bossArena=null; s.stagger = 0; s.biome++; s.phase = "arena"; s.notice = "Boss defeated — a new depth opens. Legendary draft!"
    s.pendingDrafts++;s.legendaryDrafts++; this.collectLoot(true); this.openDraft()
   } else if (enemy.kind === "bomber" || enemy.kind === "barrel") {
    this.effect("blast", enemy, 1)
@@ -265,8 +271,8 @@ export class SurvivalRun {
   }
   this.refreshQueue()
  }
- private strikePosition(enemy: DungeonEnemy, spacing: number): Point {
-  const p=this.state.player,from=distance(p,enemy)>.1?p:p.dashFrom
+ private strikePosition(enemy: Point, spacing: number, approach: Point = this.state.player): Point {
+  const p=this.state.player,from=distance(approach,enemy)>.1?approach:p.dashFrom
   const angle=Math.atan2(from.x-enemy.x,from.z-enemy.z)
   for(let i=0;i<12;i++){
    const point={x:enemy.x+Math.sin(angle+i*Math.PI/6)*spacing,z:enemy.z+Math.cos(angle+i*Math.PI/6)*spacing}
@@ -278,8 +284,45 @@ export class SurvivalRun {
   const s = this.state
   const boss=s.enemies.find(e=>e.id===s.boss)!
   if(distance(s.player,boss)<3){const retreat=this.strikePosition(boss,3.5);s.player.x=retreat.x;s.player.z=retreat.z}
+  delete boss.motion;delete boss.motionTime;delete boss.aim
+  this.startBossArena()
   s.phase = "overdrive"; s.stagger = B.stagger; s.target = null; s.prefix = ""; s.command = ""; s.cursor = 0
   s.paragraph = this.pick(bossPassages[s.language]).split(" BLIZZARD")[0]+" BLIZZARD"; s.notice = "ARMOR BREAK — every letter is a strike!"
+ }
+ private startBossArena() {
+  const s=this.state
+  if(s.bossArena)return
+  s.bossArena={x:s.player.x,z:s.player.z,hp:B.barrierHp,cooldown:0,rage:0};s.spawnAt=3
+  for(const e of s.enemies)if(e.id!==s.boss&&!objects.includes(e.kind)&&distance(e,s.bossArena)<B.barrierRadius+.7){const p=this.strikePosition(s.bossArena,B.barrierRadius+.7,e);e.x=p.x;e.z=p.z}
+  for(let i=0;i<3;i++){const p=this.strikePosition(s.bossArena,B.barrierRadius+.7,{x:s.player.x+Math.sin(i*2.1)*8,z:s.player.z+Math.cos(i*2.1)*8});this.spawn(i===1?"goblin":"skeleton",p)}
+ }
+ private damageBarrier(at: Point, attacker: Point) {
+  const wall=this.state.bossArena!
+  if(wall.cooldown>0)return
+  wall.hp=Math.max(0,wall.hp-1);wall.cooldown=.8
+  this.effect("barrier",at,wall.hp,attacker)
+  if(!wall.hp)this.state.notice="BARRICADE BROKEN — the horde can reach you. Keep finishing the same line!"
+ }
+ private advanceBossDuel(dt: number) {
+  const s=this.state,boss=s.enemies.find(e=>e.id===s.boss)!
+  this.startBossArena();const wall=s.bossArena!
+  wall.cooldown=Math.max(0,wall.cooldown-dt);wall.rage=Math.max(0,wall.rage-dt);s.stagger=Math.max(0,s.stagger-dt)
+  if(boss.frozen>0){boss.frozen=Math.max(0,boss.frozen-dt);return}
+  if(boss.motion){
+   boss.motionTime=Math.max(0,boss.motionTime!-dt)
+   if(boss.motionTime===0){
+    if(boss.motion==="windup"){
+     this.effect("slam",boss,3)
+     if(distance(boss,s.player)<2.8){if(s.player.invincible>0)this.effect("block",s.player,0);else this.damage(1)}
+     boss.motion="recover";boss.motionTime=.65;s.stagger=B.stagger
+    }else {delete boss.motion;delete boss.motionTime;delete boss.aim}
+   }
+  }else if(distance(boss,s.player)<2.7&&s.stagger===0){boss.motion="windup";boss.motionTime=.8;boss.aim={x:s.player.x,z:s.player.z}}
+  else {
+   const d=Math.max(.1,distance(boss,s.player)),weave=Math.sin(s.worldTime*1.3)*.8
+   this.moveEnemy(boss,dt,{x:s.player.x+(boss.x-s.player.x)/d*2.2+(s.player.z-boss.z)/d*weave,z:s.player.z+(boss.z-s.player.z)/d*2.2-(s.player.x-boss.x)/d*weave},Math.min(.8,.35+boss.speed)+(wall.rage>0?.8:0))
+  }
+  if(s.spawnAt<=0&&s.enemies.filter(e=>!objects.includes(e.kind)&&e.id!==s.boss).length<8){const p=this.strikePosition(wall,B.barrierRadius+.9,{x:wall.x+Math.sin(s.worldTime)*8,z:wall.z+Math.cos(s.worldTime)*8});this.spawn(this.pick(["skeleton","goblin","bat"] as const),p);s.spawnAt=3}
  }
  private rearmBoss(boss: DungeonEnemy) {
   const s=this.state,layers=3+Math.min(2,s.biome)
@@ -384,25 +427,17 @@ export class SurvivalRun {
   s.time += real; s.worldTime += dt; s.procs.lightning=Math.max(0,s.procs.lightning-dt);s.procs.vowels=Math.max(0,s.procs.vowels-dt); s.player.invincible = Math.max(0, s.player.invincible - dt)
   s.player.mana = Math.min(100, s.player.mana + real * B.manaRegen * (s.relics.overclock && runWpm(s) > 100 ? 2 : 1))
   s.effects = s.effects.filter(fx => { fx.life -= dt; return fx.life > 0 })
-  if (s.phase === "overdrive") {
-   s.stagger = Math.max(0, s.stagger - real)
-   if (!s.stagger) {
-    const boss = s.enemies.find(e => e.id === s.boss)!
-    this.effect("slam",boss,3);s.stagger=B.stagger
-    if(s.player.invincible>0){this.effect("block",s.player,0);s.notice="PARRIED — keep typing the same line."}
-    else {this.damage(1);s.notice="Boss retaliation! Finish words to guard. Your line is preserved."}
-   }
-   return
-  }
-  if (s.time >= s.nextBoss && s.boss === null) {
+  const duel=s.phase==="overdrive"
+  if(duel)this.advanceBossDuel(dt)
+  if (!duel && s.time >= s.nextBoss && s.boss === null) {
    const boss = this.spawn("boss", { x: s.player.x + 5, z: s.player.z - 4 })
    if (boss) { s.nextBoss += B.bossInterval; if (s.phase === "skills") { s.phase = "arena"; s.command = "" } }
   }
   const opening=s.time<B.openingSeconds,learning=s.time<B.learningSeconds
   const floor=opening?2:learning?3:4,limit=opening?B.openingThreats:learning?B.learningThreats:s.time<B.bossInterval?B.preBossThreats:B.enemies
   const interval=opening?B.openingInterval:learning?B.learningInterval:B.spawnInterval
-  s.spawnAt -= dt
-  if (s.spawnAt <= 0) {
+  s.spawnAt = Math.max(0,s.spawnAt-dt)
+  if (!duel && s.spawnAt <= 0) {
    const roster:EnemyKind[]=opening?(s.time<60?["skeleton","goblin","skeleton"]:["skeleton","goblin","skeleton","bat"]):s.time<150?["skeleton","goblin","guard"]:["skeleton","goblin","skeleton","goblin","skeleton","goblin","guard","guard","bat","minotaur","bomber","mage"]
    const needed=Math.max(floor-this.targets().filter(e=>!objects.includes(e.kind)).length,4-s.queue.length)
    for(let i=0;i<Math.max(1,Math.min(opening?2:3,needed));i++){
@@ -420,7 +455,13 @@ export class SurvivalRun {
    s.spawnAt = learning?interval:Math.max(.65, interval / (1 + s.time / 360 + s.level * .03))
   }
   for (const e of [...s.enemies]) {
+   if(duel&&e.id===s.boss)continue
    if (e.frozen > 0) { e.frozen -= dt; continue }
+   if(duel&&s.bossArena!.hp>0&&!objects.includes(e.kind)){
+    const wall=s.bossArena!,d=Math.max(.1,distance(e,wall)),goal={x:wall.x+(e.x-wall.x)/d*(B.barrierRadius+.3),z:wall.z+(e.z-wall.z)/d*(B.barrierRadius+.3)}
+    this.moveEnemy(e,dt,goal,Math.max(.65,e.speed));if(distance(e,wall)<B.barrierRadius+.8)this.damageBarrier(goal,e)
+    continue
+   }
    const d = distance(e, s.player)
    this.steerEnemy(e,dt)
    if (e.speed && distance(e,s.player) <= 1) this.damage(1)
@@ -439,7 +480,7 @@ export class SurvivalRun {
    }
    if (d > 18 && e.id !== s.target && e.id !== s.boss) s.enemies = s.enemies.filter(enemy => enemy !== e)
   }
-  s.projectiles = s.projectiles.filter(p => { p.x += p.vx * dt; p.z += p.vz * dt; p.life -= dt; if(!dungeonWalkable(p))return false; if (distance(p, s.player) < .6) { this.damage(1); return false }; return p.life > 0 })
+  s.projectiles = s.projectiles.filter(p => { p.x += p.vx * dt; p.z += p.vz * dt; p.life -= dt; if(!dungeonWalkable(p))return false; if(duel&&s.bossArena!.hp>0&&distance(p,s.bossArena!)<B.barrierRadius){this.damageBarrier(p,p);return false}; if (distance(p, s.player) < .6) { this.damage(1); return false }; return p.life > 0 })
   if(s.sentry){
    const tower=s.sentry;tower.life=Math.max(0,tower.life-dt);tower.cooldown-=dt
    if(!tower.life)s.sentry=null
@@ -465,6 +506,7 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   if(s?.version===1&&s.supplies===undefined)s.supplies={shield:0,potion:0,mana:0,sentry:0}
   if(s?.version===1&&s.procs===undefined)s.procs={lightning:0,vowels:0}
   if(s?.version===1&&s.sentry===undefined)s.sentry=null
+  if(s?.version===1&&s.bossArena===undefined)s.bossArena=null
   if(!s?.procs||![s.procs.lightning,s.procs.vowels].every(v=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=4))return null
   const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value)
   if (!s || s.version !== 1 || typeof s.seed !== "string" || s.seed.length > 200 || !["en", "id"].includes(s.language) || !["ready", "arena", "skills", "draft", "overdrive", "paused", "dead"].includes(s.phase)) return null
@@ -482,10 +524,11 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   if(s.enemies.some(e=>e.waypoint&&(![e.waypoint.x,e.waypoint.z].every(finite)||Math.abs(e.waypoint.x)>1_000_000||Math.abs(e.waypoint.z)>1_000_000||!dungeonWalkable(e.waypoint))))return null
   if(!s.supplies||Object.keys(dungeonSupplies).some(kind=>{const n=s.supplies[kind as SupplyKind];return !Number.isSafeInteger(n)||n<0||n>1000000}))return null
   if(s.sentry!==null&&(![s.sentry.x,s.sentry.z,s.sentry.life,s.sentry.cooldown].every(finite)||Math.abs(s.sentry.x)>1000000||Math.abs(s.sentry.z)>1000000||!dungeonWalkable(s.sentry)||s.sentry.life<=0||s.sentry.life>18||s.sentry.cooldown<0||s.sentry.cooldown>1.8))return null
+  if(s.bossArena!==null&&(![s.bossArena.x,s.bossArena.z,s.bossArena.hp,s.bossArena.cooldown,s.bossArena.rage].every(finite)||Math.abs(s.bossArena.x)>1000000||Math.abs(s.bossArena.z)>1000000||!dungeonWalkable(s.bossArena)||!Number.isInteger(s.bossArena.hp)||s.bossArena.hp<0||s.bossArena.hp>B.barrierHp||s.bossArena.cooldown<0||s.bossArena.cooldown>.8||s.bossArena.rage<0||s.bossArena.rage>2||s.boss===null))return null
   if(s.enemies.some(e=>e.motion!==undefined&&(!["minotaur","boss"].includes(e.kind)||!["windup","charge","slam","recover"].includes(e.motion)||!finite(e.motionTime)||e.motionTime!<0||e.motionTime!>1.3||!e.aim||![e.aim.x,e.aim.z].every(finite)||!dungeonWalkable(e.aim)||Math.abs(e.aim.x)>1000000||Math.abs(e.aim.z)>1000000)||e.motion===undefined&&(e.aim!==undefined||e.motionTime!==undefined)))return null
   if(s.effects.some(e=>e.source!==undefined&&!["blade","cleave","storm","lightning","vowels","sentry","explosion"].includes(e.source)))return null
   if(s.effects.some(e=>e.to!==undefined&&(![e.to.x,e.to.z].every(finite)||Math.abs(e.to.x)>1000000||Math.abs(e.to.z)>1000000)))return null
-  if (s.projectiles.some(e => !e || ![e.id, e.x, e.z, e.vx, e.vz, e.life].every(finite)) || s.effects.some(e => !e || ![e.id, e.x, e.z, e.life, e.value].every(finite) || !["slash", "hit", "storm", "heal", "pickup", "shatter", "magnet", "block", "shield", "mana", "deploy", "sentry", "lightning", "firebolt", "blast", "treasure", "slam", "level", "upgrade"].includes(e.kind))) return null
+  if (s.projectiles.some(e => !e || ![e.id, e.x, e.z, e.vx, e.vz, e.life].every(finite)) || s.effects.some(e => !e || ![e.id, e.x, e.z, e.life, e.value].every(finite) || !["slash", "hit", "storm", "heal", "pickup", "shatter", "magnet", "block", "shield", "mana", "deploy", "sentry", "lightning", "firebolt", "blast", "treasure", "slam", "level", "upgrade", "barrier"].includes(e.kind))) return null
   if (!s.skills || skillIds.some(id => !s.skills[id] || !Number.isInteger(s.skills[id].level) || s.skills[id].level < 1 || s.skills[id].level > 3 || !finite(s.skills[id].cooldown) || s.skills[id].cooldown < 0) || !s.relics || relicIds.some(id => !Number.isInteger(s.relics[id]) || s.relics[id] < 0 || s.relics[id] > dungeonUpgrades[id].max)) return null
   if (!Array.isArray(s.offers) || s.offers.length > 3 || s.offers.some(id => !Object.hasOwn(dungeonUpgrades, id)) || typeof s.prefix !== "string" || typeof s.command !== "string" || s.command.length > 40 || typeof s.paragraph !== "string" || s.paragraph.length > 100_000 || !Number.isInteger(s.cursor) || s.cursor > s.paragraph.length || typeof s.notice !== "string") return null
   if (!Array.isArray(s.queue) || s.queue.length > 6 || s.queue.some(id => !s.enemies.some(e => e.id === id)) || ![4, 6].includes(s.labelLimit)) return null
@@ -493,7 +536,7 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   const phase: RunPhase = s.phase === "paused" ? s.resumePhase : s.phase
   if (!["arena", "skills", "draft", "overdrive", "ready", "dead"].includes(phase) || !["arena", "skills", "overdrive"].includes(s.afterDraft)) return null
   if (s.target !== null && !s.enemies.some(e => e.id === s.target && e.words[0]?.startsWith(s.prefix)&&s.prefix.length<e.words[0].length) || s.target === null && s.prefix.length > 0) return null
-  if (s.boss !== null && !s.enemies.some(e => e.id === s.boss && e.kind === "boss") || phase === "overdrive" && (s.boss === null || s.stagger <= 0) || phase === "draft" && (!s.offers.length || s.pendingDrafts < 1)) return null
+  if (s.boss !== null && !s.enemies.some(e => e.id === s.boss && e.kind === "boss") || phase === "overdrive" && s.boss === null || phase === "draft" && (!s.offers.length || s.pendingDrafts < 1)) return null
   s.resumePhase = phase; if (phase !== "dead" && phase !== "ready") s.phase = "paused"
   return new SurvivalRun(s.seed, s.language, s)
  } catch { return null }

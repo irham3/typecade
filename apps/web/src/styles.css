@@ -164,3 +164,5 @@ button:hover:not(:disabled):not(.quiet){border-top-color:#b0c9ce;box-shadow:inse
 .combat-caption.source-blast{color:#ffd4a0;border-color:#e89859;background:#422923}
 
 .combat-caption.source-hit{color:#ffc4a8;border-color:#ed836f;background:#492d31}
+
+.barricade-status{display:flex;align-items:center;gap:8px;margin:8px 0 10px;color:#dfc38e;font:10px ui-monospace,monospace}.barricade-status .glyph{width:16px;height:16px}.barricade-status progress{flex:1;min-width:30px;height:8px;accent-color:#c9a26c}.barricade-status.breached{color:#f39b7d}.combat-caption.source-barrier{color:#ffcb97;border-color:#d8a067;background:#412f26}@media(max-width:600px){.barricade-status{font-size:8px}.barricade-status span{max-width:135px}}

@@ -6,7 +6,7 @@ export const dungeonBalance = {
  spawnRadius: 8.5, spawnInterval: 2.4, speed: .32, manaRegen: 2.5,
  openingSeconds: 90, openingThreats: 4, openingInterval: 4,
  learningSeconds: 180, learningThreats: 6, learningInterval: 3, preBossThreats: 12,
- bossInterval: 300, stagger: 10, bossHealth: 260,
+ bossInterval: 300, stagger: 3.2, bossHealth: 260, barrierHp: 24, barrierRadius: 5.5,
 } as const
 export const dungeonSupplies:Record<SupplyKind,{name:string;benefit:string;icon:"shield"|"heal"|"gem"|"tower";color:number}>= {
  shield:{name:"Aegis Shield",benefit:"+2 shield · absorbs damage first · cap 4",icon:"shield",color:0x73dcec},

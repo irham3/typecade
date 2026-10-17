@@ -28,6 +28,12 @@ jobs:
       - run: npm run test:coverage
       - run: npm run build
       - run: npx wrangler deploy --dry-run
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: validation-coverage-failure
+          path: coverage/
+          retention-days: 3
 
   browsers:
     runs-on: ubuntu-latest

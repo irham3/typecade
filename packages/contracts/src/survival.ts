@@ -13,7 +13,7 @@ export interface DungeonEnemy extends Point {
 export interface DungeonLoot extends Point { id: number; xp: number; gold: number; mana: number }
 export interface DungeonProjectile extends Point { id: number; vx: number; vz: number; life: number }
 export type DamageSource = "blade" | "cleave" | "storm" | "lightning" | "vowels" | "sentry" | "explosion"
-export interface DungeonEffect extends Point { id: number; kind: "slash" | "hit" | "storm" | "heal" | "pickup" | "shatter" | "magnet" | "block" | "shield" | "mana" | "deploy" | "sentry" | "lightning" | "firebolt" | "blast" | "treasure" | "slam" | "level" | "upgrade"; source?: DamageSource; life: number; value: number; to?: Point }
+export interface DungeonEffect extends Point { id: number; kind: "slash" | "hit" | "storm" | "heal" | "pickup" | "shatter" | "magnet" | "block" | "shield" | "mana" | "deploy" | "sentry" | "lightning" | "firebolt" | "blast" | "treasure" | "slam" | "level" | "upgrade" | "barrier"; source?: DamageSource; life: number; value: number; to?: Point }
 export interface DungeonState {
  version: 1; seed: string; rng: number; language: DungeonLanguage; phase: RunPhase; resumePhase: RunPhase
  time: number; worldTime: number; nextBoss: number; spawnAt: number; nextId: number; biome: number
@@ -24,6 +24,7 @@ export interface DungeonState {
  level: number; xp: number; totalXp: number; gold: number; kills: number; words: number; correct: number; errors: number; streak: number; bestStreak: number
  skills: Record<SkillId, { level: number; cooldown: number }>; relics: Record<RelicId, number>
  offers: UpgradeId[]; pendingDrafts: number; legendaryDrafts: number; afterDraft: RunPhase
+ bossArena: (Point & { hp:number; cooldown:number; rage:number }) | null
  boss: number | null; stagger: number; paragraph: string; cursor: number; notice: string
 }
 export interface DungeonLabel { id: number; x: number; y: number; visible: boolean }

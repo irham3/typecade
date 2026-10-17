@@ -90,7 +90,7 @@ try{
  const after=await memory();assert(after-before<8*1024*1024,`Retained heap grew ${after-before}`)
  const capped=await page.evaluate(()=>{
   const s=JSON.parse(localStorage.getItem("typecade:dungeon:run:v1"))
-  s.phase="paused";s.resumePhase=s.afterDraft="arena";s.target=null;s.prefix=s.command=s.paragraph="";s.cursor=s.stagger=s.pendingDrafts=s.legendaryDrafts=0;s.offers=[];s.player.x=s.player.z=0;s.player.hp=s.player.maxHp;s.player.mana=100;s.player.invincible=60;s.nextId=1000;s.boss=128;s.skills.storm.cooldown=s.skills.cleave.cooldown=0;s.skills.storm.level=s.skills.cleave.level=1
+  s.phase="paused";s.resumePhase=s.afterDraft="arena";s.target=null;s.prefix=s.command=s.paragraph="";s.cursor=s.stagger=s.pendingDrafts=s.legendaryDrafts=0;s.offers=[];s.player.x=s.player.z=0;s.player.hp=s.player.maxHp;s.player.mana=100;s.player.invincible=60;s.nextId=1000;s.bossArena=null;s.boss=128;s.skills.storm.cooldown=s.skills.cleave.cooldown=0;s.skills.storm.level=s.skills.cleave.level=1
   const kinds=["skeleton","goblin","guard","mage","minotaur","barrel","chest","bomber"],words=["slash","dash","BLOCK","hex_bolt!","CRUSH","IGNITE","OPEN","detonate-3"]
   s.enemies=Array.from({length:128},(_,i)=>({id:i+1,kind:i===127?"boss":kinds[i%8],x:Math.cos(i)*5,z:Math.sin(i)*5,words:i===127?["BREAK","CRUSH","ARMOR"]:[words[i%8],"ARMOR","BREAK"],speed:0,frozen:0,attack:20,health:i===127?260:3,maxHealth:i===127?260:3}))
   s.queue=[1,2,3,4,5,6]
