@@ -6,7 +6,7 @@ test("typed supplies equip shield and a real sentry beside distinct flying and r
  for(const [kind,x,z]of [["shield",1,0],["potion",3,0],["mana",5,0],["sentry",2,3],["bat",4,-2],["mage",-4,0]] as const){const e=r.spawn(kind,{x,z})!;if(e.speed)e.frozen=100}
  r.refreshQueue();await page.addInitScript(raw=>{if(!localStorage.getItem("typecade:dungeon:run:v1"))localStorage.setItem("typecade:dungeon:run:v1",raw)},r.serialize());await page.setViewportSize({width:1440,height:900});await page.goto("/")
  await page.getByRole("button",{name:/Continue run/}).click();await page.getByRole("button",{name:"Resume run"}).click()
- await expect(page.locator(".kind-bat")).toContainText("AIR");await expect(page.locator(".kind-mage")).toContainText("AIR")
+ await expect(page.locator(".kind-bat")).toHaveAttribute("title",/AIR/);await expect(page.locator(".kind-mage")).toHaveAttribute("title",/AIR/)
  for(const kind of ["shield","potion","mana","sentry"]){
   const target=page.locator(`.enemy-label.kind-${kind}`);await expect(target).toBeVisible();await page.keyboard.type((await target.getAttribute("data-word"))!,{delay:35})
   await expect(page.locator(`.equipment-badge.item-${kind}`)).toBeVisible()

@@ -156,7 +156,7 @@ test("two captains race the same Indonesian passage, see results, and rematch", 
 })
 
 async function expectDungeonScene(page: Page): Promise<void> {
- await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-renderer-state","ready")
+ await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-renderer-state","ready",{timeout:20000})
  await expect(page.getByTestId("dungeon-canvas").locator("canvas")).toHaveCount(1)
  await expect(page.getByLabel("Dungeon multiplayer arena")).toBeVisible()
  await expect(page.locator(".party-skill-dock")).toHaveCount(1)

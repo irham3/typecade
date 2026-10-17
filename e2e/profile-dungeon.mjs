@@ -56,7 +56,7 @@ try{
  const finishFrames=async(label)=>{
   intervals[label]=await page.evaluate(()=>{window.profileCollect=false;const summary=values=>{values.sort((a,b)=>a-b);return {p50:values[Math.floor((values.length-1)*.5)],p95:values[Math.floor((values.length-1)*.95)],samples:values.length}};return {rafMs:summary(window.profileFrames),renderMs:summary(window.profileRenderFrames)}})
  }
- await page.getByRole("button",{name:"Enter the keep"}).click();await page.getByRole("button",{name:"Begin run"}).click()
+ await page.getByRole("button",{name:/^Start run/}).click();await page.getByRole("button",{name:"Begin run"}).click()
  await collect()
  let active=0,lastClock=0,nextSample=30,deaths=0,lastCast=-30,emptySince=0,longestEmptyArenaMs=0
  const casts={heal:0,storm:0}
@@ -84,7 +84,7 @@ try{
  await page.screenshot({path:`${output}/survival.png`})
  await page.keyboard.press("Escape");await sample("survival-final")
  await page.getByRole("button",{name:"Save and return to title"}).click()
- const navigate=async()=>{await page.getByRole("button",{name:"Typing Dojo"}).click();await page.getByRole("button",{name:"Main menu",exact:true}).click();await page.getByRole("button",{name:"Multiplayer",exact:true}).click();await page.getByRole("button",{name:"Main menu",exact:true}).click()}
+ const navigate=async()=>{await page.getByRole("button",{name:"Typing Dojo"}).click();await page.getByRole("button",{name:"Main menu",exact:true}).click();await page.getByRole("button",{name:/^Multiplayer/}).click();await page.getByRole("button",{name:"Main menu",exact:true}).click()}
  console.log("Starting navigation profile");await navigate();await navigate();const before=await memory()
  for(let i=0;i<6;i++){await navigate();console.log(`Navigation ${i+1}/6`)}
  const after=await memory();assert(after-before<8*1024*1024,`Retained heap grew ${after-before}`)
