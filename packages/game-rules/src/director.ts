@@ -131,3 +131,85 @@ export function pressureFor(pace: PaceModifiers, power: number): PressureModifie
     extraArmorChance: Math.min(t.maxArmorChance, power * t.armorPerPower),
   }
 }
+
+/**
+ * Reading of the player's typing speed, used so the horde fits the person at the keyboard:
+ * slow typists get fewer, slower foes; fast typists get more from the start. The estimate
+ * blends the run's correct keystrokes with a reference prior, so the first seconds do not
+ * swing it, and it depends only on simulation inputs (deterministic in replays).
+ */
+export const adaptiveTuning = {
+  referenceWpm: 50,
+  /** Minutes of reference-speed typing assumed before any keys are pressed. */
+  priorMinutes: .75,
+  minFactor: .4,
+  maxFactor: 2,
+} as const
+
+export function typingFactor(correctKeys: number, seconds: number) {
+  const t = adaptiveTuning
+  const wpm = (correctKeys / 5 + t.referenceWpm * t.priorMinutes) / (seconds / 60 + t.priorMinutes)
+  return Math.min(t.maxFactor, Math.max(t.minFactor, wpm / t.referenceWpm))
+}
+
+/**
+ * Endless escalation. Past the warm-up stretch the keep keeps getting worse at a slow, steady
+ * rate with no ceiling on the clock, so every run eventually ends however good the build is.
+ */
+export const endlessTuning = {
+  /** Seconds before escalation starts (after the second boss). */
+  start: 600,
+  spawnRatePerMinute: .05,
+  threatPerMinute: 1,
+  hastePerMinute: .016,
+  maxHaste: 1.6,
+  armorPerMinute: .03,
+  maxArmorChance: .75,
+} as const
+
+export interface AdaptiveModifiers extends PressureModifiers {
+  /** Multiplies the phase's base threat cap before bonuses. */
+  threatScale: number
+}
+
+/** Fits build pressure to the typist, then layers on the endless escalation. */
+export function adaptPressure(pressure: PressureModifiers, factor: number, time: number): AdaptiveModifiers {
+  const e = endlessTuning, heat = Math.max(0, (time - e.start) / 60)
+  return {
+    spawnRate: pressure.spawnRate * (.55 + .45 * factor) * (1 + heat * e.spawnRatePerMinute),
+    threatBonus: Math.round(pressure.threatBonus * factor) + Math.floor(heat * e.threatPerMinute),
+    threatScale: Math.min(1.5, .45 + .55 * factor),
+    haste: pressure.haste * (.8 + .2 * Math.min(1.4, factor)) * Math.min(e.maxHaste, 1 + heat * e.hastePerMinute),
+    extraArmorChance: Math.min(e.maxArmorChance, pressure.extraArmorChance * Math.min(1.5, factor) + heat * e.armorPerMinute),
+  }
+}
+
+/**
+ * Shortest gap between any two enemy shots (seconds). Ranged foes share it, so a room full of
+ * archers fires a readable rhythm instead of a wall of arrows; faster typists and later minutes
+ * shorten it.
+ */
+export function rangedGap(factor: number, time: number) {
+  const heat = Math.max(0, (time - endlessTuning.start) / 60)
+  return Math.max(.45, 2.6 / factor * Math.pow(.97, heat))
+}
+
+/** Extra foes per spawn wave once the endless escalation is running. */
+export function endlessBatch(time: number) {
+  return Math.floor(Math.max(0, (time - endlessTuning.start) / 60) / 4)
+}
+
+/** Seconds without taking damage before one heart returns. Rewards clean play without making it free. */
+export const SECOND_WIND_SECONDS = 20
+
+const endlessHeat = (time: number) => Math.max(0, (time - endlessTuning.start) / 60)
+
+/** Veteran foes: one more word layer every seven minutes of escalation (up to three). */
+export function endlessLayers(time: number) {
+  return Math.min(3, Math.floor(endlessHeat(time) / 7))
+}
+
+/** Melee hits cost two hearts once the escalation has run for eighteen minutes (minute 28). */
+export function endlessHitDamage(time: number) {
+  return endlessHeat(time) >= 18 ? 2 : 1
+}

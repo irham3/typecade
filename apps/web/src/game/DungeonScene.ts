@@ -1,4 +1,4 @@
-import { BackSide, BoxGeometry, BufferGeometry, CircleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, DoubleSide, DynamicDrawUsage, Euler, FogExp2, HemisphereLight, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PCFShadowMap, OrthographicCamera, PlaneGeometry, PointLight, Quaternion, RingGeometry, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three"
+import { BackSide, BoxGeometry, BufferGeometry, CircleGeometry, Color, ConeGeometry, DirectionalLight, DoubleSide, DynamicDrawUsage, Euler, FogExp2, HemisphereLight, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PCFShadowMap, OrthographicCamera, PlaneGeometry, PointLight, Quaternion, RingGeometry, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three"
 import type { DungeonEnemy, DungeonEvents, DungeonState, EnemyKind, PartyWorld } from "@typecade/contracts"
 import { dungeonTerrain as T, dungeonBalance as B, dungeonBiomes, dungeonObjects, dungeonSupplies } from "@typecade/content"
 import { createSeededRng, ruinsInChunk, waveAt } from "@typecade/game-rules"
@@ -15,6 +15,10 @@ import { heroPose, moveDuration, selectMove, type HeroMove } from "./scene/HeroM
 import { wingedKinds } from "./models/monsters"
 import { buildRuin } from "./scene/RuinBuilder"
 import { enemyMotionPose } from "./scene/EnemyMotion"
+import { TargetFocus } from "./scene/TargetFocus"
+import { HeroAppearance } from "./scene/HeroAppearance"
+import { ShowcaseLight } from "./scene/ShowcaseLight"
+import { heroIdlePose } from "./scene/HeroIdle"
 
 const kinds: EnemyKind[] = ["skeleton", "goblin", "guard", "bomber", "mage", "minotaur", "boss", "barrel", "chest", "bat", "shield", "potion", "mana", "sentry",
  "wolf", "slime", "spider", "wraith", "archer", "shaman", "golem", "imp", "rat", "necromancer", "serpent", "beetle", "assassin", "troll", "wisp",
@@ -32,6 +36,8 @@ const hitMarkers: Partial<Record<NonNullable<DungeonState["effects"][number]["so
  explosion: { effect: "impact", tint: 0xff8645, size: 1 },
  vowels: { effect: "impact", tint: 0xffa24f, size: .8 },
 }
+/** Camera zoom on the Armory screen. */
+const ARMORY_ZOOM = 2.4
 /** Upper bound on torches drawn and lit around the hero. */
 const TORCH_CAP = 60
 /** Per-kind presentation: gait tempo, hover altitude and death tint. */
@@ -57,6 +63,9 @@ export class DungeonScene {
  private swingAt = -10
  private swingKind: HeroMove = "slash"
  private hitStopUntil = -10
+ private armoryZoom = 1
+ /** 0..1 blend of the idle animation; eases out during actions and back in when calm. */
+ private idleWeight = 1
  private focusAt = -10
  private zoomPunch = 0
  private castAt = -10
@@ -100,6 +109,9 @@ export class DungeonScene {
  private post: PostProcessing
  private decor: FloorDecor
  private weaponVisuals: WeaponVisuals
+ private targetFocus: TargetFocus
+ private showcase: ShowcaseLight
+ private heroAppearance: HeroAppearance
  private sun: DirectionalLight
  private batches = new Map<EnemyKind, Batch>()
  private partyBatches:Batch[]=[]
@@ -176,7 +188,7 @@ export class DungeonScene {
   // Cool rim from behind the camera's view separates silhouettes from the floor.
   const rim = new DirectionalLight(0xb48cff, environmentGrade.lights.rim); rim.position.set(-14, 6, -16); this.scene.add(rim)
   this.scene.add(this.knight.root, this.dummy.root, this.sensei.root)
-  this.heroMaterial=this.models.material.clone();this.materials.push(this.heroMaterial)
+  this.heroMaterial=this.models.createMaterial()
   for(const part of [this.knight.body,...this.knight.legs,this.knight.arm!,this.knight.weapon!]){part.material=this.heroMaterial;part.castShadow=true}
   const echoMaterial=new MeshBasicMaterial({vertexColors:true,color:0x78d9f0,transparent:true,opacity:.24,depthWrite:false});this.materials.push(echoMaterial);this.echoes=this.instance(this.knight.body.geometry,echoMaterial,3)
   this.heroShield=new Mesh(this.models.actor("shield").body,this.models.material);this.heroShield.scale.setScalar(.65);this.heroShield.position.set(0,-.9,.22);this.knight.arm!.add(this.heroShield)
@@ -198,18 +210,21 @@ export class DungeonScene {
   this.tiles.receiveShadow = true; this.walls.castShadow = this.walls.receiveShadow = true
   this.decor = new FloorDecor(this.scene, this.models)
   this.weaponVisuals = new WeaponVisuals(this.scene, this.models)
+  this.targetFocus = new TargetFocus(this.scene, B.labelRadius)
+  this.showcase = new ShowcaseLight(this.scene)
   const mossMaterial=new MeshStandardMaterial({color:0x43573d,roughness:1,side:DoubleSide});this.materials.push(mossMaterial)
   this.moss=this.instance(this.models.keep(new CircleGeometry(1,7)),mossMaterial,9*12)
-  const cloth=this.models.material.clone();this.materials.push(cloth)
-  cloth.onBeforeCompile=shader=>{shader.uniforms.wind=this.wind;shader.vertexShader="uniform float wind;\n"+shader.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\ntransformed.z += sin(wind + instanceMatrix[3].x + position.y * 3.) * .12 * max(0., .65 - position.y);")}
+  const cloth=this.models.createMaterial(),clothBase=cloth.onBeforeCompile.bind(cloth),clothKey=cloth.customProgramCacheKey.bind(cloth)
+  cloth.customProgramCacheKey=()=>`${clothKey()}|wind`
+  cloth.onBeforeCompile=(shader,renderer)=>{clothBase(shader,renderer);shader.uniforms.wind=this.wind;shader.vertexShader="uniform float wind;\n"+shader.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\ntransformed.z += sin(wind + instanceMatrix[3].x + position.y * 3.) * .12 * max(0., .65 - position.y);")}
   this.banners=this.instance(this.models.geometry([[0x753f50,0,0,0,.66,1.5,.06],[0x9e4f5e,0,.18,.035,.48,1.12,.025],[0xdeb57b,0,.72,0,.78,.10,.12],[0xd2a868,0,.2,.07,.26,.26,.02,"box",Math.PI/4],[0xffe066,0,.2,.08,.1,.1,.02,"box",Math.PI/4],[0xd2a868,0,-.62,.05,.5,.12,.02,"cone",Math.PI]]),cloth,18)
   const fire = new MeshBasicMaterial({ color: 0xffffff }); this.materials.push(fire)
   this.flames = this.instance(this.models.keep(new ConeGeometry(.23, .9, 4)), fire, TORCH_CAP * 2)
   this.torchFixtures=this.instance(this.models.geometry([[0x302b35,0,-.42,-.10,.18,.85,.18],[0x9a724a,0,-.18,0,.30,.28,.30],[0x6e5a4b,0,0,0,.43,.19,.43,"cylinder"],[0xe7ad5c,0,.08,0,.46,.08,.46,"cylinder"]]),this.models.material,TORCH_CAP)
   const bright = new MeshBasicMaterial({ vertexColors: true }); this.materials.push(bright)
-  this.gems = this.instance(this.models.tinted(new OctahedronGeometry(.18)), bright, 256)
-  this.coins = this.instance(this.models.tinted(new CylinderGeometry(.16, .16, .06, 8)), bright, 256)
-  this.projectiles = this.instance(this.models.tinted(new OctahedronGeometry(.23)), bright, 64*3)
+  this.gems = this.instance(this.models.faceted(new OctahedronGeometry(.18, 0)), bright, 256)
+  this.coins = this.instance(this.models.geometry([[0xd9d9d9,0,0,0,.17,.06,.17,"cylinder"],[0xffffff,0,0,0,.13,.075,.13,"cylinder"],[0xbdbdbd,0,0,0,.06,.085,.06]]), bright, 256)
+  this.projectiles = this.instance(this.models.faceted(new OctahedronGeometry(.23, 0)), bright, 64*3)
   this.orbitals=this.instance(this.models.geometry([[0xc1d5df,0,0,0,.58,.12,.15],[0x66503b,-.23,0,0,.10,.38,.12],[0x66503b,.23,0,0,.10,.38,.12],[0xffffff,0,.12,0,.14,.26,.14,"cone"],[0x9c723c,0,-.12,0,.12,.27,.12]]),bright,12)
   const weatherMaterial=new MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75,side:DoubleSide,depthWrite:false,fog:false});this.materials.push(weatherMaterial)
   this.weather=this.instance(this.models.keep(new PlaneGeometry(.10,.16)),weatherMaterial,32)
@@ -226,6 +241,7 @@ export class DungeonScene {
   this.aura=new Mesh(this.models.keep(new SphereGeometry(1.3,12,8)),auraMaterial);this.scene.add(this.aura)
   const outline = new MeshBasicMaterial({ color: 0x0a1424, side: BackSide }); this.materials.push(outline)
   const heroOutline = new Mesh(this.knight.body.geometry, outline);heroOutline.scale.setScalar(1.045);this.knight.body.add(heroOutline)
+  this.heroAppearance = new HeroAppearance(this.models, { body: this.knight.body, outline: heroOutline, legs: this.knight.legs, arm: this.knight.arm!, weapon: this.knight.weapon!, afterimages: this.echoes })
   const batch = (model: ReturnType<DungeonModels["actor"]>, cap: number): Batch => {
    // Two leg sockets share one draw call per species.
    const legs=model.leg?this.instance(model.leg,this.models.material,cap*2):null
@@ -257,6 +273,7 @@ export class DungeonScene {
    }
    this.lastCorrect = state.correct; this.lastEffect = state.nextId - 1
   }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.syncAudio() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.audio.setMix(settings.volume,settings.music,settings.effects); this.post.configure({ bloom: !settings.reduced&&!this.adaptive, outline: !settings.reduced }); this.renderer.shadowMap.enabled = !settings.reduced&&!this.adaptive; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
+  this.cleanup.push(bridge.on("appearance", loadout => { this.heroAppearance.apply(loadout); this.dirty = true }))
   this.cleanup.push(bridge.on("party",party=>{this.syncAudio(this.state,party);this.receiveParty(party);this.party=party;this.partyElapsedAt=this.elapsed;this.dirty=true}))
   this.listen(window, "keydown", () => this.audio.unlock()); this.listen(window, "pointerdown", () => this.audio.unlock())
   this.listen(window,"click",e=>{if(e.target instanceof Element&&e.target.closest("button,select"))this.audio.play("ui")})
@@ -278,7 +295,7 @@ export class DungeonScene {
     if(distance<9)nearby++
     if(distance<nearestDistance){nearest=e;nearestDistance=distance}
    }
-   this.audio.setScene({mood,pressure:Math.min(1,nearby/8),critical:state.player.hp>0&&state.player.hp/state.player.maxHp<=.34,boss:state.boss!==null,depth:state.biome})
+   this.audio.setScene({mood,pressure:Math.min(1,nearby/8),critical:state.player.hp>0&&state.player.hp/state.player.maxHp<=.34,boss:state.boss!==null,depth:state.biome,surge:waveAt(state.time).phase==="surge"})
    const wavePhase=waveAt(state.time).phase
    if(mood==="arena"&&wavePhase!==this.lastWavePhase&&(wavePhase==="surge"||wavePhase==="breather"))this.audio.play(wavePhase)
    this.lastWavePhase=wavePhase
@@ -336,6 +353,7 @@ export class DungeonScene {
   this.lastLevel=s.level;this.lastPower=power
   this.lastHp=s.player.hp
   for(const fx of newEffects){
+   if(fx.kind==="gold")continue
    if(fx.kind==="slash"&&s.phase==="overdrive"&&s.cursor%3!==0)continue
    let kind:VisualEffect=(fx.kind==="lightning"||fx.kind==="sentry")&&fx.to?"zap":fx.kind==="spore"?"spore":fx.kind==="barrier"?fx.value===0?"death":"shatter":fx.kind==="ward"?"shield":fx.kind==="summon"?"spawn":fx.kind==="blink"?"dash":fx.kind
    if(fx.kind==="barrier"){this.audio.play(fx.value===0?"explosion":"armor");if(fx.to)for(const actor of this.actors.values())if(Math.hypot(actor.x-fx.to.x,actor.z-fx.to.z)<.1)actor.strikeAt=now}
@@ -440,13 +458,15 @@ export class DungeonScene {
   this.bannerPoints.forEach((p,i)=>{this.matrix.makeRotationX(this.reduced?0:Math.sin(this.elapsed*2+i)*.07).setPosition(p);this.banners.setMatrixAt(i,this.matrix)});this.banners.count=this.bannerPoints.length;this.banners.instanceMatrix.needsUpdate=true
   this.knight.root.visible=!multiplayer
   this.focus.lerp(this.point.set(px, 0, pz), Math.min(1, delta * 6 || 1))
-  const offset = this.screen === "title" ? -5 : 0, side = this.height < 520 && active ? this.screen==="tutorial"?0:5 : dojo&&this.width<600 ? -3 : 0
+  const armory = this.screen === "armory", offset = this.screen === "title" ? -5 : armory ? -1.4 : 0, side = this.height < 520 && active ? this.screen==="tutorial"?0:5 : dojo&&this.width<600 ? -3 : 0
   const trainingOffset=dojo?(this.height/2-(this.width<600?215:235))*(2*this.camera.top/this.height)/Math.sqrt(2/3):0
   const fx=this.focus.x+offset+side+trainingOffset,fz=this.focus.z-side+trainingOffset
   this.cameraTrauma=Math.max(0,this.cameraTrauma-delta*1.7)
   const shake=this.reduced?0:this.cameraTrauma*this.cameraTrauma
   this.camera.position.set(fx+24+Math.sin(this.elapsed*61)*shake,24,fz+24+Math.cos(this.elapsed*53)*shake);this.camera.lookAt(fx,0,fz)
-  this.zoomPunch=Math.max(0,this.zoomPunch-delta*2.5);this.camera.zoom=1+(this.reduced?0:this.zoomPunch*this.zoomPunch*.12);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld()
+  this.zoomPunch=Math.max(0,this.zoomPunch-delta*2.5);// Armory: close-up on the hero so outfit changes are readable.
+  this.armoryZoom+=((armory?ARMORY_ZOOM:1)-this.armoryZoom)*Math.min(1,delta*5||1);this.camera.zoom=this.armoryZoom*(1+(this.reduced?0:this.zoomPunch*this.zoomPunch*.12));this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld()
+  this.showcase.update(armory,this.knight.root.position.x,this.knight.root.position.z,delta)
   this.sun.position.set(fx-8,16,fz+6);this.sun.target.position.set(fx,0,fz);this.sun.target.updateMatrixWorld()
   const hero = this.knight.root, age=this.elapsed-this.dashAt, swingAge=this.elapsed-this.swingAt
   const hurt=Math.max(0,1-(this.elapsed-this.heroHitAt)/.45)
@@ -476,9 +496,23 @@ export class DungeonScene {
   if(dash>0)for(let i=0;i<3;i++){const t=Math.max(0,1-dash**3-.12-i*.15);this.point.lerpVectors(this.dashFrom,this.dashTo,t);this.rotation.setFromEuler(this.euler.set(.15,this.heroAngle,0));this.matrix.compose(this.point,this.rotation,this.scale.setScalar(1-i*.05));this.echoes.setMatrixAt(this.echoes.count++,this.matrix)}
   this.echoes.instanceMatrix.needsUpdate=true
   this.knight.body.scale.setScalar(!this.reduced&&this.elapsed-this.heroHitAt<.09?1.06:1)
+  // Idle: breathing, weight shift and an occasional gesture whenever the knight is not acting.
+  const calm=!this.reduced&&dash===0&&swing===0&&charge===0&&casting===0&&celebration===0&&hurt===0
+  this.idleWeight+=((calm?1:0)-this.idleWeight)*Math.min(1,delta*(calm?2.5:12)||1)
+  if(this.idleWeight>.001){
+   const idle=heroIdlePose(this.elapsed,!active),k=this.idleWeight
+   hero.position.y+=idle.lift*k;hero.rotation.x+=idle.lean*k
+   this.knight.body.scale.y*=1+(idle.breath-1)*k
+   this.knight.body.rotation.z+=idle.bodyRoll*k;this.knight.body.rotation.y+=idle.bodyYaw*k
+   this.knight.weapon!.rotation.x+=idle.weaponPitch*k;this.knight.weapon!.rotation.z+=idle.weaponRoll*k
+   this.knight.arm!.rotation.x+=idle.armPitch*k;this.knight.arm!.rotation.z+=idle.armRoll*k
+   this.knight.legs.forEach((leg,i)=>{leg.rotation.z+=(i?-1:1)*idle.legRoll*k})
+  }
   if(dojo){const hit=Math.max(0,1-(this.elapsed-this.trainingHit)/.3);this.dummy.body.rotation.z=this.reduced?0:-Math.sin(hit*Math.PI)*.27;this.dummy.body.position.z=-hit*.12;this.sensei.body.rotation.z=this.reduced?0:Math.sin(this.elapsed*1.5)*.018}
-  this.marker.visible=active&&!!selected
-  if(selected){this.marker.position.set(selected.x,.03,selected.z);this.marker.scale.setScalar(this.batches.get(selected.kind)!.scale);this.marker.material.color.setHex(0x76cfe3)}
+  // Lock-on reticle and out-of-range shading replace the old ring marker in solo play.
+  this.marker.visible=false
+  const focusActor=selected?this.actors.get(selected.id):undefined,focusScale=selected?this.batches.get(selected.kind)!.scale:1
+  this.targetFocus.update(selected&&focusActor?{id:selected.id,x:focusActor.vx,z:focusActor.vz,size:focusScale,headHeight:objectsHeight(selected.kind)*focusScale*.85+.4}:null,hero.position.x,hero.position.z,this.elapsed,this.reduced,active&&!!s&&(s.phase==="arena"||s.phase==="skills"))
   if(multiplayer&&this.party?.boss&&this.party.boss.hp>0&&this.party.boss.nextAttack-partyNow<800){this.marker.visible=true;this.marker.position.set(3,.035,-4);this.marker.scale.setScalar(4.5+Math.sin(this.elapsed*16)*.3);this.marker.material.color.setHex(0xff8d59)}
   this.heroShield.visible=active&&!!s&&s.player.shield>0
   this.heroShield.rotation.z=this.reduced?0:Math.sin(this.elapsed*2)*.04
@@ -632,7 +666,7 @@ export class DungeonScene {
    this.point.set(enemy.x, objectsHeight(enemy.kind) * scale, enemy.z).project(this.camera)
    const x = (this.point.x + 1) * .5 * this.width, y = (1 - this.point.y) * .5 * this.height
    return { id, x, y, visible: x >= 0 && x <= this.width && y >= 0 && y <= this.height }
-  }),...s.effects.filter(effect=>effect.source&&effect.kind==="shatter"||effect.kind==="hit"&&effect.value<0||["blast","treasure","heal","mana","shield","block","pickup","level","upgrade","barrier","finisher"].includes(effect.kind)).slice(-6).map(effect=>{this.point.set(effect.x,1.6,effect.z).project(this.camera);return {id:effect.id,x:(this.point.x+1)*.5*this.width,y:(1-this.point.y)*.5*this.height,visible:true}})])
+  }),...s.effects.filter(effect=>effect.source&&effect.kind==="shatter"||effect.kind==="hit"&&effect.value<0||["blast","treasure","heal","mana","shield","block","pickup","level","upgrade","barrier","finisher","gold"].includes(effect.kind)).slice(-6).map(effect=>{this.point.set(effect.x,1.6,effect.z).project(this.camera);return {id:effect.id,x:(this.point.x+1)*.5*this.width,y:(1-this.point.y)*.5*this.height,visible:true}})])
   if(this.last-this.lastProjection>=33)this.lastProjection=this.last
  }
  private tick(timestamp: number) {
@@ -668,7 +702,7 @@ export class DungeonScene {
   if (this.disposed) return
   this.disposed = true; this.renderer.setAnimationLoop(null); this.observer.disconnect(); this.cleanup.forEach(stop => stop()); this.cleanup.length = 0
   this.audio.dispose();this.vfx.dispose();this.actors.clear();this.partyPoses.clear();this.partyActions.clear(); this.instances.forEach(mesh => mesh.dispose()); this.instances.length = 0
-  this.materials.forEach(material => material.dispose()); this.materials.length = 0;this.textures.dispose(); this.post.dispose(); this.decor.dispose(); this.weaponVisuals.dispose(); this.models.dispose()
+  this.materials.forEach(material => material.dispose()); this.materials.length = 0;this.textures.dispose(); this.post.dispose(); this.decor.dispose(); this.weaponVisuals.dispose(); this.targetFocus.dispose(); this.showcase.dispose(); this.heroAppearance.dispose(); this.models.dispose()
   this.scene.clear(); this.renderer.dispose(); this.renderer.forceContextLoss(); this.renderer.domElement.remove()
  }
 }

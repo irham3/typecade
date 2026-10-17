@@ -3,7 +3,6 @@ import type { EnemyKind } from "@typecade/contracts"
 import { bestiary, enemyLunges, enemyProfiles } from "@typecade/content"
 import { Glyph } from "./Glyph"
 import { DungeonDialog } from "./ui/DungeonDialog"
-import { GemDivider } from "./ui/Ornament"
 
 type Role = (typeof bestiary)[number]["role"]
 type Filter = "All" | Role
@@ -62,10 +61,9 @@ export function Bestiary({ onClose }: { onClose: () => void }) {
   return (
     <DungeonDialog title="Bestiary" onCancel={onClose} className="bestiary-dialog" tone="info">
       <span className="eyebrow">{bestiary.length} ENTRIES · MORE ENEMIES UNLOCK THE LONGER YOU SURVIVE</span>
-      <nav className="bestiary-filters" aria-label="Filter by role">
+      <nav className="bestiary-filters text-tabs" aria-label="Filter by role">
         {filters.map(option => <button key={option} className={option === filter ? "active" : ""} aria-pressed={option === filter} onClick={() => setFilter(option)}>{option}</button>)}
       </nav>
-      <GemDivider />
       <div className="bestiary-grid">{entries.map(entry => <BestiaryCard key={entry.kind} entry={entry} portrait={portraits[entry.kind]} />)}</div>
       <button className="primary-action" onClick={onClose}>Close bestiary</button>
     </DungeonDialog>

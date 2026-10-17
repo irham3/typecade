@@ -18,6 +18,11 @@ export const mixLevels = {
   glue: { threshold: -18, knee: 8, ratio: 4, attack: .004, release: .2 },
   /** Brick-wall-ish limiter: final safety against clipping. */
   limiter: { threshold: -2, knee: 0, ratio: 20, attack: .001, release: .08 },
+  /** Recorded music (streamed, loudness-normalised to -20 LUFS) and room tone levels. */
+  recordedMusic: .9,
+  roomTone: .55,
+  /** Recorded one-shot layer gain on the effects bus. */
+  sampleGain: .9,
   /** Stone-hall reverb sends and wet return. */
   hallSend: { music: .45, effects: .14, return: .8 },
   /** Simultaneous instrument notes allowed on the music bus (pads ring over bar lines). */

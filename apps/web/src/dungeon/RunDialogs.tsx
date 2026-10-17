@@ -4,7 +4,7 @@ import { dungeonBiomes, dungeonUpgrades, skillRules, weaponRules } from "@typeca
 import { runAccuracy, runWpm, weaponIds } from "@typecade/game-rules"
 import { Glyph } from "./Glyph"
 import { DungeonDialog } from "./ui/DungeonDialog"
-import { GemDivider } from "./ui/Ornament"
+import { RunReward } from "./RunReward"
 
 type GlyphName = Parameters<typeof Glyph>[0]["name"]
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`
@@ -41,7 +41,7 @@ function BuildShowcase({ view }: { view: DungeonState }) {
   )
 }
 
-export function DefeatDialog({ view, best, onRetry, onLeave }: { view: DungeonState; best: number; onRetry: () => void; onLeave: () => void }) {
+export function DefeatDialog({ view, best, payout, wallet, onRetry, onLeave }: { view: DungeonState; best: number; payout: { earned: number; bonus: number } | null; wallet: number; onRetry: () => void; onLeave: () => void }) {
   const record = view.time >= best && view.time > 0
   return (
     <DungeonDialog title="Run over" onCancel={onLeave} tone="defeat" className="result-dialog">
@@ -49,6 +49,7 @@ export function DefeatDialog({ view, best, onRetry, onLeave }: { view: DungeonSt
       {record && <div className="record-ribbon"><Glyph name="crown" />NEW LOCAL RECORD</div>}
       <div className="result-hero">
         <div className="result-time"><small>SURVIVED</small><b>{formatTime(view.time)}</b><span>{dungeonBiomes[view.biome % dungeonBiomes.length]!.name} · Depth {view.biome + 1}</span></div>
+        <RunReward view={view} payout={payout} wallet={wallet} />
       </div>
       <div className="stat-grid">
         <StatTile icon="crown" value={view.level} label="LEVEL" />
@@ -58,7 +59,7 @@ export function DefeatDialog({ view, best, onRetry, onLeave }: { view: DungeonSt
         <StatTile icon="flame" value={view.bestStreak} label="BEST STREAK" />
         <StatTile icon="gem" value={view.gold} label="GOLD" />
       </div>
-      <GemDivider label="YOUR BUILD" />
+      <h3 className="section-label">Build</h3>
       <BuildShowcase view={view} />
       <p className="muted">Best time {formatTime(best)}. Upgrades reset when you start a new run.</p>
       <div className="dialog-actions">
@@ -100,12 +101,14 @@ function UpgradeCard({ view, id, index }: { view: DungeonState; id: UpgradeId; i
   const family = isWeapon(id) ? "WEAPON" : isSkill(id) ? "SKILL" : "RELIC"
   const accent = isWeapon(id) ? `#${weaponRules[id].color.toString(16).padStart(6, "0")}` : isSkill(id) ? "#ffb85a" : "#c58bff"
   return (
-    <article className={`upgrade-card family-${family.toLowerCase()} ${typed ? "typing" : ""}`} style={{ "--accent": accent, animationDelay: `${index * .07}s` } as CSSProperties}>
+    <article className={`upgrade-card family-${family.toLowerCase()} ${typed ? "typing" : ""}`} style={{ "--accent": accent, "--typed": typed / word.length, animationDelay: `${index * .07}s` } as CSSProperties}>
       <span className="upgrade-family">{rank === 0 ? `NEW ${family}` : family}</span>
       <div className="upgrade-medallion"><Glyph name={upgradeGlyph[id]} /></div>
       <h3>{offer.name}</h3>
-      <small className="level-pips" aria-label={`Rank ${rank} of ${offer.max}`}>{Array.from({ length: offer.max }, (_, i) => <i key={i} className={i < rank ? "on" : i === rank ? "next" : ""} />)}</small>
-      <small>{rank >= offer.max ? "MAX RANK · RESTORE" : `RANK ${rank} → ${rank + 1}`}</small>
+      <div className="upgrade-rank">
+        <small className="level-pips" aria-label={`Rank ${rank} of ${offer.max}`}>{Array.from({ length: offer.max }, (_, i) => <i key={i} className={i < rank ? "on" : i === rank ? "next" : ""} />)}</small>
+        <small>{rank >= offer.max ? "MAX · RESTORE" : `RANK ${rank + 1}`}</small>
+      </div>
       <p>{offer.description}</p>
       <strong data-testid="upgrade-keyword"><span className="typed">{word.slice(0, typed)}</span>{word.slice(typed)}</strong>
     </article>
@@ -119,7 +122,7 @@ export function DraftDialog({ view, input, onPause }: { view: DungeonState; inpu
       <span className="eyebrow">{relic ? "PICK ONE RELIC · TYPE ITS KEYWORD" : "PICK ONE UPGRADE · TYPE ITS KEYWORD"}</span>
       <div className="upgrade-cards">{view.offers.map((id, index) => <UpgradeCard key={id} view={view} id={id} index={index} />)}</div>
       {input}
-      <p className="run-notice">{view.notice}</p>
+      <p className="run-notice draft-notice" role="status">{/keyword|match|mana/i.test(view.notice) ? view.notice : ""}</p>
     </DungeonDialog>
   )
 }

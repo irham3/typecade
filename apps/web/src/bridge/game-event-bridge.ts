@@ -1,5 +1,5 @@
 import type { DungeonEvents } from "@typecade/contracts"
-const replayableEvents = new Set<PropertyKey>(["frame", "screen", "settings"])
+const replayableEvents = new Set<PropertyKey>(["frame", "screen", "settings", "appearance"])
 
 export class GameEventBridge<M extends object = DungeonEvents> {
 	constructor(private readonly replay: ReadonlySet<PropertyKey> = replayableEvents) {}

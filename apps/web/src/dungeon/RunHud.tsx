@@ -3,7 +3,7 @@ import type { DungeonState, RelicId, SupplyKind, WeaponId } from "@typecade/cont
 import { dungeonBiomes, dungeonSupplies, dungeonUpgrades, weaponRules } from "@typecade/content"
 import { runAccuracy, runWpm, waveAt, weaponIds, xpThreshold } from "@typecade/game-rules"
 import { Glyph } from "./Glyph"
-import { OrnateCorners } from "./ui/Ornament"
+import { CoinIcon } from "./ui/CoinIcon"
 
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`
 
@@ -15,7 +15,6 @@ function CombatMetrics({ view, onPause }: { view: DungeonState; onPause: () => v
   const hot = view.streak >= 50
   return (
     <section className="combat-metrics hud-plate">
-      <OrnateCorners />
       <div className="hud-topline">
         <button aria-label="Pause game" className="pause-button" onClick={onPause}>Ⅱ</button>
         <span title={depth.name}>DEPTH {String(view.biome + 1).padStart(2, "0")}</span>
@@ -54,13 +53,12 @@ function Vitals({ view }: { view: DungeonState }) {
   const { player } = view
   return (
     <section className="vitals hud-plate" aria-label="Player status">
-      <OrnateCorners />
       <HeroMedallion view={view} />
       <div className="vitals-bars">
         <div className="health-row">
           <span>HP</span>
           <div className="hearts" aria-label={`${player.hp} of ${player.maxHp} hearts`}>{Array.from({ length: player.maxHp }, (_, i) => <i key={i} className={i < player.hp ? "filled" : ""} />)}</div>
-          <strong className="gold-count"><Glyph name="gem" />{view.gold}g</strong>
+          <strong className="gold-count" aria-label={`${view.gold} gold`}><CoinIcon />{view.gold}</strong>
         </div>
         <div className="resource-row mana-row"><span>MP</span><meter min="0" max="100" value={player.mana} aria-label="Mana" /><small>{Math.floor(player.mana)}</small></div>
         <div className="resource-row shield-row"><span>SH</span><meter min="0" max="4" value={player.shield} aria-label="Shield" /><small>{player.shield}/4</small></div>
@@ -71,7 +69,7 @@ function Vitals({ view }: { view: DungeonState }) {
 }
 
 export function RunHud({ view, onPause }: { view: DungeonState; onPause: () => void }) {
-  return <header className="run-hud"><CombatMetrics view={view} onPause={onPause} /><Vitals view={view} /></header>
+  return <header className="run-hud"><Vitals view={view} /><CombatMetrics view={view} onPause={onPause} /></header>
 }
 
 function WeaponBadge({ id, view }: { id: WeaponId; view: DungeonState }) {

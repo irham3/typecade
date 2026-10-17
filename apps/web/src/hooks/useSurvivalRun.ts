@@ -12,7 +12,7 @@ export const dungeonSnapshot = (s: DungeonState): DungeonState => ({ ...s, playe
 export function useSurvivalRun(enabled: boolean) {
  const [initial] = useState(() => restoreDungeonRun(readStorage("localStorage", dungeonSaveKey)) ?? new SurvivalRun(`run-${Date.now()}`))
  const run = useRef(initial)
- const [bridge] = useState(() => new GameEventBridge<DungeonEvents>(new Set(["frame", "screen", "settings"])))
+ const [bridge] = useState(() => new GameEventBridge<DungeonEvents>(new Set(["frame", "screen", "settings", "appearance"])))
  const [view, setView] = useState(() => dungeonSnapshot(initial.state))
  const [best, setBest] = useState(() => { const n = Number(readStorage("localStorage", bestKey)); return Number.isFinite(n) && n > 0 ? n : 0 })
  const savedAt = useRef(0)

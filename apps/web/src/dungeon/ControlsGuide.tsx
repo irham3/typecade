@@ -71,7 +71,7 @@ export function LessonVisual({ kind, language }: { kind: "strike" | "cancel" | "
 export function HowToPlay({ language }: { language: DungeonLanguage }) {
  const steps: Array<{ title: string; text: string; visual: Parameters<typeof LessonVisual>[0]["kind"] }> = [
   { title: "1 · Type to strike", text: "Type the word floating above a foe. The final letter dashes your knight to it and strikes.", visual: "strike" },
-  { title: "2 · Backspace cancels", text: "Locked the wrong foe? Press Backspace to release the lock, then type a different word.", visual: "cancel" },
+  { title: "2 · Backspace fixes", text: "Typo? Backspace removes the last letter. Any enemy whose word matches what you typed can be hit.", visual: "cancel" },
   { title: "3 · Tab for skills", text: "Tab slows time. Type a skill keyword to sweep, freeze or heal.", visual: "skill" },
   { title: "4 · Esc to pause", text: "Esc pauses safely. Your typed progress is kept.", visual: "pause" },
  ]

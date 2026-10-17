@@ -1,29 +1,67 @@
-import { BufferAttribute, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, SphereGeometry } from "three"
+import { BufferAttribute, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, SphereGeometry, Vector3 } from "three"
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js"
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
 import type { EnemyKind } from "@typecade/contracts"
 import type { Part } from "./models/blueprint"
 import { monsterBlueprints } from "./models/monsters"
 import { GLOW_ATTRIBUTE, glowColors, withVertexGlow } from "./render/vertexGlow"
+import { createSurfaceDetail, SURFACE_ATTRIBUTE, withSurfaceDetail } from "./render/surfaceDetail"
+import { surfaceClassFor } from "./models/surfaceClass"
 export interface ActorGeometry { body: BufferGeometry; leg: BufferGeometry | null; arm: BufferGeometry | null; weapon: BufferGeometry | null; scale: number }
+
+/** Painted vertex shading range: underside × shadow, top × highlight. */
+const PAINT_SHADOW = .72
+const PAINT_HIGHLIGHT = 1.08
 
 /** Vertex-colored shared meshes keep a whole actor part in one draw call. */
 export class DungeonModels {
  readonly geometries = new Set<BufferGeometry>()
- readonly material = withVertexGlow(new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .85, metalness: .05 }))
+ private readonly detail = createSurfaceDetail()
+ private readonly materials: MeshStandardMaterial[] = []
+ readonly material = this.createMaterial()
+ /** A fresh actor material (glow + surface detail) for meshes that need their own uniforms or shader tweaks; owned and disposed here. */
+ createMaterial() {
+  const material = withSurfaceDetail(withVertexGlow(new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .85, metalness: .05 })), this.detail)
+  this.materials.push(material); return material
+ }
  private shapes = { box: this.keep(new RoundedBoxGeometry(1, 1, 1, 1, .07)), cone: this.keep(new ConeGeometry(1, 1, 4)), round: this.keep(new SphereGeometry(1, 7, 4)), cylinder: this.keep(new CylinderGeometry(1, 1, 1, 8)) }
  private cache = new Map<string, ActorGeometry>()
  keep<T extends BufferGeometry>(geometry: T): T { this.geometries.add(geometry); return geometry }
  /** Vertex-colored materials read a `color` attribute; without one WebGL feeds black, so plain primitives get a white base for instance tints. */
  tinted<T extends BufferGeometry>(geometry: T): T { geometry.setAttribute("color", new BufferAttribute(new Float32Array(geometry.getAttribute("position").count * 3).fill(1), 3)); return this.keep(geometry) }
+ /**
+  * White-based facets for unlit loot and projectiles: each triangle is pre-shaded from a fixed
+  * key light, so gems and shards read as cut stones under MeshBasicMaterial instance tints.
+  */
+ faceted<T extends BufferGeometry>(geometry: T): BufferGeometry {
+  const flat = geometry.index ? geometry.toNonIndexed() : geometry
+  if (flat !== geometry) geometry.dispose()
+  flat.computeVertexNormals()
+  const normals = flat.getAttribute("normal"), colors = new Float32Array(normals.count * 3), key = new Vector3(.45, .8, .4).normalize(), n = new Vector3()
+  for (let v = 0; v < normals.count; v++) {
+   const tone = .55 + .5 * Math.max(0, n.fromBufferAttribute(normals, v).dot(key)) + (v % 9 < 3 ? .06 : 0)
+   colors.fill(Math.min(1, tone), v * 3, v * 3 + 3)
+  }
+  flat.setAttribute("color", new BufferAttribute(colors, 3))
+  return this.keep(flat)
+ }
  geometry(parts: Part[]) {
   const color = new Color(), transform = new Matrix4(), scale = new Matrix4()
   const copies = parts.map(([hex, x, y, z, sx, sy, sz, shape = "box", rz = 0]) => {
    const source=this.shapes[shape],copy=source.index?source.toNonIndexed():source.clone(); color.setHex(hex)
    const colors = new Float32Array(copy.getAttribute("position").count * 3)
-   for (let i = 0; i < colors.length; i += 3) { colors[i] = color.r; colors[i + 1] = color.g; colors[i + 2] = color.b }
+   // Painted shading: each part darkens toward its underside and brightens toward its top, a
+   // hand-painted low-poly look that reads as form even under flat lighting. Lit parts stay flat.
+   const local = copy.getAttribute("position"), glowing = glowColors.has(hex)
+   let low = Infinity, high = -Infinity
+   for (let v = 0; v < local.count; v++) { const ly = local.getY(v); if (ly < low) low = ly; if (ly > high) high = ly }
+   for (let v = 0, i = 0; v < local.count; v++, i += 3) {
+    const t = high > low ? (local.getY(v) - low) / (high - low) : 1, tone = glowing ? 1 : PAINT_SHADOW + (PAINT_HIGHLIGHT - PAINT_SHADOW) * t
+    colors[i] = Math.min(1, color.r * tone); colors[i + 1] = Math.min(1, color.g * tone); colors[i + 2] = Math.min(1, color.b * tone)
+   }
    copy.setAttribute("color", new BufferAttribute(colors, 3))
    copy.setAttribute(GLOW_ATTRIBUTE, new BufferAttribute(new Float32Array(copy.getAttribute("position").count).fill(glowColors.has(hex) ? 1 : 0), 1))
+   copy.setAttribute(SURFACE_ATTRIBUTE, new BufferAttribute(new Float32Array(copy.getAttribute("position").count).fill(surfaceClassFor(hex)), 1))
    transform.makeRotationZ(rz).multiply(scale.makeScale(sx, sy, sz)).setPosition(x, y, z)
    return copy.applyMatrix4(transform)
   })
@@ -152,5 +190,7 @@ export class DungeonModels {
   if (arm) { arm.position.set(-.62, 1.52, 0); root.add(arm) }
   return { root, body, legs, weapon, arm }
  }
- dispose() { this.geometries.forEach(g => g.dispose()); this.geometries.clear(); this.cache.clear(); this.material.dispose() }
+ /** Disposes geometries this instance built outside the actor cache (e.g. the customized hero). */
+ release(geometries: Iterable<BufferGeometry>) { for (const geometry of geometries) { this.geometries.delete(geometry); geometry.dispose() } }
+ dispose() { this.geometries.forEach(g => g.dispose()); this.geometries.clear(); this.cache.clear(); this.materials.forEach(m => m.dispose()); this.materials.length = 0; this.detail.dispose() }
 }
