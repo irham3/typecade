@@ -1,3 +1,6 @@
 export * from "./rng"
 export * from "./survival"
 export * from "./combat-lesson"
+export * from "./terrain"
+export * from "./weapons"
+export * from "./director"

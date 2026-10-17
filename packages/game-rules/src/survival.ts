@@ -1,10 +1,11 @@
 import type { DamageSource, DungeonEnemy, DungeonLanguage, DungeonState, EnemyKind, Point, RelicId, RunPhase, SkillId, SupplyKind, UpgradeId } from "../../contracts/src/survival"
-import { bossPassages, commonWords, commonWordStyle, dungeonBalance as B, dungeonTerrain as T, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonSupplies, dungeonObjects, enemySpeed, enemyLunges, enemyProfiles, skillRules } from "../../content/src/dungeon"
+import { bossPassages, commonWords, commonWordStyle, dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonSupplies, dungeonObjects, enemySpeed, enemyLunges, enemyProfiles, skillRules } from "../../content/src/dungeon"
 import { createSeededRng } from "./rng"
-import { areWeaponsValid, createEmptyWeapons, isWeaponId, orbitBladePositions, tickWeapons, weaponIds, type CombatPort } from "./weapons"
+import { areWeaponsValid, createEmptyWeapons, isWeaponId, tickWeapons, weaponIds, type CombatPort } from "./weapons"
 import { spawnRoster } from "./roster"
+import { hasClearPath, isWalkable, ruinAt } from "./terrain"
+import { paceFor, surgeLineup, waveAt } from "./director"
 
-export { orbitBladePositions, weaponIds }
 
 const skillIds: SkillId[] = ["cleave", "storm", "heal"]
 const relicIds: RelicId[] = ["lightning", "magnet", "switch", "vowels", "overclock", "glasses", "execute"]
@@ -13,26 +14,9 @@ const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z)
 export const xpThreshold = (level: number) => Math.min(100_000, Math.floor(100 * 1.25 ** Math.min(level, 32)))
 export const runWpm = (s: DungeonState) => Math.round(s.correct / 5 / Math.max(1 / 6, s.time / 60))
 export const runAccuracy = (s: DungeonState) => s.correct + s.errors ? Math.round(s.correct / (s.correct + s.errors) * 100) : 100
-export function dungeonWalkable(p: Point) {
- if(!Number.isFinite(p.x)||!Number.isFinite(p.z))return false
- const x = ((p.x % T.chunkSize) + T.chunkSize) % T.chunkSize, z = ((p.z % T.chunkSize) + T.chunkSize) % T.chunkSize
- for(const offset of [0,16])if(Math.abs(x-((T.ruinX+offset)%T.chunkSize))<=T.halfWidth&&Math.abs(z-((T.ruinZ+offset)%T.chunkSize))<=T.halfDepth)return false
- return true
-}
-function reachable(a: Point, b: Point) {
- if(distance(a,b)>T.chunkSize)return false
- for(let cx=Math.floor(Math.min(a.x,b.x)/T.chunkSize);cx<=Math.floor(Math.max(a.x,b.x)/T.chunkSize);cx++)for(let cz=Math.floor(Math.min(a.z,b.z)/T.chunkSize);cz<=Math.floor(Math.max(a.z,b.z)/T.chunkSize);cz++)for(const offset of [0,16]){
-  const center={x:cx*T.chunkSize+T.ruinX+offset,z:cz*T.chunkSize+T.ruinZ+offset}
-  let enter=0,exit=1
-  for(const [axis,half]of [["x",T.halfWidth],["z",T.halfDepth]] as const){
-   const delta=b[axis]-a[axis],lo=center[axis]-half,hi=center[axis]+half
-   if(delta===0){if(a[axis]<lo||a[axis]>hi){exit=-1;break}}
-   else{const t0=(lo-a[axis])/delta,t1=(hi-a[axis])/delta;enter=Math.max(enter,Math.min(t0,t1));exit=Math.min(exit,Math.max(t0,t1))}
-  }
-  if(enter<=exit)return false
- }
- return true
-}
+/** Collision lives in ./terrain; these names are kept for existing callers. */
+export const dungeonWalkable = (p: Point) => isWalkable(p)
+const reachable = (a: Point, b: Point) => hasClearPath(a, b)
 
 export function createDungeonState(seed: string, language: DungeonLanguage): DungeonState {
  return {
@@ -60,6 +44,8 @@ export class SurvivalRun {
  }
  /** Port handed to the weapon system so it can strike without reaching into private state. */
  private get combat(): CombatPort { return { state: this.state, hit: (enemy, layers, preserve, source) => this.hit(enemy, layers, preserve, source), effect: (kind, at, value) => this.effect(kind, at, value), random: () => this.random() } }
+ /** Movement multiplier from the wave director; derived from time, so it is not saved. */
+ private haste = 1
  private random() { const s = this.state; return createSeededRng(`${s.seed}:${s.rng++}`).nextFloat() }
  private pick<T>(list: readonly T[]) { return list[Math.floor(this.random() * list.length)]! }
  private effect(kind: DungeonState["effects"][number]["kind"], at: Point, value = 0, to?:Point, source?: DamageSource) {
@@ -90,7 +76,7 @@ export class SurvivalRun {
   const layers = kind === "boss" ? 3 + Math.min(2, s.biome) : kind === "minotaur" ? Math.min(5, 3 + Math.floor(s.time / 900)) : kind === "guard" ? 2 : kind === "deathknight" ? Math.min(4, 3 + Math.floor(s.time / 900)) : enemyProfiles[kind]?.layers ?? 1
   const words = Array.from({ length: layers }, (_, i) => this.drawWord(kind,layers-i,i===0))
   const health = kind === "boss" ? B.bossHealth * (1 + s.biome * .5) : layers
-  const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: B.speed * enemySpeed[kind] * (.88+this.random()*.24) * (.65+.35*Math.min(1,s.time/B.openingSeconds)) * (1 + Math.min(2, s.time / 900)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 5.5 : kind==="minotaur"||kind==="boss"?6+this.random()*2:this.openingTimer(kind), health, maxHealth: health }
+  const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: B.speed * enemySpeed[kind] * (.88+this.random()*.24) * (.7+.3*Math.min(1,s.time/B.openingSeconds)) * (1 + Math.min(.7, s.time / 700) + Math.min(.3, s.biome * .06)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 5.5 : kind==="minotaur"||kind==="boss"?6+this.random()*2:this.openingTimer(kind), health, maxHealth: health }
   s.enemies.push(enemy)
   if (kind === "boss") { s.boss = enemy.id; s.notice = "Obsidian Minotaur — break its armor." }
   return enemy
@@ -381,10 +367,8 @@ export class SurvivalRun {
   let goal=e.waypoint??player,d=Math.max(.01,distance(e,goal))
   let next={x:e.x+(goal.x-e.x)/d*Math.min(d,speed*dt),z:e.z+(goal.z-e.z)/d*Math.min(d,speed*dt)}
   if(!dungeonWalkable(next)){
-   const bx=Math.floor(next.x/T.chunkSize)*T.chunkSize,bz=Math.floor(next.z/T.chunkSize)*T.chunkSize
-   const centers=[{x:bx+T.ruinX,z:bz+T.ruinZ},{x:bx+T.ruinX+16,z:bz+T.ruinZ+16}]
-   const center=centers.find(p=>Math.abs(next.x-p.x)<=T.halfWidth&&Math.abs(next.z-p.z)<=T.halfDepth)!
-   const corners=[-1,1].flatMap(x=>[-1,1].map(z=>({x:center.x+x*(T.halfWidth+.8),z:center.z+z*(T.halfDepth+.8)})))
+   const ruin=ruinAt(next)!
+   const corners=[-1,1].flatMap(x=>[-1,1].map(z=>({x:ruin.x+x*(ruin.halfWidth+.8),z:ruin.z+z*(ruin.halfDepth+.8)})))
    e.waypoint=corners.filter(p=>distance(e,p)>.5&&reachable(e,p)).sort((a,b)=>distance(e,a)+distance(a,player)-distance(e,b)-distance(b,player))[0]
    if(!e.waypoint)return
    goal=e.waypoint;d=Math.max(.01,distance(e,goal));next={x:e.x+(goal.x-e.x)/d*Math.min(d,speed*dt),z:e.z+(goal.z-e.z)/d*Math.min(d,speed*dt)}
@@ -394,7 +378,7 @@ export class SurvivalRun {
  private steerEnemy(e:DungeonEnemy,dt:number) {
   const s=this.state,p=s.player,d=distance(e,p),dx=(p.x-e.x)/Math.max(.01,d),dz=(p.z-e.z)/Math.max(.01,d),phase=s.worldTime+e.id*.73
   const lunge=enemyLunges[e.kind]
-  if(lunge){
+  if(lunge&&(lunge.from??0)<=s.time){
    if(e.motion){
     e.motionTime=Math.max(0,(e.motionTime??0)-dt)
     if(e.motion==="windup"&&e.motionTime===0){
@@ -414,7 +398,7 @@ export class SurvivalRun {
   if(!e.speed)return
   // A mimic sits still as loot until the hero comes within reach.
   if(e.kind==="mimic"&&d>3.6)return
-  let goal:Point=p,speed=e.speed*(e.id===s.target ? .65:1)
+  let goal:Point=p,speed=e.speed*this.haste*(e.id===s.target ? .65:1)
   if(e.kind==="mage"){
    const radial=d<4.5?-1:d>6.5?1:0,side=e.id%2?1:-1
    goal={x:e.x+dx*radial*2-dz*side,z:e.z+dz*radial*2+dx*side}
@@ -464,7 +448,9 @@ export class SurvivalRun {
   const d=distance(e,p)
   if(e.kind==="archer"||e.kind==="imp"){
    const fast=e.kind==="archer"?4.5:3.2
-   if(d<(e.kind==="archer"?9:6)&&s.projectiles.length<B.projectiles&&reachable(e,p))s.projectiles.push({id:s.nextId++,x:e.x,z:e.z,vx:(p.x-e.x)/Math.max(.1,d)*fast,vz:(p.z-e.z)/Math.max(.1,d)*fast,life:e.kind==="archer"?4:2.5})
+   // Veteran archers loose a three-arrow fan instead of a single shot.
+   const spread=e.kind==="archer"&&s.time>=180?[-.22,0,.22]:[0]
+   if(d<(e.kind==="archer"?9:6)&&reachable(e,p))for(const turn of spread){if(s.projectiles.length>=B.projectiles)break;const a=Math.atan2(p.x-e.x,p.z-e.z)+turn;s.projectiles.push({id:s.nextId++,x:e.x,z:e.z,vx:Math.sin(a)*fast,vz:Math.cos(a)*fast,life:e.kind==="archer"?4:2.5})}
    e.attack=e.kind==="archer"?3.6+e.id%3*.3:4
   }else if(e.kind==="shaman"){
    const ally=s.enemies.filter(a=>a!==e&&a.id!==s.target&&a.id!==s.boss&&!objects.includes(a.kind)&&a.kind!=="shaman"&&a.words.length<3&&distance(a,e)<5).sort((a,b)=>distance(a,e)-distance(b,e))[0]
@@ -546,8 +532,12 @@ export class SurvivalRun {
    if (boss) { s.nextBoss += B.bossInterval; if (s.phase === "skills") { s.phase = "arena"; s.command = "" } }
   }
   const opening=s.time<B.openingSeconds,learning=s.time<B.learningSeconds
-  const floor=opening?2:learning?3:4,limit=opening?B.openingThreats:learning?B.learningThreats:s.time<B.bossInterval?B.preBossThreats:B.enemies
-  const interval=opening?B.openingInterval:learning?B.learningInterval:B.spawnInterval
+  const wave=waveAt(s.time),pace=paceFor(wave)
+  this.haste=duel?1:pace.haste
+  if(!duel&&wave.phase==="surge"&&waveAt(s.time-real).phase!=="surge")this.launchSurge(wave.cycle)
+  const floor=opening?2:learning?3:4,baseLimit=opening?B.openingThreats:learning?B.learningThreats:s.time<B.bossInterval?B.preBossThreats:B.enemies
+  const limit=Math.min(B.enemies,Math.max(floor,baseLimit+pace.threatBonus))
+  const interval=(opening?B.openingInterval:learning?B.learningInterval:B.spawnInterval)/pace.spawnRate
   s.spawnAt = Math.max(0,s.spawnAt-dt)
   if (!duel && s.spawnAt <= 0) {
    const roster=this.roster(opening)
@@ -566,7 +556,7 @@ export class SurvivalRun {
     // Rats arrive as a pack of up to three around the first one.
     if(kind==="rat"&&first)for(let k=0;k<2&&s.enemies.filter(e=>!objects.includes(e.kind)).length<limit;k++)this.spawn("rat",this.strikePosition(first,1.1+k*.4,{x:first.x+Math.sin(k*2.4)*3,z:first.z+Math.cos(k*2.4)*3}))
    }
-   s.spawnAt = learning?interval:Math.max(.65, interval / (1 + s.time / 360 + s.level * .03))
+   s.spawnAt = learning?interval:Math.max(.5, interval / (1 + s.time / 360 + s.level * .03))
   }
   for (const e of [...s.enemies]) {
    if(duel&&e.id===s.boss)continue
@@ -610,6 +600,18 @@ export class SurvivalRun {
   this.collectLoot(); this.openDraft(); this.refreshQueue()
   // Preserve scripted spawn holds; shorten only the director's normal countdown.
   if(s.spawnAt<=interval&&(s.queue.length<4||this.targets().filter(e=>!objects.includes(e.kind)).length<floor&&s.enemies.filter(e=>!objects.includes(e.kind)).length<limit))s.spawnAt=Math.min(s.spawnAt,.3)
+ }
+ /** Surge opener: a themed pack fans in from one direction, sometimes led by an elite. */
+ private launchSurge(cycle:number) {
+  const s=this.state,{pack,elite}=surgeLineup(s.time,cycle,s.biome,()=>this.random())
+  const heading=this.random()*Math.PI*2
+  for(let i=0;i<pack.count;i++){
+   const angle=heading+(i-(pack.count-1)/2)*.3,radius=B.spawnRadius+(i%2)*1.2
+   const at={x:s.player.x+Math.sin(angle)*radius,z:s.player.z+Math.cos(angle)*radius}
+   if(dungeonWalkable(at))this.spawn(pack.kind,at)
+  }
+  const leader=elite?this.spawn(elite,{x:s.player.x+Math.sin(heading)*(B.spawnRadius+2),z:s.player.z+Math.cos(heading)*(B.spawnRadius+2)}):undefined
+  s.notice=`SURGE — ${pack.name}${leader?` led by a ${(enemyProfiles[leader.kind]?.name??leader.kind).toLowerCase()}`:""}! Hold the line.`
  }
  private roster(opening:boolean):EnemyKind[] { return spawnRoster(this.state.time,this.state.biome,opening) }
  serialize() { return JSON.stringify(this.state) }
