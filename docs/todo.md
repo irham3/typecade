@@ -248,3 +248,11 @@ Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript 
 - [x] 230 unit/browser tests passed in the latest completed coverage run. Lines/functions reached 100%; the remaining restorative-draft statement/two branches now have a regression that exhausts weapon/relic ranks. A fresh full coverage run is in progress; no threshold was lowered.
 - [ ] Complete the fresh coverage run, cross-browser E2E and 900-active-second production profile. An initial Chromium tutorial assertion expected 7 lessons instead of 8; its fixture is corrected and needs rerun. Other completed initial Chromium scenarios passed. Do not treat running checks as successful evidence.
 - [ ] Confirm GitHub CI on the merged master commit. The user requested PR creation and merge before the remaining verification finishes. Supabase backup/schema work remains deferred; no database/Auth changes are part of this checkpoint.
+
+## M22 - Medieval orchestra and stone-hall reverb, 2026-10-17
+
+- [x] `audio/instruments.ts`: synthesized lute/harp plucks, choir "ah" pads (formant filters), bowed low strings, horn, flute, crypt bells, pipe organ and a war-drum kit (taiko, tom, frame drum, anvil, shaker); each note is a `NoteGraph` committed to the music bus voice budget.
+- [x] `audio/reverb.ts`: generated stone-hall impulse response (3.4 s darkening tail, early reflections) on music and effects sends.
+- [x] `audio/score.ts`: per-theme ensembles (Keep: horns + strings + lute + war drums; Crypt: bells + choir; Foundry: horns + organ + anvils; Frost: harp + choir; Verdant: flute + lute; Boss: horns + choir + war drums; Title: harp + choir + bells) with pad, bowed bass, melody, arpeggio and energy-scaled drums.
+- [x] Measured at the limiter: title bed about -20 dB before the final 2 dB trim, combat about -19 dB average with peaks at -1.3 dB; no runtime errors.
+- [ ] `audio/percussion.ts` is no longer used by the engine (kept because `DungeonAudio.test.ts` imports it); remove with that test update. Tests not run (per request).
