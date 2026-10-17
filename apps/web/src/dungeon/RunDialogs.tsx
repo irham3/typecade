@@ -44,8 +44,8 @@ function BuildShowcase({ view }: { view: DungeonState }) {
 export function DefeatDialog({ view, best, onRetry, onLeave }: { view: DungeonState; best: number; onRetry: () => void; onLeave: () => void }) {
   const record = view.time >= best && view.time > 0
   return (
-    <DungeonDialog title="The keep remembers." onCancel={onLeave} tone="defeat" className="result-dialog">
-      <span className="eyebrow">RUN ENDED · ANOTHER BLADE WILL RISE</span>
+    <DungeonDialog title="Run over" onCancel={onLeave} tone="defeat" className="result-dialog">
+      <span className="eyebrow">YOUR RESULTS</span>
       {record && <div className="record-ribbon"><Glyph name="crown" />NEW LOCAL RECORD</div>}
       <div className="result-hero">
         <div className="result-time"><small>SURVIVED</small><b>{formatTime(view.time)}</b><span>{dungeonBiomes[view.biome % dungeonBiomes.length]!.name} · Depth {view.biome + 1}</span></div>
@@ -60,7 +60,7 @@ export function DefeatDialog({ view, best, onRetry, onLeave }: { view: DungeonSt
       </div>
       <GemDivider label="YOUR BUILD" />
       <BuildShowcase view={view} />
-      <p className="muted">Local best {formatTime(best)} · Your temporary build resets for the next run.</p>
+      <p className="muted">Best time {formatTime(best)}. Upgrades reset when you start a new run.</p>
       <div className="dialog-actions">
         <button className="primary-action" autoFocus onClick={onRetry}><Glyph name="sword" />Try another run</button>
         <button className="quiet" onClick={onLeave}>Return to title</button>
@@ -73,8 +73,8 @@ interface PauseDialogProps { view: DungeonState; leaveLabel: string; onResume: (
 
 export function PauseDialog({ view, leaveLabel, onResume, onSettings, onControls, onLeave }: PauseDialogProps) {
   return (
-    <DungeonDialog title="Take a breath." onCancel={onResume} tone="pause" className="pause-dialog">
-      <span className="eyebrow">RUN PAUSED · INPUT SAVED</span>
+    <DungeonDialog title="Paused" onCancel={onResume} tone="pause" className="pause-dialog">
+      <span className="eyebrow">PROGRESS SAVED · ESC TO RESUME</span>
       <div className="stat-grid compact">
         <StatTile icon="flag" value={view.biome + 1} label="DEPTH" />
         <StatTile icon="crown" value={view.level} label="LEVEL" />
@@ -115,8 +115,8 @@ function UpgradeCard({ view, id, index }: { view: DungeonState; id: UpgradeId; i
 export function DraftDialog({ view, input, onPause }: { view: DungeonState; input: ReactNode; onPause: () => void }) {
   const relic = view.legendaryDrafts > 0
   return (
-    <DungeonDialog title={relic ? "A relic from the fallen." : `Level ${view.level}. Choose your edge.`} className="draft-dialog" tone={relic ? "relic" : "draft"} onCancel={onPause}>
-      <span className="eyebrow">{relic ? "BOSS RELIC · MATCH CASE TO PICK" : "TIME FROZEN · TYPE A KEYWORD TO PICK"}</span>
+    <DungeonDialog title={relic ? "Boss reward" : `Level ${view.level}`} className="draft-dialog" tone={relic ? "relic" : "draft"} onCancel={onPause}>
+      <span className="eyebrow">{relic ? "PICK ONE RELIC · TYPE ITS KEYWORD" : "PICK ONE UPGRADE · TYPE ITS KEYWORD"}</span>
       <div className="upgrade-cards">{view.offers.map((id, index) => <UpgradeCard key={id} view={view} id={id} index={index} />)}</div>
       {input}
       <p className="run-notice">{view.notice}</p>

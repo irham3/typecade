@@ -79,3 +79,11 @@
   .vitals.hud-plate { gap: 6px }
   .health-row .hearts i { width: 11px; height: 10px }
 }
+
+/* Wave director chip */
+.wave-chip { position: relative; overflow: hidden; padding: 2px 8px; font-size: 8px; letter-spacing: 2px; color: #cfe0f5; border: 1px solid #4b5e82; background: #0b1220 }
+.wave-chip::before { content: ""; position: absolute; inset: 0; width: calc(var(--progress) * 100%); background: currentColor; opacity: .18 }
+.wave-build { color: #f0c46a; border-color: #8a6534 }
+.wave-surge { color: #ff6b6b; border-color: #ff6b6b; box-shadow: 0 0 10px #ff5a6a77; animation: surge-pulse .6s ease-in-out infinite alternate }
+.wave-breather { color: #7fe0a0; border-color: #3f7a55 }
+@keyframes surge-pulse { to { box-shadow: 0 0 18px #ff5a6acc } }

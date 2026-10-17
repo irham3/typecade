@@ -61,7 +61,7 @@ export function Bestiary({ onClose }: { onClose: () => void }) {
   const entries = useMemo(() => bestiary.filter(entry => filter === "All" || entry.role === filter), [filter])
   return (
     <DungeonDialog title="Bestiary" onCancel={onClose} className="bestiary-dialog" tone="info">
-      <span className="eyebrow">{bestiary.length} ENTRIES · NEW FOES ARRIVE AS THE RUN GOES ON</span>
+      <span className="eyebrow">{bestiary.length} ENTRIES · MORE ENEMIES UNLOCK THE LONGER YOU SURVIVE</span>
       <nav className="bestiary-filters" aria-label="Filter by role">
         {filters.map(option => <button key={option} className={option === filter ? "active" : ""} aria-pressed={option === filter} onClick={() => setFilter(option)}>{option}</button>)}
       </nav>

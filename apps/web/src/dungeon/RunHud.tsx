@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react"
 import type { DungeonState, RelicId, SupplyKind, WeaponId } from "@typecade/contracts"
 import { dungeonBiomes, dungeonSupplies, dungeonUpgrades, weaponRules } from "@typecade/content"
-import { runAccuracy, runWpm, weaponIds, xpThreshold } from "@typecade/game-rules"
+import { runAccuracy, runWpm, waveAt, weaponIds, xpThreshold } from "@typecade/game-rules"
 import { Glyph } from "./Glyph"
 import { OrnateCorners } from "./ui/Ornament"
 
@@ -19,6 +19,7 @@ function CombatMetrics({ view, onPause }: { view: DungeonState; onPause: () => v
       <div className="hud-topline">
         <button aria-label="Pause game" className="pause-button" onClick={onPause}>Ⅱ</button>
         <span title={depth.name}>DEPTH {String(view.biome + 1).padStart(2, "0")}</span>
+        <WaveChip time={view.time} />
         <strong>{formatTime(view.time)}</strong>
       </div>
       <div className="metric-values">
@@ -28,6 +29,14 @@ function CombatMetrics({ view, onPause }: { view: DungeonState; onPause: () => v
       </div>
     </section>
   )
+}
+
+const waveLabel = { opening: "WARM-UP", build: "BUILD-UP", surge: "SURGE", breather: "BREATHER" } as const
+
+/** Current director phase, so players can read the rhythm: push during build-up, brace for surges, loot in breathers. */
+function WaveChip({ time }: { time: number }) {
+  const wave = waveAt(time)
+  return <span className={`wave-chip wave-${wave.phase}`} style={{ "--progress": wave.progress } as CSSProperties}>{waveLabel[wave.phase]}</span>
 }
 
 function HeroMedallion({ view }: { view: DungeonState }) {
