@@ -232,3 +232,19 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [ ] Tests, lint, typecheck and production profile not run (per request). Copy changes will break text-based assertions in existing tests.
 
 Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript (`npx tsc --noEmit`) and staged whitespace checks passed for M18-M20. Full tests, coverage, lint, server TypeScript, E2E and the timed profile were not rerun during this push-only checkpoint.
+
+## M21 - Clean surge audio, distinct kill sounds, build pressure, modal scrolling, 2026-10-17
+
+- [x] Audio: new `sweep` voice primitive (one oscillator, pitch glide, LFO vibrato, soft attack) replaces chopped multi-note glides that clicked when a surge pack called at once; surge cue is a soft two-voice horn with drum hits and ducks music. Death cries ×1.9 with a quiet kill tick, so each kind's death is what you hear. Measured at the limiter during a surge: avg -18.4 dB, peak -0.9 dB.
+- [x] Build-scaled pressure (`director.pressureFor`, `buildPowerScore`): weapons/relics/skills raise threat cap, spawn rate, haste and the chance of an extra armor word on regular foes; mid-game spawn intervals tightened. Headless probe (scripted typist, 3 seeds, 7 min): 40 WPM survives ~4 min, 60 WPM needs heals from ~5 min, 90 WPM takes hits from ~6 min.
+- [x] Dialogs: frame no longer scrolls (decorations caused 4 px overflow and scrollbars on every modal); content lives in `.dialog-body`, which scrolls only when needed; Bestiary has a single scroll area with a pinned close button.
+- [ ] Tests, lint, typecheck and production profile not run (per request).
+
+
+## M22 - Verification and merge checkpoint, 2026-10-17
+
+- [x] Reviewed and split current changes into Conventional Commits for combat pressure/caps, compact label metadata and dialog focus/scrolling, continuous enemy audio, limb batching/adaptive rendering, browser regression coverage and CI triggers.
+- [x] Current-source lint, web TypeScript, rooms TypeScript, production build, zero-vulnerability npm audit, Worker dry-run and retirement/headless audits passed locally. Audit matches were vocabulary, compatibility save keys and test fixtures; no retired renderer dependency or gameplay DOM/RNG violation was found.
+- [x] 230 unit/browser tests passed in the latest completed coverage run. Lines/functions reached 100%; the remaining restorative-draft statement/two branches now have a regression that exhausts weapon/relic ranks. A fresh full coverage run is in progress; no threshold was lowered.
+- [ ] Complete the fresh coverage run, cross-browser E2E and 900-active-second production profile. An initial Chromium tutorial assertion expected 7 lessons instead of 8; its fixture is corrected and needs rerun. Other completed initial Chromium scenarios passed. Do not treat running checks as successful evidence.
+- [ ] Confirm GitHub CI on the merged master commit. The user requested PR creation and merge before the remaining verification finishes. Supabase backup/schema work remains deferred; no database/Auth changes are part of this checkpoint.
