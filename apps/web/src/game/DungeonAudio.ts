@@ -2,16 +2,24 @@ import { sfxRecipes, hasSfxRecipe } from "./audio/sfxRecipes"
 import { Orchestra, type VoiceHost } from "./audio/instruments"
 import { createStoneHall } from "./audio/reverb"
 import { playScoreStep } from "./audio/score"
+import { ambienceTrack, musicTracks, type MusicTrackId } from "./audio/assetManifest"
+import { SampleBank } from "./audio/SampleBank"
+import { StreamingDeck } from "./audio/StreamingDeck"
+import { deathSample, eventSamples } from "./audio/sampleCues"
+import type { EnemyKind } from "@typecade/contracts"
 import { mixLevels } from "./audio/mixLevels"
 import { bossTrack, depthTracks, titleTrack, type MusicTrack } from "./audio/musicTracks"
 
 /** Optional shaping for a single synth voice. */
 export interface VoiceShape { attack?: number; vibratoRate?: number; vibratoDepth?: number; delay?: number }
 
+/** Minimum time battle music holds after the last surge or pressure peak. */
+const BATTLE_HOLD_SECONDS = 20
+
 type Mood = "title" | "dojo" | "arena" | "draft" | "dead" | "paused"
 type Bus = "music" | "effects" | "ambience"
 type Voice = { source: AudioScheduledSourceNode; nodes: AudioNode[]; bus: Bus; priority: number }
-export interface DungeonSoundscape { mood: Mood; pressure?: number; critical?: boolean; boss?: boolean; depth?: number }
+export interface DungeonSoundscape { mood: Mood; pressure?: number; critical?: boolean; boss?: boolean; depth?: number; surge?: boolean }
 const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12)
 
 /** Original D-minor score, synthesized locally; the audio clock owns its beat grid. */
@@ -32,6 +40,13 @@ export class DungeonAudio {
  private limiter: DynamicsCompressorNode | null = null
  private orchestra: Orchestra | null = null
  private reverbNodes: AudioNode[] = []
+ /** Recorded music and room tone (streamed) plus recorded one-shots; synthesis stays as the fallback and the magic layer. */
+ private musicDeck: StreamingDeck | null = null
+ private ambienceDeck: StreamingDeck | null = null
+ private samples: SampleBank | null = null
+ private recordedMusic: GainNode | null = null
+ private musicTrack: MusicTrackId | null = null
+ private battleSince = -100
  private musicVolume = .85
  private effectsVolume = 1
  private nextBeat = 0
@@ -51,6 +66,7 @@ export class DungeonAudio {
    this.buses.effects!.gain.setTargetAtTime(this.effectsVolume * mixLevels.effectsBus, now, .04)
    this.buses.music!.gain.setTargetAtTime(this.musicVolume * mixLevels.musicBus, now, .15)
    this.buses.ambience!.gain.setTargetAtTime(this.musicVolume * mixLevels.ambienceBus, now, .2)
+   this.recordedMusic?.gain.setTargetAtTime(this.musicVolume * mixLevels.recordedMusic, now, .15)
   }
   this.transport()
  }
@@ -77,6 +93,7 @@ export class DungeonAudio {
     for (let i = 0; i < data.length; i++) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; data[i] = seed / 2147483648 - 1 }
     this.connectStoneHall(ctx)
     this.orchestra = new Orchestra(this.voiceHost(ctx))
+    this.connectRecordings(ctx)
    }
    this.transport()
   } catch { this.dispose() /* Audio is optional when the browser has no device. */ }
@@ -86,6 +103,32 @@ export class DungeonAudio {
   node.threshold.value = settings.threshold; node.knee.value = settings.knee; node.ratio.value = settings.ratio
   node.attack.value = settings.attack; node.release.value = settings.release
   return node
+ }
+ /** Recorded music skips the hall reverb (it carries its own room); room tone rides the ambience bus. */
+ private connectRecordings(ctx: AudioContext) {
+  this.recordedMusic = ctx.createGain()
+  this.recordedMusic.gain.value = this.musicVolume * mixLevels.recordedMusic
+  this.recordedMusic.connect(this.duck!)
+  this.musicDeck = new StreamingDeck(ctx, this.recordedMusic)
+  this.ambienceDeck = new StreamingDeck(ctx, this.buses.ambience!, 3)
+  this.ambienceDeck.setVolume(mixLevels.roomTone)
+  this.samples = new SampleBank(ctx, this.buses.effects!)
+  void this.samples.load()
+ }
+ /** Picks the recorded track for the scene. Battle music needs a surge or high pressure, and holds for 20 s to avoid flip-flopping. */
+ private syncRecordings() {
+  const ctx = this.context, deck = this.musicDeck
+  if (!ctx || !deck) return
+  const { mood, boss, surge } = this.scene
+  let track: MusicTrackId | null
+  if (mood === "title" || mood === "dojo") track = "menu"
+  else if (mood === "dead") track = "defeat"
+  else if (boss) track = "boss"
+  else if (surge || this.intensity > .8) { track = "battle"; this.battleSince = ctx.currentTime }
+  else track = this.musicTrack === "battle" && ctx.currentTime - this.battleSince < BATTLE_HOLD_SECONDS ? "battle" : "dungeon"
+  if (track !== this.musicTrack) { this.musicTrack = track; deck.setTrack(track ? musicTracks[track] : null, track !== "defeat") }
+  deck.setMuffled(mood === "draft" || mood === "paused")
+  this.ambienceDeck?.setTrack(mood === "title" ? null : ambienceTrack)
  }
  /** Music and a little of the effects feed a stone-hall convolution reverb that returns to the master. */
  private connectStoneHall(ctx: AudioContext) {
@@ -122,6 +165,7 @@ export class DungeonAudio {
   const ctx = this.context
   if (!ctx || this.disposed) return
   if (!this.visible || !this.masterVolume || (!this.musicVolume && !this.effectsVolume) || this.scene.mood === "paused") { this.suspend(); return }
+  this.syncRecordings(); this.musicDeck?.resume(); this.ambienceDeck?.resume()
   if (ctx.state === "suspended" && !this.resuming) { this.resuming = true; void ctx.resume().catch(() => {}).finally(() => { this.resuming = false; if (this.context === ctx && (!this.visible || !this.masterVolume || (!this.musicVolume && !this.effectsVolume) || this.scene.mood === "paused")) this.suspend() }) }
   if (this.scene.mood === "dead") {
    if (this.timer !== null) clearInterval(this.timer)
@@ -190,9 +234,11 @@ export class DungeonAudio {
    const arena = this.scene.mood === "arena"
    this.intensity += ((arena ? Math.max(this.scene.boss ? 1 : this.scene.critical ? .75 : .2, this.scene.pressure ?? 0) : 0) - this.intensity) * .08
    const energy = this.intensity
-   if (index === 0) this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
-   if (index === 5 || index === 13) this.sound(1900, .04, .025, "ambience", at, "noise", 1900, index === 5 ? -.4 : .4)
-   if (this.orchestra && this.musicVolume) playScoreStep(this.orchestra, track, this.step, at, 60 / track.tempo / 4, { energy, calm: !arena, title: this.scene.mood === "title", hushed: this.scene.mood === "draft", boss: !!this.scene.boss })
+   if (index === 0 && this.step % 64 === 0) this.syncRecordings()
+   const recorded = !!this.musicDeck
+   if (!recorded && index === 0) this.sound(500, 1.3, .045, "ambience", at, "noise", 500, bar % 2 ? -.45 : .45)
+   if (!recorded && (index === 5 || index === 13)) this.sound(1900, .04, .025, "ambience", at, "noise", 1900, index === 5 ? -.4 : .4)
+   if (!recorded && this.orchestra && this.musicVolume) playScoreStep(this.orchestra, track, this.step, at, 60 / track.tempo / 4, { energy, calm: !arena, title: this.scene.mood === "title", hushed: this.scene.mood === "draft", boss: !!this.scene.boss })
    if (arena) {
     if (this.scene.critical && index % 8 === 0) {
      this.sound(105, .13, .23, "effects", at, "triangle", 62, 0, 2)
@@ -201,6 +247,12 @@ export class DungeonAudio {
    }
    this.step++; this.nextBeat += 60 / track.tempo / 4
   }
+ }
+ private layerSamples(kind: string, pan: number) {
+  const samples = this.samples
+  if (!samples?.ready) return
+  const layers = kind.startsWith("death-") ? [deathSample(kind.slice(6) as EnemyKind)] : eventSamples[kind] ?? []
+  for (const layer of layers) if (layer) samples.play(layer.group, { ...layer, pan, gain: (layer.gain ?? 1) * mixLevels.sampleGain })
  }
  /** Title and calm moods use the title theme, boss fights the duel theme, runs one theme per depth. */
  private themeFor(scene: DungeonSoundscape): MusicTrack {
@@ -216,6 +268,7 @@ export class DungeonAudio {
   if (now - (this.cooldowns.get(kind) ?? -10) < gap) return
   if (kind.startsWith("enemy-")) { if (now - (this.cooldowns.get("enemy") ?? -10) < .65) return; this.cooldowns.set("enemy", now) }
   this.cooldowns.set(kind, now); this.variation++
+  this.layerSamples(kind, pan)
   const pitch = [1, 1.035, .97, 1.015, .985][this.variation % 5]!, priority = kind === "hurt" || kind === "defeat" ? 4 : major ? 3 : kind === "tick" || kind.startsWith("enemy-") ? 0 : 1
   const tone = (freq: number, duration: number, level: number, type: OscillatorType | "noise", end = freq, delay = 0) => this.sound(freq * pitch, duration, level * mixLevels.effectsRecipeGain, "effects", now + delay, type, end * pitch, pan, priority)
   const chime = (notes: number[], level:number, spacing:number) => notes.forEach((n, i) => tone(hz(n), .3, level, "sine", hz(n), i * spacing))
@@ -255,6 +308,7 @@ export class DungeonAudio {
   }
  }
  suspend() {
+  this.musicDeck?.pause(); this.ambienceDeck?.pause(); this.samples?.stopAll()
   if (this.timer !== null) clearInterval(this.timer)
   this.timer = null
   for (const voice of [...this.voices]) this.release(voice, true)
@@ -263,6 +317,8 @@ export class DungeonAudio {
  }
  dispose() {
   this.disposed = true; this.suspend()
+  this.musicDeck?.dispose(); this.ambienceDeck?.dispose(); this.samples?.dispose(); this.recordedMusic?.disconnect()
+  this.musicDeck = this.ambienceDeck = null; this.samples = null; this.recordedMusic = null; this.musicTrack = null
   for (const node of [...Object.values(this.buses), ...this.reverbNodes, this.duck, this.master, this.compressor, this.limiter]) node?.disconnect()
   if (this.context) void this.context.close().catch(() => {})
   this.context = null; this.noise = null; this.buses = {}; this.duck = this.master = null; this.compressor = this.limiter = null; this.orchestra = null; this.reverbNodes = []

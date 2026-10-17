@@ -9,3 +9,13 @@ Updated 2026-10-15 for the dungeon implementation.
 - All former boat/fish/island artwork and twelve Ocean MP3s are removed with their final callers. Previous credits remain in Git history.
 
 See the [asset audit](docs/asset-audit.md) and [license inventory](ASSET-LICENSES.md).
+
+## Audio (CC0, credit appreciated)
+
+- Sound effects: Kenney Vleugels, [RPG Audio](https://kenney.nl/assets/rpg-audio) and [Impact Sounds](https://kenney.nl/assets/impact-sounds).
+- Menu: RandomMind, [Medieval: The Old Tower Inn](https://opengameart.org/content/medieval-the-old-tower-inn).
+- Dungeon: Spring Spring, [Into Depths!](https://opengameart.org/content/a-soundtrack).
+- Battle: cynicmusic, [Battle Theme A](https://opengameart.org/content/battle-theme-a).
+- Boss: Juhani Junkala, [Epic Boss Battle](https://opengameart.org/content/boss-battle-music).
+- Run over: TAD, [Unexplored](https://opengameart.org/content/unexplored-short-ver-orchestra-music).
+- Room tone: Paul Wortmann, [Dark Cavern Ambient](https://opengameart.org/content/dark-cavern-ambient).
