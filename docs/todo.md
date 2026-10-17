@@ -207,3 +207,28 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Bestiary with in-engine portraits; title screen, HUD, and all dialogs (pause, defeat, draft, settings, history, controls) restyled with an ornate frame system; SFX recipes and adaptive percussion.
 - [x] Push review: production build, web TypeScript, rooms TypeScript and scoped ESLint (`apps/web/src packages e2e`) passed on 2026-10-17; staged diffs checked for whitespace and new module imports.
 - [ ] Unit/browser/E2E tests, coverage and production profile were not rerun for M17 at the user's request to stop implementation and push; title markup/model snapshot compatibility and CI remain unverified.
+
+## M18 - Readability, varied ruins and wave director, 2026-10-17
+
+- [x] Contrast pass centralised in `apps/web/src/game/render/environmentGrade.ts`: darker low-noise floor/walls, bloom limited to light sources (threshold 0.92), no grade lift, lower emission, stronger silhouette outline and contact shadows; fatality uses an impact-focus dim instead of a white flash.
+- [x] `packages/game-rules/src/terrain.ts`: seeded per-slot ruin archetypes (keep wall, broken arch, watchtower, shrine, palisade, crypt) with their own footprints, ~32% open slots; collision, pathing and rendering (`scene/RuinBuilder.ts`) share it. Footprints are subsets of the legacy rectangle, so old saves stay valid.
+- [x] `packages/game-rules/src/director.ts`: opening, then 60s cycles of build-up, surge (themed pack from one direction, faster spawns, +6 threat cap, 15% haste) and breather; an elite leads every third surge. Speed curve retuned (base 0.37, growth capped at +70% plus depth step).
+- [x] New committed attacks for skeleton, goblin, slime, bat and spider after their unlock times; veteran archers fire three-arrow fans. `scene/EnemyMotion.ts` adds anticipation/charge/leap/dive/slam poses; HUD wave chip and SURGE banner.
+- [ ] Tests, lint, typecheck and production profile not run (per request).
+
+## M19 - Targeted effects, enemy voices and music themes, 2026-10-17
+
+- [x] Every damage source draws on its target: chain lightning and sentry use jagged caster→target arcs (`zap`), Storm drops a sky bolt on each struck enemy, weapons/cleave/explosions leave source-coloured impact bursts (`vfx/signatureEffects.ts`, `hitMarkers` in the scene).
+- [x] `audio/enemyVoices.ts`: arrival call and death cry per kind (skeleton rattle, ghoul groan, spider skitter, wolf howl, …); kill confirm and elite kill; layered explosion (sub, crack, rumble, debris) and thunder; surge horn and breather chime.
+- [x] `audio/musicTracks.ts`: five depth themes plus title and boss duel themes with their own key, tempo and lead; switches on phrase boundaries (boss cuts in on the next bar).
+- [x] `gradeBiome` normalises each depth's floor and fog luminance so the contrast grade holds as depths change.
+- [ ] Tests, lint, typecheck and production profile not run (per request).
+
+## M20 - Audible mix and title layout, 2026-10-17
+
+- [x] Gain staging in `apps/web/src/game/audio/mixLevels.ts` (default volume 0.7, effect and music voice make-up gain, glue compressor + limiter). Saved settings without `mix: 2` are lifted to the new default once; an explicit mute is kept. Measured at the limiter output in Chromium: combat RMS peaks about -12.5 dB, true peak about -1.2 dB, music bed about -28.7 dB (was about -41 dB).
+- [x] Title menu fills the space between nav and footer (no overlap at 1280×640, 1366×768, 1920×1080); language and controls moved to the footer; duplicate nav wordmark and decorative depth card removed.
+- [x] Plain copy for menu, dialogs, settings and bestiary in place of dramatic filler.
+- [ ] Tests, lint, typecheck and production profile not run (per request). Copy changes will break text-based assertions in existing tests.
+
+Push checkpoint, 2026-10-17: production build (`npm run build`), web TypeScript (`npx tsc --noEmit`) and staged whitespace checks passed for M18-M20. Full tests, coverage, lint, server TypeScript, E2E and the timed profile were not rerun during this push-only checkpoint.
