@@ -172,7 +172,7 @@ it("renders flying enemies, supply silhouettes, shield gear, sentry beams and ch
   s.effects=[{id:s.nextId++,kind:"lightning",x:0,z:0,life:.55,value:1}];frame()
   s.procs.lightning=2;s.procs.vowels=1
   for(const kind of ["lightning","firebolt","blast","treasure","slam","level","upgrade"] as const){s.effects=[{id:s.nextId++,kind,x:0,z:0,life:.55,value:2,to:{x:2,z:2}}];frame()}
-  const boss=r.spawn("boss",{x:3,z:0})!;s.phase="overdrive";s.bossArena={x:0,z:0,hp:24,cooldown:0,rage:0};s.stagger=1.5;boss.motion="windup";boss.motionTime=.6;boss.aim={x:0,z:0};frame();s.bossArena.hp=6;s.bossArena.cooldown=.7;frame();s.bossArena.cooldown=0;frame();boss.motion="recover";frame();boss.motion="windup";boss.motionTime=undefined;frame();s.bossArena.hp=0;frame();s.effects=[{id:s.nextId++,kind:"barrier",x:5,z:0,life:.55,value:0,to:{x:2,z:0}}];frame();s.effects=[{id:s.nextId++,kind:"barrier",x:5,z:0,life:.55,value:23}];frame();s.effects=[{id:s.nextId++,kind:"slam",x:3,z:0,life:.55,value:3}];frame();bridge.emit("settings",{reduced:true,volume:0});frame();s.phase="arena";s.boss=null;s.enemies=s.enemies.filter(e=>e!==boss);bridge.emit("settings",{reduced:false,volume:0})
+  const boss=r.spawn("boss",{x:3,z:0})!;s.phase="overdrive";s.bossArena={x:0,z:0,hp:24,cooldown:0,rage:0,calm:0};s.stagger=1.5;boss.motion="windup";boss.motionTime=.6;boss.aim={x:0,z:0};frame();s.bossArena.hp=6;s.bossArena.cooldown=.7;frame();s.bossArena.cooldown=0;frame();boss.motion="recover";frame();boss.motion="windup";boss.motionTime=undefined;frame();s.bossArena.hp=0;frame();s.effects=[{id:s.nextId++,kind:"barrier",x:5,z:0,life:.55,value:0,to:{x:2,z:0}}];frame();s.effects=[{id:s.nextId++,kind:"barrier",x:5,z:0,life:.55,value:23}];frame();s.effects=[{id:s.nextId++,kind:"slam",x:3,z:0,life:.55,value:3}];frame();bridge.emit("settings",{reduced:true,volume:0});frame();s.phase="arena";s.boss=null;s.enemies=s.enemies.filter(e=>e!==boss);bridge.emit("settings",{reduced:false,volume:0})
   minotaur.motion="slam";frame();minotaur.motion="charge";frame();s.enemies=[];s.queue=[];frame()
   for(const kind of ["shield","potion","mana","sentry","chest"] as const){s.enemies=[];s.queue=[];const item=r.spawn(kind,{x:1,z:0})!;frame();s.enemies=[];s.effects=[{id:s.nextId++,kind:"hit",x:item.x,z:item.z,life:.55,value:0}];frame()}
   s.relics.lightning=s.relics.vowels=0;s.sentry=null;bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.orbitals.count).toBe(0);expect(visual.sentryMesh.visible).toBe(false)
@@ -187,4 +187,29 @@ it("starts with Reduced Effects already saved and still projects the live party"
   const party:PartyWorld={mode:"clash",phase:"racing",casting:false,ownId:"a",now:1000,focus:{x:0,z:0},obstacles:[],boss:null,players:[{id:"a",name:"Blue",x:0,z:4,color:0x4999d4,hp:100,action:"idle",actionAt:0,target:null,role:"dps"}]}
   bridge.emit("party",party);visual.tick(performance.now()+100);expect(visual.weather.count).toBe(0);expect(names).toBe(1);expect(game.renderer.info.render.calls).toBeGreaterThan(0)
  }finally{stop();game.destroy();bridge.clear();host.remove()}
+},20000)
+
+it("animates the expanded bestiary, keeps tinted loot visible and binds weather to the current depth",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:1280px;height:800px";document.body.append(host)
+ const bridge=new GameEventBridge(),game=new DungeonScene(host,bridge),r=new SurvivalRun("bestiary-visual","en"),s=r.state
+ const visual=game as unknown as {tick:(t:number)=>void;weather:InstancedMesh;gems:InstancedMesh;embers:InstancedMesh;projectiles:InstancedMesh;telegraphs:InstancedMesh;batches:Map<string,{body:InstancedMesh}>}
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null);bridge.emit("screen","endless");r.start();s.enemies=[];s.queue=[];let now=performance.now();const frame=()=>{now+=50;bridge.emit("frame",s);visual.tick(now)}
+  // Vertex-coloured primitives must carry a white base, otherwise WebGL renders them black.
+  for(const mesh of [visual.gems,visual.embers,visual.projectiles,visual.telegraphs])expect(mesh.geometry.getAttribute("color")?.getX(0)).toBe(1)
+  const kinds=["wolf","slime","spider","wraith","archer","shaman","golem","imp","rat","necromancer","serpent","beetle","assassin","troll","wisp"] as const
+  for(const [i,kind]of kinds.entries())r.spawn(kind,{x:(i%5)*2-4,z:Math.floor(i/5)*2-2})
+  for(const e of s.enemies)if(["archer","imp","shaman","necromancer"].includes(e.kind))e.attack=.5
+  s.queue=s.enemies.filter(e=>["golem","rat","wolf","imp","archer"].includes(e.kind)).map(e=>e.id)
+  frame();for(let i=0;i<8;i++){for(const e of s.enemies)e.x+=.05;frame()}
+  for(const kind of kinds)expect(visual.batches.get(kind)!.body.count).toBe(1)
+  const transform=new Matrix4();visual.batches.get("wisp")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThan(.5)
+  expect(visual.telegraphs.count).toBeGreaterThanOrEqual(4)
+  for(const kind of ["ward","summon","blink"] as const){s.effects=[{id:s.nextId++,kind,x:1,z:1,life:.55,value:1,to:{x:2,z:2}}];frame()}
+  const counts:number[]=[];for(let biome=0;biome<6;biome++){s.biome=biome;frame();counts.push(visual.weather.count)}
+  expect(counts).toEqual([20,16,24,32,14,20])
+  bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.weather.count).toBe(0);bridge.emit("settings",{reduced:false,volume:0});frame()
+  for(const e of s.enemies)e.frozen=1;frame()
+  s.enemies=[];s.queue=[];frame()
+ }finally{game.destroy();bridge.clear();host.remove()}
 },20000)

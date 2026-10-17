@@ -1,4 +1,4 @@
-import { BackSide, BoxGeometry, BufferGeometry, CanvasTexture, CircleGeometry, Color, ConeGeometry, CylinderGeometry, DepthTexture, DirectionalLight, DoubleSide, DynamicDrawUsage, Euler, FogExp2, HemisphereLight, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, NearestFilter, OctahedronGeometry, OrthographicCamera, PlaneGeometry, PointLight, Quaternion, RingGeometry, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three"
+import { BackSide, BoxGeometry, BufferGeometry, CircleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, DoubleSide, DynamicDrawUsage, Euler, FogExp2, HemisphereLight, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PCFShadowMap, OrthographicCamera, PlaneGeometry, PointLight, Quaternion, RingGeometry, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three"
 import type { DungeonEnemy, DungeonEvents, DungeonState, EnemyKind, PartyWorld } from "@typecade/contracts"
 import { dungeonTerrain as T, dungeonBalance as B, dungeonBiomes, dungeonObjects, dungeonSupplies } from "@typecade/content"
 import { createSeededRng } from "@typecade/game-rules"
@@ -6,8 +6,24 @@ import { GameEventBridge } from "../bridge/game-event-bridge"
 import { DungeonModels } from "./DungeonModels"
 import { DungeonAudio } from "./DungeonAudio"
 import { DungeonVfx, type VisualEffect } from "./DungeonVfx"
+import { PostProcessing } from "./render/PostProcessing"
+import { TextureFactory } from "./render/TextureFactory"
+import { FloorDecor } from "./scene/FloorDecor"
+import { WeaponVisuals } from "./scene/WeaponVisuals"
+import { heroPose, moveDuration, selectMove, type HeroMove } from "./scene/HeroMoves"
+import { wingedKinds } from "./models/monsters"
 
-const kinds: EnemyKind[] = ["skeleton", "goblin", "guard", "bomber", "mage", "minotaur", "boss", "barrel", "chest", "bat", "shield", "potion", "mana", "sentry"]
+const kinds: EnemyKind[] = ["skeleton", "goblin", "guard", "bomber", "mage", "minotaur", "boss", "barrel", "chest", "bat", "shield", "potion", "mana", "sentry",
+ "wolf", "slime", "spider", "wraith", "archer", "shaman", "golem", "imp", "rat", "necromancer", "serpent", "beetle", "assassin", "troll", "wisp",
+ "gargoyle", "mimic", "sporeling", "ghoul", "deathknight"]
+/** Per-kind presentation: gait tempo, hover altitude and death tint. */
+const gait: Partial<Record<EnemyKind,{pace?:number;altitude?:number;tint?:number}>> = {
+ goblin:{pace:9,tint:0x96b657},boss:{pace:3.5,tint:0xb9ccdb},minotaur:{pace:3.5},guard:{tint:0xb9ccdb},mage:{altitude:1},bat:{altitude:1.25},
+ wolf:{pace:8,tint:0x8d97a2},slime:{pace:3,tint:0x6fd38a},spider:{pace:11,tint:0x52445d},wraith:{pace:2.5,altitude:.35,tint:0x9cf0ff},archer:{tint:0xe5caa1},
+ shaman:{tint:0x96b657},golem:{pace:2.6,tint:0x8f8b82},imp:{pace:7,altitude:1,tint:0xff8a4a},rat:{pace:13,tint:0x8a7a6d},necromancer:{pace:3,tint:0x7dff9a},
+ serpent:{pace:4,tint:0x7cb556},beetle:{pace:7,tint:0x2f5f73},assassin:{pace:7,tint:0x7a2f3a},troll:{pace:3.2,tint:0x7fa078},wisp:{pace:4,altitude:1,tint:0xffd27a},
+ gargoyle:{pace:3,altitude:1.4,tint:0xa58bff},mimic:{pace:9,tint:0xe8b966},sporeling:{pace:6,tint:0xd8433f},ghoul:{pace:10,tint:0x9fae8f},deathknight:{pace:3.2,tint:0x7dff9a},
+}
 type Batch = { body: InstancedMesh; outline: InstancedMesh; left: InstancedMesh | null; right: InstancedMesh | null; arm: InstancedMesh | null; weapon: InstancedMesh | null; scale: number }
 type Actor = DungeonEnemy & { vx: number; vz: number; angle: number; hitAt: number; strikeAt: number; deadAt: number; bornAt: number; layers: number }
 
@@ -21,7 +37,10 @@ export class DungeonScene {
  private vfx = new DungeonVfx(this.scene)
  private actors = new Map<number, Actor>()
  private swingAt = -10
- private swingKind: "slash" | "cleave" | "thrust" | "uppercut" = "slash"
+ private swingKind: HeroMove = "slash"
+ private hitStopUntil = -10
+ private flashAt = -10
+ private zoomPunch = 0
  private castAt = -10
  private celebrateAt = -10
  private echoes: InstancedMesh
@@ -35,6 +54,7 @@ export class DungeonScene {
  private dashFrom = new Vector3()
  private dashTo = new Vector3()
  private heroAngle = .55
+ private heroFacing = .55
  private heroHitAt = -10
  private lastHp = 6
  private shieldHitAt = -10
@@ -56,10 +76,12 @@ export class DungeonScene {
  private cameraTrauma = 0
  private euler = new Euler()
  private audio = new DungeonAudio()
- private target = new WebGLRenderTarget(1, 1, { minFilter: NearestFilter, magFilter: NearestFilter })
- private postScene = new Scene()
- private postCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
- private post: ShaderMaterial
+ private textures = new TextureFactory()
+ private accent = new Color()
+ private post: PostProcessing
+ private decor: FloorDecor
+ private weaponVisuals: WeaponVisuals
+ private sun: DirectionalLight
  private batches = new Map<EnemyKind, Batch>()
  private partyBatches:Batch[]=[]
  private party:PartyWorld|null=null
@@ -69,7 +91,6 @@ export class DungeonScene {
  private dummy = this.models.rig("dummy")
  private sensei = this.models.rig("sensei")
  private tiles: InstancedMesh
- private floorTexture: CanvasTexture
  private moss: InstancedMesh
  private banners: InstancedMesh
  private bannerPoints: Vector3[]=[]
@@ -91,6 +112,8 @@ export class DungeonScene {
  private matrix = new Matrix4()
  private local = new Matrix4()
  private rotation = new Quaternion()
+ private sway = new Quaternion()
+ private up = new Vector3(0, 1, 0)
  private scale = new Vector3()
  private point = new Vector3()
  private color = new Color()
@@ -122,14 +145,20 @@ export class DungeonScene {
  constructor(private host: HTMLElement, private bridge: GameEventBridge<DungeonEvents>) {
   this.renderer = new WebGLRenderer({ antialias: false, alpha: false, powerPreference: "low-power" })
   this.renderer.setPixelRatio(1); this.renderer.info.autoReset = false
+  this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = PCFShadowMap
   this.renderer.domElement.style.imageRendering = "pixelated"; this.renderer.domElement.setAttribute("aria-hidden", "true"); host.append(this.renderer.domElement)
   this.scene.background = new Color(0x17202a); this.scene.fog = new FogExp2(0x17202a, .016)
-  this.scene.add(new HemisphereLight(0x9dbbdf, 0x18202a, .85))
-  const sun = new DirectionalLight(0xf5e6ce, 2.1); sun.position.set(-8, 16, 6); this.scene.add(sun)
-  const fill = new DirectionalLight(0x75b8e6, 1.15); fill.position.set(8, 8, 12); this.scene.add(fill)
+  this.scene.add(new HemisphereLight(0xb4cdff, 0x3a2a3e, 1.35))
+  this.sun = new DirectionalLight(0xffe2b8, 2.9); this.sun.position.set(-8, 16, 6); this.sun.castShadow = true
+  this.sun.shadow.mapSize.set(1024, 1024); this.sun.shadow.bias = -.0015; this.sun.shadow.normalBias = .04
+  Object.assign(this.sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 })
+  this.scene.add(this.sun, this.sun.target)
+  const fill = new DirectionalLight(0x6fa8ff, 1.0); fill.position.set(8, 8, 12); this.scene.add(fill)
+  // Cool rim from behind the camera's view separates silhouettes from the floor.
+  const rim = new DirectionalLight(0xb48cff, 1.1); rim.position.set(-14, 6, -16); this.scene.add(rim)
   this.scene.add(this.knight.root, this.dummy.root, this.sensei.root)
   this.heroMaterial=this.models.material.clone();this.materials.push(this.heroMaterial)
-  for(const part of [this.knight.body,...this.knight.legs,this.knight.arm!,this.knight.weapon!])part.material=this.heroMaterial
+  for(const part of [this.knight.body,...this.knight.legs,this.knight.arm!,this.knight.weapon!]){part.material=this.heroMaterial;part.castShadow=true}
   const echoMaterial=new MeshBasicMaterial({vertexColors:true,color:0x78d9f0,transparent:true,opacity:.24,depthWrite:false});this.materials.push(echoMaterial);this.echoes=this.instance(this.knight.body.geometry,echoMaterial,3)
   this.heroShield=new Mesh(this.models.actor("shield").body,this.models.material);this.heroShield.scale.setScalar(.65);this.heroShield.position.set(0,-.9,.22);this.knight.arm!.add(this.heroShield)
   this.partyShields=this.instance(this.models.actor("shield").body,this.models.material,6)
@@ -142,33 +171,34 @@ export class DungeonScene {
   this.bridgeDeck=new Mesh(this.models.geometry(bridgeParts),this.models.material);this.bridgeDeck.visible=false;this.scene.add(this.bridgeDeck)
   this.hurdles=this.instance(this.models.geometry([[0x795135,0,.8,0,1.4,.45,.18],[0x4f372a,-.6,.5,0,.18,1,.3],[0x4f372a,.6,.5,0,.18,1,.3],[0xb48a50,0,1.1,0,1.5,.12,.3]]),this.models.material,6)
   this.dummy.root.position.set(2.8, 0, -.2); this.sensei.root.position.set(-3.8, 0, -3)
-  const stone = new MeshStandardMaterial({ color: 0xb5bcc3, flatShading: true, roughness: 1 }); this.materials.push(stone)
-  const canvas=document.createElement("canvas");canvas.width=canvas.height=32;const ctx=canvas.getContext("2d")!
-  ctx.fillStyle="#d9dfe7";ctx.fillRect(0,0,32,32);ctx.fillStyle="#aeb8c7";ctx.fillRect(0,0,32,1);ctx.fillRect(0,0,1,32);ctx.fillStyle="#f1f2ee";ctx.fillRect(1,1,30,1);ctx.fillRect(1,1,1,30)
-  ctx.strokeStyle="#bbc5d0";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(8,5);ctx.lineTo(11,8);ctx.lineTo(11,12);ctx.moveTo(31,23);ctx.lineTo(27,23);ctx.lineTo(25,25);ctx.stroke()
-  this.floorTexture=new CanvasTexture(canvas);this.floorTexture.magFilter=this.floorTexture.minFilter=NearestFilter;this.floorTexture.colorSpace=SRGBColorSpace
-  const floor=stone.clone();floor.map=this.floorTexture;this.materials.push(floor)
+  const wallTextures=this.textures.wall(),floorTextures=this.textures.floor()
+  const stone = new MeshStandardMaterial({ color: 0xffffff, roughness: .9, map: wallTextures.map, normalMap: wallTextures.normalMap, normalScale: new Vector2(.9, .9) }); this.materials.push(stone)
+  const floor = new MeshStandardMaterial({ color: 0xffffff, roughness: .88, map: floorTextures.map, normalMap: floorTextures.normalMap, normalScale: new Vector2(1.1, 1.1) }); this.materials.push(floor)
   this.tiles = this.instance(this.models.keep(new BoxGeometry(2, .12, 2)), floor, 9 * 256)
   this.walls = this.instance(this.models.geometry([[0xffffff,0,0,0,1.03,.72,.78]]), stone, 9 * 192)
+  this.tiles.receiveShadow = true; this.walls.castShadow = this.walls.receiveShadow = true
+  this.decor = new FloorDecor(this.scene, this.models)
+  this.weaponVisuals = new WeaponVisuals(this.scene, this.models)
   const mossMaterial=new MeshStandardMaterial({color:0x43573d,roughness:1,side:DoubleSide});this.materials.push(mossMaterial)
   this.moss=this.instance(this.models.keep(new CircleGeometry(1,7)),mossMaterial,9*12)
   const cloth=this.models.material.clone();this.materials.push(cloth)
   cloth.onBeforeCompile=shader=>{shader.uniforms.wind=this.wind;shader.vertexShader="uniform float wind;\n"+shader.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\ntransformed.z += sin(wind + instanceMatrix[3].x + position.y * 3.) * .12 * max(0., .65 - position.y);")}
-  this.banners=this.instance(this.models.geometry([[0x753f50,0,0,0,.66,1.5,.06],[0x9e4f5e,0,.18,.035,.48,1.12,.025],[0xdeb57b,0,.72,0,.78,.10,.12],[0xd2a868,0,.15,.07,.10,.54,.02],[0xd2a868,0,.15,.07,.32,.09,.02]]),cloth,18)
+  this.banners=this.instance(this.models.geometry([[0x753f50,0,0,0,.66,1.5,.06],[0x9e4f5e,0,.18,.035,.48,1.12,.025],[0xdeb57b,0,.72,0,.78,.10,.12],[0xd2a868,0,.2,.07,.26,.26,.02,"box",Math.PI/4],[0xffe066,0,.2,.08,.1,.1,.02,"box",Math.PI/4],[0xd2a868,0,-.62,.05,.5,.12,.02,"cone",Math.PI]]),cloth,18)
   const fire = new MeshBasicMaterial({ color: 0xffffff }); this.materials.push(fire)
   this.flames = this.instance(this.models.keep(new ConeGeometry(.23, .9, 4)), fire, 72)
   this.torchFixtures=this.instance(this.models.geometry([[0x302b35,0,-.42,-.10,.18,.85,.18],[0x9a724a,0,-.18,0,.30,.28,.30],[0x6e5a4b,0,0,0,.43,.19,.43,"cylinder"],[0xe7ad5c,0,.08,0,.46,.08,.46,"cylinder"]]),this.models.material,36)
   const bright = new MeshBasicMaterial({ vertexColors: true }); this.materials.push(bright)
-  this.gems = this.instance(this.models.keep(new OctahedronGeometry(.18)), bright, 256)
-  this.coins = this.instance(this.models.keep(new CylinderGeometry(.16, .16, .06, 8)), bright, 256)
-  this.projectiles = this.instance(this.models.keep(new OctahedronGeometry(.23)), bright, 64*3)
+  this.gems = this.instance(this.models.tinted(new OctahedronGeometry(.18)), bright, 256)
+  this.coins = this.instance(this.models.tinted(new CylinderGeometry(.16, .16, .06, 8)), bright, 256)
+  this.projectiles = this.instance(this.models.tinted(new OctahedronGeometry(.23)), bright, 64*3)
   this.orbitals=this.instance(this.models.geometry([[0xc1d5df,0,0,0,.58,.12,.15],[0x66503b,-.23,0,0,.10,.38,.12],[0x66503b,.23,0,0,.10,.38,.12],[0xffffff,0,.12,0,.14,.26,.14,"cone"],[0x9c723c,0,-.12,0,.12,.27,.12]]),bright,12)
-  const weatherMaterial=new MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.6,side:DoubleSide,depthWrite:false});this.materials.push(weatherMaterial)
+  const weatherMaterial=new MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75,side:DoubleSide,depthWrite:false,fog:false});this.materials.push(weatherMaterial)
   this.weather=this.instance(this.models.keep(new PlaneGeometry(.10,.16)),weatherMaterial,32)
   this.barricade=this.instance(this.models.geometry([[0x66513c,0,.78,0,.16,1.56,.2],[0xae8b57,0,1.60,0,.20,.25,.23,"cone"],[0x806441,0,.55,0,1.5,.14,.13],[0x9f7d4e,0,1.12,0,1.5,.14,.13],[0xb6a27a,0,.55,.09,.09,.08,.04],[0xb6a27a,0,1.12,.09,.09,.08,.04]]),this.models.material,24)
   this.landmarks=this.instance(this.models.geometry([[0x4c5462,0,0,0,1.6,.24,1.3],[0x897b64,0,.3,0,1.1,.4,1.0],[0x586174,0,1.3,0,.8,1.6,.7],[0xd9be77,0,2.2,0,1.1,.22,.95],[0x74c6dd,0,2.6,0,.35,.6,.35,"cone"],[0x86775a,-.7,.7,0,.2,1.2,.2],[0x86775a,.7,.7,0,.2,1.2,.2]]),this.models.material,18)
-  this.telegraphs=this.instance(this.models.keep(new BoxGeometry(1,.025,1)),bright,128)
-  this.embers = this.instance(this.models.keep(new BoxGeometry(.12, .12, .12)), bright, 16)
+  this.telegraphs=this.instance(this.models.tinted(new BoxGeometry(1,.025,1)),bright,128)
+  const glow=new MeshBasicMaterial({vertexColors:true,fog:false});this.materials.push(glow)
+  this.embers = this.instance(this.models.tinted(new BoxGeometry(.12, .12, .12)), glow, 16)
   const shade=new MeshBasicMaterial({color:0x050e16,transparent:true,opacity:.35,depthWrite:false});this.materials.push(shade)
   this.shadows=this.instance(this.models.keep(new CircleGeometry(.62,16)),shade,145)
   const markerMaterial=new MeshBasicMaterial({color:0x76cfe3,transparent:true,opacity:.65,side:2,depthWrite:false});this.materials.push(markerMaterial)
@@ -178,7 +208,7 @@ export class DungeonScene {
   const outline = new MeshBasicMaterial({ color: 0x0a1424, side: BackSide }); this.materials.push(outline)
   const heroOutline = new Mesh(this.knight.body.geometry, outline);heroOutline.scale.setScalar(1.045);this.knight.body.add(heroOutline)
   const batch = (model: ReturnType<DungeonModels["actor"]>, cap: number): Batch => ({
-   body:this.instance(model.body,this.models.material,cap),outline:this.instance(model.body,outline,cap),
+   body:this.castShadow(this.instance(model.body,this.models.material,cap)),outline:this.instance(model.body,outline,cap),
    left:model.leg?this.instance(model.leg,this.models.material,cap):null,right:model.leg?this.instance(model.leg,this.models.material,cap):null,
    arm:model.arm?this.instance(model.arm,this.models.material,cap):null,weapon:model.weapon?this.instance(model.weapon,this.models.material,cap):null,scale:model.scale,
   })
@@ -188,18 +218,7 @@ export class DungeonScene {
    this.partyBatches.push(batch(model,8))
   }
   for (let i = 0; i < 4; i++) { const light = new PointLight(0xffa34b, 18, 12, 2); this.lights.push(light); this.scene.add(light) }
-  this.post = new ShaderMaterial({
-   uniforms: { image: { value: this.target.texture }, depth: { value: null }, texel: { value: new Vector2(1, 1) }, strength: { value: 1 }, hurt: {value:0} },
-   vertexShader: "varying vec2 p;void main(){p=uv;gl_Position=vec4(position.xy,0.,1.);}",
-   fragmentShader: `varying vec2 p;uniform sampler2D image;uniform sampler2D depth;uniform vec2 texel;uniform float strength;uniform float hurt;
-    void main(){vec3 c=texture2D(image,p).rgb;float d=texture2D(depth,p).r;
-     float edge=step(.0012,abs(d-texture2D(depth,p+vec2(texel.x,0.)).r)+abs(d-texture2D(depth,p+vec2(0.,texel.y)).r));c=mix(c,c*.38,edge*.60*strength);
-     float vignette=1.-.2*pow(length((p-.5)*1.3),2.);c+=vec3(.6,.06,.025)*hurt*smoothstep(.18,.65,length(p-.5));gl_FragColor=vec4(c*vignette,1.);
-     #include <colorspace_fragment>
-    }`,
-  })
-  this.target.depthTexture = new DepthTexture(1,1);this.post.uniforms.depth.value=this.target.depthTexture
-  this.postScene.add(new Mesh(this.models.keep(new PlaneGeometry(2, 2)), this.post))
+  this.post = new PostProcessing(this.renderer, this.scene, this.camera)
   this.cleanup.push(bridge.on("frame", state => {
    if (state.seed !== this.state?.seed) { this.lastEnemyCue=-10;this.lastLevel=state.level;this.lastPower=Object.values(state.skills).reduce((n,s)=>n+s.level,0)+Object.values(state.relics).reduce((n,v)=>n+v,0);this.heroHitAt=-10;this.lastCorrect = state.correct; this.lastEffect = state.nextId-1; this.lastDash=state.player.dashAt;this.lastHp=state.player.hp;this.lastPhase=state.phase;this.actors.clear();this.vfx.clear();this.dashAt=this.swingAt=-10;this.cameraTrauma=0;this.knight.root.position.set(state.player.x, 0, state.player.z); this.focus.set(state.player.x, 0, state.player.z) }
    this.syncAudio(state)
@@ -210,11 +229,11 @@ export class DungeonScene {
     for (const fx of state.effects) if (fx.id > this.lastEffect) {
      const nearHero=Math.hypot(fx.x-state.player.x,fx.z-state.player.z)<.2
      const kind=fx.kind==="hit"&&fx.value<0?"hurt":fx.kind==="slash"&&nearHero&&state.phase!=="overdrive"?"cleave":fx.kind==="storm"&&(!nearHero||fx.value<0)?"explosion":fx.kind
-     this.audio.play(fx.kind==="treasure"?"chest":fx.kind==="blast"||fx.kind==="slam"?"explosion":fx.kind==="lightning"?"storm":fx.kind==="firebolt"?"sentry":kind,(fx.x-state.player.x)/12)
+     this.audio.play(fx.kind==="treasure"?"chest":fx.kind==="blast"||fx.kind==="slam"?"explosion":fx.kind==="lightning"?"storm":fx.kind==="firebolt"?"sentry":fx.kind==="ward"?"armor":fx.kind==="summon"?"deploy":fx.kind==="blink"?"magnet":kind,(fx.x-state.player.x)/12)
     }
    }
    this.lastCorrect = state.correct; this.lastEffect = state.nextId - 1
-  }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.syncAudio() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.audio.setMix(settings.volume,settings.music,settings.effects); this.post.uniforms.strength.value = settings.reduced ? 0 : 1; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
+  }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.syncAudio() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.audio.setMix(settings.volume,settings.music,settings.effects); this.post.configure({ bloom: !settings.reduced, outline: !settings.reduced }); this.renderer.shadowMap.enabled = !settings.reduced; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
   this.cleanup.push(bridge.on("party",party=>{this.syncAudio(this.state,party);this.receiveParty(party);this.party=party;this.partyElapsedAt=this.elapsed;this.dirty=true}))
   this.listen(window, "keydown", () => this.audio.unlock()); this.listen(window, "pointerdown", () => this.audio.unlock())
   this.listen(window,"click",e=>{if(e.target instanceof Element&&e.target.closest("button,select"))this.audio.play("ui")})
@@ -246,7 +265,12 @@ export class DungeonScene {
  private receive(s: DungeonState) {
   const now=this.elapsed,newEffects=s.effects.filter(fx=>fx.id>this.lastEffect),dash=s.player.dashAt!==this.lastDash
   if(dash){
-   this.dashFrom.copy(this.knight.root.position);this.dashTo.set(s.player.x,0,s.player.z);this.dashAt=this.swingAt=now;this.swingKind=s.words%3===0?"slash":s.words%3===1?"thrust":"uppercut";this.swingSide=s.words%2?1:-1
+   this.dashFrom.copy(this.knight.root.position);this.dashTo.set(s.player.x,0,s.player.z);this.dashAt=this.swingAt=now;this.swingSide=s.words%2?1:-1
+   const landing=newEffects.find(fx=>fx.kind==="slash"||fx.kind==="finisher"),struck=landing?[...this.actors.values()].find(a=>Math.hypot(a.x-landing.x,a.z-landing.z)<.3):undefined
+   this.swingKind=selectMove({wordsCompleted:s.words,targetLayers:struck?.layers??1,finisher:newEffects.some(fx=>fx.kind==="finisher"),whirl:newEffects.some(fx=>fx.kind==="whirl")})
+   if(this.swingKind!=="slash")this.audio.play(this.swingKind,(s.player.x-this.dashFrom.x)/12)
+   if(this.swingKind==="finisher"){this.hitStopUntil=now+.14;this.flashAt=now+.1;this.zoomPunch=1;this.cameraTrauma=Math.max(this.cameraTrauma,.45)}
+   else if(this.swingKind==="leap"||this.swingKind==="whirl"){this.zoomPunch=Math.max(this.zoomPunch,.5);this.cameraTrauma=Math.max(this.cameraTrauma,.18)}
    this.heroAngle=Math.atan2(this.dashTo.x-this.dashFrom.x,this.dashTo.z-this.dashFrom.z);this.lastDash=s.player.dashAt
    this.vfx.emit("dust",this.dashFrom.x,this.dashFrom.z,this.heroAngle,1.2)
    this.vfx.emit("dash",this.dashFrom.x,this.dashFrom.z,this.heroAngle,1,{x:s.player.x,z:s.player.z})
@@ -255,7 +279,7 @@ export class DungeonScene {
   for(const [id,actor]of this.actors){
    if(!live.has(id)&&actor.deadAt<0){
     if(newEffects.some(fx=>["shatter","hit","storm","blast","treasure"].includes(fx.kind)&&Math.hypot(fx.x-actor.x,fx.z-actor.z)<1.5)){
-     actor.deadAt=now;actor.hitAt=now;this.vfx.emit(actor.kind in dungeonSupplies?"pickup":"death",actor.x,actor.z,actor.angle,actor.kind==="boss"?2:1,undefined,actor.kind==="goblin"?0x96b657:actor.kind==="guard"||actor.kind==="boss"?0xb9ccdb:0xe5caa1)
+     actor.deadAt=now;actor.hitAt=now;this.vfx.emit(actor.kind in dungeonSupplies?"pickup":"death",actor.x,actor.z,actor.angle,actor.kind==="boss"?2:1,undefined,gait[actor.kind]?.tint??0xe5caa1)
      this.audio.play(actor.kind in dungeonSupplies?actor.kind==="potion"?"heal":actor.kind==="shield"?"shield":actor.kind==="sentry"?"deploy":"mana":actor.kind==="barrel"||actor.kind==="bomber"?"explosion":actor.kind==="chest"?"chest":actor.kind==="boss"?"victory":`death-${actor.kind}`,(actor.x-s.player.x)/12)
      if(actor.kind==="barrel"){this.vfx.emit("cleave",actor.x,actor.z,0,1.2);this.cameraTrauma=.25}
      this.cameraTrauma=Math.max(this.cameraTrauma,actor.kind==="boss"?.4:.08)
@@ -286,14 +310,17 @@ export class DungeonScene {
   this.lastHp=s.player.hp
   for(const fx of newEffects){
    if(fx.kind==="slash"&&s.phase==="overdrive"&&s.cursor%3!==0)continue
-   let kind:VisualEffect=fx.kind==="barrier"?fx.value===0?"death":"shatter":fx.kind
+   let kind:VisualEffect=fx.kind==="spore"?"spore":fx.kind==="barrier"?fx.value===0?"death":"shatter":fx.kind==="ward"?"shield":fx.kind==="summon"?"spawn":fx.kind==="blink"?"dash":fx.kind
    if(fx.kind==="barrier"){this.audio.play(fx.value===0?"explosion":"armor");if(fx.to)for(const actor of this.actors.values())if(Math.hypot(actor.x-fx.to.x,actor.z-fx.to.z)<.1)actor.strikeAt=now}
-   if(fx.kind==="slash"&&dash)kind=this.swingKind
+   if(fx.kind==="slash"&&dash)kind=this.swingKind==="whirl"||this.swingKind==="finisher"?"slash":this.swingKind
+   if(fx.kind==="meteor"||fx.kind==="finisher")this.cameraTrauma=Math.max(this.cameraTrauma,fx.kind==="finisher"?.45:.16)
+   if(fx.kind==="nova"||fx.kind==="frost"){this.castAt=now;this.cameraTrauma=Math.max(this.cameraTrauma,.08)}
    if(fx.kind==="lightning"||fx.kind==="firebolt"){this.castAt=now;if(fx.to)this.heroAngle=Math.atan2(fx.to.x-s.player.x,fx.to.z-s.player.z)}
    if(fx.kind==="slam"||fx.kind==="blast"){this.cameraTrauma=.18;for(const actor of this.actors.values())if(actor.kind==="boss")actor.strikeAt=now}
    if(fx.kind==="block")this.shieldHitAt=now
    if(fx.kind==="slash"&&!dash&&s.phase!=="overdrive"&&Math.hypot(fx.x-s.player.x,fx.z-s.player.z)<.1){kind="cleave";this.swingAt=now;this.swingKind="cleave";this.cameraTrauma=.12}
-   this.vfx.emit(kind,fx.x,fx.z,this.heroAngle,1,fx.to??(fx.kind==="pickup"?{x:s.player.x,z:s.player.z}:undefined),fx.kind==="barrier"?0xc59b66:undefined)
+   if(fx.kind==="nova")kind="nova"
+   this.vfx.emit(kind,fx.x,fx.z,this.heroAngle,1,fx.to??(fx.kind==="pickup"?{x:s.player.x,z:s.player.z}:undefined),fx.kind==="barrier"?0xc59b66:fx.kind==="ward"?0x8fe0a0:fx.kind==="summon"?0x7dff9a:fx.kind==="blink"?0x9cc8ff:undefined)
    if(storm&&fx.kind==="shatter")this.vfx.emit("lightning",fx.x,fx.z,this.heroAngle)
    if(fx.kind==="shatter")this.cameraTrauma=Math.max(this.cameraTrauma,.055)
    if(fx.kind==="slash"&&s.phase==="overdrive"){this.swingAt=now-.07;this.swingSide=s.cursor%2?1:-1;this.heroAngle=Math.atan2(fx.x-s.player.x,fx.z-s.player.z)}
@@ -328,6 +355,7 @@ export class DungeonScene {
  private instance(geometry: BufferGeometry, material: MeshStandardMaterial | MeshBasicMaterial, count: number) {
   const mesh = new InstancedMesh(geometry, material, count); mesh.instanceMatrix.setUsage(DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; this.scene.add(mesh); this.instances.push(mesh); return mesh
  }
+ private castShadow(mesh: InstancedMesh) { mesh.castShadow = true; return mesh }
  private listen(target: EventTarget, type: string, handler: EventListener) { target.addEventListener(type, handler); this.cleanup.push(() => target.removeEventListener(type, handler)) }
  private resize() {
   this.width = Math.max(1, this.host.clientWidth); this.height = Math.max(1, this.host.clientHeight)
@@ -335,7 +363,7 @@ export class DungeonScene {
   this.camera.left = -halfHeight * aspect; this.camera.right = halfHeight * aspect; this.camera.top = halfHeight; this.camera.bottom = -halfHeight; this.camera.updateProjectionMatrix()
   const pixel = Math.max(2,Math.ceil(this.width/(this.reduced?480:this.adaptive?640:960)),Math.ceil(this.height/(this.reduced?360:this.adaptive?480:640)))
   const w = Math.max(1, Math.ceil(this.width / pixel)), h = Math.max(1, Math.ceil(this.height / pixel))
-  this.renderer.setSize(w, h, false); this.target.setSize(w, h); this.post.uniforms.texel.value.set(1 / w, 1 / h)
+  this.renderer.setSize(w, h, false); this.post.setSize(w, h)
   this.dirty = true; this.update(0); this.render()
  }
  private terrain(x: number, z: number) {
@@ -348,8 +376,10 @@ export class DungeonScene {
    const bx = (cx + dx) * T.chunkSize, bz = (cz + dz) * T.chunkSize
    const rng = createSeededRng(`dungeon:${bx}:${bz}`)
    for (let tz = 0; tz < 16; tz++) for (let tx = 0; tx < 16; tx++) {
-    this.matrix.makeTranslation(bx + tx*2 - 15, -.09 - rng.nextFloat() * .008, bz + tz*2 - 15)
-    this.tiles.setMatrixAt(tile, this.matrix); this.color.setHex(tone.stone).multiplyScalar(.94 + rng.nextFloat() * .09); this.tiles.setColorAt(tile++, this.color)
+    // Quarter-turned tiles break up repetition; rare inlaid tiles add colour to the floor.
+    this.matrix.makeRotationY(Math.floor(rng.nextFloat() * 4) * Math.PI / 2).setPosition(bx + tx*2 - 15, -.09 - rng.nextFloat() * .008, bz + tz*2 - 15)
+    const inlay=rng.nextFloat()
+    this.tiles.setMatrixAt(tile, this.matrix); this.color.setHex(tone.stone).lerp(this.accent.setHex(inlay<.012?tone.flame:0x4b8f9a),inlay<.024?.18:0).multiplyScalar(.95 + rng.nextFloat() * .14); this.tiles.setColorAt(tile++, this.color)
    }
    for(let i=0;i<12;i++){this.matrix.makeRotationX(-Math.PI/2).scale(this.scale.set(.25+rng.nextFloat()*.65,.18+rng.nextFloat()*.55,1)).setPosition(bx+rng.nextFloat()*28-14,-.024,bz+rng.nextFloat()*28-14);this.moss.setMatrixAt(patch++,this.matrix)}
    for(const offset of [0,-16]){
@@ -357,11 +387,11 @@ export class DungeonScene {
    for (let row = 0; row < 4; row++) for (let block = 0; block < 8; block++) {
     if (row > 1 && rng.nextFloat() > .55) continue
     this.matrix.makeTranslation(bx + offset + 6.3 + block * 1.08 + (row % 2) * .25, .36 + row * .76, bz + offset + 10)
-    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(row === 0 ? 0x535346 : 0x6a6460).multiplyScalar(.7 + rng.nextFloat() * .45); this.walls.setColorAt(wall++, this.color)
+    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(row === 0 ? 0x7d7a6c : 0x948a82).multiplyScalar(.8 + rng.nextFloat() * .35); this.walls.setColorAt(wall++, this.color)
    }
    for (const px of [6.5, 13.5]) for (let level = 0; level < 5; level++) {
     this.matrix.makeScale(1.3, 1, 1.5).setPosition(bx + offset + px, .36 + level * .73, bz + offset + 8.8)
-    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(level % 2 ? 0x625e59 : 0x777063); this.walls.setColorAt(wall++, this.color)
+    this.walls.setMatrixAt(wall, this.matrix); this.color.setHex(level % 2 ? 0x8a847c : 0x9f9586); this.walls.setColorAt(wall++, this.color)
    }
    for(const px of [6.5,13.5])for(const [height,size]of [[.12,1.85],[3.75,1.6]] as const){this.matrix.makeScale(size,.35,size).setPosition(bx+offset+px,height,bz+offset+8.8);this.walls.setMatrixAt(wall,this.matrix);this.walls.setColorAt(wall++,this.color.setHex(0x87909c))}
    for(const px of [6.3,13.8])for(let depth=0;depth<3;depth++)for(let row=0;row<3;row++){
@@ -383,6 +413,7 @@ export class DungeonScene {
    this.bannerPoints.push(new Vector3(bx+offset+10,1.35,bz+offset+10.45))
    }
   }
+  this.decor.rebuild(cx,cz,tone.flame)
   this.landmarks.count=landmark;this.landmarks.instanceMatrix.needsUpdate=true;this.tiles.count = tile; this.walls.count = wall;this.moss.count=patch;this.moss.instanceMatrix.needsUpdate=true
   for (const mesh of [this.tiles, this.walls]) { mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor!.needsUpdate = true }
  }
@@ -393,7 +424,7 @@ export class DungeonScene {
   this.dummy.root.visible = this.sensei.root.visible = dojo
   const multiplayer=this.screen==="multiplayer"&&this.party!==null&&this.party.phase!=="waiting"
   const partyNow=this.party?this.party.now+Math.min(2000,(this.elapsed-this.partyElapsedAt)*1000):0
-  const onBridge=multiplayer&&this.party?.mode==="clash";this.bridgeDeck.visible=onBridge;this.tiles.visible=this.walls.visible=this.moss.visible=this.banners.visible=this.landmarks.visible=!onBridge
+  const onBridge=multiplayer&&this.party?.mode==="clash";this.bridgeDeck.visible=onBridge;this.tiles.visible=this.walls.visible=this.moss.visible=this.banners.visible=this.landmarks.visible=!onBridge;this.decor.setVisible(!onBridge);this.decor.update(this.elapsed,this.reduced)
   this.wind.value=this.reduced?0:this.elapsed*2.5
   this.bannerPoints.forEach((p,i)=>{this.matrix.makeRotationX(this.reduced?0:Math.sin(this.elapsed*2+i)*.07).setPosition(p);this.banners.setMatrixAt(i,this.matrix)});this.banners.count=this.bannerPoints.length;this.banners.instanceMatrix.needsUpdate=true
   this.knight.root.visible=!multiplayer
@@ -403,28 +434,33 @@ export class DungeonScene {
   const fx=this.focus.x+offset+side+trainingOffset,fz=this.focus.z-side+trainingOffset
   this.cameraTrauma=Math.max(0,this.cameraTrauma-delta*1.7)
   const shake=this.reduced?0:this.cameraTrauma*this.cameraTrauma
-  this.camera.position.set(fx+24+Math.sin(this.elapsed*61)*shake,24,fz+24+Math.cos(this.elapsed*53)*shake);this.camera.lookAt(fx,0,fz);this.camera.updateMatrixWorld()
+  this.camera.position.set(fx+24+Math.sin(this.elapsed*61)*shake,24,fz+24+Math.cos(this.elapsed*53)*shake);this.camera.lookAt(fx,0,fz)
+  this.zoomPunch=Math.max(0,this.zoomPunch-delta*2.5);this.camera.zoom=1+(this.reduced?0:this.zoomPunch*this.zoomPunch*.12);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld()
+  this.sun.position.set(fx-8,16,fz+6);this.sun.target.position.set(fx,0,fz);this.sun.target.updateMatrixWorld()
   const hero = this.knight.root, age=this.elapsed-this.dashAt, swingAge=this.elapsed-this.swingAt
   const hurt=Math.max(0,1-(this.elapsed-this.heroHitAt)/.45)
-  this.heroMaterial.emissive.setHex(0xff5738);this.heroMaterial.emissiveIntensity=hurt*.9;this.post.uniforms.hurt.value=hurt
+  this.heroMaterial.emissive.setHex(0xff5738);this.heroMaterial.emissiveIntensity=hurt*.9;this.post.setFeedback(hurt,this.reduced?0:Math.max(0,1-(this.elapsed-this.flashAt)/.22)*.55)
   const celebration=this.reduced?0:Math.max(0,1-(this.elapsed-this.celebrateAt)/1.0),casting=this.reduced?0:Math.max(0,1-(this.elapsed-this.castAt)/.4)
-  const dash=active&&!this.reduced?Math.max(0,1-age/.19):0, swing=this.reduced?0:Math.max(0,1-swingAge/.38)
+  const dash=active&&!this.reduced?Math.max(0,1-age/(this.swingKind==="leap"||this.swingKind==="finisher"?.32:.19)):0, swing=this.reduced?0:Math.max(0,1-swingAge/moveDuration[this.swingKind])
   const selected=s?.enemies.find(e=>e.id===(s.phase==="overdrive"?s.boss:s.target)),charge=active&&selected&&selected.words.length?Math.min(1,s!.prefix.length/selected.words[0]!.length):0
   if(dash>0)hero.position.lerpVectors(this.dashFrom,this.dashTo,1-dash**3)
   else hero.position.set(px,0,pz)
   if(!this.reduced){hero.position.x+=Math.sin(this.heroHurtAngle)*Math.sin(hurt*Math.PI)*.25;hero.position.z+=Math.cos(this.heroHurtAngle)*Math.sin(hurt*Math.PI)*.25}
   if(selected&&(charge>0||s?.phase==="overdrive"))this.heroAngle=Math.atan2(selected.x-hero.position.x,selected.z-hero.position.z)
-  const facing=active?this.heroAngle:dojo?1.3:.55,turn=Math.atan2(Math.sin(facing-hero.rotation.y),Math.cos(facing-hero.rotation.y))
-  hero.rotation.y+=turn*Math.min(1,delta*22||1)
+  const facing=active?this.heroAngle:dojo?1.3:.55,turn=Math.atan2(Math.sin(facing-this.heroFacing),Math.cos(facing-this.heroFacing))
+  this.heroFacing+=turn*Math.min(1,delta*22||1);hero.rotation.y=this.heroFacing
   hero.rotation.x=this.reduced?0:dash*.27+Math.sin(swingAge*18)*swing*.09
   hero.position.y=this.reduced?0:Math.sin(this.elapsed*2.3)*.025+Math.sin((1-dash)*Math.PI)*.23+Math.sin(celebration*Math.PI)*.55
   this.knight.legs.forEach((leg,i)=>{leg.rotation.x=this.reduced?0:Math.sin(this.elapsed*22+i*Math.PI)*dash*.9;leg.rotation.z=this.reduced?0:(i?-.04:.04)-swing*.06})
-  this.knight.body.rotation.y=this.reduced?0:Math.sin((1-swing)*Math.PI*1.7)*swing*.35+Math.sin(celebration*Math.PI)*.3
+  const moveProgress=Math.min(1,swingAge/moveDuration[this.swingKind]),pose=heroPose(this.swingKind,this.reduced||moveProgress>=1?0:moveProgress,this.swingSide)
+  this.knight.body.rotation.y=this.reduced?0:pose.bodyYaw+Math.sin(celebration*Math.PI)*.3
   this.knight.body.rotation.z=this.reduced?0:Math.sin(this.elapsed*2)*.018
-  this.knight.weapon!.rotation.set(this.reduced?0:-.2-Math.sin((1-swing)*Math.PI)*1.8-charge*.5,this.reduced?0:this.swingSide*(this.swingKind==="cleave"?2:1.2)*Math.sin((1-swing)*Math.PI)*swing,this.reduced?-.12:-.15+charge*.5-swing*.8)
-  this.knight.arm!.rotation.set(this.reduced?0:-.15+swing*.45-casting*1.4-celebration*.8,0,this.reduced?0:.12+swing*.35)
-  this.knight.weapon!.position.z=this.swingKind==="thrust"?Math.sin((1-swing)*Math.PI)*swing*.85:0
-  if(this.swingKind==="uppercut")this.knight.weapon!.rotation.x-=Math.sin((1-swing)*Math.PI)*swing*1.3
+  this.knight.weapon!.rotation.set(this.reduced?0:-.2+pose.weaponPitch-charge*.5,this.reduced?0:pose.weaponYaw,this.reduced?-.12:-.15+charge*.5+pose.weaponRoll)
+  this.knight.arm!.rotation.set(this.reduced?0:-.15+pose.armPitch-casting*1.4-celebration*.8,0,this.reduced?0:.12+swing*.35)
+  this.knight.weapon!.position.z=pose.weaponReach
+  hero.rotation.y=this.heroFacing+(this.reduced?0:pose.bodySpin)
+  hero.position.y+=this.reduced?0:pose.lift
+  hero.rotation.x+=this.reduced?0:pose.lean
   this.echoes.count=0
   if(dash>0)for(let i=0;i<3;i++){const t=Math.max(0,1-dash**3-.12-i*.15);this.point.lerpVectors(this.dashFrom,this.dashTo,t);this.rotation.setFromEuler(this.euler.set(.15,this.heroAngle,0));this.matrix.compose(this.point,this.rotation,this.scale.setScalar(1-i*.05));this.echoes.setMatrixAt(this.echoes.count++,this.matrix)}
   this.echoes.instanceMatrix.needsUpdate=true
@@ -439,13 +475,14 @@ export class DungeonScene {
   this.aura.scale.setScalar(1+shieldPulse*.15);this.aura.material.opacity=s?.player.shield ? .14+shieldPulse*.18 : .10
   this.aura.visible=active&&s!==null&&(s.phase==="skills"||s.player.invincible>.5||s.player.shield>0);this.aura.position.copy(hero.position);this.aura.position.y=1.1
   this.orbitals.count=0;this.telegraphs.count=0
+  if(active&&s)this.weaponVisuals.update(s,hero.position.x,hero.position.z,this.elapsed,this.reduced);else this.weaponVisuals.hide()
   if(active&&s){
    const relics=[...(s.relics.lightning?[0x8ce9fa,0xb9fbff]:[]),...(s.relics.vowels?[0xffbb68,0xff8d54]:[])]
    relics.forEach((hex,i)=>{const a=(this.reduced?0:this.elapsed*1.4)+i*Math.PI*2/relics.length;this.matrix.makeRotationY(a).setPosition(hero.position.x+Math.sin(a)*1.15,1+Math.sin(a*2)*.13,hero.position.z+Math.cos(a)*1.15);this.orbitals.setMatrixAt(i,this.matrix);this.orbitals.setColorAt(i,this.color.setHex(hex))});this.orbitals.count=relics.length
    for(const e of s.enemies){
     if(e.id===s.boss&&s.phase==="overdrive"&&e.motion==="windup"){this.matrix.makeScale(3,1,3).setPosition(hero.position.x,.08,hero.position.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xf07855))}
     if(e.motion==="windup"&&e.aim){const length=Math.hypot(e.aim.x-e.x,e.aim.z-e.z),angle=Math.atan2(e.aim.x-e.x,e.aim.z-e.z);this.matrix.makeRotationY(angle).scale(this.scale.set(length<.1?6:.9,1,length<.1?6:length)).setPosition((e.x+e.aim.x)/2,.075,(e.z+e.aim.z)/2);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xde6948))}
-    else if(e.kind==="mage"&&e.attack<1.1){this.matrix.makeScale(.55,1,.55).setPosition(e.x,.08,e.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xc29aff))}
+    else if((e.kind==="mage"||e.kind==="archer"||e.kind==="imp"||e.kind==="necromancer"||e.kind==="shaman")&&e.attack<1.1){this.matrix.makeScale(.55,1,.55).setPosition(e.x,.08,e.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xc29aff))}
    }
   }
   for(const mesh of [this.orbitals,this.telegraphs]){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true}
@@ -465,19 +502,23 @@ export class DungeonScene {
     const arrival=this.reduced?1:Math.min(1,(this.elapsed-e.bornAt)/.4)
     const scale = batch.scale*(.4+.6*(1-(1-arrival)**3))*(1-Math.max(0,death-.35)/.65),angle=e.deadAt<0&&Math.hypot(px-e.x,pz-e.z)>.05?Math.atan2(px-e.x,pz-e.z):e.angle,turn=Math.atan2(Math.sin(angle-e.angle),Math.cos(angle-e.angle))
     e.angle+=turn*Math.min(1,delta*7)
-    const pace=this.elapsed*(.6+e.speed)*(kind==="goblin"?9:kind==="boss"||kind==="minotaur"?3.5:5)+e.id*1.9
+    const pace=this.elapsed*(.6+e.speed)*(gait[kind]?.pace??5)+e.id*1.9
     const walk=this.reduced||e.frozen>0||death>0||dungeonObjects.includes(kind)?0:Math.sin(pace)*(active ? Math.min(.65,Math.hypot(e.x-e.vx,e.z-e.vz)*8) : .16)
     e.vx+=(e.x-e.vx)*Math.min(1,delta*18);e.vz+=(e.z-e.vz)*Math.min(1,delta*18)
     const recoil=this.reduced?0:hit*.23+(e.deadAt<0?0:(1-(1-death)**3)*1.4),lunge=e.kind==="boss"&&s?.phase==="overdrive"&&!this.reduced?Math.sin(strike*Math.PI)*.4:0,x=e.vx-Math.sin(angle)*recoil+Math.sin(angle)*lunge,z=e.vz-Math.cos(angle)*recoil+Math.cos(angle)*lunge
-    const altitude=kind==="mage"?1:kind==="bat"?1.25:0
-    const bob=altitude+(this.reduced||death>0||e.frozen>0?0:kind==="mage"?Math.sin(pace*.65)*.18:kind==="bat"?Math.sin(pace*1.3)*.22:kind in dungeonSupplies?.15+Math.sin(pace)*.08:Math.abs(walk)*(kind==="goblin"?.13:.065))
+    const altitude=gait[kind]?.altitude??0,still=this.reduced||death>0||e.frozen>0
+    const hop=(kind==="slime"||kind==="sporeling")&&!still?Math.max(0,Math.sin(pace*.8)):0,floating=kind==="mage"||kind==="wraith"||kind==="imp"||kind==="wisp"
+    const bob=altitude+(still?0:floating?Math.sin(pace*.65)*(kind==="imp"?.28:.18):kind==="bat"?Math.sin(pace*1.3)*.22:kind in dungeonSupplies?.15+Math.sin(pace)*.08:kind==="slime"?hop*.55:kind==="sporeling"?hop*.25:kind==="gargoyle"?Math.sin(pace*.5)*.3:kind==="serpent"?0:Math.abs(walk)*(kind==="goblin"||kind==="rat"||kind==="wolf"?.13:.065))
     const hammer=e.motion==="windup"?Math.max(0,1-(e.motionTime??0)/.8)*1.5:e.motion==="recover"?-1.1:0
     this.matrix.makeRotationX(-Math.PI/2).scale(this.scale.setScalar(scale*1.1)).setPosition(x,.015,z);this.shadows.setMatrixAt(shadowIndex++,this.matrix)
     this.rotation.setFromEuler(this.euler.set(this.reduced?0:-hit*.22+strike*.22+death*1.3+(e.motion==="windup"?-.2:e.motion==="charge"?.35:0),e.angle,this.reduced?0:walk*.065+death*.6,"YXZ"))
-    this.matrix.compose(this.point.set(x,bob-death*.1,z),this.rotation,this.scale.setScalar(scale))
+    // Slimes squash on landing and stretch in the air; serpents sway along their length.
+    const squash=kind==="slime"&&!still?(hop>.05?-hop*.18:.22*Math.abs(Math.sin(pace*.8))):0
+    if(kind==="serpent"&&!still)this.rotation.multiply(this.sway.setFromAxisAngle(this.up,Math.sin(pace*1.2)*.3))
+    this.matrix.compose(this.point.set(x,bob-death*.1,z),this.rotation,this.scale.set(scale*(1+squash),scale*(1-squash),scale*(1+squash)))
     batch.body.setMatrixAt(index,this.matrix);batch.body.setColorAt(index,this.color.setHex(e.frozen>0?0x89c9ef:0xffffff).multiplyScalar(this.reduced?1:hit>.65?2.5:1-death*.55))
     batch.outline.setMatrixAt(index,this.local.makeScale(1.04,1.04,1.04).premultiply(this.matrix))
-    for(const [part,sign]of [[batch.left,-1],[batch.right,1]] as const)if(part){if(kind==="bat")this.local.makeRotationZ(this.reduced?sign*.2:sign*(.18+Math.sin(pace*2.6)*.65)).setPosition(.6*sign,1.13,0);else this.local.makeRotationX(walk*sign+death*sign*2).setPosition(.25*sign+death*sign*.5,.7+Math.sin(death*Math.PI)*.45,death*sign*.25);part.setMatrixAt(index,this.local.premultiply(this.matrix))}
+    for(const [part,sign]of [[batch.left,-1],[batch.right,1]] as const)if(part){if(wingedKinds.has(kind))this.local.makeRotationZ(this.reduced?sign*.2:sign*(.18+Math.sin(pace*2.6)*.65)).setPosition(.6*sign,1.13,0);else this.local.makeRotationX(walk*sign+death*sign*2).setPosition(.25*sign+death*sign*.5,.7+Math.sin(death*Math.PI)*.45,death*sign*.25);part.setMatrixAt(index,this.local.premultiply(this.matrix))}
     if(batch.arm){this.local.makeRotationX(-walk*.6+strike*.8-death*2).setPosition(-.62-death*.6,1.52,death*.2);batch.arm.setMatrixAt(index,this.local.premultiply(this.matrix))}
     const windup=kind==="boss"&&multiplayer?Math.max(0,1-e.attack/800):kind==="mage"?Math.max(0,1-e.attack/.8):Math.max(0,1-Math.hypot(px-e.x,pz-e.z)/2)
     if(batch.weapon){this.local.makeRotationX(this.reduced?0:walk*.55-strike*2.2+windup*.7+hammer+death*2-(kind==="mage"?Math.sin(pace)*.2:0)).setPosition(.62+death*.6,1.52+Math.sin(death*Math.PI)*.4,death*.2);batch.weapon.setMatrixAt(index,this.local.premultiply(this.matrix))}
@@ -540,18 +581,28 @@ export class DungeonScene {
   const wall=active&&s?.phase==="overdrive"?s.bossArena:null
   this.barricade.count=wall?24:0
   if(wall)for(let i=0;i<24;i++){
-   const a=i*Math.PI/12,broken=wall.hp===0,front=Math.sin(a)+Math.cos(a)>0
+   // Stakes topple progressively (scattered order) so the remaining barricade health reads in the world, not only in the HUD.
+   const a=i*Math.PI/12,broken=wall.hp===0||(i*7)%24<Math.floor((1-wall.hp/B.barrierHp)*14),front=Math.sin(a)+Math.cos(a)>0
    this.rotation.setFromEuler(this.euler.set(broken?1.35:0,a,0));this.matrix.compose(this.point.set(wall.x+Math.sin(a)*B.barrierRadius,broken?.05:0,wall.z+Math.cos(a)*B.barrierRadius),this.rotation,this.scale.set(1,broken?.6:front?.65:1,1))
-   this.barricade.setMatrixAt(i,this.matrix);this.barricade.setColorAt(i,this.color.setHex(wall.cooldown>.55?0xffb37b:wall.hp<8?0xb98d68:0xffffff))
+   this.barricade.setMatrixAt(i,this.matrix);this.barricade.setColorAt(i,this.color.setHex(wall.cooldown>.55?0xffb37b:wall.hp<B.barrierHp/3?0xb98d68:0xffffff))
   }
   this.barricade.instanceMatrix.needsUpdate=true;if(this.barricade.instanceColor)this.barricade.instanceColor.needsUpdate=true
-  const season=((s?.biome??0)+Math.floor((s?.time??0)/120))%dungeonBiomes.length
-  this.weather.count=this.reduced?0:season===3?32:season===4?12:18
+  // Weather belongs to the place: each depth has its own airborne motif (ash, crypt wisps, forge sparks, snow, leaves).
+  const place=(s?.biome??0)%dungeonBiomes.length,motif=[
+   {count:20,speed:.03,fall:true,top:5,span:5,size:[.5,.5],colors:[0xe2ded6,0xbfb9b0]},
+   {count:16,speed:.025,fall:false,top:3.2,span:3,size:[.38,.38],colors:[0x9cf0ff,0x6fd3f0]},
+   {count:24,speed:.11,fall:false,top:3.6,span:3.4,size:[.28,.42],colors:[0xffc06a,0xff8a3d]},
+   {count:32,speed:.065,fall:true,top:6,span:6,size:[.55,.55],colors:[0xf4f8ff,0xd6e6ff]},
+   {count:14,speed:.04,fall:true,top:4.5,span:3.8,size:[1.3,1],colors:[0xa9d36b,0xd9bf62]},
+  ][place]!
+  this.weather.count=this.reduced?0:motif.count
   for(let i=0;i<this.weather.count;i++){
-   const t=(this.elapsed*(season===3?.065:.035)+i*.137)%1,x=Math.floor(px/16)*16+8+((i*7.31)%32)-16+Math.sin(this.elapsed*.35+i)*.6,z=Math.floor(pz/16)*16+8+((i*4.79)%32)-16
-   this.rotation.setFromEuler(this.euler.set(Math.PI/4+Math.sin(this.elapsed+i)*.25,this.elapsed*.3+i,Math.sin(this.elapsed*.8+i)*.5))
-   this.matrix.compose(this.point.set(x,season===3?6-t*6:season===4?4-t*3:.6+t*3,z),this.rotation,this.scale.set(season===4?1.3:.55,season===4?1:.55,1))
-   this.weather.setMatrixAt(i,this.matrix);this.weather.setColorAt(i,this.color.setHex(season===3?0xe6f1ff:season===4?0xc1b576:season===2?0xffc78b:0xb9bdc6))
+   const t=(this.elapsed*motif.speed*(1+(i%3)*.18)+i*.137)%1,sway=place===4?Math.sin(this.elapsed*1.1+i)*.9:place===1?Math.sin(this.elapsed*.6+i)*.35:Math.sin(this.elapsed*.35+i)*.6
+   const x=Math.floor(px/16)*16+8+((i*7.31)%32)-16+sway,z=Math.floor(pz/16)*16+8+((i*4.79)%32)-16+(place===0?t*1.4:0)
+   this.rotation.setFromEuler(this.euler.set(Math.PI/4+Math.sin(this.elapsed+i)*(place===4?.9:.25),this.elapsed*(place===4?1.2:.3)+i,Math.sin(this.elapsed*.8+i)*.5))
+   const pulse=place===1?.7+Math.sin(this.elapsed*3+i)*.3:place===2?.6+Math.abs(Math.sin(this.elapsed*9+i*1.7))*.4:1
+   this.matrix.compose(this.point.set(x,motif.fall?motif.top-t*motif.span:.3+t*motif.span,z),this.rotation,this.scale.set(motif.size[0]!*pulse,motif.size[1]!*pulse,1))
+   this.weather.setMatrixAt(i,this.matrix);this.weather.setColorAt(i,this.color.setHex(motif.colors[i%2]!))
   }
   this.weather.instanceMatrix.needsUpdate=true;if(this.weather.instanceColor)this.weather.instanceColor.needsUpdate=true
   this.embers.count=0
@@ -568,7 +619,7 @@ export class DungeonScene {
    this.point.set(enemy.x, objectsHeight(enemy.kind) * scale, enemy.z).project(this.camera)
    const x = (this.point.x + 1) * .5 * this.width, y = (1 - this.point.y) * .5 * this.height
    return { id, x, y, visible: x >= 0 && x <= this.width && y >= 0 && y <= this.height }
-  }),...s.effects.filter(effect=>effect.source&&effect.kind==="shatter"||effect.kind==="hit"&&effect.value<0||["blast","treasure","heal","mana","shield","block","pickup","level","upgrade","barrier"].includes(effect.kind)).slice(-6).map(effect=>{this.point.set(effect.x,1.6,effect.z).project(this.camera);return {id:effect.id,x:(this.point.x+1)*.5*this.width,y:(1-this.point.y)*.5*this.height,visible:true}})])
+  }),...s.effects.filter(effect=>effect.source&&effect.kind==="shatter"||effect.kind==="hit"&&effect.value<0||["blast","treasure","heal","mana","shield","block","pickup","level","upgrade","barrier","finisher"].includes(effect.kind)).slice(-6).map(effect=>{this.point.set(effect.x,1.6,effect.z).project(this.camera);return {id:effect.id,x:(this.point.x+1)*.5*this.width,y:(1-this.point.y)*.5*this.height,visible:true}})])
   if(this.last-this.lastProjection>=33)this.lastProjection=this.last
  }
  private tick(timestamp: number) {
@@ -579,18 +630,19 @@ export class DungeonScene {
   if (this.last && timestamp - this.last < (this.reduced||this.adaptive ? 32 : 16)) return
   if(this.last&&!this.adaptive){this.slowFrames=timestamp-this.last>35?this.slowFrames+1:Math.max(0,this.slowFrames-1);if(this.slowFrames>=30){this.adaptive=true;this.resize()}}
   const delta = this.last ? Math.min(.1, (timestamp - this.last) / 1000) : 0; this.last = timestamp
-  if (!frozen) this.elapsed += delta * ((this.screen==="endless"||this.screen==="tutorial")&&this.state?.phase === "skills" ? .5 : 1)
+  const hitStop=!this.reduced&&this.elapsed<this.hitStopUntil?.12:1
+  if (!frozen) this.elapsed += delta * hitStop * ((this.screen==="endless"||this.screen==="tutorial")&&this.state?.phase === "skills" ? .5 : 1)
   this.update(frozen ? 0 : delta); this.render(); this.dirty = false
   if (timestamp - this.lastMetrics > 1000) { this.lastMetrics = timestamp; this.report("ready") }
  }
- private render() { if (this.lost) return; this.renderer.info.reset();if(this.reduced){this.renderer.setRenderTarget(null);this.renderer.render(this.scene,this.camera);return}; this.renderer.setRenderTarget(this.target); this.renderer.render(this.scene, this.camera); this.renderer.setRenderTarget(null); this.renderer.render(this.postScene, this.postCamera) }
+ private render() { if (this.lost) return; this.renderer.info.reset();if(this.reduced){this.renderer.setRenderTarget(null);this.renderer.render(this.scene,this.camera);return}; this.post.render(1/60) }
  private report(status: "ready" | "lost" | "error") { this.host.dataset.vfxCount=String(this.vfx.count);this.bridge.emit("renderer", { status, calls: this.renderer.info.render.calls, geometries: this.renderer.info.memory.geometries, textures: this.renderer.info.memory.textures }) }
  destroy() {
   if (this.disposed) return
   this.disposed = true; this.renderer.setAnimationLoop(null); this.observer.disconnect(); this.cleanup.forEach(stop => stop()); this.cleanup.length = 0
   this.audio.dispose();this.vfx.dispose();this.actors.clear();this.partyPoses.clear();this.partyActions.clear(); this.instances.forEach(mesh => mesh.dispose()); this.instances.length = 0
-  this.materials.forEach(material => material.dispose()); this.materials.length = 0;this.floorTexture.dispose(); this.post.dispose(); this.target.dispose(); this.models.dispose()
-  this.scene.clear(); this.postScene.clear(); this.renderer.dispose(); this.renderer.forceContextLoss(); this.renderer.domElement.remove()
+  this.materials.forEach(material => material.dispose()); this.materials.length = 0;this.textures.dispose(); this.post.dispose(); this.decor.dispose(); this.weaponVisuals.dispose(); this.models.dispose()
+  this.scene.clear(); this.renderer.dispose(); this.renderer.forceContextLoss(); this.renderer.domElement.remove()
  }
 }
-function objectsHeight(kind: EnemyKind) { return dungeonObjects.includes(kind) ? 1.8 : kind==="bat"?3.4:kind==="mage"?3.5:2.5 }
+function objectsHeight(kind: EnemyKind) { return dungeonObjects.includes(kind) ? 1.8 : kind==="gargoyle"?3.8:kind==="deathknight"?3.1:kind==="mimic"||kind==="sporeling"?2.1:kind==="ghoul"?1.9:kind==="bat"?3.4:kind==="mage"||kind==="imp"||kind==="wisp"?3.5:kind==="golem"||kind==="troll"?3.4:kind==="rat"||kind==="slime"?1.6:kind==="wolf"||kind==="spider"||kind==="beetle"||kind==="serpent"?2:2.5 }
