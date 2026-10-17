@@ -178,3 +178,32 @@ Evidence: `verification/dungeon-visual-2026-10-16`. The persistent dungeon save 
 - [x] Replace dark block weather with restrained world-anchored ash, leaves and snow; retain Reduced Effects and instance bounds.
 - [ ] Final current-source coverage, build, types/lint, browser matrix and timed production profile. The completed pre-duel profile is historical and does not verify M14.
 - [ ] Final PR title/body and target master, per the latest user instruction; preserve the existing branch and finish checks first.
+
+## M15 - Rhythm-based duel pressure, per-break barricade and Indonesian word review, 2026-10-17
+
+- [x] Correct duel letters add calm (0.55s each, cap 1.5s); while calm, the boss holds a 3.4-unit standoff outside hammer reach and cannot wind up. Hesitation drains calm; typos clear it and trigger the rush. Simulated hammer damage per duel: 40 WPM 1.10 -> 0.45, 30 WPM 3.05 -> 0.90; 15% typo rate still costs about 2.5.
+- [x] Each armor break raises a fresh barricade centred on the hero (fixes a stale wall position and inherited near-zero HP in later combos). Barricade HP 24 -> 30 (about 24-27s under sustained pressure); stakes topple progressively; HUD reads the balance constant.
+- [x] Replace non-standard Indonesian words (e.g. dobrakkan, LULUHLANTAK, GEMPAKAN, KELAMNYA, Angkuh, nokta). BLIZZARD stays as the GDD-defined ultimate keyword.
+- [x] 198 tests/27 files at 100% coverage, lint, both TypeScript checks and build pass locally.
+- [ ] Browser E2E (boss barricade timeout raised to 45s for the larger wall) and the timed production profile; deferred to the final test pass.
+
+## M16 - Bestiary expansion, place weather, controls sheet and onboarding, 2026-10-17
+
+- [x] Fifteen new combatants with distinct movement, attack style, speed, armor, XP, unlock time and depth favourites; models, gait, labels and audio cues.
+- [x] Fix black loot/embers/projectiles/telegraphs (missing vertex colour attribute); weather bound to the current depth with per-place motifs; HUD depth name matches.
+- [x] Keyboard controls sheet (title, ready, pause), before-run primer with opt-out, and a Backspace cancel lesson with animated visuals.
+- [x] Boss duel staged on open floor (no ruins inside the ring), items and shots cleared, horde kept outside the intact fence; BOSS INCOMING / BOSS DUEL banners.
+- [x] Boss lines are attributed quotations and peribahasa; everyday vocabulary pack mixed into enemy words.
+- [x] 206 tests/27 files at 100% coverage, lint, both TypeScript checks and build pass locally (Chromium headless for browser tests).
+- [ ] Playwright E2E matrix and timed production profile.
+
+## M17 - Spectacle pass: weapons, new foes, PBR environment, ornate UI, 2026-10-17
+
+- [x] Automatic weapons (Spirit Blades orbit, Arcane Nova, Meteor Rain, Frost Aura), ranks 1-5, in `packages/game-rules/src/weapons.ts` behind a `CombatPort`; first drafts lead with a weapon. Spawn table moved to `roster.ts` and driven by bestiary unlock times (new silhouette roughly every 30s from the first minute).
+- [x] Five new foes (Gargoyle, Mimic, Sporeling, Ghoul, Death Knight); guard redesigned as an Orc Warden so no large foe resembles the hero. Blueprint registry in `apps/web/src/game/models/`.
+- [x] Fatality on the final layer of armored foes (shockwave), whirlwind every 8th word; hero move set (slash, thrust, uppercut, twin, leap, whirl, finisher) with hit-stop, flash and zoom punch.
+- [x] Native three.js post chain (outline/grade, UnrealBloomPass, OutputPass), procedural albedo+normal textures, vertex-glow emissive parts, sun shadows, rim light; walk-through floor decor (bones, rubble, grass, glowshrooms, candles, crystals, puddles, cracks, runes).
+- [x] Cross shapes removed (title crest, heal glyph, shield, potion, banner, dummy, helmet).
+- [x] Bestiary with in-engine portraits; title screen, HUD, and all dialogs (pause, defeat, draft, settings, history, controls) restyled with an ornate frame system; SFX recipes and adaptive percussion.
+- [x] Push review: production build, web TypeScript, rooms TypeScript and scoped ESLint (`apps/web/src packages e2e`) passed on 2026-10-17; staged diffs checked for whitespace and new module imports.
+- [ ] Unit/browser/E2E tests, coverage and production profile were not rerun for M17 at the user's request to stop implementation and push; title markup/model snapshot compatibility and CI remain unverified.

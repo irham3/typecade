@@ -105,9 +105,9 @@ Difficulty grows within entity caps: queued/offscreen spawns follow deterministi
 
 Obsidian Minotaur has layered armor and separate health. Armor loss starts a finite **BREAK COMBO** ending with `BLIZZARD`; the hero retreats to a safe 3.5-unit presentation/combat distance when too close. Correct characters damage the boss, but health cannot fall below one until the final displayed character. Completing a nonlethal line reforms armor; completing a lethal line grants the boss reward once. Never append an unseen continuation or discard a partially typed line.
 
-The exposed boss maintains a 2.2-unit approach/orbit radius (typo rushes stop at 1.9 units), continues chasing, weaving and committing to a visible 0.8-second hammer windup within 2.7 units. A hammer only hurts within 2.8 units and has a 3.2-second attack cooldown plus 0.65-second recovery. Correct characters push the boss back by up to 0.14 unit, capped by distance and walkable paths. Completing a word grants 0.8 seconds of guard and a safe 0.65-unit sidestep within the duel's inner area. Typos bring the boss 0.55 unit closer on a valid path and enable a two-second speed burst. Freeze effects still stop movement. This replaces the former fixed ten-second retaliation clock.
+Duel pressure follows typing rhythm, not raw speed. Every correct character adds 0.55 second of calm (cap 1.5 seconds; a fresh duel starts at the cap). While calm remains and no rush is active, the boss circles at a 3.4-unit standoff outside hammer reach and does not wind up, so any steady rhythm of roughly 20 WPM or faster holds it off. When calm runs out (hesitation) it closes to a 2.2-unit approach/orbit radius (typo rushes stop at 1.9 units). A typo clears all calm. The boss continues chasing, weaving and committing to a visible 0.8-second hammer windup within 2.7 units. A hammer only hurts within 2.8 units and has a 3.2-second attack cooldown plus 0.65-second recovery. Correct characters push the boss back by up to 0.14 unit, capped by distance and walkable paths. Completing a word grants 0.8 seconds of guard and a safe 0.65-unit sidestep within the duel's inner area. Typos bring the boss 0.55 unit closer on a valid path and enable a two-second speed burst. Freeze effects still stop movement. This replaces the former fixed ten-second retaliation clock.
 
-An authored wooden barricade encloses the paragraph duel at radius 5.5. It starts with 24 HP once per boss; later armor breaks do not repair it. Existing pursuers are moved outside on safe radial paths and three initial assailants join, subject to the normal 128-entity cap. Reinforcements enter at most once per three seconds, stopping at eight non-object pursuers. Assailants keep moving, then swing at the barricade. Incoming shots are intercepted. Shared damage admission allows one HP loss per 0.8 seconds at most: sustained immediate pressure breaks the wall after approximately 19–22 seconds, with travel/freeze able to delay it. This is an explicit baseline, not a measured promise for every typing speed.
+An authored wooden barricade encloses the paragraph duel at radius 5.5. Each armor break raises a fresh 30 HP barricade centred on the hero; completing a paragraph without killing the boss removes it, so a later combo never inherits a stale position or a nearly broken wall. Stakes topple progressively in the world as HP falls. Existing pursuers are moved outside on safe radial paths and three initial assailants join, subject to the normal 128-entity cap. Reinforcements enter at most once per three seconds, stopping at eight non-object pursuers. Assailants keep moving, then swing at the barricade. Incoming shots are intercepted. Shared damage admission allows one HP loss per 0.8 seconds at most: sustained immediate pressure breaks the wall after approximately 24–27 seconds (about the time a 27–30 WPM typist needs for an authored line), with travel/freeze able to delay it. This is an explicit baseline, not a measured promise for every typing speed.
 
 At zero HP the fence falls into debris, its HUD reports a breach, and ordinary contact/ranged attacks can hurt the player while the same paragraph/cursor remains active. A breach never ends the fight or opens a draft. The boss bypasses this protective wall and always remains a live opponent. Only actual HP death or completion of the last displayed combo character can resolve the duel. Pause/hidden tabs freeze the entire encounter. Bank every upgrade until the boss falls.
 
@@ -159,3 +159,37 @@ Store up to 50 local run records under `typecade:dungeon:history:v1`, keyed by r
 Clean word strikes land outside contact range: 1 unit for final hits and objects, 2.2 for remaining armor, 3.5 for bosses. Heavy armor hits interrupt minotaur/boss attacks with one second of recovery. Candidate landing points must be walkable and connected to the target; blocked candidates rotate around the target, then retain the current player position if none is safe. Loot outside the normal pickup radius stays on the floor.
 
 Indonesian supply/object/upgrade commands use natural alphabetic words: SABET replaces UP-SAPU. Difficulty punctuation remains restricted to the explicit mage/bomber enemy packs; item commands contain no synthetic prefixes or hyphens.
+
+## Expanded bestiary, place-bound weather and onboarding, 2026-10-17
+
+Fifteen additional combatants extend section 4. Each has its own steering, attack style, speed (`enemySpeed`) and unlock time; tuning lives in `enemyLunges` and `enemyProfiles` in the content pack.
+
+| Kind | Tag | Movement | Attack | Unlock |
+| --- | --- | --- | --- | --- |
+| slime | SLOW | hops; moves only while airborne | contact | 45 s |
+| rat | SWARM | fast jittering rush, spawns as a pack of up to three | contact | 60 s |
+| wolf | FAST | circles to flank beyond 3 units | 0.45 s windup pounce | 90 s |
+| spider | ERRATIC | sideways stop-and-go skitter | contact | 90 s |
+| archer | RANGED | holds 5.5–8 units and strafes | arrow (4.5 u/s) every ~3.6 s | 120 s |
+| imp | HIT & RUN | darts to 3.5 units, flees after firing | short firebolt | 150 s |
+| serpent | STRIKER | sinusoidal slither | 0.6 s windup strike from 1.4–3.6 units | 150 s |
+| beetle | RAM | slow approach, 2 armor words | long straight ram | 150 s |
+| wisp | ORBIT | orbits at 3.2 units | dive through the hero | 150 s |
+| shaman | SUPPORT | holds 4.5–6.5 units | wards a nearby ally with an extra armor word every 6 s (never the locked target) | 150 s |
+| golem | TANK | very slow, 3 armor words | planted ground slam within 2.6 units | after first boss |
+| wraith | BLINK | slow drift | blinks up to 2.6 units closer every 3.4 s | after first boss |
+| assassin | STALKER | moves to the hero's back (opposite last dash) | quick stab dash | after first boss |
+| troll | REGEN | slow, 2 armor words | regrows one armor word after 6 s untouched | after first boss |
+| necromancer | SUMMONER | holds 5–7 units | raises a skeleton every 8.5 s while under the threat cap | after first boss |
+
+Each depth favours residents: Ashen Courtyard skeletons/archers, Hollow Crypt wraiths/necromancers, Ember Foundry imps/golems, Frostbound Watch wolves, Verdant Sanctuary spiders/serpents/slimes. All entity, projectile and label caps from section 7 still apply; all randomness stays seeded.
+
+Weather now follows the current depth instead of a two-minute cycle: falling ash, rising crypt wisps, forge sparks, snow and falling leaves. Plain primitives used with vertex-coloured materials carry a white colour attribute, so loot, embers, projectiles and telegraphs show their intended tint instead of black.
+
+A before-run "How to play" primer (type, Backspace cancel, Tab, Esc) shows until the player opts out; it is reopenable from the ready screen. A keyboard controls sheet is available from the title, ready and pause screens. The combat tutorial gains an eight-step "Backspace cancels a lock" lesson that starts with a mistaken lock and only completes when the other foe falls.
+
+### Boss duel staging, quotations and everyday vocabulary, 2026-10-17
+
+- When armor breaks, the duel is staged on the nearest open floor whose whole barricade ring (radius 5.5 plus a 1.5 margin) avoids ruins and is reachable; the hero dashes there. Loose items (barrels, chests, supplies), in-flight shots and the sentry are cleared. Foes that cannot be placed outside the fence are removed, reinforcements only enter outside it, and any foe found inside an intact fence is pushed out before it acts. A "BOSS INCOMING" and a "BOSS DUEL" banner announce the two stages.
+- Boss lines are real quotations and proverbs (Sun Tzu, Marcus Aurelius, Seneca, Shakespeare, Confucius, Nietzsche; Indonesian peribahasa, Soekarno, Tan Malaka, Chairil Anwar, Ki Hajar Dewantara, Kartini), each ending in the GDD's BLIZZARD ultimate keyword; the attribution is shown under the line.
+- About 45% of words for eligible foes come from an everyday vocabulary pack (226 EN / 233 ID words), re-cased to the foe's style (lowercase, Title or UPPER) and length-limited per kind. Symbol foes, bosses, minotaurs and items keep their own packs.
