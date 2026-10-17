@@ -34,13 +34,26 @@ const item = (slot: HeroSlot, id: string, name: string, rarity: Rarity, note: st
   ({ id: `${slot}.${id}`, slot, name, rarity, price: rarityPrice[rarity], note })
 
 export const cosmetics: readonly CosmeticItem[] = [
-  item("hero", "warden", "Aldric, Warden", "starter", "Shield-first knight. Square stance, measured swings."),
-  item("hero", "rogue", "Kestrel, Cutpurse", "starter", "Low crouch, quick thrusts, never stands still."),
-  item("hero", "brute", "Brann Ironhide", "rare", "Stout dwarf. Heavy, grounded blows and a great red beard."),
-  item("hero", "duelist", "Lyra Vale", "rare", "Elven duelist. Tall, light on her feet, fast blade work."),
-  item("hero", "mage", "Morwen the Grey", "epic", "Battle mage who hovers above the stones with a bound wisp."),
+  item("hero", "warden", "Aldric the Lionheart", "starter", "Human knight. Royal blue tabard, gold lion shield, square stance."),
+  item("hero", "rogue", "Kestrel Blackfeather", "starter", "Human cutpurse. Crimson scarf, wavy kris, never stands still."),
+  item("hero", "duelist", "Lyra Vale", "starter", "Elf duelist. Platinum braid, forest-green coat, a swift rapier."),
+  item("hero", "brute", "Brann Ironhide", "rare", "Dwarf berserker. Great red braided beard and a forge hammer."),
+  item("hero", "frostborn", "Ragnar Frostborn", "rare", "Northman raider. Wolf-pelt hood, ice-white beard, a frost axe."),
+  item("hero", "ronin", "Kenji Ashblade", "rare", "Wandering swordsman. Black topknot, red sash, a long katana."),
+  item("hero", "sylvan", "Thorne Oakheart", "rare", "Sylvan druid. Bark skin, antlers, moss beard and a thorn staff."),
+  item("hero", "mage", "Morwen the Grey", "epic", "Battle mage. Silver hair, violet robes, a bound wisp; she hovers."),
+  item("hero", "orc", "Grukk Tuskborn", "epic", "Orc warchief. Green hide, tusks, black mohawk and a bone cleaver."),
+  item("hero", "pyromancer", "Kaela Emberheart", "epic", "Fire sorceress. Living flame hair and an ember wand."),
+  item("hero", "dragonkin", "Saffi Sunscale", "epic", "Dragonkin lancer. Golden scales, swept horns and a tail."),
+  item("hero", "avian", "Mira Featherfall", "epic", "Avian skydancer. Teal feather crest and wide wings."),
+  item("hero", "lunarian", "Selene Moonveil", "legendary", "Lunarian priestess. Pale moon skin, crescent halo, moon glaive."),
+  item("hero", "darkelf", "Vesper Nightshade", "legendary", "Dark elf assassin. Dusk skin, white ponytail, red eyes, twin fangs."),
+  item("hero", "leonin", "Rhaz Sunmane", "legendary", "Leonin champion. Lion mane, golden plate and a greatsword."),
 
+  item("head", "none", "Own Hair", "starter", "The hero's own hair and features, nothing over them."),
   item("head", "squire", "Squire Cap", "starter", "Padded cloth cap."),
+  item("head", "shadowhood", "Shadow Hood", "starter", "Deep black hood with a crimson lining."),
+  item("head", "wolfpelt", "Wolf Pelt", "rare", "A wolf's head worn as a hood."),
   item("head", "bare", "Bare Head", "starter", "Short hair, no helmet."),
   item("head", "bandana", "Bandana", "starter", "Knotted cloth over the hair."),
   item("head", "coif", "Mail Coif", "starter", "Chainmail hood, face open."),
@@ -56,6 +69,11 @@ export const cosmetics: readonly CosmeticItem[] = [
   item("head", "crown", "Crown of the Keep", "legendary", "Gold circlet over a full helm."),
 
   item("face", "steady", "Steady", "starter", "Calm eyes."),
+  item("face", "lashes", "Bright Eyes", "starter", "Lashes and rose lips."),
+  item("face", "moonlit", "Moonlit Eyes", "legendary", "Glowing pale eyes and silver lips."),
+  item("face", "warpaint", "War Paint", "epic", "Red stripes under a heavy brow."),
+  item("face", "redeyes", "Crimson Gaze", "legendary", "Burning red eyes, dark lips."),
+  item("face", "slit", "Dragon Eyes", "epic", "Golden slit eyes and scaled cheeks."),
   item("face", "scar", "Scarred", "starter", "A scar across one eye."),
   item("face", "stern", "Stern", "starter", "Heavy brows, set jaw."),
   item("face", "stubble", "Stubble", "starter", "A week on the road."),
@@ -68,6 +86,15 @@ export const cosmetics: readonly CosmeticItem[] = [
   item("face", "ember", "Ember Eyes", "legendary", "Burning eyes that leave a glow."),
 
   item("body", "gambeson", "Padded Gambeson", "starter", "Quilted cloth coat."),
+  item("body", "tabard", "Lion Tabard", "starter", "Steel plate under a tabard with a gold lion."),
+  item("body", "duelcoat", "Duelist Coat", "starter", "Fitted coat with flared tails and a gold sash."),
+  item("body", "furcoat", "Northern Furs", "rare", "Heavy fur coat over mail."),
+  item("body", "ronin", "Ronin Garb", "rare", "Wide-sleeved robe, one armored shoulder, red sash."),
+  item("body", "barkhide", "Barkhide", "rare", "Living bark plates bound with vines."),
+  item("body", "bonemail", "Bone Mail", "epic", "Hide harness with skull pauldrons."),
+  item("body", "scalemail", "Dragon Scale", "epic", "Overlapping scales with a plated skirt."),
+  item("body", "starsilk", "Starsilk Gown", "legendary", "Midnight gown with silver stars."),
+  item("body", "shadowleathers", "Shadow Leathers", "legendary", "Fitted leathers laced at the waist."),
   item("body", "jerkin", "Leather Jerkin", "starter", "Belted leather vest."),
   item("body", "tunic", "Belted Tunic", "starter", "Wool tunic with a buckle."),
   item("body", "brigandine", "Brigandine", "starter", "Leather coat with rivets."),
@@ -87,6 +114,8 @@ export const cosmetics: readonly CosmeticItem[] = [
   item("legs", "spurred", "Spurred Sabatons", "epic", "Pointed steel boots with spurs."),
 
   item("back", "none", "Nothing", "starter", "Travel light."),
+  item("back", "warcape", "Royal Cape", "starter", "Crimson cape with a gold clasp."),
+  item("back", "leafcloak", "Leaf Cloak", "starter", "Cloak of layered leaves."),
   item("back", "satchel", "Satchel", "starter", "Small leather bag."),
   item("back", "bedroll", "Bedroll", "starter", "Blanket strapped across the shoulders."),
   item("back", "scabbard", "Scabbard", "starter", "A spare blade on the back."),
@@ -98,6 +127,18 @@ export const cosmetics: readonly CosmeticItem[] = [
   item("back", "mantle", "Phoenix Mantle", "legendary", "Feathered mantle of flame."),
 
   item("weapon", "arming", "Arming Sword", "starter", "Straight one-handed blade."),
+  item("weapon", "kris", "Kris", "starter", "Wavy-bladed knife."),
+  item("weapon", "rapier", "Rapier", "starter", "Thin blade with a swept gold guard."),
+  item("weapon", "frostaxe", "Frost Axe", "rare", "Bearded axe with an ice edge."),
+  item("weapon", "katana", "Katana", "rare", "Long curved blade, wrapped grip."),
+  item("weapon", "thornstaff", "Thorn Staff", "rare", "Gnarled staff sprouting leaves."),
+  item("weapon", "arcstaff", "Arcane Staff", "epic", "Staff cradling a violet orb."),
+  item("weapon", "cleaver", "Bone Cleaver", "epic", "Huge notched blade on a bone handle."),
+  item("weapon", "emberwand", "Ember Wand", "epic", "Short wand holding a living flame."),
+  item("weapon", "dragonlance", "Dragon Lance", "epic", "Gold dragon-head spear with a red tassel."),
+  item("weapon", "wingblade", "Wing Blade", "epic", "Curved sabre with a feather guard."),
+  item("weapon", "moonglaive", "Moon Glaive", "legendary", "Pole with a glowing crescent blade."),
+  item("weapon", "twinfang", "Twin Fang", "legendary", "Curved dagger with a red-lit edge."),
   item("weapon", "axe", "Hand Axe", "starter", "Short bearded axe."),
   item("weapon", "shortsword", "Shortsword", "starter", "Short blade, wide guard."),
   item("weapon", "club", "Iron-bound Club", "starter", "Oak with two iron rings."),
@@ -113,6 +154,7 @@ export const cosmetics: readonly CosmeticItem[] = [
 
   item("offhand", "bare", "Bare Hand", "starter", "Gloved fist."),
   item("offhand", "buckler", "Wooden Buckler", "starter", "Small round shield."),
+  item("offhand", "lionshield", "Lion Shield", "starter", "Blue heater shield with a gold lion."),
   item("offhand", "torch", "Torch", "starter", "Lights the way."),
   item("offhand", "dagger", "Parrying Dagger", "starter", "Held point-down."),
   item("offhand", "roundshield", "Round Shield", "starter", "Planked wood with a steel boss."),
@@ -121,6 +163,21 @@ export const cosmetics: readonly CosmeticItem[] = [
   item("offhand", "tower", "Tower Shield", "epic", "Tall rectangular shield."),
 
   item("dye", "keep", "Keep Blue", "starter", "Blue cloth, steel trim."),
+  item("dye", "lionheart", "Lionheart", "starter", "Royal blue, gold trim."),
+  item("dye", "bloodmoon", "Blood Moon", "starter", "Charcoal, crimson trim."),
+  item("dye", "sylvan", "Sylvan", "starter", "Forest green, ivory and gold."),
+  item("dye", "forgefire", "Forgefire", "rare", "Rust red, bronze trim."),
+  item("dye", "glacier", "Glacier", "rare", "Ice blue, frost white."),
+  item("dye", "ashen", "Ashen", "rare", "Black, blood-red trim."),
+  item("dye", "grove", "Grove", "rare", "Moss green, sap gold."),
+  item("dye", "amethyst", "Amethyst", "epic", "Violet, silver trim."),
+  item("dye", "warband", "Warband", "epic", "Hide brown, bone trim."),
+  item("dye", "cinder", "Cinder", "epic", "Flame red, ember gold."),
+  item("dye", "sunscale", "Sunscale", "epic", "Crimson, sun gold."),
+  item("dye", "skyfeather", "Skyfeather", "epic", "Sky teal, cloud white."),
+  item("dye", "lunar", "Lunar", "legendary", "Midnight, moon silver."),
+  item("dye", "nightshade", "Nightshade", "legendary", "Deep violet, magenta trim."),
+  item("dye", "pride", "Pride", "legendary", "Royal red, lion gold."),
   item("dye", "ash", "Ash Grey", "starter", "Grey cloth, iron trim."),
   item("dye", "ochre", "Ochre", "starter", "Yellow-brown cloth, brass trim."),
   item("dye", "teal", "Teal", "starter", "Blue-green cloth, steel trim."),
@@ -134,11 +191,49 @@ export const cosmetics: readonly CosmeticItem[] = [
   item("dye", "obsidian", "Obsidian & Ember", "legendary", "Black cloth, ember trim."),
 ]
 
-/** What a brand-new profile wears. Every id here must be a starter item. */
-export const defaultLoadout: Readonly<Record<HeroSlot, string>> = {
-  hero: "hero.warden", head: "head.squire", face: "face.steady", body: "body.gambeson", legs: "legs.boots",
-  back: "back.none", weapon: "weapon.arming", offhand: "offhand.buckler", dye: "dye.keep",
+export type HeroGender = "male" | "female"
+export interface HeroDetail { race: string; gender: HeroGender }
+
+/** Race and gender shown in the Armory; every hero is clearly one or the other. */
+export const heroDetails: Readonly<Record<string, HeroDetail>> = {
+  "hero.warden": { race: "Human", gender: "male" }, "hero.rogue": { race: "Human", gender: "male" }, "hero.duelist": { race: "Elf", gender: "female" },
+  "hero.brute": { race: "Dwarf", gender: "male" }, "hero.frostborn": { race: "Northman", gender: "male" }, "hero.ronin": { race: "Human", gender: "male" },
+  "hero.sylvan": { race: "Sylvan", gender: "male" }, "hero.mage": { race: "Human", gender: "female" }, "hero.orc": { race: "Orc", gender: "male" },
+  "hero.pyromancer": { race: "Human", gender: "female" }, "hero.dragonkin": { race: "Dragonkin", gender: "female" }, "hero.avian": { race: "Avian", gender: "female" },
+  "hero.lunarian": { race: "Lunarian", gender: "female" }, "hero.darkelf": { race: "Dark Elf", gender: "female" }, "hero.leonin": { race: "Leonin", gender: "male" },
 }
+
+type Kit = Readonly<Record<Exclude<HeroSlot, "hero">, string>>
+const kit = (head: string, face: string, body: string, legs: string, back: string, weapon: string, offhand: string, dye: string): Kit =>
+  ({ head: `head.${head}`, face: `face.${face}`, body: `body.${body}`, legs: `legs.${legs}`, back: `back.${back}`, weapon: `weapon.${weapon}`, offhand: `offhand.${offhand}`, dye: `dye.${dye}` })
+
+/**
+ * Each hero's signature outfit: what they wear when first chosen, and what buying them unlocks.
+ * Free heroes use only starter items. Players can restyle any hero; each keeps its own look.
+ */
+export const heroKits: Readonly<Record<string, Kit>> = {
+  "hero.warden": kit("none", "stern", "tabard", "greaves", "warcape", "arming", "lionshield", "lionheart"),
+  "hero.rogue": kit("shadowhood", "scar", "jerkin", "wraps", "scabbard", "kris", "dagger", "bloodmoon"),
+  "hero.duelist": kit("none", "lashes", "duelcoat", "highboots", "leafcloak", "rapier", "bare", "sylvan"),
+  "hero.brute": kit("horned", "beard", "plate", "plate", "none", "hammer", "roundshield", "forgefire"),
+  "hero.frostborn": kit("wolfpelt", "beard", "furcoat", "chain", "none", "frostaxe", "roundshield", "glacier"),
+  "hero.ronin": kit("none", "stubble", "ronin", "wraps", "scabbard", "katana", "bare", "ashen"),
+  "hero.sylvan": kit("none", "steady", "barkhide", "wraps", "leafcloak", "thornstaff", "bare", "grove"),
+  "hero.mage": kit("none", "lashes", "robe", "wraps", "longcape", "arcstaff", "bare", "amethyst"),
+  "hero.orc": kit("none", "warpaint", "bonemail", "wraps", "none", "cleaver", "bare", "warband"),
+  "hero.pyromancer": kit("none", "lashes", "robe", "wraps", "none", "emberwand", "bare", "cinder"),
+  "hero.dragonkin": kit("none", "slit", "scalemail", "spurred", "none", "dragonlance", "bare", "sunscale"),
+  "hero.avian": kit("none", "lashes", "tunic", "wraps", "none", "wingblade", "bare", "skyfeather"),
+  "hero.lunarian": kit("none", "moonlit", "starsilk", "highboots", "none", "moonglaive", "bare", "lunar"),
+  "hero.darkelf": kit("none", "redeyes", "shadowleathers", "highboots", "none", "twinfang", "dagger", "nightshade"),
+  "hero.leonin": kit("none", "stern", "gilded", "plate", "cape", "greatsword", "bare", "pride"),
+}
+
+/** The full look a hero wears before the player restyles it. */
+export const kitLoadout = (heroId: string): Readonly<Record<HeroSlot, string>> => ({ hero: heroId, ...(heroKits[heroId] ?? heroKits["hero.warden"]!) })
+
+/** What a brand-new profile wears. Every id here must be a starter item. */
+export const defaultLoadout: Readonly<Record<HeroSlot, string>> = kitLoadout("hero.warden")
 
 /** Dye palettes: cloth (primary), trim (secondary), metal and leather tones. */
 export const dyePalettes: Record<string, { cloth: number; trim: number; metal: number; leather: number; glow?: number }> = {
@@ -154,6 +249,21 @@ export const dyePalettes: Record<string, { cloth: number; trim: number; metal: n
   "dye.midnight": { cloth: 0x22304f, trim: 0xc8d2dc, metal: 0x8e9cb0, leather: 0x352a28 },
   "dye.ivory": { cloth: 0xe6e0cf, trim: 0xe0b85a, metal: 0xd4d0c4, leather: 0x6a4a32 },
   "dye.obsidian": { cloth: 0x1d1b22, trim: 0xff8a3d, metal: 0x3a3842, leather: 0x2a2024, glow: 0xff8a3d },
+  "dye.lionheart": { cloth: 0x24479a, trim: 0xe8b84a, metal: 0xc4ccd6, leather: 0x5a3a24 },
+  "dye.bloodmoon": { cloth: 0x2b2a33, trim: 0xc8323a, metal: 0x9aa0a8, leather: 0x3a2622 },
+  "dye.sylvan": { cloth: 0x2f6b45, trim: 0xf0e3c0, metal: 0xe0b85a, leather: 0x6a4428 },
+  "dye.forgefire": { cloth: 0x8e3b22, trim: 0xe0a040, metal: 0x8c8f94, leather: 0x4a2e1e },
+  "dye.glacier": { cloth: 0x3a6a8e, trim: 0xe8f4ff, metal: 0xb8d0e0, leather: 0x5a4030, glow: 0xa9e9ff },
+  "dye.ashen": { cloth: 0x1f1f24, trim: 0xc0302a, metal: 0xd0d4d8, leather: 0x3a2a20 },
+  "dye.grove": { cloth: 0x4a6a2a, trim: 0xd0b050, metal: 0x8a7a5a, leather: 0x5a3a22, glow: 0x7dff9a },
+  "dye.amethyst": { cloth: 0x5b3a8a, trim: 0xd8d8ee, metal: 0xb4b2c8, leather: 0x3a2a3a, glow: 0xbca1ff },
+  "dye.warband": { cloth: 0x5a3a22, trim: 0xd8c8a0, metal: 0x707070, leather: 0x3a2a1a },
+  "dye.cinder": { cloth: 0xa8321e, trim: 0xffb040, metal: 0xc89040, leather: 0x4a2418, glow: 0xff8a3d },
+  "dye.sunscale": { cloth: 0x8a2a2a, trim: 0xffcc55, metal: 0xd8a64a, leather: 0x4a2a1a },
+  "dye.skyfeather": { cloth: 0x2a8aa8, trim: 0xf4f4f0, metal: 0xc0d8e0, leather: 0x6a4a2a },
+  "dye.lunar": { cloth: 0x262c5e, trim: 0xe4ecff, metal: 0xc8d4f0, leather: 0x3a3a5a, glow: 0x9ff5fa },
+  "dye.nightshade": { cloth: 0x2a1f3a, trim: 0xd03a7a, metal: 0xa8a8c8, leather: 0x1f1a26, glow: 0xff4a5a },
+  "dye.pride": { cloth: 0x7a1f1f, trim: 0xf0c050, metal: 0xd8b860, leather: 0x4a2a18 },
 }
 
 export function cosmeticById(id: string): CosmeticItem | undefined {

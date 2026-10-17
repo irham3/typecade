@@ -1,19 +1,19 @@
 /**
- * Single source of truth for the scene's value hierarchy, tuned for long sessions:
- * the environment sits in a darker, low-noise mid-range so actors, labels and effects
+ * Single source of truth for the scene's value hierarchy, tuned for long sessions. Brightened after
+ * playtest feedback ("too dark, characters lose detail"): the environment sits in a lighter, low-noise mid-range so actors, labels and effects
  * (the gameplay-relevant layer) are always the brightest, most saturated things on screen.
  */
 export const environmentGrade = {
   lights: {
     /** Sky/ground ambient. Lower keeps floors from washing out. */
-    hemisphere: 1.1,
+    hemisphere: 1.75,
     /** Key light; also casts the shadows that ground actors. */
-    sun: 2.5,
-    fill: .85,
+    sun: 3.1,
+    fill: 1.2,
     /** Back rim that outlines silhouettes against the floor. */
     rim: 1.45,
     /** Torch point lights: base intensity and flicker amplitude. */
-    torch: 13,
+    torch: 15,
     torchFlicker: 1.6,
   },
   surfaces: {
@@ -36,8 +36,8 @@ export const environmentGrade = {
     bloomStrength: .32,
     bloomRadius: .25,
     bloomThreshold: .92,
-    saturation: 1.08,
-    vignette: .34,
+    saturation: 1.2,
+    vignette: .18,
     /** Depth-edge ink line strength; crisp silhouettes separate actors from the floor. */
     outline: .85,
     /** Self-illumination of eyes/runes. Too high reads as a glow halo over faces. */
@@ -47,7 +47,7 @@ export const environmentGrade = {
     /** Ground-contact blob shadow opacity: anchors characters so they don't float on the floor. */
     contactShadow: .55,
   },
-  fogDensity: .02,
+  fogDensity: .011,
   decor: {
     runeOpacity: .26,
     runePulse: .1,
@@ -55,8 +55,8 @@ export const environmentGrade = {
 } as const
 
 /** Target relative luminance for each depth's floor tint and fog, so contrast holds as depths change. */
-const BIOME_STONE_LUMINANCE = .3
-const BIOME_FOG_LUMINANCE = .075
+const BIOME_STONE_LUMINANCE = .4
+const BIOME_FOG_LUMINANCE = .13
 
 function luminance(hex: number) {
   const r = (hex >> 16 & 255) / 255, g = (hex >> 8 & 255) / 255, b = (hex & 255) / 255

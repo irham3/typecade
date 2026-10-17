@@ -13,8 +13,6 @@ import { bossTrack, depthTracks, titleTrack, type MusicTrack } from "./audio/mus
 /** Optional shaping for a single synth voice. */
 export interface VoiceShape { attack?: number; vibratoRate?: number; vibratoDepth?: number; delay?: number }
 
-/** Minimum time battle music holds after the last surge or pressure peak. */
-const BATTLE_HOLD_SECONDS = 20
 
 type Mood = "title" | "dojo" | "arena" | "draft" | "dead" | "paused"
 type Bus = "music" | "effects" | "ambience"
@@ -46,7 +44,6 @@ export class DungeonAudio {
  private samples: SampleBank | null = null
  private recordedMusic: GainNode | null = null
  private musicTrack: MusicTrackId | null = null
- private battleSince = -100
  private musicVolume = .85
  private effectsVolume = 1
  private nextBeat = 0
@@ -115,17 +112,17 @@ export class DungeonAudio {
   this.samples = new SampleBank(ctx, this.buses.effects!)
   void this.samples.load()
  }
- /** Picks the recorded track for the scene. Battle music needs a surge or high pressure, and holds for 20 s to avoid flip-flopping. */
+ /** Picks the recorded track for the scene: only the boss duel and defeat use recordings; the synthesized score plays the rest. */
  private syncRecordings() {
   const ctx = this.context, deck = this.musicDeck
   if (!ctx || !deck) return
-  const { mood, boss, surge } = this.scene
+  const { mood, boss } = this.scene
   let track: MusicTrackId | null
-  if (mood === "title" || mood === "dojo") track = "menu"
-  else if (mood === "dead") track = "defeat"
+  // The upbeat synthesized themes carry the title and normal play (the recorded menu/dungeon/battle beds read as gloomy);
+  // recordings stay for the boss duel and the defeat sting.
+  if (mood === "dead") track = "defeat"
   else if (boss) track = "boss"
-  else if (surge || this.intensity > .8) { track = "battle"; this.battleSince = ctx.currentTime }
-  else track = this.musicTrack === "battle" && ctx.currentTime - this.battleSince < BATTLE_HOLD_SECONDS ? "battle" : "dungeon"
+  else track = null
   if (track !== this.musicTrack) { this.musicTrack = track; deck.setTrack(track ? musicTracks[track] : null, track !== "defeat") }
   deck.setMuffled(mood === "draft" || mood === "paused")
   this.ambienceDeck?.setTrack(mood === "title" ? null : ambienceTrack)
@@ -259,19 +256,20 @@ export class DungeonAudio {
   if (scene.boss) return bossTrack
   return depthTracks[(scene.depth ?? 0) % depthTracks.length]!
  }
- play(kind: string, pan = 0) {
+ /** Plays a cue. `rate` shifts its pitch (typing ticks climb as a word fills in). */
+ play(kind: string, pan = 0, rate = 1) {
   const ctx = this.context
   if (!ctx || ctx.state !== "running" || !this.visible || !this.masterVolume || !this.effectsVolume || this.scene.mood === "paused") return
-  const now = ctx.currentTime, major = ["hurt", "defeat", "boss", "level", "upgrade", "storm", "cleave", "heal", "explosion", "victory", "finisher", "meteor", "nova", "whirl", "leap", "surge"].includes(kind)
-  const gap = kind === "tick" ? .055 : kind.startsWith("enemy-") ? 1.4 : major ? .12 : .1
+  const now = ctx.currentTime, major = ["hurt", "defeat", "boss", "level", "upgrade", "storm", "cleave", "heal", "explosion", "victory", "finisher", "meteor", "nova", "whirl", "leap", "surge", "laststand"].includes(kind)
+  const gap = kind === "tick" ? .03 : kind === "typo" ? .07 : kind === "strike" ? .04 : kind.startsWith("enemy-") ? 1.4 : major ? .12 : .1
   if (now - (this.cooldowns.get(kind) ?? -10) < gap) return
   if (kind.startsWith("enemy-")) { if (now - (this.cooldowns.get("enemy") ?? -10) < .65) return; this.cooldowns.set("enemy", now) }
   this.cooldowns.set(kind, now); this.variation++
   this.layerSamples(kind, pan)
-  const pitch = [1, 1.035, .97, 1.015, .985][this.variation % 5]!, priority = kind === "hurt" || kind === "defeat" ? 4 : major ? 3 : kind === "tick" || kind.startsWith("enemy-") ? 0 : 1
+  const pitch = (kind === "tick" ? 1 : [1, 1.035, .97, 1.015, .985][this.variation % 5]!) * Math.max(.25, Math.min(4, rate)), priority = kind === "hurt" || kind === "defeat" ? 4 : major || kind === "strike" ? 3 : kind === "typo" ? 2 : kind === "tick" || kind.startsWith("enemy-") ? 0 : 1
   const tone = (freq: number, duration: number, level: number, type: OscillatorType | "noise", end = freq, delay = 0) => this.sound(freq * pitch, duration, level * mixLevels.effectsRecipeGain, "effects", now + delay, type, end * pitch, pan, priority)
   const chime = (notes: number[], level:number, spacing:number) => notes.forEach((n, i) => tone(hz(n), .3, level, "sine", hz(n), i * spacing))
-  if (major && this.duck) {
+  if ((major || kind === "strike") && this.duck) {
    this.duck.gain.cancelScheduledValues(now); this.duck.gain.setValueAtTime(this.duck.gain.value, now)
    this.duck.gain.linearRampToValueAtTime(mixLevels.duckTo, now + .025); this.duck.gain.setTargetAtTime(1, now + .12, .16)
   }
@@ -288,7 +286,7 @@ export class DungeonAudio {
    case "mana": chime([81,86,93],.17,.05);break
    case "deploy": tone(190,.15,.2,"square",270);chime([69,74,81],.16,.07);break
    case "ui": tone(660, .055, .055, "sine", 880); break
-   case "tick": tone(1100, .035, .035, "sine", 750); break
+   case "tick": tone(1100, .035, .05, "sine", 900); tone(3200, .012, .02, "noise"); break
    case "slash": case "dust": tone(2100, .12, .22, "noise"); tone(430, .075, .13, "triangle", 100); tone(2600, .18, .05, "sine", 2400, .02); break
    case "cleave": tone(1300, .32, .37, "noise"); tone(190, .24, .3, "triangle", 45); break
    case "hurt": tone(90, .24, .46, "triangle", 34); tone(750, .14, .28, "noise"); break

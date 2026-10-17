@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { DungeonEvents, DungeonLanguage, DungeonState } from "@typecade/contracts"
-import { SurvivalRun, restoreDungeonRun } from "@typecade/game-rules"
+import { SurvivalRun, restoreDungeonRun, runTalentsFor } from "@typecade/game-rules"
 import { GameEventBridge } from "../bridge/game-event-bridge"
 import { rememberRun } from "../run-history"
 import { readStorage, writeStorage } from "../storage"
+import { talentStore } from "../profile/talentStore"
+
+/** A brand-new run carries the skill-tree ranks owned right now. */
+const newRun = (language?: DungeonLanguage) => new SurvivalRun(`run-${Date.now()}`, language, undefined, runTalentsFor(talentStore.getSnapshot().ranks))
 
 export const dungeonSaveKey = "typecade:dungeon:run:v1"
 const bestKey = "typecade:dungeon:best:v1"
-export const dungeonSnapshot = (s: DungeonState): DungeonState => ({ ...s, player: { ...s.player }, procs:{...s.procs},bossArena:s.bossArena?{...s.bossArena}:null,supplies:{...s.supplies},sentry:s.sentry?{...s.sentry}:null, enemies: s.enemies.map(e => ({ ...e, words: [...e.words] })), recentWords:[...s.recentWords], queue: [...s.queue], offers: [...s.offers], skills: { cleave: { ...s.skills.cleave }, storm: { ...s.skills.storm }, heal: { ...s.skills.heal } }, relics: { ...s.relics }, weapons: { orbit: { ...s.weapons.orbit }, nova: { ...s.weapons.nova }, meteor: { ...s.weapons.meteor }, frost: { ...s.weapons.frost } }, orbitHits: { ...s.orbitHits } })
+export const dungeonSnapshot = (s: DungeonState): DungeonState => ({ ...s, player: { ...s.player }, procs:{...s.procs},bossArena:s.bossArena?{...s.bossArena}:null,supplies:{...s.supplies},sentry:s.sentry?{...s.sentry}:null, enemies: s.enemies.map(e => ({ ...e, words: [...e.words] })), recentWords:[...s.recentWords], queue: [...s.queue], offers: [...s.offers], skills: { cleave: { ...s.skills.cleave }, storm: { ...s.skills.storm }, heal: { ...s.skills.heal } }, relics: { ...s.relics }, weapons: { orbit: { ...s.weapons.orbit }, nova: { ...s.weapons.nova }, meteor: { ...s.weapons.meteor }, frost: { ...s.weapons.frost } }, orbitHits: { ...s.orbitHits }, talents: { ranks: { ...s.talents.ranks }, lastStand: s.talents.lastStand } })
 
 export function useSurvivalRun(enabled: boolean) {
- const [initial] = useState(() => restoreDungeonRun(readStorage("localStorage", dungeonSaveKey)) ?? new SurvivalRun(`run-${Date.now()}`))
+ const [initial] = useState(() => restoreDungeonRun(readStorage("localStorage", dungeonSaveKey)) ?? newRun())
  const run = useRef(initial)
  const [bridge] = useState(() => new GameEventBridge<DungeonEvents>(new Set(["frame", "screen", "settings", "appearance"])))
  const [view, setView] = useState(() => dungeonSnapshot(initial.state))
@@ -27,7 +31,7 @@ export function useSurvivalRun(enabled: boolean) {
  const input = useCallback((key: string) => { run.current.input(key); publish(); if (["paused", "draft", "dead"].includes(run.current.state.phase)) save() }, [publish, save])
  const pause = useCallback(() => { run.current.pause(); publish(); save() }, [publish, save])
  const resume = useCallback(() => { run.current.resume(); publish() }, [publish])
- const fresh = useCallback((language: DungeonLanguage) => { rememberRun(run.current.state,true); run.current = new SurvivalRun(`run-${Date.now()}`, language); publish(); save() }, [publish, save])
+ const fresh = useCallback((language: DungeonLanguage) => { rememberRun(run.current.state,true); run.current = newRun(language); publish(); save() }, [publish, save])
  const start = useCallback(() => { run.current.start(); publish() }, [publish])
  const checkpoint = useCallback(()=>run.current.serialize(),[])
  const restore = useCallback((raw:string)=>{const next=restoreDungeonRun(raw);if(!next)return false;run.current=next;publish();save();return true},[publish,save])

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import type { HeroLoadout, HeroSlot } from "@typecade/contracts"
-import { cosmeticById, cosmetics, heroSlots, type CosmeticItem } from "@typecade/content"
+import { cosmeticById, cosmetics, heroDetails, heroKits, heroSlots, type CosmeticItem } from "@typecade/content"
+import { lookFor } from "@typecade/game-rules"
 import { heroProfileStore, useHeroProfile } from "../profile/heroProfileStore"
 import { CoinIcon } from "./ui/CoinIcon"
 
@@ -28,7 +29,8 @@ export function Armory({ onPreview, onClose }: ArmoryProps) {
   const equipped = profile.loadout[item.slot] === selected
 
   // Try-on: show the selected item over the equipped look; restore on leave.
-  useEffect(() => { onPreview({ ...profile.loadout, [item.slot]: selected }) }, [onPreview, profile.loadout, item.slot, selected])
+  // Heroes preview in their own saved look (or signature kit); other slots try on over the equipped look.
+  useEffect(() => { onPreview(item.slot === "hero" ? { ...lookFor(profile, selected), hero: selected } : { ...profile.loadout, [item.slot]: selected }) }, [onPreview, profile, item.slot, selected])
   useEffect(() => () => onPreview(heroProfileStore.getSnapshot().loadout), [onPreview])
 
   const chooseSlot = (next: HeroSlot) => { setSlot(next); setSelected(profile.loadout[next]); setMessage("") }
@@ -55,7 +57,7 @@ export function Armory({ onPreview, onClose }: ArmoryProps) {
           return (
             <li key={entry.id}>
               <button className={`armory-item rarity-${entry.rarity} ${entry.id === selected ? "selected" : ""}`} onClick={() => { setSelected(entry.id); setMessage("") }} aria-pressed={entry.id === selected}>
-                <span className="armory-item-name">{entry.name}</span>
+                <span className="armory-item-name">{entry.name}{heroDetails[entry.id] && <small className={`hero-tag gender-${heroDetails[entry.id]!.gender}`}>{heroDetails[entry.id]!.gender === "female" ? "♀" : "♂"} {heroDetails[entry.id]!.race}</small>}</span>
                 <span className="armory-item-state">{isEquipped ? "Equipped" : isOwned ? "Owned" : <><CoinIcon />{coins(entry.price)}</>}</span>
               </button>
             </li>
@@ -67,6 +69,7 @@ export function Armory({ onPreview, onClose }: ArmoryProps) {
           <strong>{item.name}</strong>
           <span className={`armory-rarity rarity-${item.rarity}`}>{rarityLabel[item.rarity]}</span>
           <p>{item.note}</p>
+          {item.slot === "hero" && !owned && <p className="armory-kit">Comes with {Object.values(heroKits[item.id] ?? {}).map(id => cosmeticById(id)?.name).filter(Boolean).join(", ")}.</p>}
         </div>
         {equipped ? <button disabled>Equipped</button>
           : owned ? <button className="primary-action" onClick={equip}>Equip</button>

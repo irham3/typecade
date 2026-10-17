@@ -158,3 +158,7 @@
   .result-dialog .section-label { margin: 10px 0 6px }
   .result-dialog .record-ribbon { margin-bottom: 8px }
 }
+
+/* About: plain reading page. */
+.about-dialog ul { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 6px }
+.about-dialog .section-label { margin-top: 14px }

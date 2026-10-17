@@ -1,5 +1,5 @@
 import type { DungeonState } from "../../contracts/src/survival"
-import { cosmeticById, cosmetics, defaultLoadout, heroSlots, type HeroSlot } from "../../content/src/cosmetics"
+import { cosmeticById, cosmetics, defaultLoadout, heroKits, heroSlots, kitLoadout, type HeroSlot } from "../../content/src/cosmetics"
 
 export const PROFILE_VERSION = 1
 
@@ -13,6 +13,8 @@ export interface HeroProfile {
   paidRuns: readonly string[]
   /** UTC day (YYYY-MM-DD) of the last first-run-of-the-day bonus. */
   bonusDay: string
+  /** Each hero's own saved look, so switching heroes never loses an outfit. Missing heroes wear their kit. */
+  looks: Readonly<Record<string, Readonly<Record<HeroSlot, string>>>>
 }
 
 /** Coin rewards. A 4-minute run earns ~300, a long 10-minute run hits the 900 cap; legendaries take 50+ long runs. */
@@ -21,7 +23,7 @@ export const coinTuning = { perSecond: .6, perKill: .5, perLevel: 6, perGold: .0
 const starterIds = cosmetics.filter(entry => entry.price === 0).map(entry => entry.id)
 
 export function createHeroProfile(): HeroProfile {
-  return { version: PROFILE_VERSION, coins: 0, owned: starterIds, loadout: { ...defaultLoadout }, paidRuns: [], bonusDay: "" }
+  return { version: PROFILE_VERSION, coins: 0, owned: starterIds, loadout: { ...defaultLoadout }, paidRuns: [], bonusDay: "", looks: {} }
 }
 
 export type CoinSource = "time" | "kills" | "level" | "gold"
@@ -68,14 +70,30 @@ export function purchase(profile: HeroProfile, itemId: string): PurchaseResult {
   if (!entry) return { ok: false, reason: "unknown" }
   if (profile.owned.includes(itemId)) return { ok: false, reason: "owned" }
   if (profile.coins < entry.price) return { ok: false, reason: "coins" }
-  return { ok: true, profile: { ...profile, coins: profile.coins - entry.price, owned: [...profile.owned, itemId] } }
+  // A hero comes with its whole signature outfit.
+  const unlocked = entry.slot === "hero" ? [itemId, ...Object.values(heroKits[itemId] ?? {})] : [itemId]
+  return { ok: true, profile: { ...profile, coins: profile.coins - entry.price, owned: [...new Set([...profile.owned, ...unlocked])] } }
+}
+
+/** The look a hero wears when chosen: its saved outfit, else its signature kit. */
+export function lookFor(profile: HeroProfile, heroId: string): Readonly<Record<HeroSlot, string>> {
+  return profile.looks[heroId] ?? kitLoadout(heroId)
 }
 
 /** Equips an owned item into its slot; unknown or unowned items leave the profile unchanged. */
 export function equip(profile: HeroProfile, itemId: string): HeroProfile {
   const entry = cosmeticById(itemId)
   if (!entry || !profile.owned.includes(itemId)) return profile
-  return { ...profile, loadout: { ...profile.loadout, [entry.slot]: itemId } }
+  if (entry.slot === "hero") {
+    if (profile.loadout.hero === itemId) return profile
+    // Store the current hero's outfit, then put on the chosen hero's own look.
+    const looks = { ...profile.looks, [profile.loadout.hero]: profile.loadout }
+    const next = lookFor(profile, itemId)
+    const loadout = Object.fromEntries(heroSlots.map(({ id }) => [id, id === "hero" ? itemId : profile.owned.includes(next[id]) ? next[id] : defaultLoadout[id]])) as Record<HeroSlot, string>
+    return { ...profile, loadout, looks }
+  }
+  const loadout = { ...profile.loadout, [entry.slot]: itemId }
+  return { ...profile, loadout, looks: { ...profile.looks, [loadout.hero]: loadout } }
 }
 
 /** Validates untrusted saved data; anything malformed falls back to a fresh profile (never throws). */
@@ -85,15 +103,22 @@ export function restoreHeroProfile(raw: string | null): HeroProfile {
     const data = JSON.parse(raw) as Partial<HeroProfile>
     if (data?.version !== PROFILE_VERSION) return createHeroProfile()
     const coins = Number.isSafeInteger(data.coins) && data.coins! >= 0 && data.coins! <= 100_000_000 ? data.coins! : 0
-    const owned = [...new Set([...starterIds, ...(Array.isArray(data.owned) ? data.owned.filter(id => typeof id === "string" && cosmeticById(id)) : [])])]
-    const loadout = Object.fromEntries(heroSlots.map(({ id: slot }) => {
-      const chosen = data.loadout?.[slot]
+    const saved = Array.isArray(data.owned) ? data.owned.filter((id): id is string => typeof id === "string" && !!cosmeticById(id)) : []
+    // Owning a hero always includes its signature outfit (older saves bought heroes before kits existed).
+    const owned = [...new Set([...starterIds, ...saved, ...saved.flatMap(id => cosmeticById(id)?.slot === "hero" ? Object.values(heroKits[id] ?? {}) : [])])]
+    const clean = (raw: unknown, fallback: Readonly<Record<HeroSlot, string>>) => Object.fromEntries(heroSlots.map(({ id: slot }) => {
+      const chosen = (raw as Partial<Record<HeroSlot, unknown>> | undefined)?.[slot]
       const valid = typeof chosen === "string" && owned.includes(chosen) && cosmeticById(chosen)?.slot === slot
-      return [slot, valid ? chosen : defaultLoadout[slot]]
+      return [slot, valid ? chosen : fallback[slot]]
     })) as Record<HeroSlot, string>
+    const loadout = clean(data.loadout, defaultLoadout)
+    const looks: Record<string, Record<HeroSlot, string>> = {}
+    if (typeof data.looks === "object" && data.looks !== null) for (const [hero, look] of Object.entries(data.looks)) {
+      if (cosmeticById(hero)?.slot === "hero" && owned.includes(hero)) looks[hero] = { ...clean(look, kitLoadout(hero)), hero }
+    }
     const paidRuns = Array.isArray(data.paidRuns) ? data.paidRuns.filter(seed => typeof seed === "string" && seed.length <= 200).slice(-coinTuning.paidRunMemory) : []
     const bonusDay = typeof data.bonusDay === "string" && /^\d{4}-\d{2}-\d{2}$/.test(data.bonusDay) ? data.bonusDay : ""
-    return { version: PROFILE_VERSION, coins, owned, loadout, paidRuns, bonusDay }
+    return { version: PROFILE_VERSION, coins, owned, loadout, paidRuns, bonusDay, looks }
   } catch {
     return createHeroProfile()
   }

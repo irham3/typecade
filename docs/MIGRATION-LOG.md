@@ -947,3 +947,15 @@ The pre-duel source (production code 89828a6) completed 900 active seconds befor
 Final PR must target master, superseding the earlier main request. Commits remain separated by completed concern; final build/checks follow implementation.
 
 CI regression diagnosis: the four-player room renderer failed when Reduced Effects was already persisted before startup. Weather instance colors had never been allocated (zero instances), but startup still marked the null buffer for upload. Guarded empty weather/fence color buffers and added an initial-Reduced-Effects WebGL/party-projection regression. The earlier focus helper alone did not resolve this root cause. Coverage/assertions/time limits remain intact.
+
+## 2026-10-17 - Impact feel, meta skill tree and fifteen heroes (M26)
+
+User playtest: combat lacked impact, mistypes had no feedback, effects were faint, auto-weapon sources were unclear, barrels exploded far from foes, all heroes looked alike, and an incremental meta layer was requested (Outhold as reference). Details in docs/todo.md M26.
+
+Save compatibility: `DungeonState.talents` is a validated addition to save version 1; older saves restore with no talents. Max-heart validation now allows exactly the carried Heart/Vigor ranks. `HeroProfile.looks` is an optional addition to profile version 1; legacy owners of a hero receive its kit on load. The skill tree uses a separate `typecade:talents:v1` key; coins and cosmetics are untouched. Multiplayer rooms keep their previous skill recharge (`partyWords`) and receive no talent bonuses.
+
+Meta timing decision: Embers pay out at every run end (death or a quit after 30 s), so the first short death already buys the root node; deeper nodes need many runs, and bosses weigh most, so pushing further remains the main source.
+
+## 2026-10-17 - External review pass (M27)
+
+An independent review (dark visuals, merged pixel glyphs, gloomy music, slow pace, heavy onboarding, endless format) was applied except for the endless format, which the user chose to keep, and the landing redesign, which the user rejected in favour of a standard About page. Balance change: base enemy speed +16% and a shorter warm-up; save formats unchanged.

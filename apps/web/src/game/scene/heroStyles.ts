@@ -99,6 +99,42 @@ export const heroStyles: Record<HeroStyleId, HeroStyle> = {
     ],
     combo: ["slash", "uppercut", "thrust", "slash"], dashHeight: 1.6, lunge: .8,
   },
+  beast: {
+    idle: { breathRate: 1.3, breathDepth: .035, swayRate: .6, sway: .08, look: .1, weaponSway: .1, crouch: .1, hover: -.04, float: 0, bounce: .012, gestureEvery: 5.5 },
+    gestures: [
+      // Roar: chest out, arms wide, rising onto the toes.
+      t => ({ lean: -.12 * ease(t), armPitch: -1.1 * ease(t), armRoll: .7 * ease(t), weaponPitch: -.9 * ease(t), lift: .06 * ease(t), breath: .08 * ease(t) }),
+      // Beat the chest twice.
+      t => ({ armPitch: -.9 * Math.max(0, Math.sin(t * Math.PI * 4)), lean: -.04 * ease(t) }),
+      // Drag the weapon low and prowl.
+      t => ({ lean: .14 * ease(t), weaponPitch: .6 * ease(t), bodyYaw: Math.sin(t * Math.PI * 2) * .3 }),
+    ],
+    combo: ["uppercut", "slash", "leap", "twin"], dashHeight: .8, lunge: 1.1,
+  },
+  dancer: {
+    idle: { breathRate: 1.9, breathDepth: .012, swayRate: .9, sway: .05, look: .14, weaponSway: .14, crouch: -.02, hover: .08, float: .05, bounce: .008, gestureEvery: 5 },
+    gestures: [
+      // Full spin with the weapon held out.
+      t => ({ bodyYaw: glide(t) * Math.PI * 2, weaponRoll: .6 * ease(t), lift: .1 * ease(t) }),
+      // Rise on the air, arms lifted.
+      t => ({ lift: .2 * ease(t), armPitch: -1.3 * ease(t), armRoll: .4 * ease(t) }),
+      // A curtsey-like dip.
+      t => ({ lift: -.08 * ease(t), lean: .1 * ease(t), weaponPitch: .4 * ease(t) }),
+    ],
+    combo: ["twin", "slash", "uppercut", "twin"], dashHeight: 1.45, lunge: 1.1,
+  },
+  ronin: {
+    idle: { breathRate: 1.4, breathDepth: .012, swayRate: .35, sway: .02, look: .06, weaponSway: .03, crouch: .06, hover: -.02, float: 0, bounce: 0, gestureEvery: 7 },
+    gestures: [
+      // Iaido: blade lowered to the hip, then a flash draw.
+      t => ({ weaponPitch: t < .7 ? .8 * ease(t / .7) : -1.4 * ease((t - .7) / .3), lean: .06 * ease(t) }),
+      // Still, eyes closed: a deep breath.
+      t => ({ breath: .05 * ease(t), lift: .02 * ease(t) }),
+      // Flick the blood from the blade.
+      t => ({ weaponRoll: Math.sin(t * Math.PI * 2) * .8 * ease(t) }),
+    ],
+    combo: ["thrust", "slash", "twin", "thrust"], dashHeight: .7, lunge: 1.6,
+  },
 }
 
 export const styleFor = (id: HeroStyleId): HeroStyle => heroStyles[id] ?? heroStyles.warden

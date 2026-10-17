@@ -58,7 +58,7 @@ export function castArenaSkill(c:ArenaCombat,id:string,skill:SkillId,seq:number,
  if(p.cooldowns[skill]>0)return `Complete ${p.cooldowns[skill]} more words`
  if(p.mana<rule.cost)return `Need ${rule.cost} mana`
  if(skill==="heal"&&c.mode!=="raid"&&p.hp===100)return "Health is full"
- p.mana-=rule.cost;p.cooldowns[skill]=rule.words
+ p.mana-=rule.cost;p.cooldowns[skill]=rule.partyWords
  if(skill==="heal"){
   if(c.mode==="raid")healParty(c,id,25,now)
   else{const restored=Math.min(25,100-p.hp);p.hp+=restored;action(c,id,id,"heal",restored,now)}

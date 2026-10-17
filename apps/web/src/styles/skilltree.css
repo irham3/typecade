@@ -1,0 +1,36 @@
+/* Skill tree: same plate as the Armory, a 3-column node grid with branch-coloured links. */
+.skill-tree {
+  position: absolute; z-index: 6; top: 16px; bottom: 16px; left: 50%; transform: translateX(-50%);
+  width: min(620px, calc(100vw - 32px));
+  display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px;
+  padding: 10px 12px;
+  border: 8px solid transparent; border-image: var(--frame-panel) 8 / 8px stretch;
+  background: var(--grain), var(--iron-800); background-clip: padding-box;
+  filter: drop-shadow(0 4px 0 #000000b0);
+}
+.tree-embers { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: var(--size-s); color: #ffb85a; text-shadow: 2px 2px 0 #000 }
+.tree-embers .glyph, .tree-node .glyph { width: 14px; height: 14px }
+.tree-intro { margin: 0; font-size: var(--size-xs); line-height: 1.8; color: var(--text-dim) }
+.tree-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(52px, auto); gap: 14px 12px; overflow-y: auto; align-content: start; padding: 4px }
+.tree-branch { grid-row: 1; text-align: center; font-size: var(--size-xs); color: var(--branch); text-shadow: 1px 1px 0 #000; align-self: end }
+.tree-cell { position: relative; display: grid }
+/* Link up to the parent node: a dotted branch-coloured line. */
+.tree-cell.has-parent::before { content: ""; position: absolute; left: 50%; top: -14px; height: 14px; width: 0; border-left: 3px dotted var(--branch); opacity: .7 }
+.tree-cell:first-of-type { grid-column: 2 }
+.tree-node { display: grid; gap: 6px; justify-items: center; padding: 8px 6px !important; font-size: var(--size-xs); line-height: 1.5; box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--branch) 40%, transparent) !important }
+.tree-node.learned { color: #fff6dc; box-shadow: inset 0 -3px 0 var(--branch), 0 0 10px color-mix(in srgb, var(--branch) 45%, transparent) !important }
+.tree-node.state-locked { opacity: .45 }
+.tree-node.state-maxed { box-shadow: inset 0 0 0 2px var(--branch) !important }
+.tree-node.state-available:not(.learned) { animation: tree-ready 1.6s ease-in-out infinite }
+.tree-node.selected { border-image-source: var(--frame-iron-hover) !important; outline: 2px solid var(--branch); outline-offset: 1px }
+.tree-node .level-pips i.on { background: var(--branch) }
+.tree-lock { color: var(--red) !important }
+.tree-footnote { margin: 0 !important; display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.tree-footnote button { font-size: var(--size-xs); padding: 0 }
+@keyframes tree-ready { 50% { filter: brightness(1.35) } }
+@media (max-width: 760px) { .skill-tree { top: 8px; bottom: 8px; width: calc(100vw - 16px) } .tree-node { font-size: 7px } }
+
+/* Ember reward line on the result screen. */
+.run-embers { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; font-size: var(--size-s); color: #ffb85a; text-shadow: 1px 1px 0 #000 }
+.run-embers .glyph { width: 16px; height: 16px }
+.run-embers small { color: var(--text-dim); font-size: var(--size-xs) }

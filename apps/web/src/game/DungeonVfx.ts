@@ -1,11 +1,12 @@
-import { AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, DoubleSide, DynamicDrawUsage, Euler, Float32BufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, PlaneGeometry, Quaternion, RingGeometry, Scene, Vector3 } from "three"
+import { AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, DoubleSide, DynamicDrawUsage, Euler, Float32BufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, RingGeometry, Scene, Vector3 } from "three"
 import type { Point } from "@typecade/contracts"
 import { isSignatureEffect, signatureColors, signatureLifetimes, signaturePainters, type SignatureEffect, type VfxDraw, type VfxLayer } from "./vfx/signatureEffects"
+import { impactColors, impactLifetimes, impactPainters, isImpactEffect, type ImpactEffect } from "./vfx/impactEffects"
 
-export type VisualEffect = "slash" | "cleave" | "hit" | "storm" | "lightning" | "heal" | "pickup" | "shatter" | "magnet" | "death" | "dust" | "dash" | "block" | "spawn" | "hurt" | "level" | "upgrade" | "shield" | "mana" | "deploy" | "sentry" | "firebolt" | "blast" | "treasure" | "slam" | "thrust" | "uppercut" | SignatureEffect
+export type VisualEffect = "slash" | "cleave" | "hit" | "storm" | "lightning" | "heal" | "pickup" | "shatter" | "magnet" | "death" | "dust" | "dash" | "block" | "spawn" | "hurt" | "level" | "upgrade" | "shield" | "mana" | "deploy" | "sentry" | "firebolt" | "blast" | "treasure" | "slam" | "thrust" | "uppercut" | SignatureEffect | ImpactEffect
 type Burst = Point & { kind: VisualEffect; age: number; life: number; angle: number; power: number; end?: Point; tint?: number }
-const colors: Record<VisualEffect, number> = { ...signatureColors,  slash: 0x65dfff, cleave: 0xffa64f, hit: 0xff7651, storm: 0x73cdff, lightning: 0xb3eaff, heal: 0x8cffad, pickup: 0x9af3b8, shatter: 0xffd99b, magnet: 0xa3dfff, death: 0xe5caa1, dust: 0x8c959c, dash:0x7bdcff, block: 0xffd376, spawn:0x9a9cfa, hurt:0xff694f, level:0xffd571, upgrade:0xffdf91, shield:0x76deef, mana:0x9bafff, deploy:0xf1d38a, sentry:0x9df2ff, firebolt:0xffa24f, blast:0xff8645, treasure:0xffd36b, slam:0xff7046, thrust:0xb8f5ff, uppercut:0x8bd7ff }
-const major:VisualEffect[]=["finisher","nova","meteor","frost","whirl","spore","cleave","storm","heal","magnet","death","hurt","level","upgrade","shield","deploy","block","slam","blast","treasure"]
+const colors: Record<VisualEffect, number> = { ...signatureColors, ...impactColors,  slash: 0x65dfff, cleave: 0xffa64f, hit: 0xff7651, storm: 0x73cdff, lightning: 0xb3eaff, heal: 0x8cffad, pickup: 0x9af3b8, shatter: 0xffd99b, magnet: 0xa3dfff, death: 0xe5caa1, dust: 0x8c959c, dash:0x7bdcff, block: 0xffd376, spawn:0x9a9cfa, hurt:0xff694f, level:0xffd571, upgrade:0xffdf91, shield:0x76deef, mana:0x9bafff, deploy:0xf1d38a, sentry:0x9df2ff, firebolt:0xffa24f, blast:0xff8645, treasure:0xffd36b, slam:0xff7046, thrust:0xb8f5ff, uppercut:0x8bd7ff }
+const major:VisualEffect[]=["explosion","gore","cleaveSkill","stormSkill","healSkill","laststand","finisher","nova","meteor","frost","whirl","spore","cleave","storm","heal","magnet","death","hurt","level","upgrade","shield","deploy","block","slam","blast","treasure"]
 
 /** Bounded presentation bursts. Neither effects nor their clocks change combat or input. */
 export class DungeonVfx {
@@ -14,9 +15,22 @@ export class DungeonVfx {
  readonly rings: InstancedMesh
  readonly bolts: InstancedMesh
  readonly glows: InstancedMesh
+ /** Camera-facing additive glows: flashes, fireballs, souls. */
+ readonly flares: InstancedMesh
+ /** Camera-facing soft smoke (normal blending, alpha per instance). */
+ readonly smoke: InstancedMesh
+ /** Flat ground scorch decals (smoke material laid on the floor). */
+ readonly scorch: InstancedMesh
+ /** Solid debris and gibs that arc, fall and settle on the floor. */
+ readonly chunks: InstancedMesh
+ private view = new Quaternion()
+ private roll = new Quaternion()
+ private zAxis = new Vector3(0, 0, 1)
+ private smokeMaterial: MeshBasicMaterial
+ private chunkMaterial: MeshStandardMaterial
  private bursts: Burst[] = []
  private readonly draw: VfxDraw
- private static readonly CAPACITY = 40
+ private static readonly CAPACITY = 64
  private matrix = new Matrix4()
  private rotation = new Quaternion()
  private euler = new Euler()
@@ -34,7 +48,7 @@ export class DungeonVfx {
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64)
   this.texture = new CanvasTexture(canvas)
   this.glowMaterial = new MeshBasicMaterial({ map: this.texture, transparent: true, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, toneMapped: false, fog: false })
-  const batch = (geometry: BufferGeometry, capacity: number, material = this.material) => {
+  const batch = (geometry: BufferGeometry, capacity: number, material: MeshBasicMaterial | MeshStandardMaterial = this.material) => {
    const mesh = new InstancedMesh(geometry, material, capacity); mesh.count = 0; mesh.frustumCulled = false; mesh.instanceMatrix.setUsage(DynamicDrawUsage); scene.add(mesh); return mesh
   }
   this.sparks = batch(new BoxGeometry(1, 1, 1), 320)
@@ -49,7 +63,17 @@ export class DungeonVfx {
   }
   this.bolts = batch(new BufferGeometry().setAttribute("position", new Float32BufferAttribute(vertices, 3)), 32)
   this.glows = batch(new PlaneGeometry(1, 1), 48, this.glowMaterial)
-  const layers: Record<VfxLayer, InstancedMesh> = { sparks: this.sparks, arcs: this.arcs, rings: this.rings, bolts: this.bolts, glows: this.glows }
+  this.flares = batch(new PlaneGeometry(1, 1), 128, this.glowMaterial)
+  this.smokeMaterial = new MeshBasicMaterial({ color: 0x2a2420, map: this.texture, transparent: true, depthWrite: false, side: DoubleSide, toneMapped: false })
+  // Instance colour carries opacity in its red channel; the smoke tint itself is fixed.
+  this.smokeMaterial.onBeforeCompile = shader => { shader.fragmentShader = shader.fragmentShader.replace("#include <color_fragment>", "#ifdef USE_COLOR\ndiffuseColor.a *= vColor.r;\n#endif") }
+  this.smokeMaterial.customProgramCacheKey = () => "vfx-smoke"
+  this.smoke = batch(new PlaneGeometry(1, 1), 64, this.smokeMaterial)
+  this.scorch = batch(new PlaneGeometry(1, 1), 24, this.smokeMaterial)
+  this.chunkMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: .75, metalness: .05 })
+  this.chunks = batch(new BoxGeometry(1, 1, 1), 192, this.chunkMaterial)
+  this.chunks.castShadow = true
+  const layers: Record<VfxLayer, InstancedMesh> = { sparks: this.sparks, arcs: this.arcs, rings: this.rings, bolts: this.bolts, glows: this.glows, flares: this.flares, smoke: this.smoke, scorch: this.scorch, chunks: this.chunks }
   this.draw = (layer, x, y, z, sx, sy, sz, rx, ry, rz, hex, intensity) => this.place(layers[layer], x, y, z, sx, sy, sz, rx, ry, rz, hex, intensity)
  }
  get count() { return this.bursts.length }
@@ -60,26 +84,35 @@ export class DungeonVfx {
    else if(!major.includes(kind))return
    else this.bursts.shift()
   }
-  this.bursts.push({ kind, x, z, angle, power, end, tint, age: 0, life: isSignatureEffect(kind)?signatureLifetimes[kind]:kind==="level"||kind==="upgrade"?1.2:kind==="dash"?.24:kind === "heal" || kind === "death" ? .85 : kind === "pickup" ? .65 : kind === "slash" || kind === "cleave" ? .36 : .6 })
+  this.bursts.push({ kind, x, z, angle, power, end, tint, age: 0, life: isImpactEffect(kind)?impactLifetimes[kind]:isSignatureEffect(kind)?signatureLifetimes[kind]:kind==="level"||kind==="upgrade"?1.2:kind==="dash"?.24:kind === "heal" || kind === "death" ? .85 : kind === "pickup" ? .65 : kind === "slash" || kind === "cleave" ? .36 : .6 })
  }
- clear() { this.bursts.length = 0; for (const mesh of [this.sparks, this.arcs, this.rings, this.bolts, this.glows]) mesh.count = 0 }
+ /** Camera orientation, so flares and smoke face the viewer. */
+ setView(quaternion: Quaternion) { this.view.copy(quaternion) }
+ private get meshes() { return [this.sparks, this.arcs, this.rings, this.bolts, this.glows, this.flares, this.smoke, this.scorch, this.chunks] }
+ clear() { this.bursts.length = 0; for (const mesh of this.meshes) mesh.count = 0 }
+ /** One camera-facing glow for this frame only (projectile heads, familiars); call between update() and commit(). */
+ flare(x:number,y:number,z:number,size:number,color:number,intensity:number) { this.place(this.flares,x,y,z,size,size,1,0,0,0,color,intensity) }
  groundLight(x:number,z:number,color:number,intensity:number) { this.place(this.glows,x,.005,z,6,6,1,-Math.PI/2,0,0,color,intensity);this.glows.instanceMatrix.needsUpdate=true;this.glows.instanceColor!.needsUpdate=true }
  private place(mesh: InstancedMesh, x: number, y: number, z: number, sx: number, sy: number, sz: number, rx: number, ry: number, rz: number, hex: number, intensity: number) {
   if (mesh.count === mesh.instanceMatrix.count) return
-  this.rotation.setFromEuler(this.euler.set(rx, ry, rz, "YXZ"))
+  if (mesh === this.flares || mesh === this.smoke) this.rotation.copy(this.view).multiply(this.roll.setFromAxisAngle(this.zAxis, rz))
+  else this.rotation.setFromEuler(this.euler.set(rx, ry, rz, "YXZ"))
   this.matrix.compose(this.point.set(x, y, z), this.rotation, this.scale.set(sx, sy, sz))
   mesh.setMatrixAt(mesh.count, this.matrix); mesh.setColorAt(mesh.count++, this.color.setHex(hex).multiplyScalar(Math.max(0, intensity)))
  }
  update(delta: number, reduced: boolean) {
-  for (const mesh of [this.sparks, this.arcs, this.rings, this.bolts, this.glows]) mesh.count = 0
+  for (const mesh of this.meshes) mesh.count = 0
   for (const b of this.bursts) {
    b.age += delta
    const t = Math.min(1, b.age / b.life), fade = (1 - t) ** 2, color = b.tint??colors[b.kind], size = b.power
+   if (isImpactEffect(b.kind)) { impactPainters[b.kind](this.draw, b, t, fade, reduced); continue }
    if (isSignatureEffect(b.kind)) { signaturePainters[b.kind](this.draw, b, t, fade, reduced); continue }
    if(["sentry","firebolt","lightning"].includes(b.kind)&&b.end){
     const angle=Math.atan2(b.end.x-b.x,b.end.z-b.z),length=Math.hypot(b.end.x-b.x,b.end.z-b.z)
     this.place(this.sparks,(b.x+b.end.x)/2,1.25,(b.z+b.end.z)/2,reduced?.035:.075,.055,length,0,angle,0,color,fade*1.6)
-    if(b.kind==="lightning")this.place(this.bolts,b.end.x,.1,b.end.z,1,4,1,0,angle,0,color,fade*1.6)
+    if(b.kind==="lightning"&&!reduced)this.place(this.bolts,b.end.x,.1,b.end.z,1,4,1,0,angle,0,color,fade*1.6)
+    this.place(this.flares,b.x,1.25,b.z,1.2,1.2,1,0,0,0,color,fade*1.4);this.place(this.flares,b.end.x,1.1,b.end.z,2*(1-t*.5),2*(1-t*.5),1,0,0,t*3,color,fade*1.8)
+    if(b.kind==="firebolt"){const head=Math.min(1,t*4),size=head<1?1.4:2.6*(1-t);this.place(this.flares,b.x+(b.end.x-b.x)*head,1.15+Math.sin(head*Math.PI)*.35,b.z+(b.end.z-b.z)*head,size,size,1,0,0,0,0xffb060,head<1?2:fade*2.4)}
     if(b.kind==="firebolt")for(let i=0;i<(reduced?1:5);i++){const travel=Math.max(0,Math.min(1,t*4-i*.06));this.place(this.sparks,b.x+(b.end.x-b.x)*travel,1.1+Math.sin(travel*Math.PI)*.35,b.z+(b.end.z-b.z)*travel,.22-i*.025,.17,.35,0,angle,0,i?color:0xffefb4,fade)}
     continue
    }
@@ -134,7 +167,9 @@ export class DungeonVfx {
    }
   }
   this.bursts = this.bursts.filter(b => b.age < b.life)
-  for (const mesh of [this.sparks, this.arcs, this.rings, this.bolts, this.glows]) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true }
+  for (const mesh of this.meshes) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true }
  }
- dispose() { for (const mesh of [this.sparks, this.arcs, this.rings, this.bolts, this.glows]) {mesh.removeFromParent();mesh.geometry.dispose();mesh.dispose()};this.material.dispose();this.glowMaterial.dispose();this.texture.dispose();this.bursts.length=0 }
+ /** Uploads instances placed after update() (familiar and projectile flares, ground light). */
+ commit() { for (const mesh of [this.flares, this.glows]) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true } }
+ dispose() { for (const mesh of this.meshes) {mesh.removeFromParent();mesh.geometry.dispose();mesh.dispose()};this.material.dispose();this.glowMaterial.dispose();this.smokeMaterial.dispose();this.chunkMaterial.dispose();this.texture.dispose();this.bursts.length=0 }
 }

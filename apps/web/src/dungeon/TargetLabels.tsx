@@ -5,6 +5,7 @@ import type { GameEventBridge } from "../bridge/game-event-bridge"
 import { dungeonObjects, dungeonSupplies, enemyProfiles } from "@typecade/content"
 import { Glyph } from "./Glyph"
 import { LifeDrops } from "./ui/LifeDrops"
+import { useTypoPulse } from "./TypingBar"
 
 /** Gap in pixels between a label's bottom edge and the enemy's projected head. */
 const LABEL_GAP = 18
@@ -13,13 +14,14 @@ export function TargetLabels({ view, bridge, tutorial=false }: { view: DungeonSt
  const [points, setPoints] = useState<DungeonLabel[]>([])
  const [size, setSize] = useState({width:window.innerWidth,height:window.innerHeight})
  const layer = useRef<HTMLDivElement>(null)
+ const typo = useTypoPulse(view.errors)
  useEffect(() => bridge.on("projected", setPoints), [bridge])
  useEffect(() => { const node=layer.current!; const observer=new ResizeObserver(()=>setSize({width:node.clientWidth,height:node.clientHeight}));observer.observe(node);return()=>observer.disconnect() },[])
  const {width,height}=size
  const compact = width < 700, landscape=height<520, tight=height<360, pad = 12, top = tutorial&&compact&&!landscape?300:view.notice.includes(" acquired.")?(landscape?166:212):tight?74:landscape ? 106 : compact ? 145 : 116, bottom = tight?8:landscape ? 20 : compact ? 148 : 164
  const used: Array<{ x: number; y: number; w: number; h: number }> = []
  const ids = [...view.queue].sort((a,b) => Number(b === view.target) - Number(a === view.target))
-  return <div className={`target-labels ${tight?"tight":""}`} ref={layer} aria-label="Enemy targets">{ids.map(id => {
+  return <div className={`target-labels ${tight?"tight":""} ${typo}`} ref={layer} aria-label="Enemy targets">{ids.map(id => {
   const e = view.enemies.find(e => e.id === id), point = points.find(p => p.id === id)
   if (!e || !point || !e.words.length) return null
   const object=dungeonObjects.includes(e.kind),supply=e.kind in dungeonSupplies?dungeonSupplies[e.kind as SupplyKind]:null

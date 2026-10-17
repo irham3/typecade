@@ -2,10 +2,10 @@ import type { DungeonLanguage, EnemyKind, SupplyKind, SkillId, UpgradeId, Weapon
 
 export const dungeonBalance = {
  tick: 1 / 30, enemies: 128, loot: 256, projectiles: 64, effects: 128,
- hp: 6, contactGrace: 1.2, dashGrace: .3, pickupRadius: 2.2,
- spawnRadius: 8.5, spawnInterval: 2, labelRadius: 13, speed: .37, manaRegen: 2.5,
- openingSeconds: 90, openingThreats: 4, openingInterval: 4,
- learningSeconds: 180, learningThreats: 8, learningInterval: 2.2, preBossThreats: 18,
+ hp: 6, contactGrace: 1.2, dashGrace: .3, pickupRadius: 2.2, blastRadius: 4.6,
+ spawnRadius: 8.5, spawnInterval: 2, labelRadius: 13, speed: .43, manaRegen: 2.5,
+ openingSeconds: 60, openingThreats: 4, openingInterval: 3,
+ learningSeconds: 180, learningThreats: 8, learningInterval: 1.9, preBossThreats: 18,
  bossInterval: 300, stagger: 3.2, bossHealth: 260, barrierHp: 30, barrierRadius: 5.5,
  duelCalmPerKey: .55, duelCalmMax: 1.5, duelStandoff: 3.4,
 } as const
@@ -124,10 +124,11 @@ export const commonWordStyle: Partial<Record<EnemyKind, { style: "lower" | "titl
  guard:{style:"title",max:9},wraith:{style:"title",max:9},necromancer:{style:"title",max:9},beetle:{style:"title",max:9},troll:{style:"title",max:9},golem:{style:"upper",max:9},
  gargoyle:{style:"title",max:9},deathknight:{style:"title",max:9},ghoul:{style:"lower",max:8},sporeling:{style:"lower",max:7},mimic:{style:"upper",max:7},
 }
-export const skillRules: Record<SkillId, { cost: number; words: number; en: string; id: string; description: string }> = {
- cleave: { cost: 25, words: 3, en: "CLEAVE", id: "SAPU", description: "Sweep nearby foes. Preserve your locked word." },
- storm: { cost: 40, words: 5, en: "STORM", id: "BADAI", description: "Strike every visible foe. Evolve to freeze." },
- heal: { cost: 35, words: 4, en: "HEAL", id: "SEMBUH", description: "Restore two hearts. Evolve to gain Aegis." },
+/** Active skills. `words` is the solo recharge: finished words needed before the next cast; multiplayer rooms keep their own shorter `partyWords`. `levels` says what each rank adds. */
+export const skillRules: Record<SkillId, { cost: number; words: number; partyWords: number; en: string; id: string; description: string; levels: readonly [string, string, string] }> = {
+ cleave: { cost: 25, words: 4, partyWords: 3, en: "CLEAVE", id: "SAPU", description: "Sweep nearby foes. Preserve your locked word.", levels: ["Crimson arc: strips 1 layer within 4 m.", "Twin sweep: radius 5.6 m.", "Crimson Tempest: radius 7.2 m, strips 2 layers and pulls in all XP."] },
+ storm: { cost: 40, words: 6, partyWords: 5, en: "STORM", id: "BADAI", description: "Strike every visible foe. Evolve to freeze.", levels: ["Thunderclap: strikes every foe within 12 m.", "Thunderhead: struck foes are stunned for 1.5 s.", "Blizzard: freezes all foes for 5 s and halves their words."] },
+ heal: { cost: 35, words: 5, partyWords: 4, en: "HEAL", id: "SEMBUH", description: "Restore two hearts. Evolve to gain Aegis.", levels: ["Mend: restores 2 hearts.", "Bloom: also grants 1 shield charge.", "Aegis: also 4 s of invulnerability."] },
 }
 export const combatLessons = [
  {id:"strike",title:"Your word is your movement",help:"Type the word above the enemy. Its final letter dashes you to it and strikes. No Space or movement key is needed.",success:"Enemy defeated. The dash also collected its XP and gold."},

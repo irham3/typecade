@@ -206,7 +206,7 @@ it("renders flying enemies, supply silhouettes, shield gear, sentry beams and ch
   const button=document.createElement("button");host.append(button);button.click();host.click();window.dispatchEvent(new Event("click"));button.remove()
   s.queue=[s.enemies.find(e=>e.kind==="bat")!.id];frame();bridge.emit("settings",{reduced:true,volume:0});frame()
   const transform=new Matrix4();visual.batches.get("bat")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThanOrEqual(1.25);visual.batches.get("mage")!.body.getMatrixAt(0,transform);expect(transform.elements[13]).toBeGreaterThanOrEqual(1);bridge.emit("settings",{reduced:false,volume:0});frame()
-  expect(visual.heroShield.visible).toBe(true);expect(visual.sentryMesh.visible).toBe(true);expect(visual.orbitals.count).toBe(4);expect(visual.telegraphs.count).toBe(2)
+  expect(visual.heroShield.visible).toBe(true);expect(visual.sentryMesh.visible).toBe(true);expect(visual.orbitals.count).toBe(2);expect(visual.telegraphs.count).toBe(2)
   s.effects=[{id:s.nextId++,kind:"sentry",x:0,z:0,life:.55,value:1,to:{x:2,z:2}},{id:s.nextId++,kind:"block",x:0,z:0,life:.55,value:1}];frame()
   for(const words of [2,3,4]){s.words=words;s.player.dashAt+=1;s.effects=[{id:s.nextId++,kind:"slash",x:0,z:0,life:.55,value:1}];frame()}
   minotaur.aim={x:minotaur.x,z:minotaur.z};frame();minotaur.aim={x:0,z:0}

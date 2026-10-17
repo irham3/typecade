@@ -41,7 +41,7 @@ function BuildShowcase({ view }: { view: DungeonState }) {
   )
 }
 
-export function DefeatDialog({ view, best, payout, wallet, onRetry, onLeave }: { view: DungeonState; best: number; payout: { earned: number; bonus: number } | null; wallet: number; onRetry: () => void; onLeave: () => void }) {
+export function DefeatDialog({ view, best, payout, wallet, embers, onRetry, onLeave, onTalents }: { view: DungeonState; best: number; payout: { earned: number; bonus: number } | null; wallet: number; embers: number | null; onRetry: () => void; onLeave: () => void; onTalents: () => void }) {
   const record = view.time >= best && view.time > 0
   return (
     <DungeonDialog title="Run over" onCancel={onLeave} tone="defeat" className="result-dialog">
@@ -51,6 +51,7 @@ export function DefeatDialog({ view, best, payout, wallet, onRetry, onLeave }: {
         <div className="result-time"><small>SURVIVED</small><b>{formatTime(view.time)}</b><span>{dungeonBiomes[view.biome % dungeonBiomes.length]!.name} · Depth {view.biome + 1}</span></div>
         <RunReward view={view} payout={payout} wallet={wallet} />
       </div>
+      {embers !== null && <p className="run-embers" role="status"><Glyph name="flame" />+{embers} Embers <small>spend them on the Skill Tree</small></p>}
       <div className="stat-grid">
         <StatTile icon="crown" value={view.level} label="LEVEL" />
         <StatTile icon="skull" value={view.kills} label="DEFEATED" />
@@ -64,6 +65,7 @@ export function DefeatDialog({ view, best, payout, wallet, onRetry, onLeave }: {
       <p className="muted">Best time {formatTime(best)}. Upgrades reset when you start a new run.</p>
       <div className="dialog-actions">
         <button className="primary-action" autoFocus onClick={onRetry}><Glyph name="sword" />Try another run</button>
+        <button onClick={onTalents}><Glyph name="flame" />Skill tree</button>
         <button className="quiet" onClick={onLeave}>Return to title</button>
       </div>
     </DungeonDialog>

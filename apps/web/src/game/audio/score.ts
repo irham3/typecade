@@ -17,7 +17,7 @@ export interface ScoreMood {
 /** Mix levels per part, before the music bus. Tuned against the limiter meter. */
 const level = {
   pad: .05, padCalm: .035, bass: .16, bell: .07,
-  lead: { lute: .2, harp: .22, horn: .11, flute: .16, bell: .12, organ: .08 },
+  lead: { lute: .25, harp: .27, horn: .14, flute: .21, bell: .15, organ: .1 },
   arpeggio: .07, drum: { war: .55, tom: .35, frame: .22, anvil: .16, shaker: .07 },
 } as const
 
@@ -26,6 +26,8 @@ const drumPatterns = {
   war: { low: [0, 8], mid: [0, 6, 8, 14], high: [0, 3, 6, 8, 11, 14] },
   frame: { low: [0], mid: [0, 6, 8, 11], high: [0, 3, 6, 8, 10, 11, 14] },
   forge: { low: [0, 8], mid: [0, 8], high: [0, 6, 8, 14] },
+  // Four-on-the-floor kick: steady pulse that pushes the typing pace.
+  drive: { low: [0, 8], mid: [0, 4, 8, 12], high: [0, 4, 8, 10, 12, 14] },
 } as const
 
 /**
@@ -73,13 +75,16 @@ function playLead(orchestra: Orchestra, track: MusicTrack, midi: number, at: num
   }
 }
 
-function playDrums(orchestra: Orchestra, style: "war" | "frame" | "forge", index: number, bar: number, at: number, mood: ScoreMood) {
+function playDrums(orchestra: Orchestra, style: "war" | "frame" | "forge" | "drive", index: number, bar: number, at: number, mood: ScoreMood) {
   const tier = mood.boss || mood.energy > .7 ? "high" : mood.energy > .35 ? "mid" : "low"
   const hits: readonly number[] = drumPatterns[style][tier]
   if (hits.includes(index)) {
     if (style === "frame") orchestra.drum("frame", at, level.drum.frame, index % 8 ? .3 : -.1)
     else orchestra.drum("war", at, level.drum.war * (index === 0 ? 1 : .75), 0)
   }
+  // Drive: frame-drum backbeat and running off-beat shaker for a bright, danceable groove.
+  if (style === "drive" && (index === 4 || index === 12)) orchestra.drum("frame", at, level.drum.frame * 1.3, index === 4 ? -.2 : .2)
+  if (style === "drive" && tier !== "low" && index % 2 === 1) orchestra.drum("shaker", at, level.drum.shaker * 1.2, index % 4 === 1 ? -.35 : .35)
   // Forge: anvil strikes on the backbeat, like smiths keeping time.
   if (style === "forge" && (index === 4 || index === 12)) orchestra.drum("anvil", at, level.drum.anvil, index === 4 ? -.4 : .4)
   // Tom fill closing every fourth bar once the fight is on.

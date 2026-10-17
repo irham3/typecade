@@ -52,16 +52,33 @@ export const sfxRecipes: Record<string, Recipe> = {
   meteor: v => { v.tone(2600, .28, .1, "sine", 300); v.tone(80, .55, .45, "sine", 26, .28); v.tone(380, .6, .38, "noise", 380, .28) },
   frost: v => { v.chime([88, 93, 96, 100], .12, .035); v.tone(5200, .35, .1, "noise") },
   spore: v => { v.tone(420, .35, .16, "noise", 420); v.tone(260, .3, .08, "sine", 160) },
-  // Kill confirm: punchy thwack + rising sparkle; plays on top of each foe's own death cry.
-  kill: v => { v.tone(2400, .03, .05, "noise"); v.tone(1600, .05, .04, "sine", 2200, .01) },
-  "kill-elite": v => { v.tone(120, .3, .3, "sine", 40); v.tone(1500, .25, .2, "noise"); v.chime([74, 81, 86, 93, 98], .12, .05) },
-  // Explosion: sub thump, sharp crack, low rumble tail and falling debris.
-  explosion: v => {
-    v.tone(95, .55, .5, "sine", 28)
-    v.tone(3800, .09, .32, "noise")
-    v.tone(420, .9, .34, "noise", 420, .03)
-    for (let i = 0; i < 5; i++) v.tone(1400 + i * 300, .04, .06, "noise", 1400, .25 + i * .07)
+  // Word landed: chest-thump sub, a dry crack and a short body knock. The core "hit" every word earns.
+  strike: v => {
+    v.tone(160, .16, .5, "sine", 42)
+    v.tone(5200, .025, .3, "noise")
+    v.tone(900, .07, .28, "noise", 900, .005)
+    v.tone(320, .09, .16, "square", 90, .004)
   },
+  // Mistype: a dull, detuned buzz-thud. Short and low so it never masks the next correct key.
+  typo: v => {
+    v.tone(140, .11, .26, "square", 95)
+    v.tone(147, .11, .18, "sawtooth", 98)
+    v.tone(380, .05, .16, "noise")
+  },
+  // Kill confirm: crunch + rising sparkle; plays on top of each foe's own death cry.
+  kill: v => { v.tone(110, .2, .42, "sine", 36); v.tone(2400, .06, .22, "noise"); v.tone(1600, .08, .1, "sine", 2600, .03) },
+  "kill-elite": v => { v.tone(90, .5, .55, "sine", 28); v.tone(1500, .3, .32, "noise"); v.tone(260, .3, .2, "sawtooth", 60, .02); v.chime([74, 81, 86, 93, 98], .14, .05) },
+  // Explosion: sub drop, sharp crack, roaring body, rumble tail and falling debris.
+  explosion: v => {
+    v.tone(120, .8, .7, "sine", 24)
+    v.tone(55, 1.1, .45, "triangle", 22, .02)
+    v.tone(4200, .11, .5, "noise")
+    v.tone(900, .5, .45, "noise", 900, .01)
+    v.tone(260, 1.4, .4, "noise", 260, .05)
+    for (let i = 0; i < 7; i++) v.tone(1200 + i * 350, .05, .09, "noise", 1200, .3 + i * .08)
+  },
+  laststand: v => { v.tone(60, 1, .5, "sine", 30); v.chime([62, 69, 74, 81, 86], .2, .07); v.tone(2000, .6, .15, "noise") },
+  loot: v => { v.tone(300, .12, .22, "noise"); v.chime([79, 86, 91, 98, 103], .16, .045); v.tone(150, .3, .3, "sine", 60) },
   // Lightning: dry crack, electric buzz, then a rolling thunder tail.
   zap: v => { v.tone(6000, .05, .26, "noise"); v.tone(1400, .16, .12, "sawtooth", 180); v.tone(900, .12, .08, "square", 2400, .03) },
   storm: v => {

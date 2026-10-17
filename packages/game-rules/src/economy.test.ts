@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
-import { coinBreakdown, coinTuning, coinsForRun, createHeroProfile, equip, payOutRun, PROFILE_VERSION, purchase, restoreHeroProfile } from "./economy"
-import { cosmeticById, cosmetics, defaultLoadout, heroSlots, rarityPrice } from "../../content/src/cosmetics"
+import { coinBreakdown, coinTuning, coinsForRun, createHeroProfile, equip, lookFor, payOutRun, PROFILE_VERSION, purchase, restoreHeroProfile } from "./economy"
+import { cosmeticById, cosmetics, defaultLoadout, heroDetails, heroKits, heroSlots, kitLoadout, rarityPrice } from "../../content/src/cosmetics"
 
 const run = (time: number, kills = 0, level = 1, gold = 0) => ({ time, kills, level, gold })
 
@@ -75,4 +75,41 @@ it("keeps the catalog consistent: every slot has free items and every default is
   }
   expect(cosmeticById("nope")).toBeUndefined()
   expect(new Set(cosmetics.map(entry => entry.id)).size).toBe(cosmetics.length)
+})
+
+it("ships 15 heroes with clear genders, three free, and a signature kit each", () => {
+  const heroes = cosmetics.filter(entry => entry.slot === "hero")
+  expect(heroes).toHaveLength(15)
+  expect(heroes.filter(hero => hero.price === 0)).toHaveLength(3)
+  expect(heroes.filter(hero => hero.price === 0).some(hero => heroDetails[hero.id]!.gender === "female")).toBe(true)
+  for (const hero of heroes) {
+    expect(["male", "female"]).toContain(heroDetails[hero.id]!.gender)
+    const kit = heroKits[hero.id]!
+    for (const [slot, id] of Object.entries(kit)) {
+      expect(cosmeticById(id)).toMatchObject({ slot })
+      if (hero.price === 0) expect(cosmeticById(id)!.price).toBe(0)
+    }
+  }
+  // Every hero wears its own dye, so no two look alike.
+  expect(new Set(Object.values(heroKits).map(kit => kit.dye)).size).toBe(heroes.length)
+})
+
+it("buying a hero unlocks its kit, and each hero keeps its own look when switching", () => {
+  const rich = { ...createHeroProfile(), coins: 100_000 }
+  const bought = purchase(rich, "hero.lunarian"); if (!bought.ok) throw new Error("buy")
+  for (const id of Object.values(heroKits["hero.lunarian"]!)) expect(bought.profile.owned).toContain(id)
+  let profile = equip(bought.profile, "hero.lunarian")
+  expect(profile.loadout).toEqual(kitLoadout("hero.lunarian"))
+  profile = equip(profile, "dye.keep")
+  profile = equip(profile, "hero.duelist")
+  expect(profile.loadout).toEqual(kitLoadout("hero.duelist"))
+  profile = equip(profile, "hero.lunarian")
+  expect(profile.loadout.dye).toBe("dye.keep")
+  expect(lookFor(profile, "hero.warden")).toEqual(kitLoadout("hero.warden"))
+  const restored = restoreHeroProfile(JSON.stringify(profile))
+  expect(restored.looks["hero.lunarian"]!.dye).toBe("dye.keep")
+  // Legacy saves that owned a hero before kits existed get its kit.
+  const legacy = restoreHeroProfile(JSON.stringify({ version: PROFILE_VERSION, coins: 0, owned: ["hero.brute"], loadout: defaultLoadout, paidRuns: [], bonusDay: "" }))
+  expect(legacy.owned).toContain("weapon.hammer")
+  expect(legacy.looks).toEqual({})
 })

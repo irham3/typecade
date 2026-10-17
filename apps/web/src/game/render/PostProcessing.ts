@@ -1,4 +1,4 @@
-import { DepthTexture, NearestFilter, Vector2, WebGLRenderTarget, type Camera, type Scene, type WebGLRenderer } from "three"
+import { Color, DepthTexture, NearestFilter, Vector2, WebGLRenderTarget, type Camera, type Scene, type WebGLRenderer } from "three"
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js"
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js"
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js"
@@ -17,11 +17,17 @@ const GradeShader = {
     saturation: { value: environmentGrade.post.saturation },
     vignetteStrength: { value: environmentGrade.post.vignette },
     focus: { value: 0 },
+    flash: { value: new Color(0, 0, 0) },
+    split: { value: 0 },
+    typo: { value: 0 },
   },
   vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
-  fragmentShader: `varying vec2 vUv;uniform sampler2D tDiffuse;uniform sampler2D depth;uniform vec2 texel;uniform float outline;uniform float hurt;uniform float saturation;uniform float focus;uniform float vignetteStrength;
+  fragmentShader: `varying vec2 vUv;uniform sampler2D tDiffuse;uniform sampler2D depth;uniform vec2 texel;uniform float outline;uniform float hurt;uniform float saturation;uniform float focus;uniform float vignetteStrength;uniform vec3 flash;uniform float split;uniform float typo;
   void main(){
+    vec2 dir=(vUv-.5)*split*texel.x*6.;
     vec3 c=texture2D(tDiffuse,vUv).rgb;float d=texture2D(depth,vUv).r;
+    // Impact kick: a brief red/blue channel split outward from the centre.
+    if(split>.001){c.r=texture2D(tDiffuse,vUv+dir).r;c.b=texture2D(tDiffuse,vUv-dir).b;}
     float edge=step(.0012,abs(d-texture2D(depth,vUv+vec2(texel.x,0.)).r)+abs(d-texture2D(depth,vUv+vec2(0.,texel.y)).r));
     c=mix(c,c*.25,edge*outline);
     float luma=dot(c,vec3(.299,.587,.114));
@@ -30,6 +36,10 @@ const GradeShader = {
     c+=vec3(.6,.06,.025)*hurt*smoothstep(.18,.65,length(vUv-.5));
     // Impact focus: dim the surroundings (edges most) so the action at screen centre reads clearly.
     c*=vignette*(1.-focus*(.15+.55*smoothstep(.08,.55,length(vUv-.5))));
+    // Mistype: thin red frame pulse at the screen edge, weaker than the hurt glow.
+    c+=vec3(.55,.04,.06)*typo*smoothstep(.36,.62,max(abs(vUv.x-.5),abs(vUv.y-.5))*1.05);
+    // Screen flash (lightning, explosions): additive, brightest at the centre.
+    c+=flash*(1.-.45*length(vUv-.5));
     gl_FragColor=vec4(c,1.);
   }`,
 }
@@ -74,6 +84,13 @@ export class PostProcessing {
   setFeedback(hurt: number, focus: number) {
     this.grade.uniforms.hurt!.value = hurt
     this.grade.uniforms.focus!.value = focus
+  }
+
+  /** Additive screen flash colour (already scaled by strength), chromatic split (0..1) and mistype edge (0..1). */
+  setPunch(flash: Color, split: number, typo: number) {
+    this.grade.uniforms.flash!.value.copy(flash)
+    this.grade.uniforms.split!.value = split
+    this.grade.uniforms.typo!.value = typo
   }
 
   render(delta: number) {

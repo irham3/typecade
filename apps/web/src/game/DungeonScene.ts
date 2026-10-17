@@ -19,6 +19,8 @@ import { TargetFocus } from "./scene/TargetFocus"
 import { HeroAppearance } from "./scene/HeroAppearance"
 import { ShowcaseLight } from "./scene/ShowcaseLight"
 import { heroIdlePose } from "./scene/HeroIdle"
+import { CameraShake } from "./scene/CameraShake"
+import { weaponRules } from "@typecade/content"
 
 const kinds: EnemyKind[] = ["skeleton", "goblin", "guard", "bomber", "mage", "minotaur", "boss", "barrel", "chest", "bat", "shield", "potion", "mana", "sentry",
  "wolf", "slime", "spider", "wraith", "archer", "shaman", "golem", "imp", "rat", "necromancer", "serpent", "beetle", "assassin", "troll", "wisp",
@@ -62,7 +64,11 @@ export class DungeonScene {
  private actors = new Map<number, Actor>()
  private swingAt = -10
  private swingKind: HeroMove = "slash"
+ /** Hit-stop end on the real clock (not the slowed presentation clock), so a freeze lasts exactly as long as asked. */
  private hitStopUntil = -10
+ private realTime = 0
+ /** Freezes presentation for `seconds` of real time (kills, heavy strikes). Never touches the simulation. */
+ private freeze(seconds: number) { this.hitStopUntil = Math.max(this.hitStopUntil, this.realTime + seconds) }
  private armoryZoom = 1
  /** 0..1 blend of the idle animation; eases out during actions and back in when calm. */
  private idleWeight = 1
@@ -92,6 +98,7 @@ export class DungeonScene {
  private telegraphs:InstancedMesh
  private lastLevel = 1
  private lastPower = 3
+ private lastStand = 0
  private heroHurtAngle = 0
  private heroMaterial: MeshStandardMaterial
  private lastEnemyCue = -10
@@ -101,7 +108,20 @@ export class DungeonScene {
  private partyPoses = new Map<string, { x:number;z:number;angle:number;hitAt:number }>()
  private bossHitAt = -10
  private lastBossAttack = -1000
- private cameraTrauma = 0
+ private shake = new CameraShake()
+ /** Screen shake strength from settings (0 off, 1 full); Reduced Effects forces 0. */
+ private shakeScale = 1
+ /** Mistype bookkeeping: last error count seen and when the last typo landed. */
+ private lastErrors = 0
+ private typoAt = -10
+ /** Screen flash colour/strength and chromatic kick, decaying every frame. */
+ private flash = new Color(0, 0, 0)
+ private flashLevel = 0
+ private splitKick = 0
+ /** Last known position of each enemy shot, so a vanished shot bursts where it ended. */
+ private projectileTrail = new Map<number, { x: number; z: number }>()
+ /** Familiar orb per automatic weapon or proc relic: where its attacks visibly come from. */
+ private familiarAt = new Map<string, { x: number; y: number; z: number; color: number; firedAt: number }>()
  private euler = new Euler()
  private audio = new DungeonAudio()
  private textures = new TextureFactory()
@@ -137,6 +157,8 @@ export class DungeonScene {
  private marker: Mesh<RingGeometry,MeshBasicMaterial>
  private aura: Mesh<SphereGeometry,MeshBasicMaterial>
  private lights: PointLight[] = []
+ /** Soft warm key light that follows the hero so its colours and face read on any floor. */
+ private heroLight = new PointLight(0xfff0d8, 10, 9, 1.4)
  private torchColor=0xff923d
  private torchPoints: Vector3[] = []
  private bridgeTorches = [-7,7].flatMap(x=>[-5,5].map(z=>new Vector3(x,2.5,z)))
@@ -257,22 +279,27 @@ export class DungeonScene {
    this.partyBatches.push(batch(model,8))
   }
   for (let i = 0; i < 4; i++) { const light = new PointLight(0xffa34b, 18, 12, 2); this.lights.push(light); this.scene.add(light) }
+  this.scene.add(this.heroLight)
   this.post = new PostProcessing(this.renderer, this.scene, this.camera)
   this.cleanup.push(bridge.on("frame", state => {
-   if (state.seed !== this.state?.seed) { this.lastEnemyCue=-10;this.lastLevel=state.level;this.lastPower=Object.values(state.skills).reduce((n,s)=>n+s.level,0)+Object.values(state.relics).reduce((n,v)=>n+v,0);this.heroHitAt=-10;this.lastCorrect = state.correct; this.lastEffect = state.nextId-1; this.lastDash=state.player.dashAt;this.lastHp=state.player.hp;this.lastPhase=state.phase;this.actors.clear();this.vfx.clear();this.dashAt=this.swingAt=-10;this.cameraTrauma=0;this.knight.root.position.set(state.player.x, 0, state.player.z); this.focus.set(state.player.x, 0, state.player.z) }
+   if (state.seed !== this.state?.seed) { this.lastEnemyCue=-10;this.lastLevel=state.level;this.lastPower=Object.values(state.skills).reduce((n,s)=>n+s.level,0)+Object.values(state.relics).reduce((n,v)=>n+v,0);this.heroHitAt=-10;this.lastCorrect = state.correct; this.lastEffect = state.nextId-1; this.lastDash=state.player.dashAt;this.lastHp=state.player.hp;this.lastPhase=state.phase;this.actors.clear();this.vfx.clear();this.dashAt=this.swingAt=-10;this.shake.reset();this.lastErrors=state.errors;this.projectileTrail.clear();this.knight.root.position.set(state.player.x, 0, state.player.z); this.focus.set(state.player.x, 0, state.player.z) }
    this.syncAudio(state)
    this.receive(state)
    this.state = state; this.dirty = true
    if (!["paused", "ready"].includes(state.phase)) {
-    if (state.correct > this.lastCorrect) this.audio.play("tick")
+    if (state.correct > this.lastCorrect) {
+     const locked = state.enemies.find(e => e.id === state.target), progress = locked?.words[0] ? state.prefix.length / locked.words[0].length : state.phase === "overdrive" ? (state.cursor % 12) / 12 : 0
+     this.audio.play("tick", 0, 2 ** (progress * 7 / 12))
+    }
+    if (state.errors > this.lastErrors) this.mistype(state)
     for (const fx of state.effects) if (fx.id > this.lastEffect) {
      const nearHero=Math.hypot(fx.x-state.player.x,fx.z-state.player.z)<.2
      const kind=fx.kind==="hit"&&fx.value<0?"hurt":fx.kind==="slash"&&nearHero&&state.phase!=="overdrive"?"cleave":fx.kind==="storm"&&(!nearHero||fx.value<0)?"explosion":fx.kind
-     this.audio.play(fx.kind==="treasure"?"chest":fx.kind==="blast"||fx.kind==="slam"?"explosion":fx.kind==="lightning"?"zap":fx.kind==="firebolt"?"firebolt":fx.kind==="ward"?"armor":fx.kind==="summon"?"deploy":fx.kind==="blink"?"magnet":kind,(fx.x-state.player.x)/12)
+     this.audio.play(fx.kind==="treasure"?"loot":fx.kind==="blast"||fx.kind==="slam"?"explosion":fx.kind==="lightning"?"zap":fx.kind==="firebolt"?"firebolt":fx.kind==="ward"?"armor":fx.kind==="summon"?"deploy":fx.kind==="blink"?"magnet":kind,(fx.x-state.player.x)/12)
     }
    }
-   this.lastCorrect = state.correct; this.lastEffect = state.nextId - 1
-  }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.syncAudio() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.audio.setMix(settings.volume,settings.music,settings.effects); this.post.configure({ bloom: !settings.reduced&&!this.adaptive, outline: !settings.reduced }); this.renderer.shadowMap.enabled = !settings.reduced&&!this.adaptive; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
+   this.lastCorrect = state.correct; this.lastEffect = state.nextId - 1; this.lastErrors = state.errors
+  }), bridge.on("screen", screen => { this.screen = screen;this.vfx.clear();this.partyActions.clear();this.lastBossHp=0;this.lastTrainingCorrect=0; this.dirty = true; this.last = 0; this.syncAudio() }), bridge.on("settings", settings => { this.reduced = settings.reduced; this.shakeScale = settings.reduced ? 0 : settings.shake ?? 1; this.audio.setMix(settings.volume,settings.music,settings.effects); this.post.configure({ bloom: !settings.reduced&&!this.adaptive, outline: !settings.reduced }); this.renderer.shadowMap.enabled = !settings.reduced&&!this.adaptive; this.dirty = true; this.resize() }),bridge.on("training",({correct})=>{if(correct>this.lastTrainingCorrect){this.trainingHit=this.swingAt=this.elapsed;this.vfx.emit("slash",2.4,-.2,1.3,.85);this.vfx.emit("shatter",2.8,-.2);this.audio.play("tick")};this.lastTrainingCorrect=correct;this.dirty=true}))
   this.cleanup.push(bridge.on("appearance", loadout => { this.heroAppearance.apply(loadout); this.dirty = true }))
   this.cleanup.push(bridge.on("party",party=>{this.syncAudio(this.state,party);this.receiveParty(party);this.party=party;this.partyElapsedAt=this.elapsed;this.dirty=true}))
   this.listen(window, "keydown", () => this.audio.unlock()); this.listen(window, "pointerdown", () => this.audio.unlock())
@@ -312,9 +339,16 @@ export class DungeonScene {
    const landing=newEffects.find(fx=>fx.kind==="slash"||fx.kind==="finisher"),struck=landing?[...this.actors.values()].find(a=>Math.hypot(a.x-landing.x,a.z-landing.z)<.3):undefined
    this.swingKind=selectMove({wordsCompleted:s.words,targetLayers:struck?.layers??1,finisher:newEffects.some(fx=>fx.kind==="finisher"),whirl:newEffects.some(fx=>fx.kind==="whirl")},this.heroAppearance.style.combo)
    if(this.swingKind!=="slash")this.audio.play(this.swingKind,(s.player.x-this.dashFrom.x)/12)
-   if(this.swingKind==="finisher"){this.hitStopUntil=now+.14;this.focusAt=now;this.zoomPunch=1;this.cameraTrauma=Math.max(this.cameraTrauma,.45)}
-   else if(this.swingKind==="leap"||this.swingKind==="whirl"){this.zoomPunch=Math.max(this.zoomPunch,.5);this.cameraTrauma=Math.max(this.cameraTrauma,.18)}
+   if(this.swingKind==="finisher"){this.freeze(.14);this.focusAt=now;this.zoomPunch=1;this.shake.add(.45)}
+   else if(this.swingKind==="leap"||this.swingKind==="whirl"){this.zoomPunch=Math.max(this.zoomPunch,.5);this.shake.add(.18)}
    this.heroAngle=Math.atan2(this.dashTo.x-this.dashFrom.x,this.dashTo.z-this.dashFrom.z);this.lastDash=s.player.dashAt
+   if(landing){
+    const elite=(struck?.maxHealth??1)>=3,heavy=this.swingKind==="finisher"||this.swingKind==="leap"||this.swingKind==="whirl"
+    this.vfx.emit("strike",landing.x,landing.z,this.heroAngle,heavy?1.5:elite?1.2:1,undefined,heavy?0xffe39a:undefined)
+    this.shake.add(heavy?.55:.32,landing.x-this.dashFrom.x,landing.z-this.dashFrom.z)
+    this.freeze((heavy?.13:.055));this.splitKick=Math.max(this.splitKick,heavy?1:.45)
+    this.audio.play("strike",(landing.x-s.player.x)/12)
+   }
    this.vfx.emit("dust",this.dashFrom.x,this.dashFrom.z,this.heroAngle,1.2)
    this.vfx.emit("dash",this.dashFrom.x,this.dashFrom.z,this.heroAngle,1,{x:s.player.x,z:s.player.z})
   }
@@ -322,11 +356,15 @@ export class DungeonScene {
   for(const [id,actor]of this.actors){
    if(!live.has(id)&&actor.deadAt<0){
     if(newEffects.some(fx=>["shatter","hit","storm","blast","treasure"].includes(fx.kind)&&Math.hypot(fx.x-actor.x,fx.z-actor.z)<1.5)){
-     actor.deadAt=now;actor.hitAt=now;this.vfx.emit(actor.kind in dungeonSupplies?"pickup":"death",actor.x,actor.z,actor.angle,actor.kind==="boss"?2:1,undefined,gait[actor.kind]?.tint??0xe5caa1)
+     actor.deadAt=now;actor.hitAt=now
+     const supply=actor.kind in dungeonSupplies,elite=actor.maxHealth>=3&&!dungeonObjects.includes(actor.kind)
+     if(supply)this.vfx.emit("pickup",actor.x,actor.z,actor.angle,1,{x:s.player.x,z:s.player.z})
+     else if(actor.kind==="chest")this.vfx.emit("loot",actor.x,actor.z)
+     else if(actor.kind!=="barrel")this.vfx.emit("gore",actor.x,actor.z,actor.angle,actor.kind==="boss"?2.4:elite?1.4:1,undefined,gait[actor.kind]?.tint??0xe5caa1)
+     if(!supply&&!dungeonObjects.includes(actor.kind)){this.freeze((actor.kind==="boss"?.3:elite?.1:.06));this.shake.add(actor.kind==="boss"?.9:elite?.42:.26,actor.x-s.player.x,actor.z-s.player.z)}
      this.audio.play(actor.kind in dungeonSupplies?actor.kind==="potion"?"heal":actor.kind==="shield"?"shield":actor.kind==="sentry"?"deploy":"mana":actor.kind==="barrel"||actor.kind==="bomber"?"explosion":actor.kind==="chest"?"chest":actor.kind==="boss"?"victory":`death-${actor.kind}`,(actor.x-s.player.x)/12)
      if(!dungeonObjects.includes(actor.kind)&&actor.kind!=="boss")this.audio.play(actor.maxHealth>=3?"kill-elite":"kill",(actor.x-s.player.x)/12)
-     if(actor.kind==="barrel"){this.vfx.emit("cleave",actor.x,actor.z,0,1.2);this.cameraTrauma=.25}
-     this.cameraTrauma=Math.max(this.cameraTrauma,actor.kind==="boss"?.4:.08)
+
     }else this.actors.delete(id)
    }
   }
@@ -339,15 +377,20 @@ export class DungeonScene {
     if(arriving){this.vfx.emit("spawn",e.x,e.z);if(!dungeonObjects.includes(e.kind)&&Math.hypot(e.x-s.player.x,e.z-s.player.z)<11)this.audio.play(`enemy-${e.kind}`,(e.x-s.player.x)/12)}
    }
   }
+  const shots=new Set(s.projectiles.map(p=>p.id))
+  for(const [id,at] of this.projectileTrail)if(!shots.has(id)){this.vfx.emit("bolthit",at.x,at.z,this.heroAngle);if(Math.hypot(at.x-s.player.x,at.z-s.player.z)<1.2)this.shake.add(.2,s.player.x-at.x,s.player.z-at.z);this.projectileTrail.delete(id)}
+  for(const p of s.projectiles)this.projectileTrail.set(p.id,{x:p.x,z:p.z})
   const corpses=[...this.actors.values()].filter(a=>a.deadAt>=0).sort((a,b)=>b.deadAt-a.deadAt)
   for(const actor of corpses.slice(16))this.actors.delete(actor.id)
   if(s.player.hp<this.lastHp&&newEffects.some(fx=>fx.kind==="hit"&&fx.value<0)){
-   this.heroHitAt=now;this.cameraTrauma=.22
+   this.heroHitAt=now;this.shake.add(.5,Math.sin(this.heroHurtAngle),Math.cos(this.heroHurtAngle));this.punch(0xff3020,.35,.6)
    this.vfx.emit("hurt",s.player.x,s.player.z,this.heroAngle)
    const nearest=[...this.actors.values()].filter(e=>e.deadAt<0&&!dungeonObjects.includes(e.kind)).sort((a,b)=>Math.hypot(a.x-s.player.x,a.z-s.player.z)-Math.hypot(b.x-s.player.x,b.z-s.player.z))[0]
    if(nearest){this.audio.play(`enemy-${nearest.kind}`,(nearest.x-s.player.x)/12);nearest.strikeAt=now;this.heroHurtAngle=Math.atan2(s.player.x-nearest.x,s.player.z-nearest.z)}
   }
-  if(s.level>this.lastLevel){this.celebrateAt=now;this.vfx.emit("level",s.player.x,s.player.z);this.audio.play("level")}
+  if(s.player.hp>0&&s.talents.lastStand<this.lastStand){this.vfx.emit("laststand",s.player.x,s.player.z);this.audio.play("laststand");this.punch(0xffd36b,.6,.6);this.shake.add(.5)}
+  this.lastStand=s.talents.lastStand
+  if(s.level>this.lastLevel){this.celebrateAt=now;this.shake.add(.2);this.vfx.emit("level",s.player.x,s.player.z);this.audio.play("level")}
   const power=Object.values(s.skills).reduce((n,skill)=>n+skill.level,0)+Object.values(s.relics).reduce((n,v)=>n+v,0)
   if(power>this.lastPower||this.lastPhase==="draft"&&s.phase==="arena"){this.celebrateAt=now;this.vfx.emit("upgrade",s.player.x,s.player.z);this.audio.play("upgrade")}
   this.lastLevel=s.level;this.lastPower=power
@@ -358,20 +401,65 @@ export class DungeonScene {
    let kind:VisualEffect=(fx.kind==="lightning"||fx.kind==="sentry")&&fx.to?"zap":fx.kind==="spore"?"spore":fx.kind==="barrier"?fx.value===0?"death":"shatter":fx.kind==="ward"?"shield":fx.kind==="summon"?"spawn":fx.kind==="blink"?"dash":fx.kind
    if(fx.kind==="barrier"){this.audio.play(fx.value===0?"explosion":"armor");if(fx.to)for(const actor of this.actors.values())if(Math.hypot(actor.x-fx.to.x,actor.z-fx.to.z)<.1)actor.strikeAt=now}
    if(fx.kind==="slash"&&dash)kind=this.swingKind==="whirl"||this.swingKind==="finisher"?"slash":this.swingKind
-   if(fx.kind==="meteor"||fx.kind==="finisher")this.cameraTrauma=Math.max(this.cameraTrauma,fx.kind==="finisher"?.45:.16)
-   if(fx.kind==="nova"||fx.kind==="frost"){this.castAt=now;this.cameraTrauma=Math.max(this.cameraTrauma,.08)}
+   if(fx.kind==="meteor"||fx.kind==="finisher")this.shake.add(fx.kind==="finisher"?.55:.3)
+   if(fx.kind==="nova"||fx.kind==="frost"){this.castAt=now;this.shake.add(.08)}
    if(fx.kind==="lightning"||fx.kind==="firebolt"){this.castAt=now;if(fx.to)this.heroAngle=Math.atan2(fx.to.x-s.player.x,fx.to.z-s.player.z)}
-   if(fx.kind==="slam"||fx.kind==="blast"){this.cameraTrauma=.18;for(const actor of this.actors.values())if(actor.kind==="boss")actor.strikeAt=now}
+   if(fx.kind==="slam"||fx.kind==="blast"){this.shake.add(.18);for(const actor of this.actors.values())if(actor.kind==="boss")actor.strikeAt=now}
    if(fx.kind==="block")this.shieldHitAt=now
-   if(fx.kind==="slash"&&!dash&&s.phase!=="overdrive"&&Math.hypot(fx.x-s.player.x,fx.z-s.player.z)<.1){kind="cleave";this.swingAt=now;this.swingKind="cleave";this.cameraTrauma=.12}
+   if(fx.kind==="slash"&&!dash&&s.phase!=="overdrive"&&Math.hypot(fx.x-s.player.x,fx.z-s.player.z)<.1){kind="cleave";this.swingAt=now;this.swingKind="cleave";this.shake.add(.12)}
    if(fx.kind==="nova")kind="nova"
+   const atHero=Math.hypot(fx.x-s.player.x,fx.z-s.player.z)<.1,cast=this.lastPhase==="skills"
+   if(kind==="cleave"&&atHero&&!dash){const level=s.skills.cleave.level;this.vfx.emit("cleaveSkill",fx.x,fx.z,level,4*(1+.4*(level-1)));this.shake.add(.3+level*.1);this.splitKick=Math.max(this.splitKick,.5+level*.2);continue}
+   if(fx.kind==="storm"&&atHero&&fx.value>0){const level=s.skills.storm.level;this.vfx.emit("stormSkill",fx.x,fx.z,level,12);this.punch(level===3?0xc8f4ff:0xb8d8ff,.45+level*.12,.4);this.shake.add(.45+level*.12);continue}
+   if(fx.kind==="heal"&&atHero&&cast){this.vfx.emit("healSkill",fx.x,fx.z,0,s.skills.heal.level);this.punch(0x40ff80,.15,0);continue}
+   if(fx.kind==="blast"||fx.kind==="barrier"&&fx.value===0){this.vfx.emit("explosion",fx.x,fx.z,this.heroAngle,fx.kind==="blast"?1:.8);this.punch(0xff8a3a,Math.max(.2,.8-Math.hypot(fx.x-s.player.x,fx.z-s.player.z)*.06),.9);this.shake.add(.75,s.player.x-fx.x,s.player.z-fx.z);this.freeze(.09);continue}
+   if(kind==="zap"&&fx.to){const origin=fx.kind==="lightning"?this.familiar("lightning"):undefined;if(origin){origin.firedAt=now;this.vfx.emit("zap",origin.x,origin.z,this.heroAngle,1,fx.to,0x9fe6ff);this.punch(0xa8d8ff,.12,.2);continue}}
+   if(fx.kind==="firebolt"&&fx.to){const origin=this.familiar("vowels");if(origin){origin.firedAt=now;this.vfx.emit("firebolt",origin.x,origin.z,this.heroAngle,1,fx.to);continue}}
+   if((fx.kind==="meteor"||fx.kind==="frost"||fx.kind==="nova")){const origin=this.familiar(fx.kind);if(origin){origin.firedAt=now;if(fx.kind==="meteor")this.vfx.emit("tracer",origin.x,origin.z,0,1,{x:fx.x,z:fx.z},weaponRules.meteor.color)}}
    this.vfx.emit(kind,fx.x,fx.z,this.heroAngle,1,fx.to??(fx.kind==="pickup"?{x:s.player.x,z:s.player.z}:undefined),fx.kind==="sentry"?0x9df2ff:fx.kind==="barrier"?0xc59b66:fx.kind==="ward"?0x8fe0a0:fx.kind==="summon"?0x7dff9a:fx.kind==="blink"?0x9cc8ff:undefined)
-   if(fx.kind==="shatter"&&fx.source){const marker=hitMarkers[fx.source];if(marker)this.vfx.emit(marker.effect,fx.x,fx.z,this.heroAngle,marker.size,undefined,marker.tint)}
-   if(fx.kind==="shatter")this.cameraTrauma=Math.max(this.cameraTrauma,.055)
+   if(fx.kind==="shatter"&&fx.source){const marker=hitMarkers[fx.source];if(marker)this.vfx.emit(marker.effect,fx.x,fx.z,this.heroAngle,marker.size,undefined,marker.tint)
+    // Weapon hits draw a tracer from the familiar that fired, so every automatic attack has a visible source.
+    const origin=fx.source==="nova"||fx.source==="frost"||fx.source==="meteor"?this.familiar(fx.source):undefined
+    if(origin&&fx.source!=="meteor"){origin.firedAt=now;this.vfx.emit("tracer",origin.x,origin.z,0,1,{x:fx.x,z:fx.z},marker?.tint)}
+    if(fx.source==="sentry"&&s.sentry)this.vfx.emit("tracer",s.sentry.x,s.sentry.z,0,1,{x:fx.x,z:fx.z},0x9df2ff)}
+   if(fx.kind==="shatter")this.shake.add(.08)
    if(fx.kind==="slash"&&s.phase==="overdrive"){this.swingAt=now-.07;this.swingSide=s.cursor%2?1:-1;this.heroAngle=Math.atan2(fx.x-s.player.x,fx.z-s.player.z)}
   }
-  if(s.phase==="overdrive"&&this.lastPhase!=="overdrive"){const boss=s.enemies.find(e=>e.id===s.boss);if(boss){this.vfx.emit("cleave",boss.x,boss.z,0,1.4);this.vfx.emit("storm",boss.x,boss.z,0,.8);this.cameraTrauma=.25}}
+  if(s.phase==="overdrive"&&this.lastPhase!=="overdrive"){const boss=s.enemies.find(e=>e.id===s.boss);if(boss){this.vfx.emit("cleave",boss.x,boss.z,0,1.4);this.vfx.emit("storm",boss.x,boss.z,0,.8);this.shake.add(.25)}}
   this.lastPhase=s.phase
+ }
+ /** Mistype: red cross over the hero, a flinch, a red edge pulse, a small shake and the typo cue. */
+ private mistype(s: DungeonState) {
+  this.typoAt=this.elapsed
+  this.vfx.emit("typo",s.player.x,s.player.z,this.heroFacing)
+  this.audio.play("typo")
+  this.shake.add(.14)
+ }
+ /** Screen flash in a colour, plus an optional chromatic kick. */
+ private punch(hex: number, strength: number, split: number) {
+  if(strength>=this.flashLevel){this.flash.setHex(hex);this.flashLevel=strength}
+  this.splitKick=Math.max(this.splitKick,split)
+ }
+ private familiar(id: string) { return this.familiarAt.get(id) }
+ /**
+  * One orb per automatic weapon and proc relic, circling at shoulder height in the weapon's colour.
+  * It flares when it fires; tracers start from it. Spirit Blades and the sentry are their own sources.
+  */
+ private updateFamiliars(s: DungeonState, x: number, z: number) {
+  const owned:Array<[string,number]>=[]
+  for(const id of ["nova","meteor","frost"] as const)if(s.weapons[id].level)owned.push([id,weaponRules[id].color])
+  if(s.relics.lightning)owned.push(["lightning",0x8ce9fa])
+  if(s.relics.vowels)owned.push(["vowels",0xffa040])
+  for(const id of this.familiarAt.keys())if(!owned.some(([k])=>k===id))this.familiarAt.delete(id)
+  let index=0
+  owned.forEach(([id,color],i)=>{
+   const a=(this.reduced?0:this.elapsed*1.1)+i*Math.PI*2/owned.length,fx=x+Math.sin(a)*1.35,fz=z+Math.cos(a)*1.35,fy=2.1+Math.sin(this.elapsed*2.4+i)*.12
+   const slot=this.familiarAt.get(id)??{x:fx,y:fy,z:fz,color,firedAt:-10};Object.assign(slot,{x:fx,y:fy,z:fz,color});this.familiarAt.set(id,slot)
+   const fire=Math.max(0,1-(this.elapsed-slot.firedAt)/.35)
+   this.matrix.makeRotationY(this.elapsed*2+i).scale(this.scale.setScalar(.75+fire*.5)).setPosition(fx,fy,fz);this.orbitals.setMatrixAt(index,this.matrix);this.orbitals.setColorAt(index++,this.color.setHex(color))
+   this.vfx.flare(fx,fy,fz,1.1+fire*1.6,color,1.3+fire*1.8)
+  })
+  this.orbitals.count=index;this.orbitals.instanceMatrix.needsUpdate=true;if(this.orbitals.instanceColor)this.orbitals.instanceColor.needsUpdate=true
  }
  private receiveParty(party: PartyWorld|null) {
   if(!party){this.partyActions.clear();this.partyPoses.clear();this.lastBossAttack=-1000;return}
@@ -386,15 +474,15 @@ export class DungeonScene {
    const target=party.players.find(other=>other.id===p.target),to=p.target==="boss"?{x:3,z:-4}:target??p,angle=Math.atan2(to.x-p.x,to.z-p.z)
    const kind:VisualEffect=p.action==="heal"||p.action==="revive"?"heal":p.action==="storm"?"storm":p.action==="block"?"block":p.action==="dodge"?"dust":p.action==="ignite"||p.action==="cleave"?"cleave":"slash"
    this.vfx.emit(kind,to.x,to.z,angle)
-   if(kind==="slash"){this.vfx.emit("shatter",to.x,to.z,angle);this.cameraTrauma=.06}
+   if(kind==="slash"){this.vfx.emit("shatter",to.x,to.z,angle);this.shake.add(.06)}
    this.audio.play(p.action==="ignite"?"explosion":kind)
   }
   if(party.boss&&this.lastBossHp>party.boss.hp)this.bossHitAt=this.elapsed
-  if(party.boss&&this.lastBossHp>0&&party.boss.hp===0){this.vfx.emit("death",3,-4,0,3);this.vfx.emit("storm",3,-4);this.cameraTrauma=.35;this.audio.play("victory")}
+  if(party.boss&&this.lastBossHp>0&&party.boss.hp===0){this.vfx.emit("death",3,-4,0,3);this.vfx.emit("storm",3,-4);this.shake.add(.35);this.audio.play("victory")}
   this.lastBossHp=party.boss?.hp??0
   if(party.boss&&party.boss.attackAt!==this.lastBossAttack){
    this.lastBossAttack=party.boss.attackAt
-   if(party.now-party.boss.attackAt<700){const target=party.players.find(p=>p.id===party.boss!.target);this.vfx.emit("cleave",3,-4,0,.75);if(target)this.vfx.emit("hit",target.x,target.z);this.cameraTrauma=.15}
+   if(party.now-party.boss.attackAt<700){const target=party.players.find(p=>p.id===party.boss!.target);this.vfx.emit("cleave",3,-4,0,.75);if(target)this.vfx.emit("hit",target.x,target.z);this.shake.add(.15)}
   }
  }
  private instance(geometry: BufferGeometry, material: MeshStandardMaterial | MeshBasicMaterial, count: number) {
@@ -461,9 +549,13 @@ export class DungeonScene {
   const armory = this.screen === "armory", offset = this.screen === "title" ? -5 : armory ? -1.4 : 0, side = this.height < 520 && active ? this.screen==="tutorial"?0:5 : dojo&&this.width<600 ? -3 : 0
   const trainingOffset=dojo?(this.height/2-(this.width<600?215:235))*(2*this.camera.top/this.height)/Math.sqrt(2/3):0
   const fx=this.focus.x+offset+side+trainingOffset,fz=this.focus.z-side+trainingOffset
-  this.cameraTrauma=Math.max(0,this.cameraTrauma-delta*1.7)
-  const shake=this.reduced?0:this.cameraTrauma*this.cameraTrauma
-  this.camera.position.set(fx+24+Math.sin(this.elapsed*61)*shake,24,fz+24+Math.cos(this.elapsed*53)*shake);this.camera.lookAt(fx,0,fz)
+  this.shake.update(delta,this.reduced?0:this.shakeScale)
+  const o=this.shake.offset
+  this.camera.position.set(fx+24+o.x,24+o.y,fz+24+o.z);this.camera.lookAt(fx+o.x,o.y,fz+o.z);this.camera.rotateZ(o.roll)
+  this.flashLevel=Math.max(0,this.flashLevel-delta*4.5);this.splitKick=Math.max(0,this.splitKick-delta*5)
+  const typoPulse=this.reduced?0:Math.max(0,1-(this.elapsed-this.typoAt)/.3)
+  this.post.setPunch(this.color.copy(this.flash).multiplyScalar(this.reduced?this.flashLevel*.3:this.flashLevel),this.reduced?0:this.splitKick*this.splitKick,typoPulse)
+  this.vfx.setView(this.camera.quaternion)
   this.zoomPunch=Math.max(0,this.zoomPunch-delta*2.5);// Armory: close-up on the hero so outfit changes are readable.
   this.armoryZoom+=((armory?ARMORY_ZOOM:1)-this.armoryZoom)*Math.min(1,delta*5||1);this.camera.zoom=this.armoryZoom*(1+(this.reduced?0:this.zoomPunch*this.zoomPunch*.12));this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld()
   this.showcase.update(armory,this.knight.root.position.x,this.knight.root.position.z,delta)
@@ -486,7 +578,8 @@ export class DungeonScene {
   this.knight.legs.forEach((leg,i)=>{leg.rotation.x=this.reduced?0:Math.sin(this.elapsed*22+i*Math.PI)*dash*.9;leg.rotation.z=this.reduced?0:(i?-.04:.04)-swing*.06})
   const moveProgress=Math.min(1,swingAge/moveDuration[this.swingKind]),pose=heroPose(this.swingKind,this.reduced||moveProgress>=1?0:moveProgress,this.swingSide)
   this.knight.body.rotation.y=this.reduced?0:pose.bodyYaw+Math.sin(celebration*Math.PI)*.3
-  this.knight.body.rotation.z=this.reduced?0:Math.sin(this.elapsed*2)*.018
+  const flinch=this.reduced?0:Math.max(0,1-(this.elapsed-this.typoAt)/.28)
+  this.knight.body.rotation.z=this.reduced?0:Math.sin(this.elapsed*2)*.018+Math.sin(flinch*Math.PI*3)*flinch*.12
   this.knight.weapon!.rotation.set(this.reduced?0:-.2+pose.weaponPitch-charge*.5,this.reduced?0:pose.weaponYaw,this.reduced?-.12:-.15+charge*.5+pose.weaponRoll)
   this.knight.arm!.rotation.set(this.reduced?0:-.15+pose.armPitch-casting*1.4-celebration*.8,0,this.reduced?0:.12+swing*.35)
   this.knight.weapon!.position.z=pose.weaponReach
@@ -517,6 +610,7 @@ export class DungeonScene {
   const focusActor=selected?this.actors.get(selected.id):undefined,focusScale=selected?this.batches.get(selected.kind)!.scale:1
   this.targetFocus.update(selected&&focusActor?{id:selected.id,x:focusActor.vx,z:focusActor.vz,size:focusScale,headHeight:objectsHeight(selected.kind)*focusScale*.85+.4}:null,hero.position.x,hero.position.z,this.elapsed,this.reduced,active&&!!s&&(s.phase==="arena"||s.phase==="skills"))
   if(multiplayer&&this.party?.boss&&this.party.boss.hp>0&&this.party.boss.nextAttack-partyNow<800){this.marker.visible=true;this.marker.position.set(3,.035,-4);this.marker.scale.setScalar(4.5+Math.sin(this.elapsed*16)*.3);this.marker.material.color.setHex(0xff8d59)}
+  this.heroLight.position.set(hero.position.x+.6,3.4,hero.position.z+1.6)
   this.heroShield.visible=active&&!!s&&s.player.shield>0
   this.heroShield.rotation.z=this.reduced?0:Math.sin(this.elapsed*2)*.04
   const shieldPulse=Math.max(0,1-(this.elapsed-this.shieldHitAt)/.35)
@@ -525,8 +619,6 @@ export class DungeonScene {
   this.orbitals.count=0;this.telegraphs.count=0
   if(active&&s)this.weaponVisuals.update(s,hero.position.x,hero.position.z,this.elapsed,this.reduced);else this.weaponVisuals.hide()
   if(active&&s){
-   const relics=[...(s.relics.lightning?[0x8ce9fa,0xb9fbff]:[]),...(s.relics.vowels?[0xffbb68,0xff8d54]:[])]
-   relics.forEach((hex,i)=>{const a=(this.reduced?0:this.elapsed*1.4)+i*Math.PI*2/relics.length;this.matrix.makeRotationY(a).setPosition(hero.position.x+Math.sin(a)*1.15,1+Math.sin(a*2)*.13,hero.position.z+Math.cos(a)*1.15);this.orbitals.setMatrixAt(i,this.matrix);this.orbitals.setColorAt(i,this.color.setHex(hex))});this.orbitals.count=relics.length
    for(const e of s.enemies){
     if(e.id===s.boss&&s.phase==="overdrive"&&e.motion==="windup"){this.matrix.makeScale(3,1,3).setPosition(hero.position.x,.08,hero.position.z);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xf07855))}
     if(e.motion==="windup"&&e.aim){const length=Math.hypot(e.aim.x-e.x,e.aim.z-e.z),angle=Math.atan2(e.aim.x-e.x,e.aim.z-e.z);this.matrix.makeRotationY(angle).scale(this.scale.set(length<.1?6:.9,1,length<.1?6:length)).setPosition((e.x+e.aim.x)/2,.075,(e.z+e.aim.z)/2);this.telegraphs.setMatrixAt(this.telegraphs.count,this.matrix);this.telegraphs.setColorAt(this.telegraphs.count++,this.color.setHex(0xde6948))}
@@ -663,6 +755,11 @@ export class DungeonScene {
   for (const mesh of [this.gems, this.coins, this.projectiles, this.embers]) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true }
   this.vfx.update(delta,this.reduced)
   for(const p of near.slice(0,this.reduced?1:4))this.vfx.groundLight(p.x,p.z,this.torchColor,this.reduced?.10:.18+Math.sin(this.elapsed*9)*.015)
+  if(active&&s){
+   this.updateFamiliars(s,hero.position.x,hero.position.z)
+   for(const p of projectiles)this.vfx.flare(p.x,.9,p.z,this.reduced?.9:1.5+Math.sin(this.elapsed*20+p.id)*.2,0xc58bff,1.8)
+  }else this.familiarAt.clear()
+  this.vfx.commit()
   if (active && s && this.last-this.lastProjection>=33) this.bridge.emit("projected", [...s.queue.map(id => {
    const enemy = s.enemies.find(e => e.id === id)!
    const scale = this.batches.get(enemy.kind)!.scale
@@ -680,8 +777,11 @@ export class DungeonScene {
   if (this.last && timestamp - this.last < (this.reduced||this.adaptive ? 32 : 16)) return
   if(this.last&&!this.adaptive){this.slowFrames=timestamp-this.last>35?this.slowFrames+1:Math.max(0,this.slowFrames-1);if(this.slowFrames>=30)this.adapt()}
   const delta = this.last ? Math.min(.1, (timestamp - this.last) / 1000) : 0; this.last = timestamp
-  const hitStop=!this.reduced&&this.elapsed<this.hitStopUntil?.12:1
+  this.realTime+=delta
+  const hitStop=!this.reduced&&this.realTime<this.hitStopUntil?.12:1
   if (!frozen) this.elapsed += delta * hitStop * ((this.screen==="endless"||this.screen==="tutorial")&&this.state?.phase === "skills" ? .5 : 1)
+  // Paused, drafting or dead: transient punches (flash, chroma, shake, typo pulse) end at once instead of hanging on screen.
+  if (frozen) { this.flashLevel = this.splitKick = 0; this.typoAt = -10; this.shake.reset() }
   this.update(frozen ? 0 : delta); this.render(); this.dirty = false
   if (timestamp - this.lastMetrics > 1000) { this.lastMetrics = timestamp; this.report("ready") }
  }

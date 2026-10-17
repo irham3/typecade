@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { cosmetics, defaultLoadout, heroSlots } from "@typecade/content"
+import { cosmetics, defaultLoadout, heroSlots, kitLoadout } from "@typecade/content"
 import { heroBlueprint } from "./heroParts"
 import { archetypeFor, heroArchetypes } from "./heroArchetypes"
 import { heroStyles, styleFor } from "../scene/heroStyles"
@@ -26,4 +26,14 @@ it("gives every character style a breathing idle and its own gestures, broader w
     for (const gesture of style.gestures) for (const t of [-1, 0, .5, 1, 2]) expect(Object.values(gesture(t)).every(Number.isFinite)).toBe(true)
   }
   expect(heroIdlePose(.3, false, { ...heroStyles.warden, gestures: [] }).bodyYaw).toBeCloseTo(Math.sin(.3 * .43) * heroStyles.warden.idle.look)
+})
+
+it("builds every hero in its signature kit with hair only when the head slot shows it", () => {
+  for (const hero of cosmetics.filter(item => item.slot === "hero")) {
+    const blueprint = heroBlueprint(kitLoadout(hero.id))
+    for (const part of [...blueprint.body, ...blueprint.leg, ...blueprint.arm!, ...blueprint.weapon!]) expect(part.slice(1, 7).every(Number.isFinite)).toBe(true)
+    expect(styleFor(archetypeFor(hero.id).style)).toBeDefined()
+  }
+  const open = heroBlueprint(kitLoadout("hero.duelist")), helmed = heroBlueprint({ ...kitLoadout("hero.duelist"), head: "head.great" })
+  expect(open.body.length).toBeGreaterThan(helmed.body.length)
 })

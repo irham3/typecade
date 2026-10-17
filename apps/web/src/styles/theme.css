@@ -111,3 +111,18 @@ kbd { font-size: var(--size-xs); padding: 3px 5px; color: var(--text); backgroun
 /* Coin token (legacy square) used where the SVG coin is not rendered. */
 .coin { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; background: var(--gold); box-shadow: inset 2px 2px 0 var(--gold-light), inset -2px -2px 0 var(--gold-dark) }
 .coin-icon { display: inline-block; width: 12px; height: 12px; flex: none; vertical-align: -2px; image-rendering: pixelated }
+
+/*
+ * Readability pass (playtest: pixel glyphs merged at speed). Everything a player must read fast —
+ * words to type, the typing bar, boss passages, keywords and body copy — uses a crisp system
+ * monospace with a little tracking. The pixel face stays for headings, buttons and HUD numbers.
+ */
+:root { --font-read: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", monospace; --text: #f2e8d0; --text-dim: #c4bba8 }
+.target-labels .enemy-label strong, .target-labels .enemy-label strong *, .skill-dock .typing-bar, .skill-dock .typing-bar *, .boss-passage, .boss-passage *, [data-testid="upgrade-keyword"], [data-testid="upgrade-keyword"] *, .skill-card strong, .skill-card strong *, .practice-passage, .practice-passage *, .race-passage, .race-passage * {
+  font-family: var(--font-read) !important; letter-spacing: .04em !important; font-weight: 700
+}
+.target-labels .enemy-label strong { font-size: 21px !important; -webkit-text-stroke: 3px #05070b !important }
+.skill-dock .typing-bar { font-size: 20px !important }
+.dialog-body p, .dialog-body li, .armory-detail p, .tree-intro, .run-notice, .boss-instruction, .upgrade-card p {
+  font-family: var(--font-read) !important; font-size: 13px !important; line-height: 1.6 !important; letter-spacing: .01em !important
+}

@@ -1,0 +1,38 @@
+/* Mistype feedback: the typing bar shakes and flashes red; the locked word's label does too. */
+.skill-dock .typing-bar.typo-a { animation: typo-shake-a .32s steps(8) both }
+.skill-dock .typing-bar.typo-b { animation: typo-shake-b .32s steps(8) both }
+.target-labels.typo-a .enemy-label.locked strong, .target-labels.typo-a .enemy-label .current-letter { animation: typo-label-a .32s steps(6) both }
+.target-labels.typo-b .enemy-label.locked strong, .target-labels.typo-b .enemy-label .current-letter { animation: typo-label-b .32s steps(6) both }
+@keyframes typo-shake-a {
+  0% { transform: translateX(-50%); border-image-source: var(--frame-iron) }
+  15% { transform: translateX(calc(-50% - 7px)); color: #ff6a5a; filter: drop-shadow(0 0 6px #ff3a2a) }
+  35% { transform: translateX(calc(-50% + 6px)) }
+  55% { transform: translateX(calc(-50% - 4px)); color: #ff8a7a }
+  75% { transform: translateX(calc(-50% + 2px)) }
+  100% { transform: translateX(-50%) }
+}
+@keyframes typo-shake-b {
+  0% { transform: translateX(-50%) }
+  15% { transform: translateX(calc(-50% - 7px)); color: #ff6a5a; filter: drop-shadow(0 0 6px #ff3a2a) }
+  35% { transform: translateX(calc(-50% + 6px)) }
+  55% { transform: translateX(calc(-50% - 4px)); color: #ff8a7a }
+  75% { transform: translateX(calc(-50% + 2px)) }
+  100% { transform: translateX(-50%) }
+}
+@keyframes typo-label-a { 0%, 60% { color: #ff5a4a; translate: 3px 0 } 30% { translate: -3px 0 } 100% { translate: 0 } }
+@keyframes typo-label-b { 0%, 60% { color: #ff5a4a; translate: 3px 0 } 30% { translate: -3px 0 } 100% { translate: 0 } }
+
+/* Skill cooldown, mobile-MOBA style: a dark clockwise sweep over the icon with the remaining count on top. */
+.skill-card { position: relative; overflow: hidden }
+.skill-card .skill-face { position: relative; display: grid; place-items: center; width: 34px; height: 34px; flex: none }
+.skill-card .skill-face .glyph { width: 26px; height: 26px; color: var(--skill-color) }
+.skill-card .cooldown-sweep { position: absolute; inset: -3px; background: conic-gradient(#05070bdd calc(var(--cd) * 360deg), transparent 0); border-radius: 50%; pointer-events: none }
+.skill-card .cooldown-count { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--size-l); color: #fff; -webkit-text-stroke: 3px #05070b; paint-order: stroke fill; text-shadow: 1px 1px 0 #000 }
+.skill-card .mana-ring { position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(#64b4ff calc(var(--mana) * 360deg), #1a2230 0); -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%); mask: radial-gradient(circle, transparent 60%, #000 61%) }
+.skill-card.ready .skill-face::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; box-shadow: 0 0 10px var(--skill-color); animation: skill-ready 1.4s ease-in-out infinite }
+.skill-card.just-ready .skill-face { animation: skill-pop .45s ease-out }
+.skill-card .skill-level { position: absolute; top: 2px; right: 4px; display: flex; gap: 2px }
+.skill-card .skill-level i { width: 5px; height: 5px; background: var(--iron-500) }
+.skill-card .skill-level i.on { background: var(--skill-color) }
+@keyframes skill-ready { 50% { opacity: .35 } }
+@keyframes skill-pop { 0% { transform: scale(1.5); filter: brightness(2.2) } 100% { transform: scale(1) } }

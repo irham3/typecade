@@ -2,7 +2,7 @@ import type { DungeonLanguage } from "@typecade/contracts"
 import { Glyph } from "./Glyph"
 import { CoinIcon } from "./ui/CoinIcon"
 
-export type TitlePanel = "settings" | "account" | "history" | "controls" | "bestiary"
+export type TitlePanel = "settings" | "account" | "history" | "controls" | "bestiary" | "talents" | "about"
 
 interface TitleScreenProps {
   language: DungeonLanguage
@@ -23,7 +23,7 @@ interface TitleScreenProps {
 
 function ModeButton({ icon, label, detail, onClick, className = "" }: { icon: Parameters<typeof Glyph>[0]["name"]; label: string; detail: string; onClick: () => void; className?: string }) {
   return (
-    <button className={`mode-button ${className}`} onClick={onClick}>
+    <button className={`mode-button ${className}`} onClick={onClick} aria-label={label}>
       <span className="mode-icon"><Glyph name={icon} /></span>
       <span className="mode-text">{label}<small>{detail}</small></span>
       <i className="mode-chevron" aria-hidden="true" />
@@ -38,6 +38,7 @@ export function TitleScreen(props: TitleScreenProps) {
       <header className="title-nav">
         <span />
         <div>
+          <button className="quiet" onClick={() => onPanel("about")}>About</button>
           <button className="quiet" onClick={() => onPanel("account")}>Account</button>
           <button className="icon-button" aria-label="Settings" onClick={() => onPanel("settings")}><Glyph name="gear" /></button>
         </div>
@@ -57,7 +58,8 @@ export function TitleScreen(props: TitleScreenProps) {
             <ModeButton icon="book" label="Typing Dojo" detail="Practice" onClick={onDojo} />
             <ModeButton icon="flag" label="Multiplayer" detail="Play with friends" onClick={onMultiplayer} />
             <ModeButton icon="shield" label="Tutorial" detail="Learn the controls" onClick={onTutorial} className="tutorial-entry" />
-            <ModeButton icon="crown" label="Armory" detail="Customize hero" onClick={onArmory} />
+            <ModeButton icon="flame" label="Skill Tree" detail="Permanent upgrades" onClick={() => onPanel("talents")} className="talents-entry" />
+            <ModeButton icon="crown" label="Armory" detail="Heroes & outfits" onClick={onArmory} />
             <ModeButton icon="skull" label="Bestiary" detail="Enemy guide" onClick={() => onPanel("bestiary")} />
             <ModeButton icon="history" label="Run history" detail="Past runs" onClick={() => onPanel("history")} />
           </div>

@@ -1,7 +1,7 @@
 import type { Point } from "@typecade/contracts"
 
 /** Instanced layers the VFX pool exposes to painters. */
-export type VfxLayer = "sparks" | "arcs" | "rings" | "bolts" | "glows"
+export type VfxLayer = "sparks" | "arcs" | "rings" | "bolts" | "glows" | "flares" | "smoke" | "scorch" | "chunks"
 
 /** Places one instance: position, scale, Euler rotation (YXZ), colour and additive intensity. */
 export type VfxDraw = (layer: VfxLayer, x: number, y: number, z: number, sx: number, sy: number, sz: number, rx: number, ry: number, rz: number, hex: number, intensity: number) => void
@@ -123,13 +123,13 @@ const twin: Painter = (draw, b, t, fade) => {
 }
 
 /** Deterministic hash noise in [-1, 1]; `flicker` re-rolls the bolt shape several times per second. */
-const jitter = (index: number, flicker: number) => {
+export const jitter = (index: number, flicker: number) => {
   const h = Math.sin(index * 127.1 + flicker * 311.7) * 43758.5453
   return (h - Math.floor(h)) * 2 - 1
 }
 
 /** Draws a jagged polyline between two 3D points as thin glowing segments. */
-function drawBolt(draw: VfxDraw, from: [number, number, number], to: [number, number, number], segments: number, amplitude: number, flicker: number, width: number, hex: number, intensity: number, seed = 0) {
+export function drawBolt(draw: VfxDraw, from: [number, number, number], to: [number, number, number], segments: number, amplitude: number, flicker: number, width: number, hex: number, intensity: number, seed = 0) {
   const [x0, y0, z0] = from, [x1, y1, z1] = to
   const dx = x1 - x0, dz = z1 - z0, length = Math.hypot(dx, dz) || 1
   const nx = -dz / length, nz = dx / length

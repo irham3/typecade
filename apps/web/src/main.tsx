@@ -8,6 +8,8 @@ import "./styles/title.css"
 import "./styles/hud.css"
 import "./styles/bestiary.css"
 import "./styles/armory.css"
+import "./styles/skilltree.css"
+import "./styles/feedback.css"
 
 const root = document.getElementById("root")
 

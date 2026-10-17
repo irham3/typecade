@@ -9,6 +9,10 @@ export type RelicId = "lightning" | "magnet" | "switch" | "vowels" | "overclock"
 /** Automatic, levelled weapons in the Vampire Survivors tradition: they act on their own clocks and never touch the locked word. */
 export type WeaponId = "orbit" | "nova" | "meteor" | "frost"
 export type UpgradeId = SkillId | RelicId | WeaponId
+/** Permanent skill-tree nodes bought between runs with Embers (see content/talents). */
+export type TalentId = "heart" | "vigor" | "guard" | "mending" | "laststand" | "focus" | "composure" | "wellspring" | "veteran" | "reach" | "bounty" | "arcana" | "armory"
+/** Talent ranks a run started with, plus run-scoped charges they grant. Fixed for the whole run. */
+export interface RunTalents { ranks: Partial<Record<TalentId, number>>; lastStand: number }
 export interface Point { x: number; z: number }
 export interface DungeonEnemy extends Point {
  id: number; kind: EnemyKind; words: string[]; speed: number; frozen: number; attack: number; health: number; maxHealth: number
@@ -32,6 +36,8 @@ export interface DungeonState {
  offers: UpgradeId[]; pendingDrafts: number; legendaryDrafts: number; afterDraft: RunPhase
  bossArena: (Point & { hp:number; cooldown:number; rage:number; calm:number }) | null
  boss: number | null; stagger: number; paragraph: string; cursor: number; notice: string
+ /** Meta-progression bonuses fixed at run start; older saves restore with none. */
+ talents: RunTalents
 }
 export interface DungeonLabel { id: number; x: number; y: number; visible: boolean }
 export interface PartyWorld {
@@ -47,7 +53,7 @@ export interface DungeonEvents {
  appearance: HeroLoadout
  frame: DungeonState
  screen: "title" | "endless" | "dojo" | "multiplayer" | "tutorial" | "armory"
- settings: { reduced: boolean; volume: number; music?: number; effects?: number }
+ settings: { reduced: boolean; volume: number; music?: number; effects?: number; shake?: number }
  projected: DungeonLabel[]
  training: { correct: number; words: number; errors: number }
  party: PartyWorld|null

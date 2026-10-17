@@ -1,10 +1,11 @@
-import type { DamageSource, DungeonEnemy, DungeonLanguage, DungeonState, EnemyKind, Point, RelicId, RunPhase, SkillId, SupplyKind, UpgradeId } from "../../contracts/src/survival"
+import type { DamageSource, DungeonEnemy, DungeonLanguage, DungeonState, EnemyKind, Point, RelicId, RunPhase, RunTalents, SkillId, SupplyKind, UpgradeId } from "../../contracts/src/survival"
 import { bossPassages, commonWords, commonWordStyle, dungeonBalance as B, dungeonUpgrades, dungeonWords, dungeonLongWords, dungeonSupplies, dungeonObjects, enemySpeed, enemyLunges, enemyProfiles, skillRules } from "../../content/src/dungeon"
 import { createSeededRng } from "./rng"
 import { areWeaponsValid, createEmptyWeapons, isWeaponId, tickWeapons, weaponIds, type CombatPort } from "./weapons"
 import { spawnRoster } from "./roster"
 import { hasClearPath, isWalkable, ruinAt } from "./terrain"
 import { pickTypingTarget } from "./targeting"
+import { areRunTalentsValid, noTalents, rankOf } from "./talents"
 import { adaptPressure, buildPowerScore, endlessBatch, endlessHitDamage, endlessLayers, SECOND_WIND_SECONDS, paceFor, pressureFor, rangedGap, surgeLineup, typingFactor, waveAt } from "./director"
 
 
@@ -19,8 +20,13 @@ export const runAccuracy = (s: DungeonState) => s.correct + s.errors ? Math.roun
 export const dungeonWalkable = (p: Point) => isWalkable(p)
 const reachable = (a: Point, b: Point) => hasClearPath(a, b)
 
-export function createDungeonState(seed: string, language: DungeonLanguage): DungeonState {
- return {
+/** Finished words a skill needs before its next cast; the Arcana talent shortens it. */
+export const skillRecharge = (s: DungeonState, id: SkillId) => Math.max(1, skillRules[id].words - rankOf(s.talents.ranks, "arcana"))
+/** Talent rank carried by a run (0 when the run started without it). */
+const talent = (s: DungeonState, id: Parameters<typeof rankOf>[1]) => rankOf(s.talents.ranks, id)
+
+export function createDungeonState(seed: string, language: DungeonLanguage, talents: RunTalents = noTalents()): DungeonState {
+ const state: DungeonState = {
   version: 1, seed, rng: 0, language, phase: "ready", resumePhase: "arena", time: 0, worldTime: 0, nextBoss: B.bossInterval, spawnAt: 2, nextId: 1, biome: 0,
   player: { x: 0, z: 0, hp: B.hp, maxHp: B.hp, mana: 100, shield: 0, invincible: 0, dashFrom: { x: 0, z: 0 }, dashAt: -10 },
   bossArena:null,procs:{lightning:0,vowels:0},supplies:{shield:0,potion:0,mana:0,sentry:0},sentry:null,
@@ -30,14 +36,22 @@ export function createDungeonState(seed: string, language: DungeonLanguage): Dun
   relics: { lightning: 0, magnet: 0, switch: 0, vowels: 0, overclock: 0, glasses: 0, execute: 0 },
   weapons: createEmptyWeapons(), orbitHits: {},
   offers: [], pendingDrafts: 0, legendaryDrafts: 0, afterDraft: "arena", boss: null, stagger: 0, paragraph: "", cursor: 0, notice: "Type a word to dash and strike. Tab opens skills.",
+  talents: { ranks: { ...talents.ranks }, lastStand: talents.lastStand },
  }
+ // Skill-tree bonuses are applied once, here; everything after reads them from state.talents.
+ const hearts = talent(state, "heart") + talent(state, "vigor")
+ state.player.maxHp += hearts; state.player.hp += hearts
+ state.player.shield = Math.min(4, talent(state, "guard"))
+ if (talent(state, "armory")) state.weapons.orbit = { level: 1, timer: 1 }
+ if (talent(state, "veteran")) state.pendingDrafts = 1
+ return state
 }
 
 /** Deterministic simulation. No renderer, browser clock or storage dependency. */
 export class SurvivalRun {
  readonly state: DungeonState
- constructor(seed: string, language: DungeonLanguage = "id", restored?: DungeonState) {
-  this.state = restored ?? createDungeonState(seed, language)
+ constructor(seed: string, language: DungeonLanguage = "id", restored?: DungeonState, talents?: RunTalents) {
+  this.state = restored ?? createDungeonState(seed, language, talents)
   if (!restored) {
    for (const [i,kind] of (["skeleton","goblin","chest","shield"] as const).entries()) this.spawn(kind, { x: Math.sin(i * Math.PI/2) * (6 + i * .3), z: Math.cos(i * Math.PI/2) * (6 + i * .3) })
    this.refreshQueue()
@@ -94,7 +108,7 @@ export class SurvivalRun {
   if (s.enemies.length >= B.enemies || kind === "boss" && s.boss !== null || kind in dungeonSupplies && s.enemies.some(e=>e.kind===kind)) return
   const angle = this.random() * Math.PI * 2
   const radius=at?B.spawnRadius:6+this.random()*(B.spawnRadius-6)
-  let position = at ?? { x: s.player.x + Math.sin(angle) * radius, z: s.player.z + Math.cos(angle) * radius }
+  let position = at ?? (kind === "barrel" ? this.nearCrowd(angle) : null) ?? { x: s.player.x + Math.sin(angle) * radius, z: s.player.z + Math.cos(angle) * radius }
   const valid=(p:Point)=>dungeonWalkable(p)&&(!!at||reachable(s.player,p)&&!s.enemies.some(e=>distance(e,p)<1))
   for (let i = 0; i < 16 && !valid(position); i++) position = { x: s.player.x + Math.sin(angle + (i + 1)*2.399) * radius, z: s.player.z + Math.cos(angle + (i + 1)*2.399) * radius }
   if (!valid(position)) return
@@ -106,10 +120,22 @@ export class SurvivalRun {
   const total=Math.min(6,(armored?layers+1:layers)+veteran)
   const words = Array.from({ length: total }, (_, i) => this.drawWord(kind,total-i,i===0))
   const health = kind === "boss" ? B.bossHealth * (1 + s.biome * .5) : total
-  const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: B.speed * enemySpeed[kind] * (.88+this.random()*.24) * (.7+.3*Math.min(1,s.time/B.openingSeconds)) * (1 + Math.min(.7, s.time / 700) + Math.min(.3, s.biome * .06)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 5.5 : kind==="minotaur"||kind==="boss"?6+this.random()*2:this.openingTimer(kind), health, maxHealth: health }
+  const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: B.speed * enemySpeed[kind] * (.88+this.random()*.24) * (.8+.2*Math.min(1,s.time/B.openingSeconds)) * (1 + Math.min(.7, s.time / 700) + Math.min(.3, s.biome * .06)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 5.5 : kind==="minotaur"||kind==="boss"?6+this.random()*2:this.openingTimer(kind), health, maxHealth: health }
   s.enemies.push(enemy)
   if (kind === "boss") { s.boss = enemy.id; s.notice = "Obsidian Minotaur — break its armor." }
   return enemy
+ }
+ /**
+  * Barrels are only worth typing when they sit among foes: place one beside the densest nearby pack
+  * (counted within the blast radius), never on top of the hero. Null when no pack is close enough.
+  */
+ private nearCrowd(angle: number): Point | null {
+  const s=this.state,foes=s.enemies.filter(e=>!objects.includes(e.kind)&&e.id!==s.boss&&distance(e,s.player)>3&&distance(e,s.player)<B.labelRadius-2)
+  let best:DungeonEnemy|undefined,score=0
+  for(const e of foes){const n=foes.filter(o=>distance(o,e)<B.blastRadius).length;if(n>score||n===score&&best&&e.id<best.id){best=e;score=n}}
+  if(!best||score<2)return null
+  for(let i=0;i<8;i++){const p={x:best.x+Math.sin(angle+i*Math.PI/4)*1.4,z:best.z+Math.cos(angle+i*Math.PI/4)*1.4};if(distance(p,s.player)>2.5&&dungeonWalkable(p)&&!s.enemies.some(e=>distance(e,p)<.8))return p}
+  return null
  }
  /** First ability timer for the newer combatants: staggered so a fresh pack does not act in unison. */
  private openingTimer(kind: EnemyKind) {
@@ -180,7 +206,7 @@ export class SurvivalRun {
   s.target = target.id; s.prefix += key; this.correct(key)
   const word = target.words[0]!
   if (s.prefix !== word) return
-  s.words++; s.player.mana = Math.min(100, s.player.mana + 5)
+  s.words++; s.player.mana = Math.min(100, s.player.mana + 5 + talent(s, "wellspring") * 2)
   const reduction = s.relics.overclock && runWpm(s) > 100 ? 2 : 1
   skillIds.forEach(id => { s.skills[id].cooldown = Math.max(0, s.skills[id].cooldown - reduction) })
   s.player.dashFrom = { x: s.player.x, z: s.player.z }
@@ -213,7 +239,7 @@ export class SurvivalRun {
   if (s.phase === "draft") this.chooseUpgrade(id)
   else this.cast(id as SkillId)
  }
- private typo() { const s = this.state; s.errors++; s.streak = 0; s.notice = "Miss — keep the same next letter." }
+ private typo() { const s = this.state; s.errors++; s.streak = talent(s, "composure") ? Math.floor(s.streak / 2) : 0; s.notice = "Miss — keep the same next letter." }
  private correct(key: string) {
   const s = this.state
   s.correct++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak)
@@ -233,6 +259,8 @@ export class SurvivalRun {
   const s = this.state, skill = s.skills[id], cost = this.skillCost(id)
   return skill.cooldown > 0 ? `Complete ${skill.cooldown} more words` : s.player.mana < cost ? `Need ${cost} mana` : id === "heal" && s.player.hp >= s.player.maxHp ? "Health is full" : ""
  }
+ /** Words a skill needs to recharge; Arcana talent shortens it. */
+ skillRecharge(id: SkillId) { return skillRecharge(this.state, id) }
  skillCost(id: SkillId) { return Math.max(10, skillRules[id].cost - (this.state.skills[id].level - 1) * 5) }
  cast(id: SkillId) {
   const s = this.state
@@ -241,15 +269,17 @@ export class SurvivalRun {
   s.command = ""
   if (reason) { s.notice = reason; return false }
   const level = s.skills[id].level
-  s.player.mana -= this.skillCost(id); s.skills[id].cooldown = skillRules[id].words
+  s.player.mana -= this.skillCost(id); s.skills[id].cooldown = this.skillRecharge(id)
   if (id === "heal") {
    const restored=Math.min(2,s.player.maxHp-s.player.hp);s.player.hp += restored
+   if (level >= 2) s.player.shield = Math.min(4, s.player.shield + 1)
    if (level === 3) s.player.invincible = Math.max(s.player.invincible, 4)
    this.effect("heal", s.player, restored)
   } else {
    this.effect(id === "storm" ? "storm" : "slash", s.player, level === 3 ? 2 : 1)
    this.area(id === "storm" ? 12 : 4 * (1 + .4 * (level - 1)), level === 3 && id === "cleave" ? 2 : 1, id)
    if (id === "cleave" && level === 3) this.collectLoot(true)
+   if (id === "storm" && level === 2) for (const e of s.enemies) if (e.id !== s.boss && distance(e, s.player) < 12) e.frozen = Math.max(e.frozen, 1.5)
    if (id === "storm" && level === 3) for (const e of s.enemies) {
     e.frozen = 5
     if (e.id !== s.target) e.words = e.words.map(w => w.slice(0, Math.ceil(w.length / 2)))
@@ -286,7 +316,8 @@ export class SurvivalRun {
    if(kind==="shield"){s.player.shield=Math.min(4,s.player.shield+2);this.effect("shield",s.player,s.player.shield)}
    if(kind==="potion"){const restored=Math.min(2,s.player.maxHp-s.player.hp);s.player.hp+=restored;this.effect("heal",s.player,restored)}
    if(kind==="mana"){const restored=Math.min(40,100-s.player.mana);s.player.mana+=restored;this.effect("mana",s.player,restored)}
-   if(kind==="sentry"){s.sentry={x:enemy.x,z:enemy.z,life:18,cooldown:.3};this.effect("deploy",enemy,18)}
+   // The tower goes up beside the hero (who just dashed in), where the fighting is.
+   if(kind==="sentry"){const at=dungeonWalkable(s.player)?s.player:enemy;s.sentry={x:at.x,z:at.z,life:18,cooldown:.3};this.effect("deploy",at,18)}
    s.notice=`${dungeonSupplies[kind].name} acquired. ${dungeonSupplies[kind].benefit}`
    this.effect("pickup",enemy,0);this.refreshQueue();return
   }
@@ -306,7 +337,14 @@ export class SurvivalRun {
    for (const e of s.enemies) if (e.id !== s.boss && !objects.includes(e.kind) && distance(e, enemy) < 3) e.frozen = Math.max(e.frozen, 2)
   } else if (enemy.kind === "bomber" || enemy.kind === "barrel") {
    this.effect("blast", enemy, 1)
-   for (const e of [...s.enemies]) if (distance(e, enemy) < 4) this.hit(e, 1, true, "explosion")
+   // Blast: strips one layer, shoves survivors outward and stuns them briefly.
+   for (const e of [...s.enemies]) if (distance(e, enemy) < B.blastRadius) {
+    this.hit(e, 1, true, "explosion")
+    if (!s.enemies.includes(e) || objects.includes(e.kind) || e.id === s.boss) continue
+    const d = Math.max(.1, distance(e, enemy)), push = (B.blastRadius - d) * .45, to = { x: e.x + (e.x - enemy.x) / d * push, z: e.z + (e.z - enemy.z) / d * push }
+    if (dungeonWalkable(to)) { e.x = to.x; e.z = to.z }
+    e.frozen = Math.max(e.frozen, 1)
+   }
   }
   this.refreshQueue()
  }
@@ -499,14 +537,14 @@ export class SurvivalRun {
  gainXp(value: number) {
   const s = this.state
   const before=s.level
-  const bonus = s.relics.magnet && runWpm(s) > 60 ? 1.2 : 1
+  const bonus = (s.relics.magnet && runWpm(s) > 60 ? 1.2 : 1) * (1 + talent(s, "focus") * .1)
   s.xp += Math.floor(value * bonus); s.totalXp += Math.floor(value * bonus)
   while (s.xp >= xpThreshold(s.level)) { s.xp -= xpThreshold(s.level); s.level++; s.pendingDrafts++ }
   if(s.level>before)this.effect("level",s.player,s.level)
  }
  private collectLoot(all = false) {
   const s = this.state
-  const radius = B.pickupRadius * (1 + s.relics.magnet * .5)
+  const radius = B.pickupRadius * (1 + s.relics.magnet * .5) * (1 + talent(s, "reach") * .2)
   let gold = 0
   s.loot = s.loot.filter(loot => {
    if (!all && distance(loot, s.player) > radius) return true
@@ -547,6 +585,8 @@ export class SurvivalRun {
   amount-=absorbed
   if(!amount){s.player.invincible=B.contactGrace;return}
   const lost=Math.min(s.player.hp,amount);s.player.hp-=lost;this.calm=0; s.player.invincible = B.contactGrace; this.effect("hit", s.player, -lost)
+  // Last Stand talent: the first killing blow of the run leaves one heart and a moment of safety.
+  if (s.player.hp === 0 && s.talents.lastStand > 0) { s.talents.lastStand--; s.player.hp = 1; s.player.invincible = 3; this.effect("ward", s.player, 1); s.notice = "LAST STAND — one heart left. Make it count."; return }
   if (s.player.hp === 0) { s.phase = "dead"; s.notice = "The keep claimed this run. Your best is saved." }
  }
  advance(seconds: number) {
@@ -572,7 +612,7 @@ export class SurvivalRun {
   const interval=(opening?B.openingInterval:learning?B.learningInterval:B.spawnInterval)/pace.spawnRate
   s.spawnAt = Math.max(0,s.spawnAt-dt); this.shotGate = Math.max(0, this.shotGate-dt)
   this.calm += dt
-  if (this.calm >= SECOND_WIND_SECONDS && s.player.hp < s.player.maxHp && s.player.hp > 0) { this.calm = 0; s.player.hp++; this.effect("heal", s.player, 1) }
+  if (this.calm >= SECOND_WIND_SECONDS * (1 - talent(s, "mending") * .2) && s.player.hp < s.player.maxHp && s.player.hp > 0) { this.calm = 0; s.player.hp++; this.effect("heal", s.player, 1) }
   if (!duel && s.spawnAt <= 0) {
    const roster=this.roster(opening)
    const needed=Math.max(floor-this.targets().filter(e=>!objects.includes(e.kind)).length,4-s.queue.length)
@@ -666,15 +706,18 @@ export function restoreDungeonRun(raw: string | null): SurvivalRun | null {
   if(s?.version===1&&s.bossArena&&s.bossArena.calm===undefined)s.bossArena.calm=0
   if(s?.version===1&&s.weapons===undefined)s.weapons=createEmptyWeapons()
   if(s?.version===1&&s.orbitHits===undefined)s.orbitHits={}
+  if(s?.version===1&&s.talents===undefined)s.talents=noTalents()
+  if(!areRunTalentsValid(s.talents))return null
   if(!areWeaponsValid(s.weapons))return null
   if(typeof s.orbitHits!=="object"||s.orbitHits===null||Object.values(s.orbitHits).some(v=>typeof v!=="number"||!Number.isFinite(v)))return null
   if(!s?.procs||![s.procs.lightning,s.procs.vowels].every(v=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=4))return null
   const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value)
   if (!s || s.version !== 1 || typeof s.seed !== "string" || s.seed.length > 200 || !["en", "id"].includes(s.language) || !["ready", "arena", "skills", "draft", "overdrive", "paused", "dead"].includes(s.phase)) return null
   const base = createDungeonState(s.seed, s.language)
+  const hearts=rankOf(s.talents.ranks,"heart")+rankOf(s.talents.ranks,"vigor")
   for (const [key, value] of Object.entries(base)) if (typeof value === "number" && (!finite(s[key as keyof DungeonState]) || Number(s[key as keyof DungeonState]) < 0)) return null
   if(![s.rng,s.nextId,s.biome,s.level,s.totalXp,s.gold,s.kills,s.words,s.correct,s.errors,s.streak,s.bestStreak,s.pendingDrafts,s.legendaryDrafts].every(Number.isSafeInteger)||s.legendaryDrafts>s.pendingDrafts||s.level<1||s.level>1_000_000||s.pendingDrafts>1000||s.time>1_000_000_000||s.worldTime>s.time||s.xp>=xpThreshold(s.level)||s.xp>s.totalXp||s.streak>s.bestStreak||s.bestStreak>s.correct)return null
-  if (!s.player || ![s.player.x, s.player.z, s.player.hp, s.player.maxHp, s.player.mana, s.player.shield, s.player.invincible, s.player.dashAt, s.player.dashFrom?.x, s.player.dashFrom?.z].every(finite) || s.player.hp < 0 || s.player.hp > s.player.maxHp || s.player.maxHp > 100 || s.player.mana < 0 || s.player.mana > 100 || s.player.shield<0 || s.player.shield>4 || !Number.isInteger(s.player.shield)) return null
+  if (!s.player || ![s.player.x, s.player.z, s.player.hp, s.player.maxHp, s.player.mana, s.player.shield, s.player.invincible, s.player.dashAt, s.player.dashFrom?.x, s.player.dashFrom?.z].every(finite) || s.player.hp < 0 || s.player.hp > s.player.maxHp || s.player.maxHp > B.hp + hearts || s.player.mana < 0 || s.player.mana > 100 || s.player.shield<0 || s.player.shield>4 || !Number.isInteger(s.player.shield)) return null
   if(![s.player.x,s.player.z,s.player.dashFrom.x,s.player.dashFrom.z].every(n=>Math.abs(n)<=1_000_000)||s.player.maxHp<1||!dungeonWalkable(s.player))return null
   if (!Array.isArray(s.enemies) || s.enemies.length > B.enemies || !Array.isArray(s.loot) || s.loot.length > B.loot || !Array.isArray(s.projectiles) || s.projectiles.length > B.projectiles || !Array.isArray(s.effects) || s.effects.length > B.effects) return null
   if(!Array.isArray(s.recentWords)||s.recentWords.length>24||s.recentWords.some(word=>typeof word!=="string"||!word.length||word.length>40))return null

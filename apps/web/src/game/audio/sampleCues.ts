@@ -10,6 +10,9 @@ export type SampleLayer = SamplePlay & { group: SampleGroup }
  */
 export const eventSamples: Record<string, SampleLayer[]> = {
   slash: [{ group: "slice", gain: .9 }],
+  strike: [{ group: "punch", gain: 1 }, { group: "plate", gain: .35, delay: .01 }],
+  kill: [{ group: "punch", gain: .7, rate: .8 }],
+  loot: [{ group: "coins", gain: 1 }, { group: "creak", gain: .5 }],
   cleave: [{ group: "slice", gain: 1 }, { group: "metalHeavy", gain: .5, delay: .03 }],
   thrust: [{ group: "draw", gain: .9 }],
   uppercut: [{ group: "slice", gain: .9, rate: 1.1 }],
@@ -22,7 +25,7 @@ export const eventSamples: Record<string, SampleLayer[]> = {
   block: [{ group: "metalLight", gain: .8 }],
   hurt: [{ group: "punch", gain: 1 }],
   hit: [{ group: "punch", gain: .6 }],
-  explosion: [{ group: "wood", gain: 1 }, { group: "stone", gain: .6, delay: .04 }],
+  explosion: [{ group: "wood", gain: 1 }, { group: "stone", gain: .9, delay: .04 }, { group: "stone", gain: .6, delay: .22, rate: .7 }],
   meteor: [{ group: "stone", gain: .9, delay: .28 }],
   frost: [{ group: "glass", gain: .7 }],
   pickup: [{ group: "coins", gain: .45 }],

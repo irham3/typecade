@@ -117,7 +117,7 @@ describe("real-time typing survival", () => {
   expect(r.state.phase).toBe("arena"); expect(elite.words).toHaveLength(2); expect(r.state.prefix).toBe(word[0]); expect(elite.words[0]).toBe(word)
   r.input("Tab"); type(r, "CLEAVE"); expect(r.state.notice).toContain("words"); expect(r.state.phase).toBe("skills")
   r.state.player.mana = 0; type(r, "STORM"); expect(r.state.notice).toContain("mana")
-  r.input("Tab"); type(r, word.slice(1)); expect(r.state.skills.cleave.cooldown).toBe(2)
+  r.input("Tab"); type(r, word.slice(1)); expect(r.state.skills.cleave.cooldown).toBe(skillRules.cleave.words - 1)
   r.input("Tab"); r.input("?"); expect(r.state.command).toBe(""); r.input("Backspace"); r.input("Tab"); r.input("Backspace"); expect(r.state.target).toBeNull()
  })
  it("requires the displayed capitals for skill and upgrade keywords", () => {

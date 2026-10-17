@@ -16,16 +16,17 @@ it("gives slash, lightning and healing different geometry and bounds simultaneou
   const kinds:VisualEffect[]=["slash","cleave","hit","storm","lightning","heal","pickup","shatter","magnet","death","dust","block","dash","spawn","hurt","level","upgrade"]
   vfx.clear()
   for(let i=0;i<96;i++)vfx.emit(kinds[i%kinds.length]!,i%4,i%3,.5,1,{x:5,z:5})
-  vfx.update(.12,false);expect(vfx.count).toBe(40);expect(vfx.sparks.count).toBe(320)
+  vfx.update(.12,false);expect(vfx.count).toBe(64);expect(vfx.sparks.count).toBe(320)
   for(let i=0;i<32;i++)vfx.groundLight(i,0,0xffa34b,.2)
   expect(vfx.glows.count).toBe(48)
   for(const mesh of [vfx.sparks,vfx.arcs,vfx.rings,vfx.bolts,vfx.glows])expect(mesh.count).toBeLessThanOrEqual(mesh.instanceMatrix.count)
-  vfx.update(.12,true);expect(vfx.sparks.count).toBe(0);expect(vfx.bolts.count).toBe(0);expect(vfx.rings.count).toBeGreaterThan(0)
+  vfx.update(.12,true);// Reduced keeps only the thin lightning beams (one spark each).
+  expect(vfx.sparks.count).toBeLessThanOrEqual(6);expect(vfx.bolts.count).toBe(0);expect(vfx.rings.count).toBeGreaterThan(0)
   vfx.update(1,false);expect(vfx.count).toBe(0)
   vfx.clear();vfx.update(0,false);expect(vfx.sparks.count).toBe(0)
   vfx.emit("dash",0,0,0,1,{x:3,z:3});vfx.update(.04,false);expect(vfx.sparks.count).toBe(4);vfx.update(.04,true);expect(vfx.sparks.count).toBe(0)
   vfx.clear();vfx.emit("sentry",0,0,0,1,{x:3,z:3});vfx.update(.04,false);expect(vfx.sparks.count).toBe(1);vfx.update(.04,true);expect(vfx.sparks.count).toBe(1)
-  vfx.clear();for(let i=0;i<40;i++)vfx.emit("storm",0,0);vfx.emit("dust",0,0);expect(vfx.count).toBe(40)
+  vfx.clear();for(let i=0;i<64;i++)vfx.emit("storm",0,0);vfx.emit("dust",0,0);expect(vfx.count).toBe(64)
   for(const kind of ["storm","slash","heal"] as const){for(let i=0;i<40;i++)vfx.emit(kind,0,0);vfx.update(.01,false)}
   expect(vfx.bolts.count).toBeLessThanOrEqual(32);expect(vfx.arcs.count).toBeLessThanOrEqual(48)
   for(const kind of ["firebolt","lightning","blast","treasure","slam","thrust","uppercut"] as const){
