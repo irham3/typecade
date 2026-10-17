@@ -162,7 +162,8 @@ export class DungeonScene {
   this.coins = this.instance(this.models.keep(new CylinderGeometry(.16, .16, .06, 8)), bright, 256)
   this.projectiles = this.instance(this.models.keep(new OctahedronGeometry(.23)), bright, 64*3)
   this.orbitals=this.instance(this.models.geometry([[0xc1d5df,0,0,0,.58,.12,.15],[0x66503b,-.23,0,0,.10,.38,.12],[0x66503b,.23,0,0,.10,.38,.12],[0xffffff,0,.12,0,.14,.26,.14,"cone"],[0x9c723c,0,-.12,0,.12,.27,.12]]),bright,12)
-  this.weather=this.instance(this.models.keep(new BoxGeometry(.07,.07,.12)),bright,48)
+  const weatherMaterial=new MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.6,side:DoubleSide,depthWrite:false});this.materials.push(weatherMaterial)
+  this.weather=this.instance(this.models.keep(new PlaneGeometry(.10,.16)),weatherMaterial,32)
   this.landmarks=this.instance(this.models.geometry([[0x4c5462,0,0,0,1.6,.24,1.3],[0x897b64,0,.3,0,1.1,.4,1.0],[0x586174,0,1.3,0,.8,1.6,.7],[0xd9be77,0,2.2,0,1.1,.22,.95],[0x74c6dd,0,2.6,0,.35,.6,.35,"cone"],[0x86775a,-.7,.7,0,.2,1.2,.2],[0x86775a,.7,.7,0,.2,1.2,.2]]),this.models.material,18)
   this.telegraphs=this.instance(this.models.keep(new BoxGeometry(1,.025,1)),bright,128)
   this.embers = this.instance(this.models.keep(new BoxGeometry(.12, .12, .12)), bright, 16)
@@ -533,14 +534,15 @@ export class DungeonScene {
   }); this.gems.count = this.coins.count = loot.length
   const projectiles = active && s ? s.projectiles : []
   projectiles.forEach((p,i)=>{for(let tail=0;tail<(this.reduced?1:3);tail++){this.matrix.makeRotationY(this.elapsed*3).scale(this.scale.setScalar(1-tail*.28)).setPosition(p.x-p.vx*tail*.11,.9,p.z-p.vz*tail*.11);this.projectiles.setMatrixAt(i*(this.reduced?1:3)+tail,this.matrix);this.projectiles.setColorAt(i*(this.reduced?1:3)+tail,this.color.setHex(tail?0x926fd7:0xf1c5ff))}});this.projectiles.count=projectiles.length*(this.reduced?1:3)
-  this.weather.count=this.reduced?0:48
   const season=((s?.biome??0)+Math.floor((s?.time??0)/120))%dungeonBiomes.length
+  this.weather.count=this.reduced?0:season===3?32:season===4?12:18
   for(let i=0;i<this.weather.count;i++){
-   const t=(this.elapsed*(season===3?.18:.11)+i*.137)%1,x=px+((i*7.31)%26)-13+Math.sin(this.elapsed+i)*.7,z=pz+((i*4.79)%24)-12
-   this.matrix.makeRotationZ(this.elapsed+i).scale(this.scale.set(season===3?1:1.6,season===2?2:.5,1)).setPosition(x,7-t*7,z)
-   this.weather.setMatrixAt(i,this.matrix);this.weather.setColorAt(i,this.color.setHex(season===3?0xddeeff:season===4?0x8faf56:season===2?0xffb86b:0x8196b0))
+   const t=(this.elapsed*(season===3?.065:.035)+i*.137)%1,x=Math.floor(px/16)*16+8+((i*7.31)%32)-16+Math.sin(this.elapsed*.35+i)*.6,z=Math.floor(pz/16)*16+8+((i*4.79)%32)-16
+   this.rotation.setFromEuler(this.euler.set(Math.PI/4+Math.sin(this.elapsed+i)*.25,this.elapsed*.3+i,Math.sin(this.elapsed*.8+i)*.5))
+   this.matrix.compose(this.point.set(x,season===3?6-t*6:season===4?4-t*3:.6+t*3,z),this.rotation,this.scale.set(season===4?1.3:.55,season===4?1:.55,1))
+   this.weather.setMatrixAt(i,this.matrix);this.weather.setColorAt(i,this.color.setHex(season===3?0xe6f1ff:season===4?0xc1b576:season===2?0xffc78b:0xb9bdc6))
   }
-  this.weather.instanceMatrix.needsUpdate=true;this.weather.instanceColor!.needsUpdate=true
+  this.weather.instanceMatrix.needsUpdate=true;if(this.weather.instanceColor)this.weather.instanceColor.needsUpdate=true
   this.embers.count=0
   if(!this.reduced&&!onBridge)for(let i=0;i<16;i++){
    const at=near[Math.floor(i/4)]!,phase=(this.elapsed*.45+i*.23)%1,index=this.embers.count++

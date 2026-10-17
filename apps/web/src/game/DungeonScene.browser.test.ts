@@ -178,3 +178,13 @@ it("renders flying enemies, supply silhouettes, shield gear, sentry beams and ch
   s.relics.lightning=s.relics.vowels=0;s.sentry=null;bridge.emit("settings",{reduced:true,volume:0});frame();expect(visual.orbitals.count).toBe(0);expect(visual.sentryMesh.visible).toBe(false)
  }finally{game.destroy();bridge.clear();host.remove()}
 },20000)
+
+it("starts with Reduced Effects already saved and still projects the live party",async()=>{
+ const host=document.createElement("div");host.style.cssText="width:800px;height:600px";document.body.append(host);const bridge=new GameEventBridge<DungeonEvents>();bridge.emit("settings",{reduced:true,volume:0});bridge.emit("screen","multiplayer")
+ const game=new DungeonScene(host,bridge),visual=game as unknown as {tick:(t:number)=>void;weather:{count:number}};let names=0;const stop=bridge.on("partyProjected",p=>{names=p.length})
+ try{
+  await game.ready;game.renderer.setAnimationLoop(null)
+  const party:PartyWorld={mode:"clash",phase:"racing",casting:false,ownId:"a",now:1000,focus:{x:0,z:0},obstacles:[],boss:null,players:[{id:"a",name:"Blue",x:0,z:4,color:0x4999d4,hp:100,action:"idle",actionAt:0,target:null,role:"dps"}]}
+  bridge.emit("party",party);visual.tick(performance.now()+100);expect(visual.weather.count).toBe(0);expect(names).toBe(1);expect(game.renderer.info.render.calls).toBeGreaterThan(0)
+ }finally{stop();game.destroy();bridge.clear();host.remove()}
+},20000)
