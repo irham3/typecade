@@ -54,8 +54,26 @@
 .skill-dock .skill-card { background: linear-gradient(180deg, #1b2945f2, #0e1628f2) !important; border: 1px solid color-mix(in srgb, var(--skill-color) 50%, #34466b) !important; box-shadow: 0 8px 18px #000a, inset 0 1px #ffffff14, 0 0 16px color-mix(in srgb, var(--skill-color) 18%, transparent) !important }
 .skill-dock .skill-card > .glyph { padding: 6px; width: 38px !important; height: 38px !important; background: radial-gradient(circle at 35% 30%, #2f4266, #0b1220); border: 1px solid var(--skill-color); color: var(--skill-color); filter: drop-shadow(0 0 6px var(--skill-color)) }
 .skill-dock .skill-card.unavailable > .glyph { filter: grayscale(.7); opacity: .6 }
-.skill-dock.casting .skill-card:not(.unavailable) { animation: skill-ready .8s ease-in-out infinite alternate }
-@keyframes skill-ready { to { box-shadow: 0 8px 18px #000a, 0 0 26px var(--skill-color) } }
+/* Skill mode (Tab): must out-rank the base card styles above, which use !important. */
+.skill-dock.casting::before {
+  content: ""; position: absolute; inset: -10px -12px; z-index: -1; pointer-events: none;
+  border: 1px solid #7fe8ff88; background: radial-gradient(80% 120% at 50% 100%, #2a6a8a55, #0b122000 70%);
+  box-shadow: 0 0 28px #7fe8ff44; animation: cast-frame 1.2s ease-in-out infinite alternate;
+}
+.skill-dock.casting .skill-mode-hint { color: #bff6ff; font-weight: 700; letter-spacing: 2px; text-shadow: 0 0 10px #7fe8ff }
+.skill-dock.casting .skill-card:not(.unavailable) {
+  transform: translateY(-6px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--skill-color) 30%, #1b2945), #0e1628) !important;
+  border-color: var(--skill-color) !important;
+  box-shadow: 0 10px 20px #000a, 0 0 0 1px var(--skill-color), 0 0 26px color-mix(in srgb, var(--skill-color) 70%, transparent) !important;
+  animation: skill-ready .8s ease-in-out infinite alternate;
+}
+.skill-dock.casting .skill-card:not(.unavailable) strong { color: #fff; text-shadow: 0 0 10px var(--skill-color) }
+.skill-dock.casting .skill-card:not(.unavailable) strong b { color: var(--skill-color); text-shadow: 0 0 12px var(--skill-color) }
+.skill-dock.casting .skill-card.unavailable { opacity: .45; filter: grayscale(.6) }
+@keyframes skill-ready { to { transform: translateY(-8px) } }
+@keyframes cast-frame { to { box-shadow: 0 0 40px #7fe8ff77; border-color: #bff6ffcc } }
+[data-reduced-effects="true"] .skill-dock.casting .skill-card, [data-reduced-effects="true"] .skill-dock.casting::before { animation: none }
 
 /* Enemy labels: gilded name plates */
 .enemy-label { background: linear-gradient(180deg, #0f1a2e66, #0a112040) !important; border: 1px solid #7f95bd40 !important; border-radius: 3px; box-shadow: 0 4px 10px #0004 !important; backdrop-filter: blur(1.5px) }
@@ -87,3 +105,38 @@
 .wave-surge { color: #ff6b6b; border-color: #ff6b6b; box-shadow: 0 0 10px #ff5a6a77; animation: surge-pulse .6s ease-in-out infinite alternate }
 .wave-breather { color: #7fe0a0; border-color: #3f7a55 }
 @keyframes surge-pulse { to { box-shadow: 0 0 18px #ff5a6acc } }
+
+/* Always-visible Tab keycap on the skill dock: the one control new players miss. */
+.skill-key-hint {
+  position: absolute; left: 50%; top: -34px; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px !important;
+  font: 700 12px KeepPixel, monospace; letter-spacing: 1px; color: #fff3d6;
+  background: linear-gradient(180deg, #1d2a46f2, #0e1628f2) !important; border: 1px solid var(--gild) !important;
+  box-shadow: 0 4px 12px #000a, 0 0 14px #e9bf6a44 !important;
+}
+.skill-key-hint kbd {
+  padding: 3px 8px; font: 700 11px KeepPixel, monospace; color: #241809;
+  background: linear-gradient(180deg, #fff0c8, #e2ab55); border: 1px solid #ffe7b0; border-bottom-width: 3px; border-radius: 3px;
+}
+.skill-dock.casting .skill-key-hint { border-color: var(--cyan) !important; box-shadow: 0 4px 12px #000a, 0 0 18px #7fe8ff77 !important }
+.skill-dock.casting .skill-key-hint kbd { background: linear-gradient(180deg, #e8fbff, #7fd6ff); border-color: #c8f6ff }
+.skill-dock .skill-mode-hint { text-transform: uppercase }
+
+/* Enemy words: text only. Readability comes from a heavy outline and drop shadow, not a plate. */
+.target-labels .enemy-label, .target-labels .enemy-label.object-label, .target-labels .enemy-label.locked {
+  height: auto !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
+}
+.target-labels .enemy-label strong {
+  display: inline-flex; align-items: center; gap: 0;
+  font-size: 22px; line-height: 26px; color: #fff6e2;
+  -webkit-text-stroke: 4px #060b14; paint-order: stroke fill;
+  text-shadow: 0 2px 0 #060b14, 0 0 10px #000c;
+}
+.target-labels .enemy-label strong .glyph { width: 15px; height: 15px; margin-right: 5px; color: var(--gild); filter: drop-shadow(0 1px 0 #060b14) drop-shadow(0 0 4px #000) }
+.target-labels .enemy-label.object-label strong { color: #ffe39a }
+.target-labels .enemy-label .typed { color: #7fe8ff }
+.target-labels .enemy-label.locked strong { color: #fff; text-shadow: 0 2px 0 #060b14, 0 0 14px #e9bf6acc }
+.target-labels .enemy-label.locked .current-letter { color: var(--gild-hi); text-decoration: underline 3px var(--gild); text-underline-offset: 4px }
+.target-labels .enemy-label em { margin-right: 4px; font-size: 12px; -webkit-text-stroke: 3px #060b14; color: #ffb066 }
+.target-labels .enemy-label .armor-stack { margin: 0 }

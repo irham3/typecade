@@ -39,7 +39,7 @@
 /* ---------- Dialog shell ---------- */
 .dungeon-dialog.ornate-dialog {
   --accent: var(--gild);
-  overflow: visible;
+  overflow: auto;
   border: 2px solid var(--gild-lo);
   outline: 1px solid #e9bf6a33; outline-offset: 4px;
   background:
@@ -174,3 +174,25 @@
 .dungeon-dialog.ornate-dialog > .corner-bl { bottom: -4px; left: -4px }
 .dungeon-dialog.ornate-dialog > .corner-br { bottom: -4px; right: -4px }
 .dungeon-dialog.ornate-dialog > .corner-flourish { width: 34px; height: 34px }
+
+/*
+ * Frame vs. content: the dialog frame never scrolls (so the crest and corner flourishes can sit
+ * outside it without creating scrollbars); only .dialog-body scrolls, and only when it must.
+ */
+.dungeon-dialog.ornate-dialog { overflow: visible; max-height: calc(100svh - 72px) }
+.dungeon-dialog.ornate-dialog[open] { display: flex; flex-direction: column }
+.ornate-dialog > header { flex: none }
+.ornate-dialog > .dialog-body {
+  flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto;
+  margin: 0 -6px; padding: 2px 6px;
+  scrollbar-width: thin; scrollbar-color: var(--gild-lo) transparent;
+}
+.ornate-dialog > .dialog-body::-webkit-scrollbar { width: 6px }
+.ornate-dialog > .dialog-body::-webkit-scrollbar-thumb { background: var(--gild-lo); border-radius: 3px }
+.ornate-dialog .dialog-body > button, .ornate-dialog .dialog-body > form > button { display: block; width: 100%; margin-top: 10px }
+.ornate-dialog .dialog-body > p { font-size: 12px }
+.ornate-dialog .dialog-body > .eyebrow { display: block; text-align: center; color: color-mix(in srgb, var(--accent) 80%, #fff); letter-spacing: 3px }
+.ornate-dialog .dialog-body > .dialog-actions .primary-action { display: flex }
+/* Keyboard controls and How to play carry wide tables: give them room instead of scrolling. */
+.ornate-dialog.controls-dialog, .ornate-dialog.howto-dialog { width: min(920px, calc(100vw - 32px)) }
+.ornate-dialog.history-dialog { width: min(780px, calc(100vw - 32px)) }

@@ -101,7 +101,8 @@ export function App() {
    {["arena","skills"].includes(phase)&&<TargetLabels view={view} bridge={bridge} tutorial={screen==="tutorial"}/>}
    {active&&phase!=="draft"&&<div className="run-input-owner" onKeyDownCapture={e=>{if(e.key==="Tab"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&["arena","skills"].includes(phase)){e.preventDefault();e.stopPropagation();if(!e.repeat)type("Tab")}}}><TypingInput inputRef={inputRef} label="Dungeon typing input" testId="dungeon-input" onType={type} onEscape={()=>type("Escape")} inputMode={settings.keyboard?"none":undefined}/></div>}
    {["arena","skills"].includes(phase)&&<footer className={`skill-dock ${phase==="skills"?"casting":""}`}>
-    <p className="skill-mode-hint">{phase==="skills"?"TIME SLOWED · TYPE A SKILL · TAB TO CANCEL":view.queue.length===0?screen==="tutorial"?"SAFE TRAINING - FOLLOW THE LESSON":"REINFORCEMENTS APPROACHING · HOLD YOUR GROUND":"TYPE AN ENEMY WORD TO DASH · TAB FOR SKILLS"}</p>
+    <button type="button" className="skill-key-hint" onClick={()=>{type("Tab");inputRef.current?.focus()}} aria-label={phase==="skills"?"Press Tab to go back":"Press Tab to use skills"}><kbd>TAB</kbd><span>{phase==="skills"?"Back":"Skills"}</span></button>
+    <p className="skill-mode-hint">{phase==="skills"?"Time slowed · type a skill name":view.queue.length===0?screen==="tutorial"?"Follow the lesson":"More enemies incoming":"Type an enemy's word to attack"}</p>
     <div className="skill-cards">{(["cleave","storm","heal"] as SkillId[]).map((id,i)=>{
      const skill=view.skills[id], rules=skillRules[id], word=rules[view.language], typed=phase==="skills"&&word.startsWith(view.command)?view.command.length:0
      const cost=Math.max(10,rules.cost-(skill.level-1)*5), blocked=skill.cooldown>0||view.player.mana<cost||id==="heal"&&view.player.hp===view.player.maxHp

@@ -31,3 +31,7 @@
 .role-boss { --role: #ffd36b }
 
 @media (max-width: 600px) { .bestiary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px } .bestiary-card p { display: none } }
+
+/* One scroll area only: the dialog body scrolls the grid; the close button stays pinned. */
+.bestiary-dialog .bestiary-grid { max-height: none; overflow: visible }
+.bestiary-dialog .dialog-body > .primary-action { position: sticky; bottom: 0; z-index: 3; box-shadow: 0 -12px 18px #0b1220 !important }

@@ -27,7 +27,8 @@ export function DungeonDialog({ title, children, onCancel, className = "", tone 
   useEffect(() => {
     const dialog = ref.current!
     dialog.showModal()
-    dialog.querySelector<HTMLElement>("input:not([disabled]),.primary-action")?.focus({ preventScroll: true })
+    const target = dialog.querySelector<HTMLElement>(".primary-action") ?? dialog.querySelector<HTMLElement>("input:not([disabled])")
+    target?.focus({ preventScroll: true })
   }, [])
   return (
     <dialog ref={ref} className={`dungeon-dialog pixel-panel ornate-dialog tone-${tone} ${className}`} aria-labelledby={headingId} onCancel={event => { event.preventDefault(); onCancel() }}>
@@ -38,7 +39,7 @@ export function DungeonDialog({ title, children, onCancel, className = "", tone 
         <h2 id={headingId}>{title}</h2>
         <button className="dialog-close" aria-label="Close dialog" onClick={onCancel}>×</button>
       </header>
-      {children}
+      <div className="dialog-body">{children}</div>
     </dialog>
   )
 }
