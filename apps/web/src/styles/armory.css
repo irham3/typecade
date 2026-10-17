@@ -1,0 +1,44 @@
+/* Armory: a shop column on the left; the hero stays visible (and zoomed) on the right. */
+.armory {
+  position: absolute; z-index: 6; top: 16px; bottom: 16px; left: 16px;
+  width: min(440px, calc(100vw - 32px));
+  display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px;
+  padding: 10px 12px;
+  border: 8px solid transparent; border-image: var(--frame-panel) 8 / 8px stretch;
+  background: var(--grain), var(--iron-800); background-clip: padding-box;
+  filter: drop-shadow(0 4px 0 #000000b0);
+}
+.armory-head { display: flex; align-items: center; gap: 12px }
+.armory-head h2 { margin: 0 auto 0 0; font-size: var(--size-l); font-weight: normal; color: var(--text); text-shadow: 2px 2px 0 #000 }
+.armory-wallet { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: var(--size-s); color: var(--gold-light); text-shadow: 2px 2px 0 #000 }
+.armory-wallet .coin-icon { width: 16px; height: 16px }
+.armory-close { padding: 4px 10px; font-size: var(--size-xs) }
+
+.armory-slots { gap: 2px 16px; padding-bottom: 4px; border-bottom: 2px dotted var(--iron-600) }
+
+.armory-items { list-style: none; margin: 0; padding: 0 4px 0 0; overflow-y: auto; display: grid; align-content: start; gap: 0; scrollbar-width: thin; scrollbar-color: var(--iron-500) transparent }
+.armory-item {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  --rarity: var(--rarity-starter); --hover-frame: var(--frame-iron);
+  padding: 8px 8px 8px 14px !important; text-align: left; font-size: var(--size-xs); line-height: 1.5;
+  border-image: none !important;
+  box-shadow: inset 4px 0 0 -1px var(--rarity) !important;
+}
+.armory-item.selected { border-image: var(--frame-iron-hover) 6 fill / 6px stretch !important; color: #fff6dc }
+.armory-item-state { flex: none; display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim) }
+.rarity-common { --rarity: var(--rarity-common) }
+.rarity-rare { --rarity: var(--rarity-rare) }
+.rarity-epic { --rarity: var(--rarity-epic) }
+.rarity-legendary { --rarity: var(--rarity-legendary) }
+
+.armory-detail { display: grid; gap: 10px; padding-top: 12px; border-top: 2px dotted var(--iron-600) }
+.armory-detail strong { display: block; font-size: var(--size-s); font-weight: normal; line-height: 1.5 }
+.armory-detail p { margin: 6px 0 0; font-size: var(--size-xs); line-height: 1.8; color: var(--text-dim) }
+.armory-rarity { display: inline-block; margin-top: 6px; font-size: var(--size-xs); color: var(--rarity, var(--text-dim)) }
+.armory-detail > button { padding: 10px; font-size: var(--size-s) }
+.armory-message { min-height: 1em; margin: 0 !important; color: var(--gold-light) !important }
+
+@media (max-width: 760px) { .armory { top: auto; height: 62svh; bottom: 8px; left: 8px; width: calc(100vw - 16px) } }
+
+/* The scene behind the Armory stays open so the lit hero is the focus. */
+.scene-armory .scene-shade { background: linear-gradient(90deg, #0b0e14cc 0%, #0b0e1466 36%, #0b0e1400 60%) }
