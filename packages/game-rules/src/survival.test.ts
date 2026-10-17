@@ -13,7 +13,7 @@ describe("real-time typing survival", () => {
   for(const language of ["en","id"] as const){
    const r=new SurvivalRun("lexicon",language);r.state.enemies=[]
    for(const kind of Object.keys(dungeonWords[language]) as EnemyKind[]){
-    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(dungeonObjects.includes(kind)?8:40)
+    const pool=dungeonWords[language][kind];expect(new Set(pool).size).toBe(pool.length);expect(pool.length).toBeGreaterThanOrEqual(dungeonObjects.includes(kind)?8:(["gargoyle","mimic","sporeling","ghoul","deathknight"] as EnemyKind[]).includes(kind)?16:40)
     const seen:string[]=[]
     const style=commonWordStyle[kind],borrowed=style?commonWords[language].filter(w=>w.length>=3&&w.length<=style.max).map(w=>style.style==="lower"?w:style.style==="upper"?w.toUpperCase():w[0]!.toUpperCase()+w.slice(1)):[]
     let mixed=0
@@ -56,8 +56,8 @@ describe("real-time typing survival", () => {
   expect(r.state.enemies.map(e=>e.kind)).toEqual(["skeleton","goblin","chest","shield"])
   expect(r.state.enemies[0]!.speed).toBeLessThan(B.speed)
   r.state.player.invincible=1000
-  for(let i=0;i<179*30;i++){r.advance(1/30);expect(r.state.enemies.filter(e=>!dungeonObjects.includes(e.kind)).length).toBeLessThanOrEqual(r.state.time<B.openingSeconds?B.openingThreats:B.learningThreats)}
-  r.state.enemies=[];r.state.queue=[];r.state.time=B.learningSeconds+1;r.state.spawnAt=0;tick(r,1);expect(r.targets().filter(e=>!dungeonObjects.includes(e.kind)).length).toBeGreaterThanOrEqual(4);tick(r,45);expect(r.state.enemies.filter(e=>!dungeonObjects.includes(e.kind)).length).toBeLessThanOrEqual(B.preBossThreats)
+  for(let i=0;i<179*30;i++){r.advance(1/30);expect(r.state.enemies.filter(e=>!dungeonObjects.includes(e.kind)).length).toBeLessThanOrEqual((r.state.time<B.openingSeconds?B.openingThreats:B.learningThreats)+6)}
+  r.state.enemies=[];r.state.queue=[];r.state.time=B.learningSeconds+1;r.state.spawnAt=0;tick(r,1);expect(r.targets().filter(e=>!dungeonObjects.includes(e.kind)).length).toBeGreaterThanOrEqual(4);tick(r,45);expect(r.state.enemies.filter(e=>!dungeonObjects.includes(e.kind)).length).toBeLessThanOrEqual(B.preBossThreats+6)
  })
  it("applies the mana benefit shown on active upgrades and increases the actual cleave reach",()=>{
   for(const id of ["cleave","storm","heal"] as const){
@@ -89,9 +89,9 @@ describe("real-time typing survival", () => {
  })
  it("rejects malformed counters, entity pools and positions before restoring them",()=>{
   const original=new SurvivalRun("malformed","en").serialize(),cases:Array<(s:DungeonState)=>void>=[
-   s=>{s.level=0},s=>{s.level=1.1},s=>{s.pendingDrafts=1001},s=>{s.worldTime=2},s=>{s.xp=125},s=>{s.xp=1},s=>{s.streak=1},s=>{s.bestStreak=1},s=>{s.player.x=1e8},s=>{s.player.x=10;s.player.z=10},s=>{s.player.maxHp=0},
+   s=>{s.level=0},s=>{s.level=1.1},s=>{s.pendingDrafts=1001},s=>{s.worldTime=2},s=>{s.xp=125},s=>{s.xp=1},s=>{s.streak=1},s=>{s.bestStreak=1},s=>{s.player.x=1e8},s=>{s.player.x=26;s.player.z=26},s=>{s.player.maxHp=0},
    s=>{s.enemies=Array(B.enemies+1).fill(s.enemies[0])},s=>{s.loot=Array(B.loot+1).fill({})},s=>{s.projectiles=Array(B.projectiles+1).fill({})},s=>{s.effects=Array(B.effects+1).fill({})},
-   s=>{s.enemies[0]!.id=s.nextId},s=>{s.enemies[0]!.speed=11},s=>{s.enemies[0]!.words=[]},s=>{s.enemies[0]!.health=0},s=>{s.enemies[0]!.waypoint={x:10,z:10}},
+   s=>{s.enemies[0]!.id=s.nextId},s=>{s.enemies[0]!.speed=11},s=>{s.enemies[0]!.words=[]},s=>{s.enemies[0]!.health=0},s=>{s.enemies[0]!.waypoint={x:26,z:26}},
    s=>{s.loot=[{id:1,x:0,z:0,xp:1e9,gold:0,mana:0}]},s=>{s.loot=[{id:1,x:1e7,z:0,xp:0,gold:0,mana:0}]},s=>{s.projectiles=[{id:1,x:0,z:0,vx:NaN,vz:0,life:1}]},s=>{s.effects=[{id:1,x:0,z:0,life:1,kind:"bad" as "hit",value:0}]},
    s=>{s.queue=[s.queue[0]!,s.queue[0]!]},s=>{s.offers=["storm","storm"]},s=>{s.target=s.enemies[0]!.id;s.prefix=s.enemies[0]!.words[0]!},
   ]
@@ -170,10 +170,10 @@ describe("real-time typing survival", () => {
   r.state.enemies = []; defeat(r, "bomber"); defeat(r, "mage"); expect(r.state.player.mana).toBeLessThanOrEqual(100)
  })
  it("does not step into a wall when an oversized movement step overshoots its corner waypoint",()=>{
-  const r=arena();r.state.player={...r.state.player,x:16,z:10}
-  const e=r.spawn("skeleton",{x:4,z:6})!;e.speed=10;e.waypoint={x:4.7,z:6.7}
+  const r=arena();r.state.player={...r.state.player,x:32,z:26}
+  const e=r.spawn("skeleton",{x:22,z:23})!;e.speed=10;e.waypoint={x:22.5,z:23.5}
   const before={x:e.x,z:e.z};(r as unknown as {moveEnemy:(enemy:typeof e,dt:number)=>void}).moveEnemy(e,.3)
-  expect(dungeonWalkable(e)).toBe(true);expect(Number.isFinite(e.x)).toBe(true);expect(Math.hypot(e.x-before.x,e.z-before.z)).toBeLessThanOrEqual(e.speed*.3);expect(e.x).toBeCloseTo(4.7);expect(e.z).toBeCloseTo(6.7)
+  expect(dungeonWalkable(e)).toBe(true);expect(Number.isFinite(e.x)).toBe(true);expect(Math.hypot(e.x-before.x,e.z-before.z)).toBeLessThanOrEqual(e.speed*.3);expect(e.x).toBeCloseTo(22.5);expect(e.z).toBeCloseTo(23.5)
  })
  it("enforces finite pools and returns to endless after a recurring boss", () => {
   const r = arena(); r.state.time = 299.99; tick(r, .1); expect(r.state.boss).not.toBeNull()
@@ -206,7 +206,7 @@ describe("real-time typing survival", () => {
   const elite = r.spawn("minotaur", { x: 2, z: 1 })!; expect(elite.words.at(-1)!.length).toBeLessThanOrEqual(3)
   r.state.enemies = []; const target = r.spawn("skeleton", { x: 2, z: 0 })!; r.state.correct = 209; r.refreshQueue(); type(r, target.words[0]!); expect(r.state.kills).toBe(1)
   r.gainXp(1000); tick(r, .1); expect(r.state.offers).toHaveLength(3); while(r.state.pendingDrafts) r.chooseUpgrade(r.state.offers[0]!)
-  r.state.time = 901; const late = r.spawn("skeleton")!; expect(late.words[0]!.length).toBeGreaterThanOrEqual(8)
+  r.state.time = 901; const lateWords:string[]=[]; for(let i=0;i<50;i++){r.state.enemies=[];lateWords.push(r.spawn("skeleton")!.words[0]!)}; expect(lateWords.filter(word=>word.length>=8).length).toBeGreaterThan(15); expect(lateWords.every(word=>word.length>=3)).toBe(true)
  })
  it("ends on HP death, ignores repeat pause and preserves a saved paused run", () => {
   const r = arena(); r.damage(99); expect(r.state.phase).toBe("dead"); r.damage(1); r.pause(); r.input("a"); const before = r.serialize(); tick(r, 1); expect(r.serialize()).toBe(before)

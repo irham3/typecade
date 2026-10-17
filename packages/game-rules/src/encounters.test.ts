@@ -17,8 +17,8 @@ it("starts Indonesian, varies seeded speed and per-kind steering while keeping t
  tick(r,1.2);expect(brute.motion).toBe("charge");r.state.player.x=-2;tick(r,3);expect(brute.motion).toBeUndefined();expect(brute.attack).toBeGreaterThan(0)
  brute.motion="charge";brute.motionTime=.5;brute.aim={x:brute.x,z:brute.z};tick(r,.05);expect(brute.motion).toBe("recover")
  brute.motion="windup";delete brute.motionTime;delete brute.aim;tick(r,.1);expect(brute.motion).toBe("charge");tick(r,.1)
- const blocked=run(),shooter=blocked.spawn("mage",{x:4,z:10})!;shooter.attack=0;shooter.speed=0;blocked.state.player.x=16;blocked.state.player.z=10;tick(blocked,.1);expect(blocked.state.projectiles).toHaveLength(0)
- blocked.state.projectiles=[{id:blocked.state.nextId++,x:10,z:10,vx:0,vz:0,life:1}];tick(blocked,.1);expect(blocked.state.projectiles).toHaveLength(0)
+ const blocked=run(),shooter=blocked.spawn("mage",{x:20,z:26})!;shooter.attack=0;shooter.speed=0;blocked.state.player.x=32;blocked.state.player.z=26;tick(blocked,.1);expect(blocked.state.projectiles).toHaveLength(0)
+ blocked.state.projectiles=[{id:blocked.state.nextId++,x:26,z:26,vx:0,vz:0,life:1}];tick(blocked,.1);expect(blocked.state.projectiles).toHaveLength(0)
 })
 it("collects readable supplies, absorbs real damage and deploys one timed sentry without consuming locked words",()=>{
  const r=run(),s=r.state;s.player.hp=2;s.player.mana=0
@@ -43,10 +43,10 @@ it("collects readable supplies, absorbs real damage and deploys one timed sentry
 it("restores old saves safely and rejects malformed shield, equipment, tower, telegraph and beam data",()=>{
  const source=new SurvivalRun("save").serialize(),legacy=JSON.parse(source);delete legacy.player.shield;delete legacy.supplies;delete legacy.sentry
  expect(restoreDungeonRun(JSON.stringify(legacy))?.state.player.shield).toBe(0)
- const bad:Array<(s:DungeonState)=>void>=[s=>{s.player.shield=5},s=>{s.player.shield=-1},s=>{s.player.shield=.5},s=>{s.supplies=null!},s=>{s.supplies.shield=-1},s=>{s.supplies.mana=1000001},s=>{s.sentry={x:NaN,z:0,life:2,cooldown:0}},s=>{s.sentry={x:1e7,z:0,life:2,cooldown:0}},s=>{s.sentry={x:0,z:1e7,life:2,cooldown:0}},s=>{s.sentry={x:10,z:10,life:2,cooldown:0}},s=>{s.sentry={x:0,z:0,life:0,cooldown:0}},s=>{s.sentry={x:0,z:0,life:19,cooldown:0}},s=>{s.sentry={x:0,z:0,life:2,cooldown:-1}},s=>{s.sentry={x:0,z:0,life:2,cooldown:2}}]
+ const bad:Array<(s:DungeonState)=>void>=[s=>{s.player.shield=5},s=>{s.player.shield=-1},s=>{s.player.shield=.5},s=>{s.supplies=null!},s=>{s.supplies.shield=-1},s=>{s.supplies.mana=1000001},s=>{s.sentry={x:NaN,z:0,life:2,cooldown:0}},s=>{s.sentry={x:1e7,z:0,life:2,cooldown:0}},s=>{s.sentry={x:0,z:1e7,life:2,cooldown:0}},s=>{s.sentry={x:26,z:26,life:2,cooldown:0}},s=>{s.sentry={x:0,z:0,life:0,cooldown:0}},s=>{s.sentry={x:0,z:0,life:19,cooldown:0}},s=>{s.sentry={x:0,z:0,life:2,cooldown:-1}},s=>{s.sentry={x:0,z:0,life:2,cooldown:2}}]
  for(const change of bad){const s=JSON.parse(source);change(s);expect(restoreDungeonRun(JSON.stringify(s))).toBeNull()}
  const r=run(),e=r.spawn("minotaur",{x:5,z:0})!;e.attack=0;tick(r,.05);const armed=r.serialize();expect(restoreDungeonRun(armed)).not.toBeNull()
- for(const field of ["motion","motionTime","aim","kind"] as const){for(const value of [null,"bad",-1,3,{x:NaN,z:0},{x:10,z:10},{x:1e7,z:0},{x:0,z:1e7}]){const s=JSON.parse(armed);s.enemies[0][field]=value;expect(restoreDungeonRun(JSON.stringify(s))).toBeNull()}}
+ for(const field of ["motion","motionTime","aim","kind"] as const){for(const value of [null,"bad",-1,3,{x:NaN,z:0},{x:26,z:26},{x:1e7,z:0},{x:0,z:1e7}]){const s=JSON.parse(armed);s.enemies[0][field]=value;expect(restoreDungeonRun(JSON.stringify(s))).toBeNull()}}
  const orphan=JSON.parse(armed);delete orphan.enemies[0].motion;expect(restoreDungeonRun(JSON.stringify(orphan))).toBeNull();delete orphan.enemies[0].aim;expect(restoreDungeonRun(JSON.stringify(orphan))).toBeNull()
  for(const to of [{x:NaN,z:0},{x:1e7,z:0},{x:0,z:1e7}]){const s=JSON.parse(source);s.effects=[{id:s.nextId++,x:0,z:0,kind:"sentry",life:.3,value:1,to}];expect(restoreDungeonRun(JSON.stringify(s))).toBeNull()}
 })
@@ -54,8 +54,8 @@ it("restores old saves safely and rejects malformed shield, equipment, tower, te
 it("pushes only safe nearby targets with the switch and resolves equidistant tower shots stably",()=>{
  const r=run(),s=r.state;s.relics.switch=1
  const target=r.spawn("skeleton",{x:1,z:0})!,near=r.spawn("guard",{x:2,z:0})!,zero=r.spawn("guard",{x:0,z:0})!;r.spawn("guard",{x:8,z:0});target.words=["go"];near.words=["Near","Guard"];zero.words=["Zero","Guard"];r.refreshQueue();for(const key of "go")r.input(key);expect(near.x).toBe(3);expect(zero.x).toBe(0)
- s.enemies=[];s.queue=[];s.player.x=3;s.player.z=6;const edge=r.spawn("skeleton",{x:4.5,z:7.3})!,blocked=r.spawn("guard",{x:5.4,z:7.6})!;edge.words=["go"];blocked.words=["Safe","Guard"];r.refreshQueue();for(const key of "go")r.input(key);expect(blocked.x).toBe(5.4)
- blocked.x=10;blocked.z=10;const before={x:blocked.x,z:blocked.z};(r as unknown as {moveEnemy:(e:typeof blocked,dt:number)=>void}).moveEnemy(blocked,.1);expect({x:blocked.x,z:blocked.z}).toEqual(before)
+ s.enemies=[];s.queue=[];s.player.x=20;s.player.z=24;const edge=r.spawn("skeleton",{x:21.5,z:25.7})!,blocked=r.spawn("guard",{x:22.9,z:26})!;edge.words=["go"];blocked.words=["Safe","Guard"];r.refreshQueue();for(const key of "go")r.input(key);expect(blocked.x).toBe(22.9)
+ blocked.x=26;blocked.z=26;const before={x:blocked.x,z:blocked.z};(r as unknown as {moveEnemy:(e:typeof blocked,dt:number)=>void}).moveEnemy(blocked,.1);expect({x:blocked.x,z:blocked.z}).toEqual(before)
  const t=run();t.state.sentry={x:0,z:0,life:18,cooldown:0};const first=t.spawn("guard",{x:2,z:0})!,second=t.spawn("guard",{x:-2,z:0})!;first.speed=second.speed=0;tick(t,.04);expect(first.words).toHaveLength(1);expect(second.words).toHaveLength(2)
 })
 
@@ -88,8 +88,8 @@ it("keeps a boss combo through retaliation, allows word guards and restores old 
  s.stagger=.01;boss.motion="windup";boss.motionTime=.01;s.player.invincible=1;r.advance(.1);expect(s.player.hp).toBe(5);expect(s.effects.some(e=>e.kind==="block"&&e.value===0)).toBe(true)
  const legacy=JSON.parse(r.serialize());delete legacy.procs;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.procs).toEqual({lightning:0,vowels:0})
  // A malformed in-memory boss location must not move the hero into blocked terrain.
- s.phase="arena";boss.x=10;boss.z=10;s.player.x=10;s.player.z=10;boss.words=["A"];s.target=boss.id;s.prefix="";r.input("A");expect(s.player.x).toBe(10)
- const far=run();const distant=far.spawn("boss",{x:7,z:0})!;distant.words=["A"];far.input("Tab");far.cast("storm");expect(far.state.phase).toBe("overdrive");expect(far.state.player.x).toBe(0)
+ s.phase="arena";boss.x=26;boss.z=26;s.player.x=26;s.player.z=26;boss.words=["A"];s.target=boss.id;s.prefix="";r.input("A");expect(s.player.x).toBe(26)
+ const far=run();const distant=far.spawn("boss",{x:7,z:0})!;distant.words=["A"];far.input("Tab");far.cast("storm");expect(far.state.phase).toBe("overdrive");expect(dungeonWalkable(far.state.player)).toBe(true)
 })
 
 it("settles overlapping barrel chain reactions once without duplicate rewards",()=>{
@@ -135,7 +135,7 @@ it("blocks incoming shots at the barricade and validates compatible duel saves",
  shot();r.advance(.1);expect(s.projectiles).toHaveLength(0);expect(s.bossArena!.hp).toBe(B.barrierHp-1);expect(s.player.hp).toBe(6)
  shot();r.advance(.1);expect(s.bossArena!.hp).toBe(B.barrierHp-1);s.bossArena!.hp=0;shot();r.advance(.1);expect(s.player.hp).toBe(5)
  s.stagger=0;expect(restoreDungeonRun(r.serialize())).not.toBeNull()
- const base=JSON.parse(r.serialize());for(const change of [(v:DungeonState)=>{v.bossArena!.hp=-1},(v:DungeonState)=>{v.bossArena!.hp=B.barrierHp+1},(v:DungeonState)=>{v.bossArena!.calm=-1},(v:DungeonState)=>{v.bossArena!.calm=B.duelCalmMax+1},(v:DungeonState)=>{v.bossArena!.calm=NaN},(v:DungeonState)=>{v.bossArena!.hp=.5},(v:DungeonState)=>{v.bossArena!.cooldown=1},(v:DungeonState)=>{v.bossArena!.rage=3},(v:DungeonState)=>{v.bossArena!.x=NaN},(v:DungeonState)=>{v.bossArena!.z=1e7},(v:DungeonState)=>{v.bossArena!.x=1e7},(v:DungeonState)=>{v.bossArena!.x=v.bossArena!.z=10},(v:DungeonState)=>{v.boss=null}]){const raw=structuredClone(base);change(raw);expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()}
+ const base=JSON.parse(r.serialize());for(const change of [(v:DungeonState)=>{v.bossArena!.hp=-1},(v:DungeonState)=>{v.bossArena!.hp=B.barrierHp+1},(v:DungeonState)=>{v.bossArena!.calm=-1},(v:DungeonState)=>{v.bossArena!.calm=B.duelCalmMax+1},(v:DungeonState)=>{v.bossArena!.calm=NaN},(v:DungeonState)=>{v.bossArena!.hp=.5},(v:DungeonState)=>{v.bossArena!.cooldown=1},(v:DungeonState)=>{v.bossArena!.rage=3},(v:DungeonState)=>{v.bossArena!.x=NaN},(v:DungeonState)=>{v.bossArena!.z=1e7},(v:DungeonState)=>{v.bossArena!.x=1e7},(v:DungeonState)=>{v.bossArena!.x=v.bossArena!.z=26},(v:DungeonState)=>{v.boss=null}]){const raw=structuredClone(base);change(raw);expect(restoreDungeonRun(JSON.stringify(raw))).toBeNull()}
  const legacy=structuredClone(base);delete legacy.bossArena.calm;expect(restoreDungeonRun(JSON.stringify(legacy))?.state.bossArena?.calm).toBe(0)
  delete base.bossArena;expect(restoreDungeonRun(JSON.stringify(base))?.state.bossArena).toBeNull()
 })
@@ -148,10 +148,10 @@ it("holds the boss outside hammer reach while typing stays steady, and lets hesi
  const r=run(),s=r.state,boss=r.spawn("boss",{x:4,z:0})!;boss.words=["A"];r.refreshQueue();r.input("A");s.enemies=[boss];s.player.invincible=0
  s.paragraph="a".repeat(200)+" BLIZZARD";s.cursor=0;const gap=()=>Math.hypot(boss.x-s.player.x,boss.z-s.player.z)
  // A slow but steady 20 WPM rhythm: one correct letter every 0.6 s.
- let closest=99;for(let i=0;i<60;i++){r.input("a");for(let k=0;k<18;k++){r.advance(1/30);closest=Math.min(closest,gap())}}
+ let closest=99;for(let i=0;i<60;i++){r.input("a");for(let k=0;k<18;k++){s.bossArena!.hp=B.barrierHp;r.advance(1/30);closest=Math.min(closest,gap())}}
  expect(closest).toBeGreaterThan(2.8);expect(boss.motion).toBeUndefined();expect(s.effects.some(e=>e.kind==="slam")).toBe(false);expect(s.player.hp).toBe(6)
  // Stopping drains the calm; the boss closes in, telegraphs and strikes.
- let slammed=false;for(let i=0;i<300&&!slammed;i++){r.advance(1/30);slammed=s.effects.some(e=>e.kind==="slam")}
+ let slammed=false;for(let i=0;i<300&&!slammed;i++){s.bossArena!.hp=B.barrierHp;r.advance(1/30);slammed=s.effects.some(e=>e.kind==="slam")}
  expect(slammed).toBe(true);expect(s.bossArena!.calm).toBe(0);expect(s.player.hp).toBe(5)
  // A typo removes the remaining calm immediately.
  r.input("a");expect(s.bossArena!.calm).toBeGreaterThan(0);r.input("?");expect(s.bossArena!.calm).toBe(0);expect(s.bossArena!.rage).toBe(2)
@@ -200,17 +200,17 @@ it("gives the expanded bestiary real wards, summons, blinks, regeneration, range
 it("unlocks the bestiary over time, favours each depth's residents and spawns rats in packs",()=>{
  const roster=(time:number,biome=0)=>{const r=new SurvivalRun("roster");r.state.time=time;r.state.biome=biome;return (r as unknown as {roster:(o:boolean)=>string[]}).roster(time<90)}
  expect(roster(10)).not.toContain("slime");expect(roster(50)).toContain("slime");expect(roster(70)).toContain("rat")
- expect(roster(100)).toContain("wolf");expect(roster(100)).not.toContain("archer");expect(roster(130)).toContain("archer")
+ expect(roster(100)).toContain("wolf");expect(roster(80)).not.toContain("archer");expect(roster(130)).toContain("archer")
  expect(roster(200)).toContain("shaman");expect(roster(200)).not.toContain("golem");expect(roster(320)).toContain("necromancer")
- expect(roster(320,1).filter(k=>k==="wraith").length).toBe(2);expect(roster(320,3).filter(k=>k==="wolf").length).toBe(3)
+ expect(roster(320,1).filter(k=>k==="wraith").length).toBe(3);expect(roster(320,3).filter(k=>k==="wolf").length).toBe(3)
  const r=new SurvivalRun("rat-pack");r.start();const s=r.state;s.enemies=[];s.queue=[];s.time=200;s.spawnAt=0;s.player.invincible=99
  let packs=0;for(let i=0;i<400&&!packs;i++){s.enemies=s.enemies.filter(e=>e.kind==="rat");r.advance(.1);s.spawnAt=0;if(s.enemies.filter(e=>e.kind==="rat").length>=2)packs++}
  expect(packs).toBe(1)
 })
 
 it("stages boss duels on open floor away from ruins, clears loose items and keeps the horde outside the fence",()=>{
- const r=run(),s=r.state;s.player.x=10;s.player.z=4;expect(dungeonWalkable(s.player)).toBe(true);expect(dungeonWalkable({x:10,z:8})).toBe(false)
- const boss=r.spawn("boss",{x:13,z:3})!,barrel=r.spawn("barrel",{x:9,z:3})!,chest=r.spawn("chest",{x:11,z:5})!,inside=r.spawn("skeleton",{x:10.5,z:4.5})!
+ const r=run(),s=r.state;s.player.x=26;s.player.z=22;expect(dungeonWalkable(s.player)).toBe(true);expect(dungeonWalkable({x:26,z:26})).toBe(false)
+ const boss=r.spawn("boss",{x:29,z:21})!,barrel=r.spawn("barrel",{x:25,z:21})!,chest=r.spawn("chest",{x:27,z:23})!,inside=r.spawn("skeleton",{x:26.5,z:22.5})!
  s.projectiles.push({id:s.nextId++,x:10,z:5,vx:0,vz:-1,life:3});boss.words=["A"];r.refreshQueue();r.input("A");expect(s.phase).toBe("overdrive")
  const wall=s.bossArena!
  for(let a=0;a<24;a++)for(const radius of [B.barrierRadius,B.barrierRadius+1])expect(dungeonWalkable({x:wall.x+Math.sin(a*Math.PI/12)*radius,z:wall.z+Math.cos(a*Math.PI/12)*radius})).toBe(true)

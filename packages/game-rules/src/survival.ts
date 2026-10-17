@@ -4,7 +4,7 @@ import { createSeededRng } from "./rng"
 import { areWeaponsValid, createEmptyWeapons, isWeaponId, tickWeapons, weaponIds, type CombatPort } from "./weapons"
 import { spawnRoster } from "./roster"
 import { hasClearPath, isWalkable, ruinAt } from "./terrain"
-import { paceFor, surgeLineup, waveAt } from "./director"
+import { buildPowerScore, paceFor, pressureFor, surgeLineup, waveAt } from "./director"
 
 
 const skillIds: SkillId[] = ["cleave", "storm", "heal"]
@@ -46,6 +46,13 @@ export class SurvivalRun {
  private get combat(): CombatPort { return { state: this.state, hit: (enemy, layers, preserve, source) => this.hit(enemy, layers, preserve, source), effect: (kind, at, value) => this.effect(kind, at, value), random: () => this.random() } }
  /** Movement multiplier from the wave director; derived from time, so it is not saved. */
  private haste = 1
+ /** Chance a regular spawn gets one extra armor word; set each tick from build pressure, so it is not saved. */
+ private extraArmorChance = 0
+ /** How far the build has grown past the starting kit (see director.buildPowerScore). */
+ private buildPower() {
+  const s=this.state
+  return buildPowerScore({level:s.level,weaponRanks:weaponIds.reduce((n,id)=>n+s.weapons[id].level,0),relicRanks:relicIds.reduce((n,id)=>n+s.relics[id],0),skillRanks:skillIds.reduce((n,id)=>n+s.skills[id].level,0)})
+ }
  private random() { const s = this.state; return createSeededRng(`${s.seed}:${s.rng++}`).nextFloat() }
  private pick<T>(list: readonly T[]) { return list[Math.floor(this.random() * list.length)]! }
  private effect(kind: DungeonState["effects"][number]["kind"], at: Point, value = 0, to?:Point, source?: DamageSource) {
@@ -74,8 +81,11 @@ export class SurvivalRun {
   for (let i = 0; i < 16 && !valid(position); i++) position = { x: s.player.x + Math.sin(angle + (i + 1)*2.399) * radius, z: s.player.z + Math.cos(angle + (i + 1)*2.399) * radius }
   if (!valid(position)) return
   const layers = kind === "boss" ? 3 + Math.min(2, s.biome) : kind === "minotaur" ? Math.min(5, 3 + Math.floor(s.time / 900)) : kind === "guard" ? 2 : kind === "deathknight" ? Math.min(4, 3 + Math.floor(s.time / 900)) : enemyProfiles[kind]?.layers ?? 1
-  const words = Array.from({ length: layers }, (_, i) => this.drawWord(kind,layers-i,i===0))
-  const health = kind === "boss" ? B.bossHealth * (1 + s.biome * .5) : layers
+  // Build pressure: strong heroes meet foes that carry an extra armor word (never bosses, objects or elites already at cap).
+  const armored=kind!=="boss"&&!objects.includes(kind)&&layers<4&&this.extraArmorChance>0&&this.random()<this.extraArmorChance
+  const total=armored?layers+1:layers
+  const words = Array.from({ length: total }, (_, i) => this.drawWord(kind,total-i,i===0))
+  const health = kind === "boss" ? B.bossHealth * (1 + s.biome * .5) : total
   const enemy: DungeonEnemy = { id: s.nextId++, kind, ...position, words, speed: B.speed * enemySpeed[kind] * (.88+this.random()*.24) * (.7+.3*Math.min(1,s.time/B.openingSeconds)) * (1 + Math.min(.7, s.time / 700) + Math.min(.3, s.biome * .06)), frozen: 0, attack: kind === "bomber" ? 20 : kind === "mage" ? 5.5 : kind==="minotaur"||kind==="boss"?6+this.random()*2:this.openingTimer(kind), health, maxHealth: health }
   s.enemies.push(enemy)
   if (kind === "boss") { s.boss = enemy.id; s.notice = "Obsidian Minotaur — break its armor." }
@@ -532,11 +542,12 @@ export class SurvivalRun {
    if (boss) { s.nextBoss += B.bossInterval; if (s.phase === "skills") { s.phase = "arena"; s.command = "" } }
   }
   const opening=s.time<B.openingSeconds,learning=s.time<B.learningSeconds
-  const wave=waveAt(s.time),pace=paceFor(wave)
+  const wave=waveAt(s.time),pace=pressureFor(paceFor(wave),this.buildPower())
+  this.extraArmorChance=duel?0:pace.extraArmorChance
   this.haste=duel?1:pace.haste
-  if(!duel&&wave.phase==="surge"&&waveAt(s.time-real).phase!=="surge")this.launchSurge(wave.cycle)
   const floor=opening?2:learning?3:4,baseLimit=opening?B.openingThreats:learning?B.learningThreats:s.time<B.bossInterval?B.preBossThreats:B.enemies
   const limit=Math.min(B.enemies,Math.max(floor,baseLimit+pace.threatBonus))
+  if(!duel&&wave.phase==="surge"&&waveAt(s.time-real).phase!=="surge")this.launchSurge(wave.cycle,limit)
   const interval=(opening?B.openingInterval:learning?B.learningInterval:B.spawnInterval)/pace.spawnRate
   s.spawnAt = Math.max(0,s.spawnAt-dt)
   if (!duel && s.spawnAt <= 0) {
@@ -602,15 +613,15 @@ export class SurvivalRun {
   if(s.spawnAt<=interval&&(s.queue.length<4||this.targets().filter(e=>!objects.includes(e.kind)).length<floor&&s.enemies.filter(e=>!objects.includes(e.kind)).length<limit))s.spawnAt=Math.min(s.spawnAt,.3)
  }
  /** Surge opener: a themed pack fans in from one direction, sometimes led by an elite. */
- private launchSurge(cycle:number) {
+ private launchSurge(cycle:number,limit:number) {
   const s=this.state,{pack,elite}=surgeLineup(s.time,cycle,s.biome,()=>this.random())
   const heading=this.random()*Math.PI*2
-  for(let i=0;i<pack.count;i++){
+  for(let i=0;i<pack.count&&s.enemies.filter(e=>!objects.includes(e.kind)).length<limit;i++){
    const angle=heading+(i-(pack.count-1)/2)*.3,radius=B.spawnRadius+(i%2)*1.2
    const at={x:s.player.x+Math.sin(angle)*radius,z:s.player.z+Math.cos(angle)*radius}
    if(dungeonWalkable(at))this.spawn(pack.kind,at)
   }
-  const leader=elite?this.spawn(elite,{x:s.player.x+Math.sin(heading)*(B.spawnRadius+2),z:s.player.z+Math.cos(heading)*(B.spawnRadius+2)}):undefined
+  const leader=elite&&s.enemies.filter(e=>!objects.includes(e.kind)).length<limit?this.spawn(elite,{x:s.player.x+Math.sin(heading)*(B.spawnRadius+2),z:s.player.z+Math.cos(heading)*(B.spawnRadius+2)}):undefined
   s.notice=`SURGE — ${pack.name}${leader?` led by a ${(enemyProfiles[leader.kind]?.name??leader.kind).toLowerCase()}`:""}! Hold the line.`
  }
  private roster(opening:boolean):EnemyKind[] { return spawnRoster(this.state.time,this.state.biome,opening) }

@@ -86,3 +86,48 @@ export function surgeLineup(time: number, cycle: number, depth: number, random: 
     elite: eliteDue ? unlockedElites[Math.floor(random() * unlockedElites.length)]!.kind : null,
   }
 }
+
+/** Snapshot of how strong the hero's build is; each point is roughly one meaningful upgrade. */
+export interface BuildPower { level: number; weaponRanks: number; relicRanks: number; skillRanks: number }
+
+export interface PressureModifiers extends PaceModifiers {
+  /** Chance (0..1) a newly spawned regular foe gets one extra armor word. */
+  extraArmorChance: number
+}
+
+/** Tuning for build-scaled pressure; caps keep late runs hard but fair. */
+export const pressureTuning = {
+  /** Upgrades (beyond the starting kit) needed before pressure starts to climb. */
+  grace: 2,
+  threatPerPower: .9,
+  maxThreatBonus: 14,
+  spawnRatePerPower: .06,
+  maxSpawnRate: 2,
+  hastePerPower: .014,
+  maxHaste: 1.22,
+  armorPerPower: .04,
+  maxArmorChance: .45,
+} as const
+
+/** Starting kit: level 1 (worth half a point) and three rank-1 skills. */
+const BASELINE_POWER = .5 + 3
+/** Levels arrive quickly and mostly feed drafts, which are already counted; weight them lightly. */
+const LEVEL_WEIGHT = .5
+
+export function buildPowerScore({ level, weaponRanks, relicRanks, skillRanks }: BuildPower) {
+  return Math.max(0, level * LEVEL_WEIGHT + weaponRanks * 1.5 + relicRanks + skillRanks - BASELINE_POWER - pressureTuning.grace)
+}
+
+/**
+ * Raises the wave director's baseline to match the hero's build, so collecting weapons
+ * and relics keeps the fight tense instead of trivial. Multiplies onto `paceFor`.
+ */
+export function pressureFor(pace: PaceModifiers, power: number): PressureModifiers {
+  const t = pressureTuning
+  return {
+    spawnRate: pace.spawnRate * Math.min(t.maxSpawnRate, 1 + power * t.spawnRatePerPower),
+    threatBonus: pace.threatBonus + Math.min(t.maxThreatBonus, Math.floor(power * t.threatPerPower)),
+    haste: pace.haste * Math.min(t.maxHaste, 1 + power * t.hastePerPower),
+    extraArmorChance: Math.min(t.maxArmorChance, power * t.armorPerPower),
+  }
+}

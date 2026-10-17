@@ -44,11 +44,7 @@ function hash01(cx: number, cz: number, slot: number) {
 
 function pickArchetype(roll: number): RuinArchetype {
   let target = roll * totalWeight
-  for (const id of archetypeList) {
-    target -= ruinArchetypes[id].weight
-    if (target < 0) return id
-  }
-  return archetypeList[archetypeList.length - 1]!
+  return archetypeList.find(id => (target -= ruinArchetypes[id].weight) < 0)!
 }
 
 /** Obstacles owned by the chunk at integer chunk coordinates (cx, cz) = floor(world / chunkSize). */
