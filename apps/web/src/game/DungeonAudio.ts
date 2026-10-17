@@ -1,3 +1,6 @@
+import { sfxRecipes, hasSfxRecipe } from "./audio/sfxRecipes"
+import { schedulePercussion } from "./audio/percussion"
+
 type Mood = "title" | "dojo" | "arena" | "draft" | "dead" | "paused"
 type Bus = "music" | "effects" | "ambience"
 type Voice = { source: AudioScheduledSourceNode; nodes: AudioNode[]; bus: Bus; priority: number }
@@ -153,8 +156,7 @@ export class DungeonAudio {
    }
    if (arena && energy > .3 && index % 2 === 1) this.note(root + 24 + [0, 7, 12, third][Math.floor(index / 2) % 4]!, .12, .035 * energy, at, "triangle", -.3)
    if (arena) {
-    if (index % 4 === 0 || energy > .65 && index === 14) this.sound(110, .16, .22, "music", at, "sine", 42)
-    if (index === 4 || index === 12) { this.sound(1700, .12, .1 * energy, "music", at, "noise"); this.sound(180, .08, .07, "music", at, "triangle", 95) }
+    schedulePercussion((f, d, l, type, end, time, pan) => this.sound(f, d, l, "music", time, type, end, pan), this.step, at, energy, !!this.scene.boss)
     if (index % (energy > .65 ? 2 : 4) === 2) this.sound(6700, .045, .045 * energy, "music", at, "noise", 6700, .25)
     if (this.scene.boss && index % 4 === 0) this.note(root + 12, .22, .045, at, "sawtooth", -.2)
     if (this.scene.critical && index % 8 === 0) {
@@ -168,7 +170,7 @@ export class DungeonAudio {
  play(kind: string, pan = 0) {
   const ctx = this.context
   if (!ctx || ctx.state !== "running" || !this.visible || !this.masterVolume || !this.effectsVolume || this.scene.mood === "paused") return
-  const now = ctx.currentTime, major = ["hurt", "defeat", "boss", "level", "upgrade", "storm", "cleave", "heal", "explosion", "victory"].includes(kind)
+  const now = ctx.currentTime, major = ["hurt", "defeat", "boss", "level", "upgrade", "storm", "cleave", "heal", "explosion", "victory", "finisher", "meteor", "nova", "whirl", "leap"].includes(kind)
   const gap = kind === "tick" ? .055 : kind.startsWith("enemy-") ? 1.4 : major ? .12 : .1
   if (now - (this.cooldowns.get(kind) ?? -10) < gap) return
   if (kind.startsWith("enemy-")) { if (now - (this.cooldowns.get("enemy") ?? -10) < .65) return; this.cooldowns.set("enemy", now) }
@@ -180,6 +182,7 @@ export class DungeonAudio {
    this.duck.gain.cancelScheduledValues(now); this.duck.gain.setValueAtTime(this.duck.gain.value, now)
    this.duck.gain.linearRampToValueAtTime(.38, now + .025); this.duck.gain.setTargetAtTime(1, now + .12, .16)
   }
+  if (hasSfxRecipe(kind)) { sfxRecipes[kind]!({ tone: (f, d, l, type, end = f, delay = 0) => tone(f, d, l, type, end, delay), chime }); return }
   switch (kind) {
    case "shield": tone(490,.38,.16,"sine",980);chime([74,81,86],.16,.065);break
    case "mana": chime([81,86,93],.17,.05);break
@@ -189,7 +192,7 @@ export class DungeonAudio {
    case "death-bat": tone(800,.18,.1,"sine",220);break
    case "ui": tone(660, .055, .055, "sine", 880); break
    case "tick": tone(1100, .035, .035, "sine", 750); break
-   case "slash": case "dust": tone(2100, .12, .22, "noise"); tone(430, .075, .13, "triangle", 100); break
+   case "slash": case "dust": tone(2100, .12, .22, "noise"); tone(430, .075, .13, "triangle", 100); tone(2600, .18, .05, "sine", 2400, .02); break
    case "cleave": tone(1300, .32, .37, "noise"); tone(190, .24, .3, "triangle", 45); break
    case "hurt": tone(90, .24, .46, "triangle", 34); tone(750, .14, .28, "noise"); break
    case "hit": tone(130, .1, .2, "triangle", 50); break
@@ -214,6 +217,21 @@ export class DungeonAudio {
    case "death-skeleton": case "death-guard": tone(1300, .22, .14, "noise"); tone(170, .12, .1, "triangle", 75); break
    case "death-mage": tone(540, .3, .13, "sine", 90); break
    case "death-goblin": case "death-minotaur": tone(190, .22, .15, "sawtooth", 42); break
+   case "enemy-wolf": tone(520, .45, .07, "sine", 380); break
+   case "enemy-rat": case "enemy-spider": tone(3200, .05, .04, "noise"); tone(2600, .05, .035, "noise", 2600, .06); break
+   case "enemy-slime": tone(160, .2, .08, "sine", 320); break
+   case "enemy-wraith": case "enemy-necromancer": tone(300, .6, .06, "sine", 180); break
+   case "enemy-archer": tone(900, .08, .06, "triangle", 1400); break
+   case "enemy-shaman": case "enemy-wisp": tone(660, .25, .05, "triangle", 990); break
+   case "enemy-golem": case "enemy-troll": tone(70, .45, .13, "sawtooth", 38); break
+   case "enemy-imp": tone(1200, .12, .06, "square", 1800); break
+   case "enemy-serpent": case "enemy-assassin": tone(4200, .22, .04, "noise"); break
+   case "enemy-beetle": tone(260, .12, .08, "square", 140); break
+   case "death-wolf": case "death-rat": case "death-serpent": case "death-assassin": case "death-imp": tone(420, .2, .12, "sawtooth", 90); break
+   case "death-slime": case "death-wisp": tone(700, .25, .1, "sine", 120); break
+   case "death-spider": case "death-beetle": case "death-archer": tone(1300, .2, .12, "noise"); break
+   case "death-wraith": case "death-necromancer": case "death-shaman": tone(540, .4, .12, "sine", 70); break
+   case "death-golem": case "death-troll": tone(110, .4, .16, "sawtooth", 35); break
    case "victory": chime([74, 81, 86, 89, 93], .24, .11); break
   }
  }
