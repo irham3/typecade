@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest"
 import { SurvivalRun, restoreDungeonRun } from "./survival"
 import { areWeaponsValid, createEmptyWeapons, isWeaponId, orbitBladePositions, tickWeapons, weaponIds } from "./weapons"
-import { dungeonBalance as B, weaponRules } from "../../content/src/dungeon"
+import { dungeonBalance as B, dungeonUpgrades, weaponRules } from "../../content/src/dungeon"
 
 it("bounds weapon saves, migrates old runs and protects the boss and locked final word", () => {
  const r = new SurvivalRun("weapon-save"), s = r.state
@@ -76,4 +76,15 @@ it("keeps close wraiths in place and refuses a blink through a ruin",()=>{
  wraith.attack=0;a.ability(wraith,.1);expect(wraith.x).toBe(1);expect(s.effects.some(e=>e.kind==="blink")).toBe(false)
  s.player.x=24;s.player.z=26;wraith.x=30;wraith.z=26;wraith.attack=0
  a.ability(wraith,.1);expect(wraith.x).toBe(30);expect(s.effects.some(e=>e.kind==="blink")).toBe(false)
+})
+
+
+it("offers unique restorative skills after every weapon and relic reaches its cap",()=>{
+ const r=new SurvivalRun("exhausted-build"),s=r.state;r.start();s.enemies=[];s.queue=[];s.spawnAt=s.nextBoss=1000;s.player.invincible=1000
+ for(const id of weaponIds)s.weapons[id].level=5
+ for(const id of Object.keys(s.relics) as (keyof typeof s.relics)[])s.relics[id]=dungeonUpgrades[id].max
+ s.skills.cleave.level=2;s.skills.storm.level=s.skills.heal.level=3
+ r.gainXp(125);r.advance(.01);expect(s.offers).toEqual(["cleave","storm","heal"])
+ expect(r.chooseUpgrade("cleave")).toBe(true);expect(s.skills.cleave.level).toBe(3)
+ r.gainXp(1000);r.advance(.01);expect(s.offers).toEqual(["cleave","storm","heal"])
 })
