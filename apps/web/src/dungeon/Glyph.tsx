@@ -9,6 +9,7 @@ const paths = {
  history: "M4 2h16v20H4zm3 4v3h10V6zm0 6v2h10v-2zm0 5v2h7v-2z",
  tower: "M3 22v-4h3V9H3V2h4v3h3V2h4v3h3V2h4v7h-3v9h3v4H3zm7-4h4v-7h-4z",
  sword: "M4 21l6-6-2-2 2-2 2 2L21 2l1 1-8 12 2 2-2 2-2-2-6 6z",
+ broadsword: "M10 1h4v2h1v11h-2V4h-2v10H9V3h1zM4 14h16v3H4zM10 17h4v3h-4zM9 20h6v3H9z",
  storm: "M2 4h20v3H6v3h13v3H9v3h7v3h-4v3H9v-3H6v-3H3v-3h3v-3H2z",
  heal: "M12 22 2 12V6l3-3h4l3 3 3-3h4l3 3v6zM12 8l-2.5 3.5L12 15l2.5-3.5z",
  skull: "M5 2h14l3 4v8l-3 2v4h-3v-3h-2v3h-4v-3H8v3H5v-4l-3-2V6zm2 7v4h4V9zm6 0v4h4V9zm-2 6h2l-1-2z",

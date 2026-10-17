@@ -1,0 +1,160 @@
+/* Dialogs: one framed plate for every modal. The frame never scrolls; only .dialog-body does. */
+.dungeon-dialog {
+  --accent: var(--gold);
+  max-height: calc(100svh - 48px);
+  width: min(560px, calc(100vw - 32px));
+  padding: 14px 18px 18px !important;
+  color: var(--text);
+  overflow: visible;
+}
+.dungeon-dialog[open] { display: flex; flex-direction: column; animation: dialog-in .18s cubic-bezier(.2, .9, .3, 1.2) both }
+@keyframes dialog-in { from { transform: translateY(10px) scale(.97); opacity: 0 } }
+.dungeon-dialog::backdrop { background: radial-gradient(circle at 50% 45%, #05070b99, #05070bf0 70%); backdrop-filter: none }
+.tone-pause { --accent: var(--cyan) }
+.tone-defeat { --accent: var(--red) }
+.tone-relic { --accent: var(--rarity-epic) }
+
+/* Header: title over a dashed rule with a lit diamond in the dialog's accent. */
+.dungeon-dialog > header { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 4px 0 14px; border: 0 }
+.dungeon-dialog > header h2 { margin: 0; font-size: var(--size-l); line-height: 1.4; color: var(--text); text-shadow: 2px 2px 0 #000 }
+.dungeon-dialog > header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: repeating-linear-gradient(90deg, var(--iron-500) 0 6px, transparent 6px 10px) }
+.dungeon-dialog > header::before { content: ""; position: absolute; left: 0; bottom: -3px; width: 8px; height: 8px; background: var(--accent); transform: rotate(45deg); box-shadow: 0 0 0 2px var(--iron-900) }
+.dungeon-dialog .dialog-close { --hover-frame: none; flex: none; width: 28px; height: 28px; padding: 0 !important; border: 0 !important; border-image: none !important; font-size: var(--size-l); line-height: 1; color: var(--text-faint); display: grid; place-items: center }
+.dungeon-dialog .dialog-close:hover { color: var(--gold-light) }
+
+.dungeon-dialog > .dialog-body { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; margin: 0 -6px; padding: 2px 6px; scrollbar-width: thin; scrollbar-color: var(--iron-500) transparent }
+.dungeon-dialog .dialog-body > p { font-size: var(--size-s); line-height: 1.8; color: var(--text-dim) }
+.dungeon-dialog .dialog-body > .eyebrow { display: block; margin: 0 0 12px }
+.dungeon-dialog .dialog-body > button, .dungeon-dialog .dialog-body > form > button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin-top: 10px; padding: 8px 12px; font-size: var(--size-s) }
+.dialog-actions { display: grid; gap: 8px; margin-top: 18px }
+.dialog-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+.dialog-actions button { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 12px; font-size: var(--size-s) }
+.dialog-actions button .glyph, .dungeon-dialog .dialog-body > button .glyph { width: 16px; height: 16px }
+.dialog-actions .primary-action { padding: 12px 14px; font-size: var(--size-m) }
+.dialog-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin-top: 12px }
+
+/* Stats: a row of icon, number and label with dotted dividers. No tiles. */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 0; margin: 16px 0 }
+.stat-grid.compact { grid-template-columns: repeat(4, 1fr) }
+.stat-tile { display: grid; justify-items: center; gap: 7px; padding: 2px 4px; background: none; border: 0 }
+.stat-tile + .stat-tile { border-left: 2px dotted var(--iron-500) }
+.stat-grid > .stat-tile:nth-child(3n + 1) { border-left: 0 }
+.stat-grid.compact > .stat-tile:nth-child(3n + 1) { border-left: 2px dotted var(--iron-500) }
+.stat-grid.compact > .stat-tile:nth-child(4n + 1) { border-left: 0 }
+.stat-tile .glyph { width: 16px; height: 16px; color: var(--gold) }
+.stat-tile b { font-size: var(--size-m); font-weight: normal; color: var(--text); text-shadow: 2px 2px 0 #000 }
+.stat-tile span { font-size: var(--size-xs); color: var(--text-faint) }
+
+/* Build chips: icon and name on a notched dark tag. */
+.build-showcase { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 }
+.build-chip { --chip: var(--text-dim); display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px 5px 7px; font-size: var(--size-xs); background: #0b0e14cc; clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px); box-shadow: inset 2px 0 0 var(--chip) }
+.build-chip .glyph { width: 12px; height: 12px; color: var(--chip) }
+.chip-weapon { --chip: var(--cyan) } .chip-skill { --chip: var(--gold) } .chip-relic { --chip: var(--rarity-epic) }
+.level-pips { display: inline-flex; gap: 2px; vertical-align: middle }
+.level-pips i { width: 5px; height: 5px; background: var(--iron-500); transform: none; border: 0; box-shadow: none }
+.level-pips i.on { background: var(--gold) }
+.level-pips i.next { background: var(--text-faint); animation: pip-step 1s steps(2) infinite }
+@keyframes pip-step { 50% { background: var(--iron-500) } }
+
+/* Result screen: survival time on the left, the coin reward beside it. */
+.result-dialog { width: min(640px, calc(100vw - 32px)) }
+.record-ribbon { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 6px 12px 6px 10px; font-size: var(--size-xs); color: #241606; background: var(--gold); clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%) }
+.record-ribbon .glyph { width: 12px; height: 12px }
+.result-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); align-items: stretch; gap: 16px; margin: 4px 0 }
+.result-time { display: grid; align-content: center; gap: 8px }
+.result-time small { font-size: var(--size-xs); color: var(--text-faint) }
+.result-time b { font-size: var(--size-xl); font-weight: normal; color: var(--text); text-shadow: 3px 3px 0 #000 }
+.result-time span { font-size: var(--size-xs); line-height: 1.6; color: var(--text-dim) }
+
+.run-reward { display: grid; gap: 10px; padding: 12px 14px; background: linear-gradient(180deg, #2a1f0e66, #0b0e1400); box-shadow: inset 0 2px 0 #d8a64a55 }
+.run-reward.empty { grid-template-columns: auto 1fr; align-items: center; font-size: var(--size-xs); line-height: 1.8; color: var(--text-faint) }
+.run-reward.empty p { margin: 0 }
+.run-reward.empty .reward-coin { width: 24px; height: 24px; filter: grayscale(1) brightness(.6) }
+.reward-total { display: flex; align-items: center; gap: 12px }
+.reward-coin { width: 36px; height: 36px; filter: drop-shadow(2px 2px 0 #000); animation: coin-spin 1.6s steps(8) 1 }
+@keyframes coin-spin { 0% { transform: scaleX(1) } 25% { transform: scaleX(.2) } 50% { transform: scaleX(1) } 75% { transform: scaleX(.2) } 100% { transform: scaleX(1) } }
+.reward-total small { display: block; margin-bottom: 6px; font-size: var(--size-xs); color: var(--gold) }
+.reward-total b { font-size: var(--size-xl); font-weight: normal; color: var(--gold-light); text-shadow: 3px 3px 0 #3a2408 }
+.reward-lines { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: var(--size-xs) }
+.reward-lines li { display: flex; justify-content: space-between; gap: 8px; color: var(--text-dim) }
+.reward-lines li b { font-weight: normal; color: var(--text) }
+.reward-lines li.bonus, .reward-lines li.bonus b { color: var(--gold-light) }
+.reward-lines li.capped b { color: var(--text-faint) }
+.reward-wallet { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; padding-top: 8px; font-size: var(--size-xs); color: var(--gold-light); border-top: 2px dotted var(--iron-500) }
+.reward-wallet span { color: var(--text-faint) }
+
+/* Draft cards: upright reward plates. The family colour lights the medallion, the rank pips and,
+   while you type, a fill bar under the keyword. Same iron frame as every other plate. */
+.draft-dialog { width: min(780px, calc(100vw - 24px)) }
+.draft-dialog .upgrade-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 14px }
+.draft-dialog .upgrade-card {
+  --accent: var(--gold); position: relative; display: grid; grid-template-rows: auto auto auto auto 1fr auto; justify-items: center; gap: 10px;
+  padding: 14px 10px 10px; text-align: center; background: none;
+  border: 6px solid transparent; border-image: var(--frame-iron) 6 fill / 6px stretch;
+  box-shadow: inset 0 3px 0 var(--accent) !important;
+  filter: drop-shadow(0 4px 0 #000000b0);
+  animation: card-rise .32s cubic-bezier(.2, .9, .3, 1.2) both;
+  transition: transform .12s steps(2);
+}
+@keyframes card-rise { from { opacity: 0; transform: translateY(14px) } }
+.draft-dialog .upgrade-card.typing { transform: translateY(-6px); border-image-source: var(--frame-iron-hover) }
+.upgrade-family { justify-self: center; padding: 3px 8px; font-size: var(--size-xs); color: var(--accent); background: #0b0e14; clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0 50%) }
+.upgrade-medallion { position: relative; width: 60px; height: 60px; display: grid; place-items: center; margin: 2px 0 0 }
+.upgrade-medallion::before, .upgrade-medallion::after { content: ""; position: absolute; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%) }
+.upgrade-medallion::before { inset: 0; background: color-mix(in srgb, var(--accent) 70%, #000) }
+.upgrade-medallion::after { inset: 4px; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--accent) 30%, #141921), #0b0e14 75%) }
+.upgrade-medallion .glyph { position: relative; z-index: 1; width: 24px; height: 24px; color: var(--accent); filter: drop-shadow(1px 1px 0 #000) }
+.draft-dialog .upgrade-card h3 { margin: 0; font-size: var(--size-s); font-weight: normal; line-height: 1.5; color: var(--text); text-shadow: 2px 2px 0 #000 }
+.upgrade-rank { display: flex; align-items: center; gap: 8px; font-size: var(--size-xs); color: var(--text-faint) }
+.upgrade-rank .level-pips i { width: 7px; height: 7px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%) }
+.upgrade-rank .level-pips i.on { background: var(--accent) }
+.draft-dialog .upgrade-card p { align-self: start; margin: 0; font-size: var(--size-xs); line-height: 1.9; color: var(--text-dim) }
+.draft-dialog .upgrade-card > strong {
+  position: relative; justify-self: stretch; display: block; margin-top: 2px; padding: 9px 4px 11px;
+  font-size: var(--size-m); font-weight: normal; letter-spacing: 0; color: var(--text); background: #0b0e14; border: 0;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%, 0 4px);
+}
+.draft-dialog .upgrade-card > strong::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: calc(var(--typed, 0) * 100%); background: var(--cyan) }
+.draft-dialog .upgrade-card > strong .typed { color: var(--cyan) }
+.draft-dialog .upgrade-card > .glyph { display: none }
+.draft-dialog .draft-notice { min-height: 0; margin: 4px 0 0; font-size: var(--size-xs); line-height: 1.7; text-align: center; color: #ff9a86 }
+.draft-dialog .draft-notice:empty { display: none }
+
+.settings-dialog .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 2px dotted var(--iron-600); font-size: var(--size-s) }
+.settings-dialog .settings-row small { display: block; margin-top: 6px; font-size: var(--size-xs); line-height: 1.6; color: var(--text-faint) }
+.history-dialog .history-list article { padding: 10px 0; margin: 0; background: none; border: 0; border-bottom: 2px dotted var(--iron-600); font-size: var(--size-xs) }
+.controls-dialog, .howto-dialog { width: min(900px, calc(100vw - 32px)) }
+
+@media (max-width: 600px) {
+  .stat-grid, .stat-grid.compact { grid-template-columns: repeat(2, 1fr) }
+  .stat-grid > .stat-tile, .stat-grid.compact > .stat-tile { border-left: 0 }
+  .stat-grid > .stat-tile:nth-child(2n) { border-left: 2px dotted var(--iron-500) }
+  .result-hero { grid-template-columns: 1fr }
+  .draft-dialog .upgrade-cards { grid-template-columns: 1fr }
+  .dungeon-dialog > header h2 { font-size: var(--size-m) }
+}
+
+/* How to play: four steps side by side, separated by dotted rules instead of boxes. */
+.how-to-play { gap: 0 !important }
+.how-step { padding: 2px 12px 4px !important; background: none !important; border: 0 !important }
+.how-step + .how-step { border-left: 2px dotted var(--iron-500) !important }
+.how-step h3 { font-size: var(--size-s) !important; line-height: 1.5; font-weight: normal }
+.how-step p { font-size: var(--size-xs) !important; line-height: 1.9 !important; color: var(--text-dim) !important }
+.how-step .lesson-visual { border: 0 !important; clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px) }
+.intro-optout { font-size: var(--size-xs) !important; color: var(--text-dim) !important }
+.intro-optout small { font-size: var(--size-xs) !important; color: var(--text-faint) !important }
+@media (max-width: 760px) { .how-step:nth-child(odd) { border-left: 0 !important; padding-left: 0 !important } .how-step { padding-bottom: 14px !important } }
+
+/* Control list: key in a fixed column, description beside it. */
+.control-list { display: grid; gap: 10px; margin: 14px 0; padding: 0; list-style: none }
+.control-list li { display: grid !important; grid-template-columns: 112px 1fr; align-items: center; gap: 12px; font-size: var(--size-xs); line-height: 1.7; color: var(--text-dim) }
+.control-list kbd { justify-self: start }
+
+/* Result screen fits one view: six stats in a single row on wide screens. */
+@media (min-width: 601px) {
+  .result-dialog .stat-grid { grid-template-columns: repeat(6, 1fr); margin: 14px 0 10px }
+  .result-dialog .stat-grid > .stat-tile { border-left: 2px dotted var(--iron-500) }
+  .result-dialog .stat-grid > .stat-tile:first-child { border-left: 0 }
+  .result-dialog .section-label { margin: 10px 0 6px }
+  .result-dialog .record-ribbon { margin-bottom: 8px }
+}

@@ -1,128 +1,65 @@
-/* Title screen: animated crest, glowing logo, ornate primary action and mode tiles. */
-.scene-title .ember-field { position: fixed; z-index: 0 }
-.title-vignette { position: fixed; inset: 0; pointer-events: none; z-index: -1; background: radial-gradient(70% 90% at 75% 55%, transparent 40%, #05080fcc), linear-gradient(0deg, #1a0e2a66, transparent 40%) }
-.scene-title .scene-shade { background: linear-gradient(90deg, #070c17f2 0%, #0b1322e0 32%, #0b132233 62%, transparent), linear-gradient(0deg, #08101bd9, transparent 30%) }
+/* Title screen: one column of actions on the left, the live keep on the right. */
+.scene-title .scene-shade { background: linear-gradient(90deg, #0b0e14 0%, #0b0e14e6 30%, #0b0e1400 60%) }
 
-.wordmark { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
-.wordmark > .glyph { width: 22px; height: 22px; color: var(--gild); filter: drop-shadow(0 0 6px #ff8a3d) }
-.wordmark span { flex-basis: 100% }
+.title-nav { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 18px 28px; z-index: 3 }
+.title-nav > div { display: flex; align-items: center; gap: 14px }
+.title-nav .icon-button { width: 38px; height: 38px; padding: 0 !important; display: grid; place-items: center }
+.title-nav .icon-button .glyph { width: 16px; height: 16px }
 
-.title-menu { border-left: 0; padding-left: 0; z-index: 2 }
-.title-menu::before, .title-menu::after { display: none }
-
-/* Crest: hexagonal sigil with a flame, pulsing halo and orbiting gems. */
-.keep-crest { position: relative; width: 86px; height: 86px; margin: 0 0 12px; display: grid; place-items: center; color: var(--gild); filter: none }
-.keep-crest > .glyph { position: relative; width: 62px; height: 62px; z-index: 1; color: var(--gild-hi); filter: drop-shadow(0 0 10px #ff8a3daa) drop-shadow(0 3px 0 #5b3a16) }
-.crest-halo { position: absolute; inset: 6px; border-radius: 50%; background: radial-gradient(circle, #ff8a3d66, #b48cff22 55%, transparent 70%); animation: crest-pulse 2.6s ease-in-out infinite }
-.crest-orbit { position: absolute; inset: -4px; animation: crest-spin 9s linear infinite }
-.crest-orbit i { position: absolute; width: 8px; height: 8px; transform: rotate(45deg); background: var(--cyan); box-shadow: 0 0 10px var(--cyan) }
-.crest-orbit i:nth-child(1) { top: 0; left: calc(50% - 4px) }
-.crest-orbit i:nth-child(2) { bottom: 12%; left: 6%; background: var(--violet); box-shadow: 0 0 10px var(--violet) }
-.crest-orbit i:nth-child(3) { bottom: 12%; right: 6%; background: var(--ember); box-shadow: 0 0 10px var(--ember) }
-.keep-crest > .glyph:first-child, .keep-crest > .glyph:last-child { position: relative; transform: none; width: 62px; height: 62px }
-@keyframes crest-pulse { 50% { transform: scale(1.18); opacity: .7 } }
-@keyframes crest-spin { to { transform: rotate(360deg) } }
-
-/* Logo */
-.title-menu h1.title-logo {
-  position: relative;
-  background: linear-gradient(180deg, #fff6d8 0%, #ffd27a 45%, #e08a3a 70%, #a5532a 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  text-shadow: none; filter: drop-shadow(0 4px 0 #3b220f) drop-shadow(0 0 24px #ff8a3d55);
-  animation: logo-breathe 4s ease-in-out infinite;
-}
-.title-menu h1.title-logo > span { -webkit-text-fill-color: #c9a46a; color: #c9a46a; letter-spacing: 9px; filter: none }
-@keyframes logo-breathe { 50% { filter: drop-shadow(0 4px 0 #3b220f) drop-shadow(0 0 36px #ff8a3d88) } }
-
-/* Primary action */
-.title-actions .start-button {
-  position: relative; overflow: visible; padding: 18px 20px;
-  background-image: linear-gradient(180deg, #ffe2a0, #e2ab55 50%, #b47a33) !important;
-  border: 2px solid #ffe7b0 !important;
-  box-shadow: 0 0 0 3px #3d2810, 0 0 0 4px #e9bf6a88, 0 8px 0 #2a1b0b, 0 0 36px #ff8a3d55 !important;
-  animation: start-glow 2.4s ease-in-out infinite;
-}
-.title-actions .start-button .corner-flourish { color: #fff4d2; width: 18px; height: 18px }
-.title-actions .start-button::before, .title-actions .start-button::after { display: none }
-.title-actions .start-button:hover { transform: translateY(-2px); box-shadow: 0 0 0 3px #3d2810, 0 0 0 4px var(--gild-hi), 0 10px 0 #2a1b0b, 0 0 50px #ff8a3d99 !important }
-.start-sigil { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5a3a18, #24160a); border: 2px solid #fff0c8; color: #ffe39a; box-shadow: 0 0 14px #ff8a3d88 }
-.start-sigil .glyph { width: 22px; height: 22px }
-@keyframes start-glow { 50% { box-shadow: 0 0 0 3px #3d2810, 0 0 0 4px #ffe3a3, 0 8px 0 #2a1b0b, 0 0 52px #ff8a3d88 } }
-
-.title-actions .gem-divider { margin: 6px 0 2px }
-
-/* Mode tiles */
-.secondary-modes { grid-template-columns: 1fr 1fr; gap: 8px }
-.secondary-modes .mode-button {
-  position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-align: left;
-  background: linear-gradient(180deg, #1b2a44f2, #111b2ef2) !important; border: 1px solid #3e5274 !important;
-  box-shadow: inset 0 1px #ffffff14, 0 3px 0 #060b14 !important; font-size: 11px;
-}
-.secondary-modes .mode-button:hover { border-color: var(--gild) !important; box-shadow: inset 0 1px #ffffff14, 0 3px 0 #060b14, 0 0 18px #e9bf6a33 !important }
-.mode-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: none; background: radial-gradient(circle at 35% 30%, #2f4266, #0d1424); border: 1px solid #5b7099; transform: rotate(45deg) }
-.mode-icon .glyph { width: 16px; height: 16px; transform: rotate(-45deg); color: #bfe9ff }
-.mode-button:hover .mode-icon { border-color: var(--gild); box-shadow: 0 0 10px #e9bf6a66 }
-.mode-button:hover .mode-icon .glyph { color: var(--gild-hi) }
-.mode-text { display: grid; gap: 3px; flex: 1 }
-.mode-text small { font-size: 8px; letter-spacing: 2px; color: #8aa0bf; display: block }
-.mode-chevron { width: 6px; height: 6px; border-top: 2px solid #6b7fa3; border-right: 2px solid #6b7fa3; transform: rotate(45deg); transition: transform .15s }
-.mode-button:hover .mode-chevron { transform: translateX(3px) rotate(45deg); border-color: var(--gild) }
-.secondary-modes .wide-mode { grid-column: 1 / -1 }
-.secondary-modes .tutorial-entry small { display: block }
-
-.title-world-note { position: absolute; padding: 16px 22px; border: 1px solid #e9bf6a66; border-left: 3px solid var(--gild); background: linear-gradient(135deg, #16233bdd, #0c1424dd); box-shadow: 0 10px 30px #000a, 0 0 24px #b48cff22 }
-.title-world-note::before { display: none }
-.title-footer { background: linear-gradient(0deg, #070c16f2, #0e1726cc); border-top: 1px solid #e9bf6a44 }
-
-@media (max-width: 700px) {
-  .keep-crest { width: 56px; height: 56px }
-  .keep-crest > .glyph { width: 40px !important; height: 40px !important }
-  .secondary-modes .mode-button { padding: 8px }
-  .mode-icon { width: 24px; height: 24px }
-}
-@media (max-height: 720px) and (min-height: 521px) { .keep-crest { width: 56px; height: 56px; margin-bottom: 4px } .keep-crest > .glyph { width: 40px !important; height: 40px !important } .secondary-modes .mode-button { padding: 7px 10px } }
-@media (max-height: 520px) and (min-width: 600px) { .secondary-modes .mode-text small, .title-actions .gem-divider { display: none } }
-[data-reduced-effects="true"] .crest-halo, [data-reduced-effects="true"] .crest-orbit, [data-reduced-effects="true"] .title-logo, [data-reduced-effects="true"] .start-button { animation: none !important }
-
-/* Layout tightening: sigil keeps its circle, modes fit in three columns, logo stays bright. */
-.title-actions .start-button > .start-sigil { flex: none }
-.title-actions .start-button > span:not(.start-sigil) { flex: 1 }
-.secondary-modes { grid-template-columns: repeat(3, 1fr) }
-.secondary-modes .wide-mode { grid-column: auto }
-.secondary-modes .mode-button { flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 10px 6px }
-.secondary-modes .mode-chevron { display: none }
-.title-menu { top: 12% }
-.title-menu h1.title-logo { background: linear-gradient(180deg, #fffbe8 0%, #ffe08a 40%, #ffab4a 72%, #e0662e 100%); -webkit-background-clip: text; background-clip: text }
-.title-actions { width: min(440px, 100%) }
-@media (max-height: 820px) { .title-menu { top: 9% } .keep-crest { width: 60px; height: 60px; margin-bottom: 4px } .keep-crest > .glyph { width: 44px !important; height: 44px !important } .title-menu h1.title-logo { margin-bottom: 10px } .title-menu > p { margin-bottom: 12px } .secondary-modes .mode-text small { display: none } .title-language, .title-footnote { margin-top: 8px } }
-
-/* Layout v3: the menu owns the space between nav and footer and never runs into either. */
 .scene-title .title-menu {
-  position: absolute; top: 72px; bottom: 56px; left: 6%;
-  width: min(460px, 44%); padding: 0;
+  position: absolute; top: 72px; bottom: 56px; left: 5%;
+  width: min(420px, 42%); padding: 0;
   display: flex; flex-direction: column; justify-content: center; gap: 0;
+  border: 0; animation: none; z-index: 2;
 }
-.scene-title .title-menu > p { margin: 0 0 16px; max-width: 380px; line-height: 1.7 }
-.scene-title .title-menu h1.title-logo { margin: 0 0 12px }
-.scene-title .title-menu .eyebrow { margin: 0 0 8px }
-.scene-title .keep-crest { margin: 0 0 8px; flex: none }
-.title-actions { width: 100% }
-.title-footer { display: flex; align-items: center; gap: 18px; padding: 10px 42px }
-.title-footer > span { margin-right: auto }
-.title-footer .title-language { margin: 0; font-size: 10px; color: #9fb0c8 }
-.title-footer .title-language select { font-size: 10px; padding: 3px 4px }
-.title-footer .controls-link { font-size: 10px; color: var(--cyan); text-decoration: none }
-.title-footnote, .title-world-note { display: none }
-@media (max-height: 760px) {
-  .scene-title .keep-crest { display: none }
-  .scene-title .title-menu > p { margin-bottom: 12px }
-  .secondary-modes .mode-button { padding: 7px 6px }
+.title-menu::before, .title-menu::after { display: none !important }
+.title-menu .eyebrow { margin: 0 0 12px !important }
+.title-menu h1.title-logo {
+  margin: 0 0 14px; font-size: clamp(28px, 4vw, 48px); line-height: 1.15; font-weight: normal;
+  color: var(--gold); text-shadow: 3px 3px 0 #4a2f12, 6px 6px 0 #000; background: none; -webkit-text-fill-color: currentColor; filter: none; animation: none;
 }
-@media (max-height: 620px) {
-  .scene-title .title-menu .eyebrow, .title-actions .gem-divider, .secondary-modes .mode-text small { display: none }
-  .scene-title .title-menu h1.title-logo { font-size: 30px; margin-bottom: 6px }
-}
-@media (max-width: 700px) {
-  .scene-title .title-menu { left: 5%; width: 90%; top: 64px; bottom: 52px }
-  .title-footer { padding: 8px 14px; gap: 10px; flex-wrap: wrap }
+.title-menu h1.title-logo > span { display: block; margin-top: 12px; font-size: var(--size-s); line-height: 1; color: var(--text-dim); text-shadow: 2px 2px 0 #000; -webkit-text-fill-color: currentColor }
+.scene-title .title-menu > p { margin: 0 0 20px; max-width: 360px; font-size: var(--size-s); line-height: 1.9; color: var(--text-dim) }
+
+.title-actions { display: grid; gap: 10px; width: 100% }
+.title-actions .start-button { display: flex; align-items: center; gap: 16px; padding: 10px 16px 10px 10px; text-align: left; animation: none; overflow: visible }
+.title-actions .start-button > span:not(.start-sigil) { flex: 1; font-size: var(--size-l); line-height: 1.3 }
+.title-actions .start-button small { display: block; margin-top: 8px; font-size: var(--size-xs); color: #5a3d12 }
+/* The sigil sits in a dark notched socket so the sword reads at a glance. */
+.title-actions .start-button > .start-sigil { flex: none; display: grid; place-items: center; width: 54px; height: 54px; background: #3a2408; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px); box-shadow: inset 0 0 0 3px #6a4614 }
+.start-sigil .glyph { width: 36px; height: 36px; color: var(--gold-light) !important; transform: rotate(45deg); filter: drop-shadow(2px 2px 0 #1a0f03) }
+.start-button:hover .start-sigil .glyph { transform: rotate(45deg) translateY(-2px) }
+.start-button:hover .start-sigil .glyph { color: #fff3cf !important }
+.title-actions .start-button kbd { padding: 6px 8px; font-size: var(--size-s); background: #b88a36; border-color: var(--gold-dark); color: #241606 }
+.continue-button { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-size: var(--size-s) }
+.continue-button span { font-size: var(--size-xs); color: var(--gold) }
+
+/* Other modes: icon over two lines of text, no plates. Hover lights the icon and lifts it. */
+.secondary-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 10px }
+.secondary-modes .mode-button { --hover-frame: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 4px !important; text-align: center; border: 0 !important; border-image: none !important }
+.mode-icon { display: grid; place-items: center; width: 42px; height: 42px; background: #1a2029e6; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); transition: transform .12s steps(2) }
+.mode-icon .glyph { width: 20px; height: 20px; transform: none; color: var(--text-dim) }
+.mode-button:hover .mode-icon { transform: translateY(-3px) }
+.mode-button:hover .mode-icon .glyph, .mode-button:focus-visible .mode-icon .glyph { color: var(--gold-light) }
+.mode-button:hover .mode-text { color: var(--gold-light) }
+.mode-text { display: grid; gap: 6px; font-size: var(--size-xs); line-height: 1.4; text-shadow: 2px 2px 0 #000 }
+.mode-text small { font-size: var(--size-xs); color: var(--text-faint) }
+.mode-chevron { display: none }
+
+/* Footer: a line of outlined text over the scene, not a bar. */
+.title-footer { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 22px; padding: 14px 28px 16px; font-size: var(--size-xs); color: var(--text-dim); background: linear-gradient(0deg, #0b0e14d9, #0b0e1400); border: 0; text-shadow: 2px 2px 0 #000 }
+.title-footer > span:first-child { margin-right: auto }
+.title-footer strong { margin-left: 8px; font-weight: normal; color: var(--text) }
+.title-footer .title-coins { display: inline-flex; align-items: center; gap: 8px; font-size: var(--size-s); color: var(--gold-light) }
+.title-footer .title-coins .coin-icon { width: 16px; height: 16px }
+.title-footer .title-language { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--size-xs) }
+.title-footer select { font-size: var(--size-xs); color: var(--text); background: var(--iron-800); border: 2px solid var(--iron-500); padding: 4px }
+.title-footer .controls-link { color: var(--cyan) }
+.title-footer button { padding: 4px 0 !important }
+.title-footnote, .title-world-note, .keep-crest, .ember-field, .title-vignette { display: none !important }
+
+@media (max-height: 700px) { .scene-title .title-menu > p { display: none } .secondary-modes .mode-text small { display: none } }
+@media (max-width: 760px) {
+  .scene-title .title-menu { left: 16px; right: 16px; width: auto; top: 64px; bottom: 96px }
+  .title-footer { flex-wrap: wrap; gap: 10px; padding: 8px 14px }
 }
